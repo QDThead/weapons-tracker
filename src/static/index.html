@@ -255,7 +255,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
           <h2>Trade Flow Network</h2>
           <div class="filters">
             <label>Min TIV (M):</label>
-            <input type="number" id="network-min-tiv" value="10" min="0" step="10" style="width:80px">
+            <input type="number" id="network-min-tiv" value="500" min="0" step="100" style="width:80px">
           </div>
           <div id="network"></div>
         </div>
@@ -573,7 +573,7 @@ async function loadData() {
     fetch(API + '/dashboard/flows?min_tiv=0'),
     fetch(API + '/dashboard/country-totals'),
     fetch(API + '/dashboard/weapon-types'),
-    fetch(API + '/trends/global/volume?start_year=2015&end_year=2025'),
+    fetch(API + '/trends/global/volume?start_year=2015&end_year=2023'),
   ]);
   const safeJson = async (r) => r.ok ? r.json() : [];
 
@@ -764,7 +764,7 @@ async function showCountryDetail(country) {
   document.getElementById('country-name').textContent = country;
   document.getElementById('detail-country-name').textContent = country;
 
-  const resp = await fetch(API + '/trends/country/' + encodeURIComponent(country) + '/profile?start_year=2015&end_year=2025');
+  const resp = await fetch(API + '/trends/country/' + encodeURIComponent(country) + '/profile?start_year=2015&end_year=2023');
   const profile = await resp.json();
   if (profile.error) { document.getElementById('country-metrics').innerHTML = `<p style="color:var(--text-dim)">${profile.error}</p>`; return; }
 
@@ -1079,7 +1079,7 @@ async function loadCanadaIntel() {
   // We already have allTransfers, flows, countryTotals from main loadData
   // Also fetch Canada's profile and flights
   const [profileResp, flightsResp, comtradeResp] = await Promise.all([
-    fetch(API + '/trends/country/Canada/profile?start_year=2015&end_year=2025'),
+    fetch(API + '/trends/country/Canada/profile?start_year=2015&end_year=2023'),
     fetch(API + '/tracking/flights/military').catch(() => ({ ok: false })),
     fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023').catch(() => ({ ok: false })),
   ]);
