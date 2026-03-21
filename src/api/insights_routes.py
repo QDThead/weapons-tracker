@@ -18,6 +18,77 @@ def _query(session, sql, params=None):
     return session.execute(text(sql), params or {}).fetchall()
 
 
+@router.get("/freshness")
+async def get_data_freshness():
+    """Get freshness timestamps for all data sources."""
+    session = SessionLocal()
+    try:
+        sources = []
+
+        # SIPRI Arms Transfers
+        r = _query(session, """
+            SELECT MAX(order_year), MAX(updated_at), COUNT(*),
+                   COUNT(DISTINCT seller_id), COUNT(DISTINCT buyer_id)
+            FROM arms_transfers
+        """)
+        if r:
+            sources.append({
+                "source": "SIPRI Arms Transfers",
+                "records": r[0][2],
+                "latest_data_year": r[0][0],
+                "last_updated": r[0][1],
+                "update_frequency": "Annual (March)",
+                "sellers": r[0][3],
+                "buyers": r[0][4],
+            })
+
+        # World Bank
+        r = _query(session, "SELECT MAX(year), COUNT(*) FROM trade_indicators")
+        if r:
+            sources.append({
+                "source": "World Bank Indicators",
+                "records": r[0][1],
+                "latest_data_year": r[0][0],
+                "last_updated": None,
+                "update_frequency": "Annual",
+            })
+
+        # Flight Tracking
+        r = _query(session, "SELECT MAX(detected_at), COUNT(*) FROM delivery_tracking")
+        if r:
+            sources.append({
+                "source": "Military Flights (adsb.lol)",
+                "records": r[0][1],
+                "latest_data_year": None,
+                "last_updated": r[0][0],
+                "update_frequency": "Every 5 minutes (live)",
+            })
+
+        # GDELT News
+        r = _query(session, "SELECT MAX(published_at), MAX(created_at), COUNT(*) FROM arms_trade_news")
+        if r:
+            sources.append({
+                "source": "Arms Trade News (GDELT)",
+                "records": r[0][2],
+                "latest_data_year": None,
+                "last_updated": r[0][1] or r[0][0],
+                "update_frequency": "Every 15 minutes",
+            })
+
+        # UN Comtrade (not persisted)
+        sources.append({
+            "source": "UN Comtrade (USD values)",
+            "records": "live",
+            "latest_data_year": 2023,
+            "last_updated": "cached (1hr TTL)",
+            "update_frequency": "Annual (~6 month lag)",
+        })
+
+        return sources
+    finally:
+        session.close()
+
+
 @router.get("/all")
 async def get_all_insights():
     """Generate all insights in a single call for the dashboard."""

@@ -302,6 +302,16 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   border-bottom-color: rgba(79,140,255,0.6);
 }
 
+/* Freshness indicators */
+.fresh-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.fresh-dot.green { background: var(--accent3); }
+.fresh-dot.yellow { background: var(--accent4); }
+.fresh-dot.red { background: var(--accent2); }
+.fresh-dot.gray { background: var(--text-dim); }
+.fresh-item { display: flex; align-items: center; }
+.fresh-label { color: var(--text); font-weight: 500; margin-right: 4px; }
+.fresh-date { color: var(--text-dim); }
+
 @media (max-width: 1200px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
@@ -319,6 +329,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
     <div>Countries: <span class="val" id="stat-countries">-</span></div>
     <div>Sellers: <span class="val" id="stat-sellers">-</span></div>
     <div>Total TIV: <span class="val" id="stat-tiv">-</span></div>
+    <div>Data: <span class="val" id="stat-freshness" style="cursor:pointer" title="Click for details">-</span></div>
   </div>
 </header>
 
@@ -335,6 +346,14 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
   <!-- ════ INSIGHTS PAGE ════ -->
   <div id="page-insights" class="page active">
+
+    <!-- Data Freshness Banner -->
+    <div id="freshness-banner" class="card" style="margin-bottom:20px; padding:14px 20px; display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <h2 style="margin:0;">Data Freshness</h2>
+        <div id="freshness-items" style="display:flex; gap:20px; flex-wrap:wrap; font-size:13px;"></div>
+      </div>
+    </div>
 
     <!-- Canada Alerts -->
     <div id="insights-alerts" style="margin-bottom:20px;"></div>
@@ -1817,9 +1836,88 @@ function renderInsightsWeapons(items) {
   });
 }
 
+// ══════════════════════════════════════════════
+// ── DATA FRESHNESS ──
+// ══════════════════════════════════════════════
+
+async function loadFreshness() {
+  try {
+    const resp = await fetch(API + '/insights/freshness');
+    if (!resp.ok) return;
+    const sources = await resp.json();
+
+    // Header badge - show most recent update
+    const now = new Date();
+    let latestUpdate = null;
+    let latestSource = '';
+    sources.forEach(s => {
+      if (s.last_updated && typeof s.last_updated === 'string' && s.last_updated.length > 4) {
+        const d = new Date(s.last_updated);
+        if (!latestUpdate || d > latestUpdate) { latestUpdate = d; latestSource = s.source; }
+      }
+    });
+
+    const headerEl = document.getElementById('stat-freshness');
+    if (latestUpdate) {
+      const hoursAgo = Math.floor((now - latestUpdate) / 3600000);
+      if (hoursAgo < 1) headerEl.textContent = 'Live';
+      else if (hoursAgo < 24) headerEl.textContent = hoursAgo + 'h ago';
+      else headerEl.textContent = Math.floor(hoursAgo / 24) + 'd ago';
+      headerEl.style.color = hoursAgo < 1 ? '#51cf66' : hoursAgo < 24 ? '#ffd43b' : '#ff6b6b';
+    }
+
+    // Insights banner
+    const banner = document.getElementById('freshness-banner');
+    const container = document.getElementById('freshness-items');
+    banner.style.display = 'block';
+    container.innerHTML = sources.map(s => {
+      let dotClass = 'gray';
+      let dateStr = '-';
+
+      if (s.last_updated && typeof s.last_updated === 'string' && s.last_updated.length > 4) {
+        const d = new Date(s.last_updated);
+        const hrs = Math.floor((now - d) / 3600000);
+        dotClass = hrs < 1 ? 'green' : hrs < 24 ? 'yellow' : 'red';
+        if (hrs < 1) dateStr = 'Live';
+        else if (hrs < 24) dateStr = hrs + 'h ago';
+        else dateStr = Math.floor(hrs / 24) + 'd ago';
+      } else if (s.latest_data_year) {
+        dateStr = s.latest_data_year;
+        const yearAge = now.getFullYear() - s.latest_data_year;
+        dotClass = yearAge <= 1 ? 'green' : yearAge <= 2 ? 'yellow' : 'red';
+      } else if (s.records === 0) {
+        dateStr = 'No data';
+        dotClass = 'red';
+      } else if (s.last_updated === 'cached (1hr TTL)') {
+        dateStr = 'Cached';
+        dotClass = 'green';
+      }
+
+      const count = typeof s.records === 'number' ? s.records.toLocaleString() + ' records' : s.records;
+      return '<div class="fresh-item">' +
+        '<span class="fresh-dot ' + dotClass + '"></span>' +
+        '<span class="fresh-label">' + esc(s.source.split('(')[0].trim()) + '</span>' +
+        '<span class="fresh-date">(' + esc(dateStr) + ', ' + esc(count) + ')</span>' +
+        '</div>';
+    }).join('');
+
+    // Click header to scroll to insights freshness
+    headerEl.onclick = () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-page="insights"]').classList.add('active');
+      document.getElementById('page-insights').classList.add('active');
+      banner.scrollIntoView({ behavior: 'smooth' });
+    };
+  } catch (e) {
+    console.error('Freshness load error:', e);
+  }
+}
+
 // ── Init ──
 loadData();
 loadInsights();
+loadFreshness();
 </script>
 </body>
 </html>
