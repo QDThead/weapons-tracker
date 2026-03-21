@@ -169,6 +169,20 @@ class FlightTrackerClient:
 
         return records
 
+    @staticmethod
+    def _safe_float(value, default: float = 0.0) -> float:
+        """Safely convert a value to float.
+
+        Handles non-numeric strings like "ground" returned by adsb.lol
+        for alt_baro when aircraft are on the ground.
+        """
+        if value is None:
+            return default
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return default
+
     def _parse_aircraft(self, ac: dict) -> MilitaryFlightRecord | None:
         """Parse a raw ADS-B aircraft object into a MilitaryFlightRecord."""
         lat = ac.get("lat")
@@ -196,10 +210,10 @@ class FlightTrackerClient:
             registration=ac.get("r", ""),
             latitude=float(lat),
             longitude=float(lon),
-            altitude_ft=float(ac.get("alt_baro", 0) or 0),
-            ground_speed_knots=float(ac.get("gs", 0) or 0),
-            heading=float(ac.get("true_heading", ac.get("track", 0)) or 0),
-            vertical_rate=float(ac.get("baro_rate", 0) or 0),
+            altitude_ft=self._safe_float(ac.get("alt_baro")),
+            ground_speed_knots=self._safe_float(ac.get("gs")),
+            heading=self._safe_float(ac.get("true_heading", ac.get("track", 0))),
+            vertical_rate=self._safe_float(ac.get("baro_rate")),
             is_military=is_military,
             country_of_origin=country,
             squawk=ac.get("squawk", ""),

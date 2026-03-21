@@ -5,11 +5,16 @@ for the global weapons trade tracking platform.
 """
 
 import logging
+from pathlib import Path
+
 import uvicorn
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from src.storage.database import init_db
 from src.api.routes import app
 from src.api.trend_routes import router as trend_router
+from src.api.dashboard_routes import router as dashboard_router
 from src.ingestion.scheduler import create_scheduler
 
 logging.basicConfig(
@@ -19,8 +24,18 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Register trend analysis routes
+# Register routes
 app.include_router(trend_router)
+app.include_router(dashboard_router)
+
+# Serve dashboard UI
+_static_dir = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def serve_dashboard():
+    return FileResponse(str(_static_dir / "index.html"))
 
 scheduler = create_scheduler()
 

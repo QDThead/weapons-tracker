@@ -85,16 +85,19 @@ weapons-tracker/
 
 ## Known Issues (as of March 2026)
 
-### CRITICAL: SIPRI Export URL Broken
-- **Problem:** The old SIPRI export endpoint `https://armstrade.sipri.org/armstrade/html/export_trade_register.php` now returns a 301 redirect to an HTML page at `https://www.sipri.org/databases/armstransfers`
-- **Impact:** `sipri_transfers.py` cannot fetch CSV data. The seed script skips all SIPRI data.
-- **Fix needed:** Find the new SIPRI export URL or scrape their updated web interface. The new site is at `https://armstransfers.sipri.org/` — need to investigate its export mechanism.
-- **Workaround:** World Bank mirrors aggregated SIPRI TIV data via indicators `MS.MIL.MPRT.KD` / `MS.MIL.XPRT.KD` (but this is country-level aggregates, not deal-level).
+### FIXED: SIPRI Export URL (March 2026)
+- **Resolution:** Connector rewritten to use SIPRI's new backend API at `https://atbackend.sipri.org/api/p/`
+- **How it works:** POST filter-based queries to `/trades/trade-register-csv/`, response is base64-encoded CSV
+- **Country lookup:** Entity IDs fetched from `/countries/getAllCountriesTrimmed` (385 countries/entities)
+- **Weapon categories:** Fetched from `/typelists/getAllArmamentCategories` (13 categories)
+- **Note:** "Turkey" renamed to "Turkiye" in SIPRI's database
+
+### TESTED & FIXED (March 2026)
+- World Bank connector (`worldbank.py`) — works; minor: `country_iso3` stores 2-letter codes, top importers/exporters include aggregate regions
+- GDELT connector (`gdelt_news.py`) — works after fixes: added 5s rate limit delay between queries, fixed OR query parentheses, guarded non-JSON responses
+- adsb.lol flight tracker (`flight_tracker.py`) — works after fix: defensive float parsing for `alt_baro="ground"`
 
 ### NOT YET TESTED
-- World Bank connector (`worldbank.py`) — likely works (standard REST API, no auth)
-- GDELT connector (`gdelt_news.py`) — likely works (standard REST API, no auth)
-- adsb.lol flight tracker (`flight_tracker.py`) — likely works (free, no auth)
 - Maritime tracker (`maritime_tracker.py`) — requires `AISSTREAM_API_KEY` env var
 - SIPRI Top 100 companies (`sipri_companies.py`) — needs valid Excel download URL
 
@@ -110,7 +113,7 @@ weapons-tracker/
 cd /Users/billdennis/weapons-tracker
 source venv/bin/activate          # venv already created with all deps installed
 
-# Seed database (will skip SIPRI due to broken URL)
+# Seed database
 python -m scripts.seed_database
 
 # Start API server (includes scheduler)
@@ -126,8 +129,8 @@ python -m src.main
 - `from __future__ import annotations` required in all files (Python 3.9 compat)
 
 ## Next Steps (Priority Order)
-1. Fix SIPRI connector (find new export URL or build scraper)
-2. Test remaining connectors (World Bank, GDELT, adsb.lol)
+1. ~~Fix SIPRI connector~~ — DONE (rewritten to use atbackend.sipri.org API)
+2. ~~Test remaining connectors~~ — DONE (World Bank, GDELT, adsb.lol all tested & fixed)
 3. Build alerting system
 4. Build dashboard/UI
 5. Add test suite

@@ -137,7 +137,7 @@ class PersistenceService:
 
             if existing:
                 # Update existing record
-                existing.number_delivered = _safe_int(record.number_ordered) or existing.number_delivered
+                existing.number_delivered = _safe_int(record.number_delivered) or existing.number_delivered
                 existing.tiv_delivered = _safe_float(record.tiv_delivered) or existing.tiv_delivered
                 existing.status = _infer_deal_status(record.status)
                 existing.comments = record.comments or existing.comments
@@ -166,7 +166,7 @@ class PersistenceService:
                 delivery_year_start=delivery_start,
                 delivery_year_end=delivery_end,
                 number_ordered=_safe_int(record.number_ordered),
-                number_delivered=_safe_int(record.number_ordered),
+                number_delivered=_safe_int(record.number_delivered),
                 status=_infer_deal_status(record.status),
                 tiv_per_unit=_safe_float(record.tiv_per_unit),
                 tiv_total_order=_safe_float(record.tiv_total_order),

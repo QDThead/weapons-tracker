@@ -1,0 +1,247 @@
+"""Dashboard-specific API endpoints.
+
+Fast, DB-backed endpoints optimized for the dashboard UI.
+These avoid hitting external APIs on every page load.
+"""
+
+from __future__ import annotations
+
+import asyncio
+
+from fastapi import APIRouter, Query
+from sqlalchemy import func, desc, text
+
+from src.storage.database import SessionLocal
+from src.storage.models import ArmsTransfer, Country, WeaponSystem
+
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+
+
+@router.get("/transfers")
+async def get_all_transfers(
+    limit: int = Query(500, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+):
+    """Get all transfers from DB with seller/buyer names resolved."""
+    session = SessionLocal()
+    try:
+        seller = session.query(Country).subquery()
+        buyer = session.query(Country).subquery()
+
+        rows = session.execute(text("""
+            SELECT
+                c1.name as seller,
+                c2.name as buyer,
+                at.weapon_description,
+                at.order_year,
+                at.number_ordered,
+                at.number_delivered,
+                at.tiv_per_unit,
+                at.tiv_total_order,
+                at.tiv_delivered,
+                at.status,
+                at.comments,
+                ws.designation as weapon_designation,
+                ws.category as weapon_category
+            FROM arms_transfers at
+            JOIN countries c1 ON at.seller_id = c1.id
+            JOIN countries c2 ON at.buyer_id = c2.id
+            LEFT JOIN weapon_systems ws ON at.weapon_system_id = ws.id
+            ORDER BY at.tiv_delivered DESC NULLS LAST
+            LIMIT :limit OFFSET :offset
+        """), {"limit": limit, "offset": offset}).fetchall()
+
+        return [
+            {
+                "seller": r[0],
+                "buyer": r[1],
+                "weapon_description": r[2],
+                "order_year": r[3],
+                "number_ordered": r[4],
+                "number_delivered": r[5],
+                "tiv_per_unit": r[6],
+                "tiv_total_order": r[7],
+                "tiv_delivered": r[8],
+                "status": r[9],
+                "comments": r[10],
+                "weapon_designation": r[11],
+                "weapon_category": r[12],
+            }
+            for r in rows
+        ]
+    finally:
+        session.close()
+
+
+@router.get("/flows")
+async def get_trade_flows(
+    start_year: int = Query(2015, ge=1950, le=2025),
+    end_year: int = Query(2025, ge=1950, le=2025),
+    min_tiv: float = Query(0, ge=0),
+):
+    """Get aggregated seller→buyer trade flows for visualization."""
+    session = SessionLocal()
+    try:
+        rows = session.execute(text("""
+            SELECT
+                c1.name as seller,
+                c2.name as buyer,
+                SUM(COALESCE(at.tiv_delivered, 0)) as total_tiv,
+                COUNT(*) as deal_count
+            FROM arms_transfers at
+            JOIN countries c1 ON at.seller_id = c1.id
+            JOIN countries c2 ON at.buyer_id = c2.id
+            WHERE at.order_year >= :start_year
+              AND at.order_year <= :end_year
+            GROUP BY c1.name, c2.name
+            HAVING SUM(COALESCE(at.tiv_delivered, 0)) >= :min_tiv
+            ORDER BY total_tiv DESC
+        """), {"start_year": start_year, "end_year": end_year, "min_tiv": min_tiv}).fetchall()
+
+        return [
+            {"seller": r[0], "buyer": r[1], "total_tiv": r[2], "deal_count": r[3]}
+            for r in rows
+        ]
+    finally:
+        session.close()
+
+
+@router.get("/country-totals")
+async def get_country_totals(
+    start_year: int = Query(2015, ge=1950, le=2025),
+    end_year: int = Query(2025, ge=1950, le=2025),
+):
+    """Get total exports and imports TIV for each country."""
+    session = SessionLocal()
+    try:
+        exports = session.execute(text("""
+            SELECT c.name, SUM(COALESCE(at.tiv_delivered, 0)) as total_tiv, COUNT(*) as deals
+            FROM arms_transfers at
+            JOIN countries c ON at.seller_id = c.id
+            WHERE at.order_year >= :start_year AND at.order_year <= :end_year
+            GROUP BY c.name
+        """), {"start_year": start_year, "end_year": end_year}).fetchall()
+
+        imports = session.execute(text("""
+            SELECT c.name, SUM(COALESCE(at.tiv_delivered, 0)) as total_tiv, COUNT(*) as deals
+            FROM arms_transfers at
+            JOIN countries c ON at.buyer_id = c.id
+            WHERE at.order_year >= :start_year AND at.order_year <= :end_year
+            GROUP BY c.name
+        """), {"start_year": start_year, "end_year": end_year}).fetchall()
+
+        export_map = {r[0]: {"tiv": r[1], "deals": r[2]} for r in exports}
+        import_map = {r[0]: {"tiv": r[1], "deals": r[2]} for r in imports}
+
+        all_countries = set(export_map.keys()) | set(import_map.keys())
+        return [
+            {
+                "country": c,
+                "exports_tiv": export_map.get(c, {}).get("tiv", 0),
+                "export_deals": export_map.get(c, {}).get("deals", 0),
+                "imports_tiv": import_map.get(c, {}).get("tiv", 0),
+                "import_deals": import_map.get(c, {}).get("deals", 0),
+            }
+            for c in sorted(all_countries)
+        ]
+    finally:
+        session.close()
+
+
+@router.get("/weapon-types")
+async def get_weapon_type_breakdown(
+    start_year: int = Query(2015, ge=1950, le=2025),
+    end_year: int = Query(2025, ge=1950, le=2025),
+):
+    """Get deal counts and TIV by weapon description."""
+    session = SessionLocal()
+    try:
+        rows = session.execute(text("""
+            SELECT
+                at.weapon_description,
+                SUM(COALESCE(at.tiv_delivered, 0)) as total_tiv,
+                COUNT(*) as deal_count
+            FROM arms_transfers at
+            WHERE at.order_year >= :start_year AND at.order_year <= :end_year
+            GROUP BY at.weapon_description
+            ORDER BY total_tiv DESC
+        """), {"start_year": start_year, "end_year": end_year}).fetchall()
+
+        return [
+            {"weapon_type": r[0], "total_tiv": r[1], "deal_count": r[2]}
+            for r in rows
+        ]
+    finally:
+        session.close()
+
+
+@router.get("/comtrade/exports")
+async def get_comtrade_exports(
+    years: str = Query("2020,2021,2022,2023", description="Comma-separated years"),
+):
+    """Get real USD arms export values from UN Comtrade (top exporters)."""
+    from src.ingestion.comtrade import ComtradeClient, ComtradeQuery
+
+    year_list = [int(y.strip()) for y in years.split(",")]
+    client = ComtradeClient()
+    # Top 10 exporters by M49 code
+    top_exporters = [842, 251, 276, 380, 826, 156, 410, 724, 376, 643]
+    query = ComtradeQuery(
+        reporter_codes=top_exporters,
+        years=year_list,
+        flow_codes=["X"],
+        hs_codes=["93"],
+    )
+    records = await client.fetch(query)
+
+    return [
+        {
+            "reporter": r.reporter,
+            "reporter_iso": r.reporter_iso,
+            "partner": r.partner,
+            "year": r.year,
+            "flow": r.flow,
+            "trade_value_usd": r.trade_value_usd,
+        }
+        for r in records
+    ]
+
+
+@router.get("/comtrade/country/{country_name}")
+async def get_comtrade_country(
+    country_name: str,
+    years: str = Query("2022,2023", description="Comma-separated years"),
+):
+    """Get UN Comtrade arms trade data for a specific country (exports + imports)."""
+    from src.ingestion.comtrade import ComtradeClient
+
+    year_list = [int(y.strip()) for y in years.split(",")]
+    client = ComtradeClient()
+
+    exports = await client.fetch_country_exports(country_name, year_list)
+    await asyncio.sleep(1.5)  # Comtrade rate limit
+    imports = await client.fetch_country_imports(country_name, year_list)
+
+    return {
+        "country": country_name,
+        "exports": [
+            {
+                "partner": r.partner,
+                "year": r.year,
+                "hs_code": r.hs_code,
+                "hs_description": r.hs_description,
+                "trade_value_usd": r.trade_value_usd,
+            }
+            for r in exports
+        ],
+        "imports": [
+            {
+                "partner": r.partner,
+                "year": r.year,
+                "hs_code": r.hs_code,
+                "hs_description": r.hs_description,
+                "trade_value_usd": r.trade_value_usd,
+            }
+            for r in imports
+        ],
+    }

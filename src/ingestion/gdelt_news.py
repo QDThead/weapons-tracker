@@ -9,6 +9,7 @@ Reference: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -21,12 +22,12 @@ GDELT_DOC_API = "https://api.gdeltproject.org/api/v2/doc/doc"
 
 # Search queries tuned for arms trade coverage
 ARMS_TRADE_QUERIES = [
-    '"arms deal" OR "arms sale" OR "weapons sale" OR "defense contract"',
-    '"weapons delivery" OR "arms delivery" OR "military equipment delivery"',
-    '"defense procurement" OR "military procurement" OR "arms procurement"',
-    '"fighter jet deal" OR "tank deal" OR "missile deal" OR "submarine deal"',
-    '"arms embargo" OR "weapons embargo" OR "arms sanctions"',
-    '"arms export" OR "arms import" OR "weapons transfer"',
+    '("arms deal" OR "arms sale" OR "weapons sale" OR "defense contract")',
+    '("weapons delivery" OR "arms delivery" OR "military equipment delivery")',
+    '("defense procurement" OR "military procurement" OR "arms procurement")',
+    '("fighter jet deal" OR "tank deal" OR "missile deal" OR "submarine deal")',
+    '("arms embargo" OR "weapons embargo" OR "arms sanctions")',
+    '("arms export" OR "arms import" OR "weapons transfer")',
 ]
 
 
@@ -92,6 +93,11 @@ class GDELTArmsNewsClient:
             response = await client.get(GDELT_DOC_API, params=params)
             response.raise_for_status()
 
+        content_type = response.headers.get("content-type", "")
+        if not response.content or "application/json" not in content_type:
+            logger.warning("GDELT returned non-JSON response: %s", response.content[:200])
+            return []
+
         data = response.json()
         articles = data.get("articles", [])
 
@@ -132,7 +138,10 @@ class GDELTArmsNewsClient:
         """
         all_articles: dict[str, ArmsNewsArticle] = {}
 
-        for query in ARMS_TRADE_QUERIES:
+        for i, query in enumerate(ARMS_TRADE_QUERIES):
+            # GDELT enforces a 5-second rate limit between requests
+            if i > 0:
+                await asyncio.sleep(5)
             try:
                 articles = await self.search_articles(
                     query=query,
