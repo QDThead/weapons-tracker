@@ -88,6 +88,20 @@ Answer the fundamental questions of the global arms trade:
 - `GET /tracking/flights/military` — All military aircraft currently in the air
 - `GET /tracking/flights/transports` — Military transport aircraft (likely carrying weapons/equipment)
 
+### Historical Trends (persisted data)
+- `GET /trends/summary` — Database stats
+- `GET /trends/global/volume` — Global arms trade TIV by year
+- `GET /trends/global/categories` — Trade by weapon type
+- `GET /trends/global/top-pairs` — Highest-volume seller→buyer pairs
+- `GET /trends/country/{name}/profile` — Full trade profile (partners, categories, totals)
+- `GET /trends/country/{name}/exports` — Export volume by year
+- `GET /trends/country/{name}/imports` — Import volume by year
+- `GET /trends/changes/imports` — Biggest year-over-year import changes
+- `GET /trends/companies/{name}` — Defense company revenue trend
+- `GET /trends/companies/top/{year}` — Top companies ranked for a year
+- `GET /trends/activity/flights` — Military flight detections per day
+- `GET /trends/activity/news` — Arms trade news volume + sentiment per day
+
 ## Project Structure
 
 ```
@@ -99,19 +113,45 @@ weapons-tracker/
 │   │   ├── worldbank.py         # World Bank arms trade indicators
 │   │   ├── gdelt_news.py        # GDELT arms trade news monitor
 │   │   ├── flight_tracker.py    # Military transport flight tracking (adsb.lol)
-│   │   └── maritime_tracker.py  # Maritime vessel tracking (aisstream.io)
+│   │   ├── maritime_tracker.py  # Maritime vessel tracking (aisstream.io)
+│   │   └── scheduler.py         # APScheduler ingestion pipeline
 │   ├── storage/
-│   │   ├── models.py            # SQLAlchemy models (transfers, weapons, countries)
-│   │   └── database.py          # Database connection management
+│   │   ├── models.py            # SQLAlchemy models (7 tables)
+│   │   ├── database.py          # Database connection management
+│   │   └── persistence.py       # Upsert/dedup logic for all entity types
+│   ├── analysis/
+│   │   └── trends.py            # Historical trend analysis engine
 │   ├── api/
-│   │   └── routes.py            # FastAPI REST endpoints
-│   └── main.py                  # Application entry point
+│   │   ├── routes.py            # Core API endpoints
+│   │   └── trend_routes.py      # Trend analysis endpoints
+│   └── main.py                  # App entry point (API + scheduler)
+├── scripts/
+│   └── seed_database.py         # Initial full data load
 ├── config/
 │   └── .env.example             # API key template
 ├── tests/
 ├── requirements.txt
+├── CLAUDE.md                    # Dev context for AI-assisted development
 └── README.md
 ```
+
+## Current Status
+
+**Working:**
+- Database models and persistence layer (SQLite)
+- World Bank, GDELT, adsb.lol, aisstream.io connectors
+- Scheduled ingestion pipeline (APScheduler)
+- Historical trend analysis engine (14 query methods)
+- Full REST API (27 endpoints)
+
+**Needs Fix:**
+- SIPRI Arms Transfers connector — export URL changed, returns 301 redirect to HTML
+- SIPRI Top 100 companies — Excel download URL needs verification
+
+**Not Yet Built:**
+- Alerting system (unusual pattern notifications)
+- Dashboard/UI (map + charts)
+- Test suite
 
 ## Getting Started
 
@@ -126,7 +166,10 @@ pip install -r requirements.txt
 # Optional: configure API keys for premium sources
 cp config/.env.example config/.env
 
-# Start the API server
+# Seed the database (one-time full load)
+python -m scripts.seed_database
+
+# Start the API server (includes auto-scheduler)
 python -m src.main
 ```
 
