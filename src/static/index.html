@@ -388,6 +388,19 @@ tr:hover td { background: rgba(79,140,255,0.05); }
       </div>
     </div>
 
+    <!-- US Monthly Trade (Census) -->
+    <div class="grid grid-2" style="margin-bottom:20px;">
+      <div class="card" style="border-top:3px solid var(--accent);">
+        <h2>US Arms Exports — Monthly (Census Bureau) <span id="census-latest" style="font-size:11px;color:var(--accent3);text-transform:none;letter-spacing:0"></span></h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Real USD values updated monthly. HS Chapter 93 (Arms & Ammunition). ~2 month lag.</p>
+        <div class="chart-container"><canvas id="census-monthly-chart"></canvas></div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--accent);">
+        <h2>Top US Export Destinations (Last 6 Months)</h2>
+        <div class="chart-container"><canvas id="census-partners-chart"></canvas></div>
+      </div>
+    </div>
+
     <!-- Row 2: Emerging + Fading Relationships -->
     <div class="grid grid-2">
       <div class="card" style="border-top:3px solid var(--accent3);">
@@ -760,7 +773,7 @@ async function loadData() {
     fetch(API + '/dashboard/flows?min_tiv=0'),
     fetch(API + '/dashboard/country-totals'),
     fetch(API + '/dashboard/weapon-types'),
-    fetch(API + '/trends/global/volume?start_year=2015&end_year=2023'),
+    fetch(API + '/trends/global/volume?start_year=2015&end_year=2025'),
   ]);
   const safeJson = async (r) => r.ok ? r.json() : [];
 
@@ -951,7 +964,7 @@ async function showCountryDetail(country) {
   document.getElementById('country-name').textContent = country;
   document.getElementById('detail-country-name').textContent = country;
 
-  const resp = await fetch(API + '/trends/country/' + encodeURIComponent(country) + '/profile?start_year=2015&end_year=2023');
+  const resp = await fetch(API + '/trends/country/' + encodeURIComponent(country) + '/profile?start_year=2015&end_year=2025');
   const profile = await resp.json();
   if (profile.error) { document.getElementById('country-metrics').innerHTML = `<p style="color:var(--text-dim)">${profile.error}</p>`; return; }
 
@@ -1266,7 +1279,7 @@ async function loadCanadaIntel() {
   // We already have allTransfers, flows, countryTotals from main loadData
   // Also fetch Canada's profile and flights
   const [profileResp, flightsResp, comtradeResp] = await Promise.all([
-    fetch(API + '/trends/country/Canada/profile?start_year=2015&end_year=2023'),
+    fetch(API + '/trends/country/Canada/profile?start_year=2015&end_year=2025'),
     fetch(API + '/tracking/flights/military').catch(() => ({ ok: false })),
     fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023').catch(() => ({ ok: false })),
   ]);
@@ -1729,6 +1742,64 @@ async function loadDSCASales() {
   }
 }
 
+async function loadCensusMonthly() {
+  try {
+    const resp = await fetch(API + '/dashboard/census/monthly');
+    if (!resp.ok) return;
+    const data = await resp.json();
+
+    if (data.latest_month) {
+      document.getElementById('census-latest').textContent = 'Latest: ' + data.latest_month;
+    }
+
+    // Monthly bar chart
+    const months = Object.keys(data.months).sort();
+    destroyChart('census-monthly-chart');
+    chartInstances['census-monthly-chart'] = new Chart(document.getElementById('census-monthly-chart'), {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'US Arms Exports (USD)',
+          data: months.map(m => data.months[m] / 1e6),
+          backgroundColor: '#4f8cff88',
+          borderColor: '#4f8cff',
+          borderWidth: 1,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { title: { display: true, text: 'USD (millions)' } } },
+      },
+    });
+
+    // Top partners bar chart
+    const partners = Object.entries(data.top_partners).slice(0, 12);
+    destroyChart('census-partners-chart');
+    chartInstances['census-partners-chart'] = new Chart(document.getElementById('census-partners-chart'), {
+      type: 'bar',
+      data: {
+        labels: partners.map(([n]) => n),
+        datasets: [{
+          label: 'Total (USD)',
+          data: partners.map(([, v]) => v / 1e6),
+          backgroundColor: '#51cf6688',
+          borderColor: '#51cf66',
+          borderWidth: 1,
+        }],
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { title: { display: true, text: 'USD (millions)' } } },
+      },
+    });
+  } catch (e) {
+    console.error('Census load error:', e);
+  }
+}
+
 function timeAgo(date) {
   const now = new Date();
   const diff = Math.floor((now - date) / 1000);
@@ -1743,6 +1814,7 @@ async function loadInsights() {
 
   loadLiveNews();
   loadDSCASales();
+  loadCensusMonthly();
 
   try {
     const resp = await fetch(API + '/insights/all');

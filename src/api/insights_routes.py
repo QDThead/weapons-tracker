@@ -84,6 +84,15 @@ async def get_data_freshness():
             "update_frequency": "Annual (~6 month lag)",
         })
 
+        # US Census Monthly Trade (not persisted)
+        sources.append({
+            "source": "US Census Monthly Trade",
+            "records": "live",
+            "latest_data_year": None,
+            "last_updated": "cached (1hr TTL)",
+            "update_frequency": "Monthly (~2 month lag)",
+        })
+
         # Defense News RSS (not persisted)
         sources.append({
             "source": "Defense News RSS",

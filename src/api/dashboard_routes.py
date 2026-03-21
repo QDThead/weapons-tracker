@@ -347,3 +347,52 @@ async def get_recent_dsca_sales(count: int = Query(20, ge=1, le=50)):
     except Exception as e:
         logger.error("DSCA fetch failed: %s", e)
         return []
+
+
+# ── US Census Monthly Trade ──
+
+_census_cache: dict[str, tuple[float, list]] = {}
+_CENSUS_TTL = 3600  # 1 hour
+
+
+@router.get("/census/monthly")
+async def get_us_monthly_arms_trade():
+    """Get monthly US arms trade data (HS 93) from Census Bureau. Cached 1 hour."""
+    cache_key = "census_monthly"
+    cached = _census_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _CENSUS_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.census_trade import CensusTradeClient
+
+        client = CensusTradeClient()
+        exports = await client.fetch_us_exports()
+
+        result = {
+            "months": {},
+            "top_partners": {},
+        }
+
+        for r in exports:
+            key = f"{r.year}-{r.month:02d}"
+            if key not in result["months"]:
+                result["months"][key] = 0
+            result["months"][key] += r.value_usd
+
+            if r.partner_country not in result["top_partners"]:
+                result["top_partners"][r.partner_country] = 0
+            result["top_partners"][r.partner_country] += r.value_usd
+
+        # Sort partners
+        result["top_partners"] = dict(
+            sorted(result["top_partners"].items(), key=lambda x: x[1], reverse=True)[:20]
+        )
+        result["latest_month"] = max(result["months"].keys()) if result["months"] else None
+        result["total_records"] = len(exports)
+
+        _census_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Census trade fetch failed: %s", e)
+        return {"months": {}, "top_partners": {}, "latest_month": None}
