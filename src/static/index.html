@@ -329,11 +329,75 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .fresh-label { color: var(--text); font-weight: 500; margin-right: 4px; }
 .fresh-date { color: var(--text-dim); }
 
+/* Data Feeds page */
+.feeds-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.feeds-header h2 { font-size: 18px; font-weight: 600; color: var(--text); margin: 0; }
+.feeds-stats { display: flex; gap: 20px; font-size: 13px; color: var(--text-dim); }
+.feeds-stats .val { color: var(--accent); font-weight: 600; }
+.feeds-refresh-btn {
+  background: var(--accent); color: #fff; border: none; padding: 8px 18px;
+  border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+  transition: opacity 0.2s;
+}
+.feeds-refresh-btn:hover { opacity: 0.85; }
+.feeds-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.feeds-section { margin-bottom: 28px; }
+.feeds-section-title {
+  font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--text-dim); margin-bottom: 12px; font-weight: 500;
+  border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.feeds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+.feed-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px; transition: border-color 0.2s;
+}
+.feed-card:hover { border-color: var(--accent); }
+.feed-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.feed-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.feed-dot.green { background: #51cf66; box-shadow: 0 0 6px rgba(81,207,102,0.4); }
+.feed-dot.yellow { background: #ffd43b; box-shadow: 0 0 6px rgba(255,212,59,0.4); }
+.feed-dot.orange { background: #ff922b; box-shadow: 0 0 6px rgba(255,146,43,0.4); }
+.feed-dot.red { background: #ff6b6b; box-shadow: 0 0 6px rgba(255,107,107,0.4); }
+.feed-dot.gray { background: #666; }
+.feed-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.feed-latest {
+  font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 6px;
+}
+.feed-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+.feed-meta-item { display: flex; align-items: center; gap: 4px; }
+.feed-meta-label { color: var(--text-dim); }
+.feed-meta-val { color: var(--text); font-weight: 500; }
+.feed-sample-toggle {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text-dim);
+  padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;
+  transition: all 0.2s; width: 100%;
+}
+.feed-sample-toggle:hover { color: var(--text); border-color: var(--accent); }
+.feed-sample {
+  display: none; margin-top: 10px; background: var(--bg); border-radius: 6px;
+  padding: 10px 12px; font-size: 12px; max-height: 250px; overflow-y: auto;
+  line-height: 1.5;
+}
+.feed-sample.open { display: block; }
+.feed-sample-row {
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.feed-sample-row:last-child { border-bottom: none; }
+.feed-sample-field { color: var(--text-dim); }
+.feed-sample-value { color: var(--text); }
+
 @media (max-width: 1200px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .ca-metrics { grid-template-columns: repeat(2, 1fr); }
   .bloc-columns { grid-template-columns: 1fr; }
+  .feeds-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -357,6 +421,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   <button class="nav-tab" data-page="live-flights">Live Flights</button>
   <button class="nav-tab" data-page="deals">Deals</button>
   <button class="nav-tab" data-page="canada-intel">Canada Intel</button>
+  <button class="nav-tab" data-page="data-feeds">Data Feeds</button>
 </nav>
 
 <div class="container">
@@ -692,6 +757,22 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
   </div>
 
+  <!-- ════ DATA FEEDS PAGE ════ -->
+  <div id="page-data-feeds" class="page">
+    <div class="feeds-header">
+      <div>
+        <h2>Data Feed Status</h2>
+        <div class="feeds-stats">
+          <span>Endpoints: <span class="val" id="feeds-endpoint-count">-</span></span>
+          <span>Total Records: <span class="val" id="feeds-total-records">-</span></span>
+          <span>Last Refresh: <span class="val" id="feeds-last-refresh">-</span></span>
+        </div>
+      </div>
+      <button class="feeds-refresh-btn" id="feeds-refresh-btn" onclick="refreshDataFeeds()">Refresh All</button>
+    </div>
+    <div id="feeds-content"></div>
+  </div>
+
 </div>
 
 <script>
@@ -759,6 +840,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     if (tab.dataset.page === 'world-map' && !worldMap) { initWorldMap(); loadComtrade(); }
     if (tab.dataset.page === 'live-flights') loadFlights();
     if (tab.dataset.page === 'canada-intel') loadCanadaIntel();
+    if (tab.dataset.page === 'data-feeds') loadDataFeeds();
   });
 });
 
@@ -2076,6 +2158,336 @@ async function loadFreshness() {
     };
   } catch (e) {
     console.error('Freshness load error:', e);
+  }
+}
+
+// ══════════════════════════════════════════════
+// ── DATA FEEDS ──
+// ══════════════════════════════════════════════
+
+let dataFeedsLoaded = false;
+let dataFeedsFreshness = [];
+
+const FEED_DEFINITIONS = [
+  // Live Feeds
+  { section: 'Live Feeds', sectionNote: 'seconds / minutes', name: 'Military Flights', key: 'adsb.lol',
+    sampleEndpoint: '/tracking/flights/military', sampleLimit: 3,
+    renderSample: items => items.slice(0, 3).map(f =>
+      '<div class="feed-sample-row"><span class="feed-sample-field">Callsign:</span> <span class="feed-sample-value">' + esc(f.callsign || '---') + '</span> | ' +
+      '<span class="feed-sample-field">Type:</span> <span class="feed-sample-value">' + esc(f.aircraft_description || f.aircraft_type || '-') + '</span> | ' +
+      '<span class="feed-sample-field">Alt:</span> <span class="feed-sample-value">' + (f.altitude_ft ? f.altitude_ft.toLocaleString() + ' ft' : '-') + '</span></div>'
+    ).join('') },
+  { section: 'Live Feeds', name: 'Defense News RSS', key: 'Defense RSS',
+    sampleEndpoint: '/dashboard/news/live', sampleLimit: 3,
+    renderSample: items => items.slice(0, 3).map(a =>
+      '<div class="feed-sample-row"><span class="feed-sample-value">' + esc((a.title || '').substring(0, 80)) + '</span><br>' +
+      '<span class="feed-sample-field">' + esc(a.source || '') + '</span> <span class="feed-sample-field">' + (a.published_at ? timeAgo(new Date(a.published_at)) : '') + '</span></div>'
+    ).join('') },
+  { section: 'Live Feeds', name: 'GDELT News', key: 'GDELT',
+    sampleEndpoint: null,
+    renderSample: () => '<div class="feed-sample-row" style="color:var(--text-dim);">GDELT data is aggregated into the news feed above.</div>' },
+
+  // Near-Real-Time
+  { section: 'Near-Real-Time', sectionNote: 'days', name: 'DSCA Arms Sales', key: 'DSCA',
+    sampleEndpoint: '/dashboard/dsca/recent?count=3', sampleLimit: 3,
+    renderSample: items => items.slice(0, 3).map(s =>
+      '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(s.buyer || '-') + '</span>' +
+      (s.value_usd ? ' <span class="feed-sample-field">$' + (s.value_usd / 1e9).toFixed(2) + 'B</span>' : '') +
+      (s.weapons ? '<br><span class="feed-sample-field">' + esc(s.weapons.substring(0, 100)) + '</span>' : '') + '</div>'
+    ).join('') },
+
+  // Monthly Trade Data
+  { section: 'Monthly Trade Data', sectionNote: 'monthly updates', name: 'US Census Bureau', key: 'US Census',
+    sampleEndpoint: '/dashboard/census/monthly', sampleLimit: 1,
+    renderSample: data => {
+      if (!data || !data.months) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      const months = Object.keys(data.months).sort().slice(-3);
+      return months.map(m =>
+        '<div class="feed-sample-row"><span class="feed-sample-field">' + esc(m) + ':</span> <span class="feed-sample-value">$' + (data.months[m] / 1e6).toFixed(1) + 'M</span></div>'
+      ).join('');
+    }, rawResponse: true },
+  { section: 'Monthly Trade Data', name: 'UK HMRC', key: 'UK HMRC',
+    sampleEndpoint: '/dashboard/uk-trade/monthly', sampleLimit: 1,
+    renderSample: data => {
+      if (!data || !data.months) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      const months = Object.keys(data.months).sort().slice(-3);
+      return months.map(m =>
+        '<div class="feed-sample-row"><span class="feed-sample-field">' + esc(m) + ':</span> <span class="feed-sample-value">' + esc(String(data.months[m])) + '</span></div>'
+      ).join('');
+    }, rawResponse: true },
+  { section: 'Monthly Trade Data', name: 'Eurostat EU', key: 'Eurostat',
+    sampleEndpoint: '/dashboard/eu-trade/monthly', sampleLimit: 1,
+    renderSample: data => {
+      if (!data || !data.months) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      const months = Object.keys(data.months).sort().slice(-3);
+      return months.map(m =>
+        '<div class="feed-sample-row"><span class="feed-sample-field">' + esc(m) + ':</span> <span class="feed-sample-value">' + esc(String(data.months[m])) + '</span></div>'
+      ).join('');
+    }, rawResponse: true },
+  { section: 'Monthly Trade Data', name: 'Statistics Canada', key: 'Statistics Canada',
+    sampleEndpoint: '/dashboard/canada-trade/monthly', sampleLimit: 1,
+    renderSample: data => {
+      if (!data || !data.months) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      const months = Object.keys(data.months).sort().slice(-3);
+      return months.map(m =>
+        '<div class="feed-sample-row"><span class="feed-sample-field">' + esc(m) + ':</span> <span class="feed-sample-value">' + esc(String(data.months[m])) + '</span></div>'
+      ).join('');
+    }, rawResponse: true },
+
+  // Annual Intelligence
+  { section: 'Annual Intelligence', sectionNote: 'yearly releases', name: 'SIPRI Arms Transfers', key: 'SIPRI',
+    sampleEndpoint: '/dashboard/transfers?limit=3', sampleLimit: 3,
+    renderSample: items => items.slice(0, 3).map(t =>
+      '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(t.seller) + '</span> &rarr; <span class="feed-sample-value">' + esc(t.buyer) + '</span> | ' +
+      '<span class="feed-sample-field">' + esc(t.weapon_description || '-') + '</span> | ' +
+      '<span class="feed-sample-field">TIV ' + (t.tiv_delivered != null ? t.tiv_delivered.toFixed(1) : '-') + 'M</span></div>'
+    ).join('') },
+  { section: 'Annual Intelligence', name: 'NATO Spending', key: 'NATO',
+    sampleEndpoint: '/dashboard/nato/spending?year=2025', sampleLimit: 1,
+    renderSample: data => {
+      if (Array.isArray(data)) {
+        return data.slice(0, 3).map(r =>
+          '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(r.country || r.name || '-') + '</span> ' +
+          (r.spending_usd ? '<span class="feed-sample-field">$' + (r.spending_usd / 1e9).toFixed(1) + 'B</span>' : '') +
+          (r.pct_gdp ? ' <span class="feed-sample-field">(' + r.pct_gdp.toFixed(1) + '% GDP)</span>' : '') + '</div>'
+        ).join('');
+      }
+      if (data && data.countries) {
+        return data.countries.slice(0, 3).map(r =>
+          '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(r.country || '-') + '</span></div>'
+        ).join('');
+      }
+      return '<div class="feed-sample-row" style="color:var(--text-dim);">Data loaded (see NATO spending tab)</div>';
+    }, rawResponse: true },
+  { section: 'Annual Intelligence', name: 'World Bank Indicators', key: 'World Bank',
+    sampleEndpoint: null,
+    renderSample: () => '<div class="feed-sample-row" style="color:var(--text-dim);">Aggregated indicator data (imports/exports TIV, military spending % GDP).</div>' },
+  { section: 'Annual Intelligence', name: 'UN Comtrade', key: 'Comtrade',
+    sampleEndpoint: '/dashboard/comtrade/exports?years=2023', sampleLimit: 3,
+    renderSample: items => {
+      if (!Array.isArray(items)) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      return items.slice(0, 3).map(r =>
+        '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(r.reporter || '-') + '</span> ' +
+        '<span class="feed-sample-field">$' + ((r.trade_value_usd || 0) / 1e9).toFixed(2) + 'B</span> ' +
+        '<span class="feed-sample-field">(' + esc(r.year || '') + ')</span></div>'
+      ).join('');
+    } },
+
+  // Analysis & Overlays
+  { section: 'Analysis & Overlays', sectionNote: 'derived / enriched', name: 'Sanctions & Embargoes', key: 'Sanctions',
+    sampleEndpoint: '/dashboard/sanctions/embargoes', sampleLimit: 3,
+    renderSample: items => {
+      if (!Array.isArray(items)) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      return items.slice(0, 3).map(r =>
+        '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(r.target || r.country || '-') + '</span> ' +
+        '<span class="feed-sample-field">' + esc(r.type || r.source || '') + '</span></div>'
+      ).join('');
+    } },
+  { section: 'Analysis & Overlays', name: 'Buyer-side Mirror', key: 'Buyer Mirror',
+    sampleEndpoint: '/dashboard/adversary-trade/buyer-mirror?seller=Russia&years=2022', sampleLimit: 3,
+    renderSample: items => {
+      if (!Array.isArray(items)) return '<div class="feed-sample-row" style="color:var(--text-dim);">No data</div>';
+      return items.slice(0, 3).map(r =>
+        '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(r.buyer || r.importer || '-') + '</span> ' +
+        (r.value_usd ? '<span class="feed-sample-field">$' + ((r.value_usd || 0) / 1e6).toFixed(1) + 'M</span>' : '') + '</div>'
+      ).join('');
+    } },
+  { section: 'Analysis & Overlays', name: 'Flight Patterns', key: 'Flight Analysis',
+    sampleEndpoint: '/dashboard/flights/analysis', sampleLimit: 1,
+    renderSample: data => {
+      if (!data) return '<div class="feed-sample-row" style="color:var(--text-dim);">No analysis data</div>';
+      if (data.summary) return '<div class="feed-sample-row"><span class="feed-sample-value">' + esc(data.summary) + '</span></div>';
+      if (typeof data === 'object') {
+        const keys = Object.keys(data).slice(0, 3);
+        return keys.map(k =>
+          '<div class="feed-sample-row"><span class="feed-sample-field">' + esc(k) + ':</span> <span class="feed-sample-value">' + esc(JSON.stringify(data[k]).substring(0, 80)) + '</span></div>'
+        ).join('');
+      }
+      return '<div class="feed-sample-row" style="color:var(--text-dim);">Analysis data loaded.</div>';
+    }, rawResponse: true },
+
+  // Inactive
+  { section: 'Inactive', sectionNote: 'not configured', name: 'Maritime Tracking (AIS)', key: 'Maritime',
+    inactive: true,
+    sampleEndpoint: null,
+    renderSample: () => '<div class="feed-sample-row" style="color:var(--text-dim);">Requires AISSTREAM_API_KEY environment variable. WebSocket streaming not yet integrated into scheduler.</div>' },
+];
+
+function getFeedFreshness(feedDef) {
+  // Match against freshness data by key or name
+  const match = dataFeedsFreshness.find(s => {
+    const src = (s.source || '').toLowerCase();
+    return src.includes(feedDef.key.toLowerCase()) || src.includes(feedDef.name.toLowerCase());
+  });
+  return match || null;
+}
+
+function getFeedDotClass(feedDef, freshness) {
+  if (feedDef.inactive) return 'gray';
+  if (!freshness) return 'gray';
+
+  const now = new Date();
+  if (freshness.last_updated && typeof freshness.last_updated === 'string' && freshness.last_updated.length > 4 && freshness.last_updated !== 'cached (1hr TTL)') {
+    const d = new Date(freshness.last_updated);
+    const hrs = (now - d) / 3600000;
+    if (hrs < 1) return 'green';
+    if (hrs < 24) return 'yellow';
+    if (hrs < 168) return 'orange';
+    return 'red';
+  }
+  if (freshness.last_updated === 'cached (1hr TTL)') return 'green';
+  if (freshness.latest_data_year) {
+    const yearAge = now.getFullYear() - freshness.latest_data_year;
+    if (yearAge <= 0) return 'green';
+    if (yearAge <= 1) return 'yellow';
+    if (yearAge <= 2) return 'orange';
+    return 'red';
+  }
+  if (freshness.records === 0) return 'red';
+  return 'gray';
+}
+
+function getFeedLatestDisplay(feedDef, freshness) {
+  if (feedDef.inactive) return 'Inactive';
+  if (!freshness) return 'Unknown';
+
+  const now = new Date();
+  if (freshness.last_updated && typeof freshness.last_updated === 'string' && freshness.last_updated.length > 4 && freshness.last_updated !== 'cached (1hr TTL)') {
+    const d = new Date(freshness.last_updated);
+    const hrs = (now - d) / 3600000;
+    if (hrs < 1) return 'Live';
+    if (hrs < 24) return Math.floor(hrs) + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+  }
+  if (freshness.last_updated === 'cached (1hr TTL)') return 'Cached';
+  if (freshness.latest_data_year) return String(freshness.latest_data_year);
+  if (freshness.records === 0) return 'No data';
+  return '-';
+}
+
+async function loadDataFeeds() {
+  if (dataFeedsLoaded) return;
+  dataFeedsLoaded = true;
+  await renderDataFeeds();
+}
+
+async function refreshDataFeeds() {
+  const btn = document.getElementById('feeds-refresh-btn');
+  btn.disabled = true;
+  btn.textContent = 'Refreshing...';
+  dataFeedsLoaded = false;
+  dataFeedsFreshness = [];
+  await renderDataFeeds();
+  btn.disabled = false;
+  btn.textContent = 'Refresh All';
+}
+
+async function renderDataFeeds() {
+  // Fetch freshness data
+  try {
+    const resp = await fetch(API + '/insights/freshness');
+    if (resp.ok) dataFeedsFreshness = await resp.json();
+  } catch (e) {
+    console.error('Feeds freshness error:', e);
+  }
+
+  // Update stats
+  const endpointCount = FEED_DEFINITIONS.filter(f => !f.inactive).length;
+  const totalRecords = dataFeedsFreshness.reduce((s, f) => s + (typeof f.records === 'number' ? f.records : 0), 0);
+  document.getElementById('feeds-endpoint-count').textContent = endpointCount;
+  document.getElementById('feeds-total-records').textContent = totalRecords.toLocaleString();
+  document.getElementById('feeds-last-refresh').textContent = new Date().toLocaleTimeString();
+
+  // Group feeds by section
+  const sections = [];
+  const sectionMap = {};
+  FEED_DEFINITIONS.forEach(fd => {
+    if (!sectionMap[fd.section]) {
+      sectionMap[fd.section] = { title: fd.section, note: fd.sectionNote || '', feeds: [] };
+      sections.push(sectionMap[fd.section]);
+    }
+    sectionMap[fd.section].feeds.push(fd);
+  });
+
+  const content = document.getElementById('feeds-content');
+  content.innerHTML = sections.map((sec, si) => {
+    const cardsHTML = sec.feeds.map((fd, fi) => {
+      const freshness = getFeedFreshness(fd);
+      const dotClass = getFeedDotClass(fd, freshness);
+      const latestDisplay = getFeedLatestDisplay(fd, freshness);
+      const records = freshness && typeof freshness.records === 'number' ? freshness.records.toLocaleString() : (freshness ? freshness.records || '-' : '-');
+      const freq = freshness ? (freshness.update_frequency || '-') : '-';
+      const lastFetched = freshness && freshness.last_updated ? esc(freshness.last_updated) : '-';
+      const cardId = 'feed-card-' + si + '-' + fi;
+
+      return '<div class="feed-card" id="' + cardId + '">' +
+        '<div class="feed-card-header">' +
+          '<span class="feed-dot ' + dotClass + '"></span>' +
+          '<span class="feed-name">' + esc(fd.name) + '</span>' +
+        '</div>' +
+        '<div class="feed-latest">' + esc(latestDisplay) + '</div>' +
+        '<div class="feed-meta">' +
+          '<div class="feed-meta-item"><span class="feed-meta-label">Records:</span> <span class="feed-meta-val">' + esc(records) + '</span></div>' +
+          '<div class="feed-meta-item"><span class="feed-meta-label">Frequency:</span> <span class="feed-meta-val">' + esc(freq) + '</span></div>' +
+          '<div class="feed-meta-item"><span class="feed-meta-label">Last fetched:</span> <span class="feed-meta-val">' + esc(lastFetched) + '</span></div>' +
+        '</div>' +
+        '<button class="feed-sample-toggle" onclick="toggleFeedSample(\'' + cardId + '\',' + si + ',' + fi + ')">Show sample data</button>' +
+        '<div class="feed-sample" id="' + cardId + '-sample"></div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="feeds-section">' +
+      '<div class="feeds-section-title">' + esc(sec.title) + (sec.note ? ' <span style="color:var(--text-dim);font-size:11px;text-transform:none;letter-spacing:0;">(' + esc(sec.note) + ')</span>' : '') + '</div>' +
+      '<div class="feeds-grid">' + cardsHTML + '</div>' +
+    '</div>';
+  }).join('');
+
+  dataFeedsLoaded = true;
+}
+
+async function toggleFeedSample(cardId, sectionIdx, feedIdx) {
+  const sampleEl = document.getElementById(cardId + '-sample');
+  const btn = document.querySelector('#' + cardId + ' .feed-sample-toggle');
+
+  if (sampleEl.classList.contains('open')) {
+    sampleEl.classList.remove('open');
+    btn.textContent = 'Show sample data';
+    return;
+  }
+
+  // Find the feed definition
+  const sections = [];
+  const sectionMap = {};
+  FEED_DEFINITIONS.forEach(fd => {
+    if (!sectionMap[fd.section]) { sectionMap[fd.section] = []; sections.push(sectionMap[fd.section]); }
+    sectionMap[fd.section].push(fd);
+  });
+  const fd = sections[sectionIdx][feedIdx];
+
+  sampleEl.innerHTML = '<div style="color:var(--text-dim);">Loading...</div>';
+  sampleEl.classList.add('open');
+  btn.textContent = 'Hide sample data';
+
+  if (!fd.sampleEndpoint) {
+    sampleEl.innerHTML = fd.renderSample ? fd.renderSample(null) : '<div style="color:var(--text-dim);">No sample endpoint configured.</div>';
+    return;
+  }
+
+  try {
+    const resp = await fetch(API + fd.sampleEndpoint);
+    if (!resp.ok) {
+      sampleEl.innerHTML = '<div style="color:var(--accent2);">Error: HTTP ' + resp.status + '</div>';
+      return;
+    }
+    const data = await resp.json();
+    if (fd.rawResponse) {
+      sampleEl.innerHTML = fd.renderSample(data);
+    } else {
+      const items = Array.isArray(data) ? data : [data];
+      sampleEl.innerHTML = fd.renderSample(items);
+    }
+  } catch (e) {
+    sampleEl.innerHTML = '<div style="color:var(--accent2);">Failed to load: ' + esc(e.message) + '</div>';
   }
 }
 
