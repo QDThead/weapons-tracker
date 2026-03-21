@@ -7,12 +7,15 @@ These avoid hitting external APIs on every page load.
 from __future__ import annotations
 
 import asyncio
+import logging
+import time
 
-from fastapi import APIRouter, Query
-from sqlalchemy import func, desc, text
+from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy import text
 
 from src.storage.database import SessionLocal
-from src.storage.models import ArmsTransfer, Country, WeaponSystem
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -25,9 +28,6 @@ async def get_all_transfers(
     """Get all transfers from DB with seller/buyer names resolved."""
     session = SessionLocal()
     try:
-        seller = session.query(Country).subquery()
-        buyer = session.query(Country).subquery()
-
         rows = session.execute(text("""
             SELECT
                 c1.name as seller,
@@ -175,36 +175,52 @@ async def get_weapon_type_breakdown(
         session.close()
 
 
+def _parse_years(years: str) -> list[int]:
+    """Parse a comma-separated year string, raising HTTPException on bad input."""
+    try:
+        return [int(y.strip()) for y in years.split(",")]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid year format. Expected comma-separated integers.")
+
+
+# Simple in-memory cache for Comtrade data (annual data, TTL = 1 hour)
+_comtrade_cache: dict[str, tuple[float, list]] = {}
+_COMTRADE_TTL = 3600
+
+
 @router.get("/comtrade/exports")
 async def get_comtrade_exports(
     years: str = Query("2020,2021,2022,2023", description="Comma-separated years"),
 ):
-    """Get real USD arms export values from UN Comtrade (top exporters)."""
-    from src.ingestion.comtrade import ComtradeClient, ComtradeQuery
+    """Get real USD arms export values from UN Comtrade (top exporters). Cached for 1 hour."""
+    cache_key = f"exports:{years}"
+    cached = _comtrade_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _COMTRADE_TTL:
+        return cached[1]
 
-    year_list = [int(y.strip()) for y in years.split(",")]
-    client = ComtradeClient()
-    # Top 10 exporters by M49 code
-    top_exporters = [842, 251, 276, 380, 826, 156, 410, 724, 376, 643]
-    query = ComtradeQuery(
-        reporter_codes=top_exporters,
-        years=year_list,
-        flow_codes=["X"],
-        hs_codes=["93"],
-    )
-    records = await client.fetch(query)
+    try:
+        from src.ingestion.comtrade import ComtradeClient
 
-    return [
-        {
-            "reporter": r.reporter,
-            "reporter_iso": r.reporter_iso,
-            "partner": r.partner,
-            "year": r.year,
-            "flow": r.flow,
-            "trade_value_usd": r.trade_value_usd,
-        }
-        for r in records
-    ]
+        year_list = _parse_years(years)
+        client = ComtradeClient()
+        records = await client.fetch_global_summary(year_list)
+
+        result = [
+            {
+                "reporter": r.reporter,
+                "reporter_iso": r.reporter_iso,
+                "partner": r.partner,
+                "year": r.year,
+                "flow": r.flow,
+                "trade_value_usd": r.trade_value_usd,
+            }
+            for r in records
+        ]
+        _comtrade_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Comtrade exports fetch failed: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch Comtrade data")
 
 
 @router.get("/comtrade/country/{country_name}")
@@ -213,35 +229,48 @@ async def get_comtrade_country(
     years: str = Query("2022,2023", description="Comma-separated years"),
 ):
     """Get UN Comtrade arms trade data for a specific country (exports + imports)."""
-    from src.ingestion.comtrade import ComtradeClient
+    cache_key = f"country:{country_name}:{years}"
+    cached = _comtrade_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _COMTRADE_TTL:
+        return cached[1]
 
-    year_list = [int(y.strip()) for y in years.split(",")]
-    client = ComtradeClient()
+    try:
+        from src.ingestion.comtrade import ComtradeClient
 
-    exports = await client.fetch_country_exports(country_name, year_list)
-    await asyncio.sleep(1.5)  # Comtrade rate limit
-    imports = await client.fetch_country_imports(country_name, year_list)
+        year_list = _parse_years(years)
+        client = ComtradeClient()
 
-    return {
-        "country": country_name,
-        "exports": [
-            {
-                "partner": r.partner,
-                "year": r.year,
-                "hs_code": r.hs_code,
-                "hs_description": r.hs_description,
-                "trade_value_usd": r.trade_value_usd,
-            }
-            for r in exports
-        ],
-        "imports": [
-            {
-                "partner": r.partner,
-                "year": r.year,
-                "hs_code": r.hs_code,
-                "hs_description": r.hs_description,
-                "trade_value_usd": r.trade_value_usd,
-            }
-            for r in imports
-        ],
-    }
+        exports = await client.fetch_country_exports(country_name, year_list)
+        await asyncio.sleep(1.5)  # Comtrade rate limit
+        imports = await client.fetch_country_imports(country_name, year_list)
+
+        result = {
+            "country": country_name,
+            "exports": [
+                {
+                    "partner": r.partner,
+                    "year": r.year,
+                    "hs_code": r.hs_code,
+                    "hs_description": r.hs_description,
+                    "trade_value_usd": r.trade_value_usd,
+                }
+                for r in exports
+            ],
+            "imports": [
+                {
+                    "partner": r.partner,
+                    "year": r.year,
+                    "hs_code": r.hs_code,
+                    "hs_description": r.hs_description,
+                    "trade_value_usd": r.trade_value_usd,
+                }
+                for r in imports
+            ],
+        }
+        _comtrade_cache[cache_key] = (time.time(), result)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Comtrade country fetch failed for %s: %s", country_name, e)
+        raise HTTPException(status_code=502, detail="Failed to fetch Comtrade data")

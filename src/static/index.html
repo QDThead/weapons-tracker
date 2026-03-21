@@ -528,6 +528,12 @@ const CENTROIDS = {
 };
 
 // ── Helpers ──
+function esc(s) {
+  if (s == null) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
 function fmt(n) {
   if (n == null || isNaN(n)) return '-';
   if (n >= 1000) return (n/1000).toFixed(1) + 'B';
@@ -547,6 +553,9 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('page-' + tab.dataset.page).classList.add('active');
 
+    // Stop flight refresh when leaving flights tab
+    if (tab.dataset.page !== 'live-flights') clearTimeout(flightRefreshTimer);
+
     if (tab.dataset.page === 'world-map' && !worldMap) { initWorldMap(); loadComtrade(); }
     if (tab.dataset.page === 'live-flights') loadFlights();
     if (tab.dataset.page === 'canada-intel') loadCanadaIntel();
@@ -559,19 +568,20 @@ async function loadData() {
   Chart.defaults.borderColor = '#2a2d3a';
   Chart.defaults.font.family = "-apple-system, 'Segoe UI', Roboto, sans-serif";
 
-  const [transfersResp, flowsResp, totalsResp, weaponsResp, volumeResp] = await Promise.all([
+  const responses = await Promise.all([
     fetch(API + '/dashboard/transfers?limit=5000'),
     fetch(API + '/dashboard/flows?min_tiv=0'),
     fetch(API + '/dashboard/country-totals'),
     fetch(API + '/dashboard/weapon-types'),
     fetch(API + '/trends/global/volume?start_year=2015&end_year=2025'),
   ]);
+  const safeJson = async (r) => r.ok ? r.json() : [];
 
-  allTransfers = await transfersResp.json();
-  flows = await flowsResp.json();
-  countryTotals = await totalsResp.json();
-  const weapons = await weaponsResp.json();
-  const volume = await volumeResp.json();
+  allTransfers = await safeJson(responses[0]);
+  flows = await safeJson(responses[1]);
+  countryTotals = await safeJson(responses[2]);
+  const weapons = await safeJson(responses[3]);
+  const volume = await safeJson(responses[4]);
 
   updateStats();
   renderBarChart('exporters');
@@ -637,7 +647,9 @@ function renderBarChart(mode) {
 }
 
 // ── Network Graph ──
+let _networkSim = null;
 function renderNetwork() {
+  if (_networkSim) { _networkSim.stop(); _networkSim = null; }
   const minTIV = parseFloat(document.getElementById('network-min-tiv').value) || 0;
   const filtered = flows.filter(f => f.total_tiv >= minTIV);
   const nodesMap = new Map();
@@ -657,7 +669,7 @@ function renderNetwork() {
   const maxTIV = d3.max(links, d => d.value) || 1;
   const linkWidth = d3.scaleLinear().domain([0, maxTIV]).range([1, 8]);
   const nodeSize = d3.scaleLinear().domain([0, d3.max(nodes, d => d.exports + d.imports) || 1]).range([5, 30]);
-  const simulation = d3.forceSimulation(nodes)
+  const simulation = _networkSim = d3.forceSimulation(nodes)
     .force('link', d3.forceLink(links).id(d => d.id).distance(120))
     .force('charge', d3.forceManyBody().strength(-300))
     .force('center', d3.forceCenter(width / 2, height / 2))
@@ -713,14 +725,14 @@ function renderDealsTable(transfers) {
   const tbody = document.querySelector('#deals-table tbody');
   tbody.innerHTML = transfers.slice(0, 1000).map(t => `
     <tr>
-      <td><span class="seller-tag" onclick="showCountryDetail('${t.seller.replace(/'/g,"\\'")}');">${t.seller}</span></td>
-      <td><span class="buyer-tag" onclick="showCountryDetail('${t.buyer.replace(/'/g,"\\'")}');">${t.buyer}</span></td>
-      <td>${t.weapon_description || '-'}</td>
-      <td>${t.order_year || '-'}</td>
+      <td><span class="seller-tag" onclick="showCountryDetail('${esc(t.seller).replace(/'/g,"\\'")}');">${esc(t.seller)}</span></td>
+      <td><span class="buyer-tag" onclick="showCountryDetail('${esc(t.buyer).replace(/'/g,"\\'")}');">${esc(t.buyer)}</span></td>
+      <td>${esc(t.weapon_description) || '-'}</td>
+      <td>${esc(t.order_year) || '-'}</td>
       <td>${fmtInt(t.number_ordered)}</td>
       <td>${fmtInt(t.number_delivered)}</td>
       <td class="tiv">${t.tiv_delivered != null ? t.tiv_delivered.toFixed(1) : '-'}</td>
-      <td>${t.status || '-'}</td>
+      <td>${esc(t.status) || '-'}</td>
     </tr>
   `).join('');
 }
@@ -1032,9 +1044,12 @@ async function loadFlights() {
     document.getElementById('flight-total').innerHTML = `<span style="color:var(--accent2)">Error loading flights</span>`;
   }
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds, but only if flights tab is active
   clearTimeout(flightRefreshTimer);
-  flightRefreshTimer = setTimeout(loadFlights, 30000);
+  const activeTab = document.querySelector('.nav-tab.active');
+  if (activeTab && activeTab.dataset.page === 'live-flights') {
+    flightRefreshTimer = setTimeout(loadFlights, 30000);
+  }
 }
 
 // ══════════════════════════════════════════════

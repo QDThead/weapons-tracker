@@ -11,7 +11,6 @@ Reference: https://comtradedeveloper.un.org/
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 
@@ -162,10 +161,9 @@ class ComtradeClient:
 
         records = []
         for item in data.get("data", []):
-            # Skip aggregates where partner is "World"
-            if item.get("partnerCode") == 0 and len(query.partner_codes) == 0:
-                # Keep World aggregates only if explicitly requested
-                pass
+            # Skip "World" aggregates unless the caller explicitly requested them
+            if item.get("partnerCode") == 0 and not query.partner_codes:
+                continue
 
             trade_value = item.get("primaryValue") or item.get("fobvalue") or item.get("cifvalue") or 0
 

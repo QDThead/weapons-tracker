@@ -204,11 +204,7 @@ class SIPRITransfersClient:
                 "listData": [],
             })
 
-        return {
-            "method": "POST",
-            "headers": {"Content-Type": "application/json"},
-            "body": {"filters": filters, "logic": "AND"},
-        }
+        return {"filters": filters, "logic": "AND"}
 
     async def fetch_transfers(self, query: SIPRIQuery) -> list[SIPRITransferRecord]:
         """Fetch arms transfer records from SIPRI.
@@ -219,7 +215,7 @@ class SIPRITransfersClient:
         Returns:
             List of transfer records.
         """
-        request_spec = self._build_filters(query)
+        request_body = self._build_filters(query)
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             logger.info(
@@ -229,7 +225,7 @@ class SIPRITransfersClient:
             )
             response = await client.post(
                 f"{SIPRI_API_BASE}/trades/trade-register-csv/",
-                json=request_spec["body"],
+                json=request_body,
             )
             response.raise_for_status()
 
