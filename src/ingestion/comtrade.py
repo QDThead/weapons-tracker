@@ -64,6 +64,15 @@ COMTRADE_COUNTRY_CODES = {
     "Singapore": 702,
     "Indonesia": 360,
     "Thailand": 764,
+    "Algeria": 12,
+    "Iraq": 368,
+    "Viet Nam": 704,
+    "Kazakhstan": 398,
+    "Belarus": 112,
+    "Myanmar": 104,
+    "Bangladesh": 50,
+    "Nigeria": 566,
+    "Serbia": 688,
 }
 
 
@@ -92,6 +101,33 @@ class ComtradeQuery:
     flow_codes: list[str] = field(default_factory=lambda: ["M", "X"])
     hs_codes: list[str] = field(default_factory=lambda: ["93"])
     include_descriptions: bool = True
+
+
+# Known major buyer countries for adversary sellers (UN M49 codes)
+ADVERSARY_BUYER_CODES: dict[str, list[int]] = {
+    "Russia": [
+        699,   # India
+        12,    # Algeria
+        818,   # Egypt
+        368,   # Iraq
+        704,   # Viet Nam
+        398,   # Kazakhstan
+        112,   # Belarus
+        104,   # Myanmar
+    ],
+    "China": [
+        586,   # Pakistan
+        50,    # Bangladesh
+        104,   # Myanmar
+        12,    # Algeria
+        764,   # Thailand
+        566,   # Nigeria
+        688,   # Serbia
+    ],
+}
+
+# Reverse lookup: M49 code -> country name (built from COMTRADE_COUNTRY_CODES)
+_M49_TO_NAME: dict[int, str] = {v: k for k, v in COMTRADE_COUNTRY_CODES.items()}
 
 
 class ComtradeClient:
@@ -228,4 +264,53 @@ class ComtradeClient:
             flow_codes=["X"],
             hs_codes=["93"],
         )
+        return await self.fetch(query)
+
+    async def fetch_buyer_side_imports(
+        self, seller_name: str, years: list[int]
+    ) -> list[ComtradeRecord]:
+        """Fetch what buyer countries report importing from a specific seller.
+
+        Russia and China don't publish reliable arms export data, but their
+        buyers do. This method queries known major buyers of a given seller
+        for their HS 93 import records where the partner is the seller.
+
+        The preview endpoint limits each call to 500 records, so we batch
+        buyer countries in a single request (comma-separated reporterCodes)
+        and set partnerCode to the seller.
+
+        Args:
+            seller_name: Country name of the seller (must be in ADVERSARY_BUYER_CODES).
+            years: List of years to query.
+
+        Returns:
+            List of ComtradeRecords representing import reports from buyer countries.
+        """
+        seller_code = COMTRADE_COUNTRY_CODES.get(seller_name)
+        if seller_code is None:
+            raise ValueError(f"Unknown seller country: {seller_name}")
+
+        buyer_codes = ADVERSARY_BUYER_CODES.get(seller_name)
+        if buyer_codes is None:
+            raise ValueError(
+                f"No known buyer list for {seller_name}. "
+                f"Supported sellers: {', '.join(ADVERSARY_BUYER_CODES.keys())}"
+            )
+
+        # Query: reporters = buyer countries, partner = the seller, flow = imports
+        query = ComtradeQuery(
+            reporter_codes=buyer_codes,
+            partner_codes=[seller_code],
+            years=years,
+            flow_codes=["M"],
+            hs_codes=["9301", "9302", "9303", "9304", "9305", "9306"],
+        )
+
+        logger.info(
+            "Buyer-side mirror: querying %d buyers of %s for years %s",
+            len(buyer_codes),
+            seller_name,
+            years,
+        )
+
         return await self.fetch(query)

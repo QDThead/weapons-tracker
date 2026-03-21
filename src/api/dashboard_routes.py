@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from dataclasses import asdict
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
@@ -274,6 +275,120 @@ async def get_comtrade_country(
     except Exception as e:
         logger.error("Comtrade country fetch failed for %s: %s", country_name, e)
         raise HTTPException(status_code=502, detail="Failed to fetch Comtrade data")
+
+
+# ── Adversary Trade Buyer-Side Mirror ──
+
+_buyer_mirror_cache: dict[str, tuple[float, dict]] = {}
+_BUYER_MIRROR_TTL = 3600  # 1 hour
+
+
+@router.get("/adversary-trade/buyer-mirror")
+async def get_buyer_side_mirror(
+    seller: str = Query(
+        ...,
+        description="Seller country name: 'Russia' or 'China'",
+    ),
+    years: str = Query(
+        "2022,2023",
+        description="Comma-separated years to query",
+    ),
+):
+    """Buyer-side mirror: see what buyer countries report importing from Russia/China.
+
+    Russia and China don't publish reliable arms export data. But their buyers
+    do report imports. This endpoint queries known major buyers of the given
+    seller for their HS 93 (arms & ammunition) import records from UN Comtrade,
+    then aggregates by buyer country, year, and HS code category.
+
+    Cached for 1 hour.
+    """
+    cache_key = f"buyer_mirror:{seller}:{years}"
+    cached = _buyer_mirror_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _BUYER_MIRROR_TTL:
+        return cached[1]
+
+    year_list = _parse_years(years)
+
+    try:
+        from src.ingestion.comtrade import ComtradeClient, ADVERSARY_BUYER_CODES
+
+        if seller not in ADVERSARY_BUYER_CODES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Unsupported seller '{seller}'. "
+                    f"Supported: {', '.join(ADVERSARY_BUYER_CODES.keys())}"
+                ),
+            )
+
+        client = ComtradeClient()
+        records = await client.fetch_buyer_side_imports(seller, year_list)
+
+        # Aggregate by buyer country
+        by_buyer: dict[str, dict] = {}
+        for r in records:
+            buyer = r.reporter
+            if buyer not in by_buyer:
+                by_buyer[buyer] = {
+                    "buyer": buyer,
+                    "buyer_iso": r.reporter_iso,
+                    "total_usd": 0.0,
+                    "by_year": {},
+                    "by_hs_code": {},
+                }
+            by_buyer[buyer]["total_usd"] += r.trade_value_usd
+
+            # Year breakdown
+            yr_key = str(r.year)
+            by_buyer[buyer]["by_year"].setdefault(yr_key, 0.0)
+            by_buyer[buyer]["by_year"][yr_key] += r.trade_value_usd
+
+            # HS code breakdown
+            hs_key = r.hs_code
+            if hs_key not in by_buyer[buyer]["by_hs_code"]:
+                by_buyer[buyer]["by_hs_code"][hs_key] = {
+                    "description": r.hs_description,
+                    "total_usd": 0.0,
+                }
+            by_buyer[buyer]["by_hs_code"][hs_key]["total_usd"] += r.trade_value_usd
+
+        # Sort buyers by total value descending
+        buyers_sorted = sorted(by_buyer.values(), key=lambda b: b["total_usd"], reverse=True)
+
+        # Grand totals
+        grand_total_usd = sum(b["total_usd"] for b in buyers_sorted)
+        total_by_year: dict[str, float] = {}
+        for b in buyers_sorted:
+            for yr, val in b["by_year"].items():
+                total_by_year.setdefault(yr, 0.0)
+                total_by_year[yr] += val
+
+        result = {
+            "seller": seller,
+            "years": year_list,
+            "methodology": (
+                "Buyer-side mirror: querying import reports filed by known major "
+                "buyers of this seller. HS Chapter 93 (arms and ammunition). "
+                "Data from UN Comtrade."
+            ),
+            "grand_total_usd": grand_total_usd,
+            "total_by_year": dict(sorted(total_by_year.items())),
+            "buyer_count": len(buyers_sorted),
+            "record_count": len(records),
+            "buyers": buyers_sorted,
+        }
+
+        _buyer_mirror_cache[cache_key] = (time.time(), result)
+        return result
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Buyer-side mirror fetch failed for %s: %s", seller, e)
+        raise HTTPException(status_code=502, detail="Failed to fetch buyer-side mirror data")
 
 
 # ── Defense News RSS ──
@@ -694,3 +809,153 @@ async def get_canada_monthly_arms_trade(
             "top_partners": {},
             "latest_month": None,
         }
+
+
+# ── Russian / Chinese Military Flight Pattern Analysis ──
+
+_flight_analysis_cache: dict[str, tuple[float, dict]] = {}
+_FLIGHT_ANALYSIS_TTL = 300  # 5 minutes
+
+
+@router.get("/flights/analysis")
+async def get_flight_pattern_analysis():
+    """Analyze current military flights for Russian and Chinese patterns.
+
+    Fetches live ADS-B data from adsb.lol, identifies Russian and Chinese
+    military transport aircraft, and flags flights transiting regions of
+    interest (Africa, Middle East, South Asia, Arctic).
+
+    Results are cached for 5 minutes.
+    """
+    cache_key = "flight_analysis"
+    cached = _flight_analysis_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _FLIGHT_ANALYSIS_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.flight_tracker import FlightTrackerClient
+        from src.analysis.flight_patterns import FlightPatternAnalyzer
+
+        tracker = FlightTrackerClient()
+        flights = await tracker.fetch_military_aircraft()
+
+        analyzer = FlightPatternAnalyzer()
+        analysis = analyzer.analyze_current_flights(flights)
+
+        result = asdict(analysis)
+
+        _flight_analysis_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Flight pattern analysis failed: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch or analyze flight data")
+
+
+# ── Arms Sanctions & Embargoes ──
+
+_sanctions_cache: dict[str, tuple[float, list | dict]] = {}
+_SANCTIONS_TTL = 3600  # 1 hour for live SDN/EU data; embargo list is instant
+
+
+@router.get("/sanctions/embargoes")
+async def get_arms_embargoes():
+    """Get all countries currently under arms embargoes.
+
+    Returns a curated list of active UN, EU, US, and regional
+    arms embargoes with details on scope, imposing bodies, and dates.
+    """
+    from src.ingestion.sanctions import SanctionsClient
+
+    client = SanctionsClient()
+    embargoes = client.get_embargoed_countries()
+    return [
+        {
+            "country": e.country,
+            "iso3": e.iso3,
+            "embargo_type": e.embargo_type,
+            "imposing_bodies": e.imposing_bodies,
+            "since_year": e.since_year,
+            "description": e.description,
+            "notes": e.notes,
+        }
+        for e in embargoes
+    ]
+
+
+@router.get("/sanctions/check/{country}")
+async def check_country_embargo(country: str):
+    """Check if a specific country is under an arms embargo.
+
+    Accepts country name (e.g. 'Russia') or ISO3 code (e.g. 'RUS').
+    Case-insensitive.
+    """
+    from src.ingestion.sanctions import SanctionsClient
+
+    client = SanctionsClient()
+    return client.check_country(country)
+
+
+@router.get("/sanctions/ofac-sdn")
+async def get_ofac_sdn_defense_entities():
+    """Get defense-related entities from the OFAC SDN (Specially Designated Nationals) list.
+
+    Downloads from US Treasury and filters for military/defense keywords.
+    Cached for 1 hour.
+    """
+    cache_key = "ofac_sdn"
+    cached = _sanctions_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _SANCTIONS_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.sanctions import SanctionsClient
+
+        client = SanctionsClient()
+        entities = await client.fetch_ofac_sdn_list(filter_defense=True)
+        result = [
+            {
+                "name": e.name,
+                "entity_type": e.entity_type,
+                "program": e.program,
+                "remarks": e.remarks,
+            }
+            for e in entities
+        ]
+        _sanctions_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("OFAC SDN fetch failed: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch OFAC SDN data")
+
+
+@router.get("/sanctions/eu")
+async def get_eu_sanctions_defense_entities():
+    """Get defense-related entries from the EU Consolidated Sanctions list.
+
+    Downloads from EU and filters for military/defense keywords.
+    Cached for 1 hour.
+    """
+    cache_key = "eu_sanctions"
+    cached = _sanctions_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _SANCTIONS_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.sanctions import SanctionsClient
+
+        client = SanctionsClient()
+        entries = await client.fetch_eu_sanctions(filter_defense=True)
+        result = [
+            {
+                "name": e.name,
+                "entity_type": e.entity_type,
+                "programme": e.programme,
+                "remark": e.remark,
+            }
+            for e in entries
+        ]
+        _sanctions_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("EU sanctions fetch failed: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch EU sanctions data")
