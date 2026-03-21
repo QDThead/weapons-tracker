@@ -1,121 +1,154 @@
 # Weapons Tracker
 
-Global weapons systems tracking and risk monitoring platform using open-source intelligence (OSINT) data sources.
+Track global weapons sales and trade across countries using open-source intelligence (OSINT).
 
-## Overview
+## Mission
 
-A multi-layered intelligence platform that monitors global arms transfers, military logistics, and conflict risk by fusing structured databases, real-time physical tracking, satellite imagery, and social media signals.
+Answer the fundamental questions of the global arms trade:
+- **Who is selling weapons to whom?** (SIPRI Arms Transfers Database)
+- **What systems are being traded?** (deal-level weapon designation, quantity, value)
+- **Which companies are producing them?** (SIPRI Top 100 defense companies)
+- **How much is each country spending?** (World Bank military expenditure data)
+- **Are deliveries happening right now?** (military flight + maritime vessel tracking)
+- **What's breaking in the news?** (GDELT arms trade news monitoring)
 
-## Architecture
+## How It Works
 
 ```
-┌─────────────────────────────────────────────────┐
-│              INGESTION LAYER                     │
-├──────────┬──────────┬──────────┬────────────────┤
-│ Streaming│ Polling  │ Scheduled│ Manual/Scraped │
-│ aisstream│ adsb.lol │ ACLED    │ SIPRI (annual) │
-│ Telegram │ GDELT    │ UCDP     │ UNROCA         │
-│          │ OpenSky  │ WGI      │ ODIN/WEG       │
-│          │ X API    │ INFORM   │ FSI            │
-│          │          │ GPR      │                │
-└─────┬────┴─────┬────┴─────┬────┴───────┬────────┘
-      │          │          │            │
-      ▼          ▼          ▼            ▼
-┌─────────────────────────────────────────────────┐
-│         STORAGE (PostGIS + TimescaleDB)         │
-│  - Geospatial indexing for all location data    │
-│  - Time-series for flight/vessel tracks         │
-│  - Event store for conflicts/news               │
-└────────────────────┬────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────┐
-│              ANALYSIS ENGINE                     │
-│  - Correlation: flight anomaly + conflict event │
-│  - Trend detection: arms buildup patterns       │
-│  - Geofencing: alerts for activity in AOIs      │
-│  - NLP: GDELT/social media sentiment scoring    │
-│  - Satellite change detection pipeline          │
-└────────────────────┬────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────┐
-│           PRESENTATION & ALERTING               │
-│  - Real-time map (Mapbox/Deck.gl)               │
-│  - Dashboard (Grafana or custom)                │
-│  - Alert rules → Slack/Email/SMS                │
-│  - Weekly/monthly risk digests                  │
-│  - Country risk scorecards                      │
-└─────────────────────────────────────────────────┘
+                    WEAPONS TRADE DATA PIPELINE
+
+ ┌──────────────────────────────────────────────────────┐
+ │                  DATA SOURCES                         │
+ │                                                       │
+ │  SIPRI Arms         World Bank         GDELT News     │
+ │  Transfers DB  ───  Arms Trade    ───  Arms Deal      │
+ │  (annual)           Indicators         Monitoring      │
+ │                     (annual)           (15-min)        │
+ │  SIPRI Top 100                                        │
+ │  Companies     ───  adsb.lol      ───  aisstream.io   │
+ │  (annual)           Military           Maritime        │
+ │                     Flights (live)     Vessels (live)  │
+ └──────────────┬──────────────────┬─────────────────────┘
+                │                  │
+                ▼                  ▼
+ ┌──────────────────────────────────────────────────────┐
+ │              WEAPONS TRACKER DATABASE                  │
+ │                                                       │
+ │  Arms Transfers ── Weapon Systems ── Countries        │
+ │  Defense Companies ── Trade Indicators                │
+ │  Delivery Tracking ── Arms Trade News                 │
+ └──────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+ ┌──────────────────────────────────────────────────────┐
+ │                   REST API                            │
+ │                                                       │
+ │  GET /transfers/exports/{country}                     │
+ │  GET /transfers/imports/{country}                     │
+ │  GET /transfers/bilateral/{seller}/{buyer}            │
+ │  GET /indicators/{country_iso3}                       │
+ │  GET /indicators/top/importers                        │
+ │  GET /indicators/top/exporters                        │
+ │  GET /news/latest                                     │
+ │  GET /news/country/{country}                          │
+ │  GET /tracking/flights/military                       │
+ │  GET /tracking/flights/transports                     │
+ └──────────────────────────────────────────────────────┘
 ```
 
 ## Data Sources
 
-### Tier 1: Structured Arms & Conflict Databases
-| Source | Update Frequency | API | Cost |
-|--------|-----------------|-----|------|
-| SIPRI Arms Transfers | Annual | Unofficial (CSV/JSON) | Free (non-commercial) |
-| SIPRI Top 100 Companies | Annual | Excel download | Free (non-commercial) |
-| ACLED | Weekly | REST + Python lib | Free (research) |
-| GDELT | Every 15 min | REST + BigQuery | Free |
-| UCDP | Annual + monthly | REST (token) | Free |
-| World Bank WGI | Annual | REST (open) | Free |
-| INFORM Risk Index | Twice yearly | JSON | Free |
-| Fragile States Index | Annual | Excel download | Free |
-| GPR Index | Monthly | File download | Free |
+| Source | What It Tracks | Update Frequency | Cost |
+|--------|---------------|-----------------|------|
+| **SIPRI Arms Transfers** | Every major arms deal since 1950 (buyer, seller, weapon, quantity, TIV value) | Annual (March) | Free |
+| **SIPRI Top 100** | Largest defense companies by arms revenue | Annual | Free |
+| **World Bank** | Arms imports/exports TIV + military expenditure (% GDP) per country | Annual | Free |
+| **GDELT** | Global news articles about arms deals, deliveries, procurement | Every 15 min | Free |
+| **adsb.lol** | Live military transport aircraft positions (C-17, Il-76, An-124, etc.) | Seconds | Free |
+| **aisstream.io** | Live vessel positions at key chokepoints (Hormuz, Suez, etc.) | Real-time | Free |
 
-### Tier 2: Real-Time Physical Tracking
-| Source | Update Frequency | API | Cost |
-|--------|-----------------|-----|------|
-| ADS-B Exchange | 1-20 sec | REST | $10/mo+ |
-| adsb.lol | Seconds | REST (no auth) | Free |
-| OpenSky Network | 5-10 sec | REST | Free |
-| aisstream.io | Real-time | WebSocket | Free |
-| VesselFinder | Real-time | REST | EUR 330/10K credits |
-| Sentinel Hub | 5-12 day revisit | OGC + REST | EUR 30-1000/mo |
-| Planet Labs | Daily | REST | ~$4K+/mo |
+## API Endpoints
 
-### Tier 3: Social Media & OSINT
-| Source | Update Frequency | API | Cost |
-|--------|-----------------|-----|------|
-| X (Twitter) API | Real-time | REST | $200/mo+ |
-| Telegram Bot API | Real-time | Bot API | Free |
-| ODIN/WEG | Periodic | Web/Excel | Free |
+### Arms Transfers (SIPRI)
+- `GET /transfers/exports/{country}` — All arms exports from a country
+- `GET /transfers/imports/{country}` — All arms imports to a country
+- `GET /transfers/bilateral/{seller}/{buyer}` — Arms deals between two countries
+- `GET /transfers/countries` — List available countries
+
+### Trade Indicators (World Bank)
+- `GET /indicators/{country_iso3}` — Arms trade + military spending for a country
+- `GET /indicators/top/importers` — Top arms importing countries
+- `GET /indicators/top/exporters` — Top arms exporting countries
+
+### Arms Trade News (GDELT)
+- `GET /news/latest` — Latest arms trade news globally
+- `GET /news/country/{country}` — Arms news for a specific country
+
+### Live Delivery Tracking
+- `GET /tracking/flights/military` — All military aircraft currently in the air
+- `GET /tracking/flights/transports` — Military transport aircraft (likely carrying weapons/equipment)
 
 ## Project Structure
 
 ```
 weapons-tracker/
 ├── src/
-│   ├── ingestion/        # Data source connectors
-│   ├── storage/           # Database models and migrations
-│   ├── analysis/          # Correlation and detection engines
-│   ├── api/               # REST API for the platform
-│   └── alerts/            # Alerting and notification system
-├── config/                # Configuration files
-├── tests/                 # Test suite
-├── docs/                  # Documentation
-└── scripts/               # Utility scripts
+│   ├── ingestion/
+│   │   ├── sipri_transfers.py   # SIPRI Arms Transfers Database connector
+│   │   ├── sipri_companies.py   # SIPRI Top 100 defense companies connector
+│   │   ├── worldbank.py         # World Bank arms trade indicators
+│   │   ├── gdelt_news.py        # GDELT arms trade news monitor
+│   │   ├── flight_tracker.py    # Military transport flight tracking (adsb.lol)
+│   │   └── maritime_tracker.py  # Maritime vessel tracking (aisstream.io)
+│   ├── storage/
+│   │   ├── models.py            # SQLAlchemy models (transfers, weapons, countries)
+│   │   └── database.py          # Database connection management
+│   ├── api/
+│   │   └── routes.py            # FastAPI REST endpoints
+│   └── main.py                  # Application entry point
+├── config/
+│   └── .env.example             # API key template
+├── tests/
+├── requirements.txt
+└── README.md
 ```
 
 ## Getting Started
 
 ```bash
-# Clone the repository
 git clone https://github.com/QDThead/weapons-tracker.git
 cd weapons-tracker
 
-# Set up Python environment
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Copy environment config
+# Optional: configure API keys for premium sources
 cp config/.env.example config/.env
-# Edit config/.env with your API keys
 
-# Run the platform
+# Start the API server
 python -m src.main
+```
+
+The API runs at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
+
+### Quick Examples
+
+```bash
+# Canada's arms imports since 2015
+curl "http://localhost:8000/transfers/imports/Canada?low_year=2015"
+
+# US arms exports to Saudi Arabia
+curl "http://localhost:8000/transfers/bilateral/United%20States/Saudi%20Arabia"
+
+# Top arms importers in 2024
+curl "http://localhost:8000/indicators/top/importers?year=2024"
+
+# Latest arms trade news
+curl "http://localhost:8000/news/latest?hours=48"
+
+# Military transport aircraft currently in the air
+curl "http://localhost:8000/tracking/flights/transports"
 ```
 
 ## License
