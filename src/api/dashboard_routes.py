@@ -274,3 +274,76 @@ async def get_comtrade_country(
     except Exception as e:
         logger.error("Comtrade country fetch failed for %s: %s", country_name, e)
         raise HTTPException(status_code=502, detail="Failed to fetch Comtrade data")
+
+
+# ── Defense News RSS ──
+
+_news_cache: dict[str, tuple[float, list]] = {}
+_NEWS_TTL = 900  # 15 minutes
+
+
+@router.get("/news/live")
+async def get_live_defense_news():
+    """Get live defense news from RSS feeds. Cached for 15 minutes."""
+    cache_key = "rss_news"
+    cached = _news_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _NEWS_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.defense_news_rss import DefenseNewsRSSClient
+
+        client = DefenseNewsRSSClient()
+        articles = await client.fetch_all_feeds(filter_arms=True)
+        result = [
+            {
+                "title": a.title,
+                "url": a.url,
+                "source": a.source,
+                "published_at": a.published_at.isoformat() if a.published_at else None,
+                "summary": a.summary[:200],
+            }
+            for a in articles[:50]
+        ]
+        _news_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("RSS news fetch failed: %s", e)
+        return []
+
+
+# ── DSCA Arms Sales ──
+
+_dsca_cache: dict[str, tuple[float, list]] = {}
+_DSCA_TTL = 3600  # 1 hour
+
+
+@router.get("/dsca/recent")
+async def get_recent_dsca_sales(count: int = Query(20, ge=1, le=50)):
+    """Get recent US arms sale notifications from the Federal Register. Cached 1 hour."""
+    cache_key = f"dsca:{count}"
+    cached = _dsca_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _DSCA_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.dsca_sales import DSCASalesClient
+
+        client = DSCASalesClient()
+        sales = await client.fetch_recent_sales(count=count)
+        result = [
+            {
+                "date": s.publication_date,
+                "buyer": s.buyer_country,
+                "value_usd": s.total_value_usd,
+                "weapons": s.weapon_systems,
+                "transmittal": s.transmittal_number,
+                "url": s.url,
+            }
+            for s in sales
+        ]
+        _dsca_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("DSCA fetch failed: %s", e)
+        return []

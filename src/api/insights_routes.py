@@ -84,6 +84,24 @@ async def get_data_freshness():
             "update_frequency": "Annual (~6 month lag)",
         })
 
+        # Defense News RSS (not persisted)
+        sources.append({
+            "source": "Defense News RSS",
+            "records": "live",
+            "latest_data_year": None,
+            "last_updated": "cached (15min TTL)",
+            "update_frequency": "Every 15 minutes (4 feeds)",
+        })
+
+        # DSCA Arms Sales (not persisted)
+        sources.append({
+            "source": "DSCA Arms Sales",
+            "records": "live",
+            "latest_data_year": None,
+            "last_updated": "cached (1hr TTL)",
+            "update_frequency": "Days (Federal Register)",
+        })
+
         return sources
     finally:
         session.close()
