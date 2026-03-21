@@ -9,6 +9,8 @@ Queries persisted data to compute:
   - Military flight activity trends
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
 

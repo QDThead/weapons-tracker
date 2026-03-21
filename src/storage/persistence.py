@@ -3,6 +3,8 @@
 Handles upsert logic and deduplication for all entity types.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 

@@ -4,6 +4,8 @@ Provides historical trend data for weapons trade visualization
 and analysis. All data comes from the persisted database.
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Query
 
 from src.storage.database import SessionLocal

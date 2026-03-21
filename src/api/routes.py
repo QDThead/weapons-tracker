@@ -4,6 +4,8 @@ Provides endpoints to query arms transfers, defense companies,
 trade indicators, arms trade news, and live delivery tracking.
 """
 
+from __future__ import annotations
+
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 

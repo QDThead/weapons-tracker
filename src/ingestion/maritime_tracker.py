@@ -7,6 +7,8 @@ logistics vessels, and traffic through key chokepoints.
 Reference: https://aisstream.io/
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging

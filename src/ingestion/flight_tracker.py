@@ -9,6 +9,8 @@ C-130 Hercules, C-5 Galaxy, Y-20, KC-390.
 Reference: https://api.adsb.lol/docs
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime

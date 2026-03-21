@@ -7,6 +7,8 @@ Updated annually.
 Reference: https://www.sipri.org/databases/armsindustry
 """
 
+from __future__ import annotations
+
 import io
 import logging
 from dataclasses import dataclass

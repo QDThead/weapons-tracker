@@ -7,6 +7,8 @@ Updates every 15 minutes. Free, no auth required.
 Reference: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
