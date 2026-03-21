@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Environment
+.env
+config/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data cache
+data/cache/
+data/raw/
+*.csv
+*.xlsx
+!config/*.csv
+
+# Logs
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
