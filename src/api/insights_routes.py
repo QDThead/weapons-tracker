@@ -102,6 +102,24 @@ async def get_data_freshness():
             "update_frequency": "Every 15 minutes (4 feeds)",
         })
 
+        # UK HMRC Trade (not persisted)
+        sources.append({
+            "source": "UK HMRC Arms Trade",
+            "records": "live",
+            "latest_data_year": None,
+            "last_updated": "cached (1hr TTL)",
+            "update_frequency": "Monthly (~2 month lag)",
+        })
+
+        # NATO Defence Expenditure
+        sources.append({
+            "source": "NATO Defence Expenditure",
+            "records": "live",
+            "latest_data_year": 2025,
+            "last_updated": "cached (24hr TTL)",
+            "update_frequency": "Annual (includes estimates)",
+        })
+
         # DSCA Arms Sales (not persisted)
         sources.append({
             "source": "DSCA Arms Sales",

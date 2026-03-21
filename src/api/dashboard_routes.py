@@ -396,3 +396,126 @@ async def get_us_monthly_arms_trade():
     except Exception as e:
         logger.error("Census trade fetch failed: %s", e)
         return {"months": {}, "top_partners": {}, "latest_month": None}
+
+
+# ── NATO Defence Expenditure ──
+
+_nato_cache: dict[str, tuple[float, list]] = {}
+_NATO_TTL = 86400  # 24 hours (annual data)
+
+
+@router.get("/nato/spending")
+async def get_nato_spending(
+    country: str | None = Query(None, description="Filter by country name (case-insensitive)"),
+    year: int | None = Query(None, ge=2014, le=2025, description="Filter by single year"),
+    include_aggregates: bool = Query(False, description="Include NATO Total and Europe+Canada aggregates"),
+):
+    """Get NATO defence expenditure data for all member countries.
+
+    Returns spending in million USD (current and constant 2021 prices),
+    spending as % of GDP, and annual real change. Data spans 2014-2025
+    (2024-2025 are estimates). Cached for 24 hours.
+    """
+    cache_key = f"nato:{country}:{year}:{include_aggregates}"
+    cached = _nato_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _NATO_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.nato_spending import NATOSpendingClient
+
+        client = NATOSpendingClient()
+        records = await client.fetch_spending_data()
+
+        # Apply filters
+        filtered = records
+        if not include_aggregates:
+            filtered = [r for r in filtered if not r.is_aggregate]
+        if country:
+            country_lower = country.lower()
+            filtered = [r for r in filtered if r.country.lower() == country_lower]
+        if year is not None:
+            filtered = [r for r in filtered if r.year == year]
+
+        result = [
+            {
+                "country": r.country,
+                "year": r.year,
+                "spending_current_usd_millions": r.spending_current_usd_millions,
+                "spending_constant_usd_millions": r.spending_constant_usd_millions,
+                "pct_gdp": r.pct_gdp,
+                "annual_real_change_pct": r.annual_real_change_pct,
+                "is_estimate": r.is_estimate,
+                "is_aggregate": r.is_aggregate,
+            }
+            for r in filtered
+        ]
+
+        _nato_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("NATO spending fetch failed: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch NATO spending data")
+
+
+# ── UK HMRC Arms Trade ──
+
+_hmrc_cache: dict[str, tuple[float, list | dict]] = {}
+_HMRC_TTL = 3600  # 1 hour
+
+
+@router.get("/uk-trade/monthly")
+async def get_uk_monthly_arms_trade(
+    months: str = Query(
+        default="",
+        description="Comma-separated months in YYYYMM format (e.g. 202501,202502). Defaults to last 6 months.",
+    ),
+):
+    """Get monthly UK arms trade data (HS 93) from HMRC Trade Info. Cached 1 hour."""
+    cache_key = f"hmrc_monthly:{months}"
+    cached = _hmrc_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _HMRC_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.uk_hmrc_trade import UKHMRCTradeClient
+
+        client = UKHMRCTradeClient()
+        month_list = [m.strip() for m in months.split(",") if m.strip()] if months else None
+        records = await client.fetch_uk_arms_trade(month_list)
+
+        # Aggregate by month
+        monthly_totals: dict[str, dict[str, int]] = {}
+        partner_totals: dict[str, int] = {}
+
+        for r in records:
+            key = f"{r.year}-{r.month:02d}"
+            if key not in monthly_totals:
+                monthly_totals[key] = {"imports_gbp": 0, "exports_gbp": 0}
+            if r.direction == "import":
+                monthly_totals[key]["imports_gbp"] += r.value_gbp
+            else:
+                monthly_totals[key]["exports_gbp"] += r.value_gbp
+
+            if r.partner_country not in partner_totals:
+                partner_totals[r.partner_country] = 0
+            partner_totals[r.partner_country] += r.value_gbp
+
+        # Sort partners by total value, keep top 20
+        top_partners = dict(
+            sorted(partner_totals.items(), key=lambda x: x[1], reverse=True)[:20]
+        )
+
+        result = {
+            "currency": "GBP",
+            "months": dict(sorted(monthly_totals.items())),
+            "top_partners": top_partners,
+            "latest_month": max(monthly_totals.keys()) if monthly_totals else None,
+            "total_records": len(records),
+        }
+
+        _hmrc_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("HMRC UK trade fetch failed: %s", e)
+        return {"currency": "GBP", "months": {}, "top_partners": {}, "latest_month": None}
