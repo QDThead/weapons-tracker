@@ -102,6 +102,24 @@ async def get_data_freshness():
             "update_frequency": "Every 15 minutes (4 feeds)",
         })
 
+        # Eurostat EU Trade (not persisted)
+        sources.append({
+            "source": "Eurostat EU Arms Trade",
+            "records": "live",
+            "latest_data_year": None,
+            "last_updated": "cached (1hr TTL)",
+            "update_frequency": "Monthly (~2 month lag)",
+        })
+
+        # Statistics Canada (not persisted)
+        sources.append({
+            "source": "Statistics Canada CIMT",
+            "records": "live",
+            "latest_data_year": None,
+            "last_updated": "cached (24hr TTL)",
+            "update_frequency": "Monthly (~6 week lag)",
+        })
+
         # UK HMRC Trade (not persisted)
         sources.append({
             "source": "UK HMRC Arms Trade",

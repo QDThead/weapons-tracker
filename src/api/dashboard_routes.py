@@ -519,3 +519,178 @@ async def get_uk_monthly_arms_trade(
     except Exception as e:
         logger.error("HMRC UK trade fetch failed: %s", e)
         return {"currency": "GBP", "months": {}, "top_partners": {}, "latest_month": None}
+
+
+# ── Eurostat EU Arms Trade ──
+
+_eurostat_cache: dict[str, tuple[float, dict]] = {}
+_EUROSTAT_TTL = 3600  # 1 hour
+
+
+@router.get("/eu-trade/monthly")
+async def get_eu_monthly_arms_trade(
+    reporters: str = Query(
+        default="",
+        description=(
+            "Comma-separated ISO 2-letter reporter codes "
+            "(e.g. DE,FR,IT). Defaults to top 6 EU exporters."
+        ),
+    ),
+    start: str = Query(
+        default="",
+        description="Start period YYYY-MM (defaults to 12 months ago)",
+    ),
+    end: str = Query(
+        default="",
+        description="End period YYYY-MM (defaults to current month)",
+    ),
+):
+    """Get monthly EU arms trade data (HS 93) from Eurostat Comext. Cached 1 hour."""
+    cache_key = f"eurostat:{reporters}:{start}:{end}"
+    cached = _eurostat_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _EUROSTAT_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.eurostat_trade import EurostatTradeClient
+
+        client = EurostatTradeClient()
+        reporter_list = (
+            [r.strip().upper() for r in reporters.split(",") if r.strip()]
+            if reporters
+            else None
+        )
+        start_period = start if start else None
+        end_period = end if end else None
+
+        records = await client.fetch_eu_arms_trade(
+            reporters=reporter_list,
+            start_period=start_period,
+            end_period=end_period,
+        )
+
+        # Aggregate by month
+        monthly_totals: dict[str, dict[str, float]] = {}
+        reporter_totals: dict[str, float] = {}
+        partner_totals: dict[str, float] = {}
+
+        for r in records:
+            key = f"{r.year}-{r.month:02d}"
+            if key not in monthly_totals:
+                monthly_totals[key] = {"imports_eur": 0.0, "exports_eur": 0.0}
+            if r.direction == "import":
+                monthly_totals[key]["imports_eur"] += r.value_eur
+            else:
+                monthly_totals[key]["exports_eur"] += r.value_eur
+
+            if r.reporter not in reporter_totals:
+                reporter_totals[r.reporter] = 0.0
+            reporter_totals[r.reporter] += r.value_eur
+
+            if r.partner not in partner_totals:
+                partner_totals[r.partner] = 0.0
+            partner_totals[r.partner] += r.value_eur
+
+        # Sort reporters and partners by total value
+        top_reporters = dict(
+            sorted(reporter_totals.items(), key=lambda x: x[1], reverse=True)
+        )
+        top_partners = dict(
+            sorted(partner_totals.items(), key=lambda x: x[1], reverse=True)[:20]
+        )
+
+        result = {
+            "currency": "EUR",
+            "months": dict(sorted(monthly_totals.items())),
+            "top_reporters": top_reporters,
+            "top_partners": top_partners,
+            "latest_month": max(monthly_totals.keys()) if monthly_totals else None,
+            "total_records": len(records),
+        }
+
+        _eurostat_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Eurostat EU trade fetch failed: %s", e)
+        return {
+            "currency": "EUR",
+            "months": {},
+            "top_reporters": {},
+            "top_partners": {},
+            "latest_month": None,
+        }
+
+
+# ── Statistics Canada Arms Trade ──
+
+_statcan_cache: dict[str, tuple[float, dict]] = {}
+_STATCAN_TTL = 86400  # 24 hours (large bulk download, monthly updates)
+
+
+@router.get("/canada-trade/monthly")
+async def get_canada_monthly_arms_trade(
+    year: int = Query(
+        default=0,
+        ge=0,
+        le=2030,
+        description="Year to fetch (e.g. 2025). Defaults to current year.",
+    ),
+):
+    """Get monthly Canadian arms trade data (HS 93) from Statistics Canada CIMT. Cached 24 hours."""
+    if year == 0:
+        from datetime import datetime
+        year = datetime.now().year
+
+    cache_key = f"statcan:{year}"
+    cached = _statcan_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _STATCAN_TTL:
+        return cached[1]
+
+    try:
+        from src.ingestion.statcan_trade import StatCanTradeClient
+
+        client = StatCanTradeClient()
+        records = await client.fetch_canada_arms_trade(year=year)
+
+        # Aggregate by month
+        monthly_totals: dict[str, dict[str, int]] = {}
+        partner_totals: dict[str, int] = {}
+
+        for r in records:
+            key = f"{r.year}-{r.month:02d}"
+            if key not in monthly_totals:
+                monthly_totals[key] = {"imports_cad": 0, "exports_cad": 0}
+            if r.direction == "import":
+                monthly_totals[key]["imports_cad"] += r.value_cad
+            else:
+                monthly_totals[key]["exports_cad"] += r.value_cad
+
+            if r.partner_country not in partner_totals:
+                partner_totals[r.partner_country] = 0
+            partner_totals[r.partner_country] += r.value_cad
+
+        # Sort partners by total value, keep top 20
+        top_partners = dict(
+            sorted(partner_totals.items(), key=lambda x: x[1], reverse=True)[:20]
+        )
+
+        result = {
+            "currency": "CAD",
+            "year": year,
+            "months": dict(sorted(monthly_totals.items())),
+            "top_partners": top_partners,
+            "latest_month": max(monthly_totals.keys()) if monthly_totals else None,
+            "total_records": len(records),
+        }
+
+        _statcan_cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("StatCan Canada trade fetch failed: %s", e)
+        return {
+            "currency": "CAD",
+            "year": year,
+            "months": {},
+            "top_partners": {},
+            "latest_month": None,
+        }
