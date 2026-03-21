@@ -157,17 +157,185 @@ async def get_all_insights():
     """Generate all insights in a single call for the dashboard."""
     session = SessionLocal()
     try:
+        shifts = _supplier_shifts(session)
         return {
             "emerging_relationships": _emerging_relationships(session),
             "fading_relationships": _fading_relationships(session),
             "biggest_movers": _biggest_movers(session),
-            "supplier_shifts": _supplier_shifts(session),
+            "supplier_shifts": _add_shift_context(shifts),
             "weapon_trends": _weapon_trends(session),
             "regional_hotspots": _regional_hotspots(session),
             "canada_alerts": _canada_alerts(session),
+            "situation_report": _compute_situation_report(session),
         }
     finally:
         session.close()
+
+
+def _compute_situation_report(session) -> dict:
+    """Compute 6 threat indicators for the situation report."""
+    report = {}
+
+    # 1. Arctic Threat — Russian exports to Arctic-adjacent countries
+    arctic_countries = (
+        "Norway", "Finland", "Sweden", "Denmark", "Iceland",
+        "Greenland", "Canada", "United States",
+    )
+    placeholders = ", ".join(f":ac{i}" for i in range(len(arctic_countries)))
+    params = {f"ac{i}": c for i, c in enumerate(arctic_countries)}
+    rows = _query(session, f"""
+        SELECT COUNT(*) as deals, SUM(COALESCE(at.tiv_delivered, 0)) as tiv
+        FROM arms_transfers at
+        JOIN countries c1 ON at.seller_id = c1.id
+        JOIN countries c2 ON at.buyer_id = c2.id
+        WHERE c1.name = 'Russia' AND c2.name IN ({placeholders})
+          AND at.order_year >= 2018
+    """, params)
+    arctic_deals = rows[0][0] if rows else 0
+    arctic_tiv = rows[0][1] if rows else 0
+    if arctic_deals >= 5:
+        level = "red"
+    elif arctic_deals >= 1:
+        level = "yellow"
+    else:
+        level = "green"
+    report["arctic_threat"] = {
+        "level": level,
+        "deals": arctic_deals,
+        "tiv": arctic_tiv,
+        "summary": f"{arctic_deals} Russian arms deals to Arctic nations since 2018 (TIV {arctic_tiv:.0f}M)" if arctic_deals else "No Russian arms transfers to Arctic nations detected",
+    }
+
+    # 2. Supply Chain Risk — Canada's import concentration
+    rows = _query(session, """
+        SELECT c1.name, SUM(COALESCE(at.tiv_delivered, 0)) as tiv
+        FROM arms_transfers at
+        JOIN countries c1 ON at.seller_id = c1.id
+        JOIN countries c2 ON at.buyer_id = c2.id
+        WHERE c2.name = 'Canada' AND at.order_year >= 2015
+        GROUP BY c1.name ORDER BY tiv DESC
+    """)
+    if rows:
+        total = sum(r[1] for r in rows)
+        top_supplier = rows[0][0]
+        top_pct = (rows[0][1] / total * 100) if total > 0 else 0
+    else:
+        total = 0
+        top_supplier = "N/A"
+        top_pct = 0
+    if top_pct > 60:
+        level = "red"
+    elif top_pct > 40:
+        level = "yellow"
+    else:
+        level = "green"
+    report["supply_chain_risk"] = {
+        "level": level,
+        "top_supplier": top_supplier,
+        "top_pct": round(top_pct, 1),
+        "summary": f"{top_pct:.0f}% of imports from {top_supplier}" if top_supplier != "N/A" else "No import data available",
+    }
+
+    # 3. Adversary Expansion — new seller-buyer pairs since 2020 where seller is Russia or China
+    rows = _query(session, """
+        SELECT c1.name as seller, c2.name as buyer,
+               SUM(COALESCE(at.tiv_delivered, 0)) as tiv
+        FROM arms_transfers at
+        JOIN countries c1 ON at.seller_id = c1.id
+        JOIN countries c2 ON at.buyer_id = c2.id
+        WHERE c1.name IN ('Russia', 'China') AND at.order_year >= 2020
+        GROUP BY c1.name, c2.name
+        HAVING c1.name || '|' || c2.name NOT IN (
+            SELECT c1b.name || '|' || c2b.name
+            FROM arms_transfers at2
+            JOIN countries c1b ON at2.seller_id = c1b.id
+            JOIN countries c2b ON at2.buyer_id = c2b.id
+            WHERE at2.order_year >= 2015 AND at2.order_year < 2020
+              AND c1b.name IN ('Russia', 'China')
+        )
+        ORDER BY tiv DESC
+    """)
+    new_pairs_count = len(rows) if rows else 0
+    if new_pairs_count >= 5:
+        level = "red"
+    elif new_pairs_count >= 1:
+        level = "yellow"
+    else:
+        level = "green"
+    report["adversary_expansion"] = {
+        "level": level,
+        "new_pairs": new_pairs_count,
+        "pairs": [{"seller": r[0], "buyer": r[1], "tiv": r[2]} for r in (rows or [])],
+        "summary": f"{new_pairs_count} new Russia/China arms relationships since 2020",
+    }
+
+    # 4. Allied Rearmament — placeholder for client-side computation from NATO data
+    report["allied_rearmament"] = {
+        "level": "yellow",
+        "summary": "Computed client-side from NATO spending data",
+    }
+
+    # 5. Canada NATO Rank — placeholder for client-side computation from NATO data
+    report["canada_nato_rank"] = {
+        "level": "yellow",
+        "summary": "Computed client-side from NATO spending data",
+    }
+
+    # 6. Sanctions Compliance — cross-reference Canada's trade partners against embargo list
+    try:
+        from src.ingestion.sanctions import SanctionsClient
+        client = SanctionsClient()
+        embargoes = client.get_embargoed_countries()
+        embargoed_names = {e.country.lower() for e in embargoes}
+        embargoed_iso3 = {e.iso3.lower() for e in embargoes}
+    except Exception:
+        embargoed_names = set()
+        embargoed_iso3 = set()
+
+    # Canada's trade partners from arms_transfers
+    partner_rows = _query(session, """
+        SELECT DISTINCT c.name
+        FROM (
+            SELECT buyer_id as cid FROM arms_transfers at
+            JOIN countries cs ON at.seller_id = cs.id WHERE cs.name = 'Canada'
+            UNION
+            SELECT seller_id as cid FROM arms_transfers at
+            JOIN countries cb ON at.buyer_id = cb.id WHERE cb.name = 'Canada'
+        ) sub
+        JOIN countries c ON sub.cid = c.id
+    """)
+    flagged = []
+    for r in (partner_rows or []):
+        if r[0].lower() in embargoed_names:
+            flagged.append(r[0])
+    report["sanctions_compliance"] = {
+        "level": "red" if flagged else "green",
+        "flagged_partners": flagged,
+        "summary": f"{len(flagged)} trade partner(s) under embargo: {', '.join(flagged)}" if flagged else "No trade partners under active embargoes",
+    }
+
+    return report
+
+
+def _add_shift_context(shifts: list[dict]) -> list[dict]:
+    """Add context and context_type fields to supplier shift entries."""
+    adversaries = {"Russia", "China", "Iran"}
+    for s in shifts:
+        old = s.get("old_supplier", "")
+        new = s.get("new_supplier", "")
+        if old in adversaries and new not in adversaries:
+            s["context_type"] = "opportunity"
+            s["context"] = "Moving away from adversary — potential opportunity for Canada"
+        elif new in adversaries and old not in adversaries:
+            s["context_type"] = "threat"
+            s["context"] = "Shifting to adversary supplier — growing adversary influence"
+        elif new == "South Korea":
+            s["context_type"] = "competition"
+            s["context"] = "South Korea gaining market share — competitive pressure"
+        else:
+            s["context_type"] = "neutral"
+            s["context"] = ""
+    return shifts
 
 
 def _emerging_relationships(session) -> list[dict]:

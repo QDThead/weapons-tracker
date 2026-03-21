@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Global Arms Trade Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
@@ -392,12 +393,61 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .feed-sample-field { color: var(--text-dim); }
 .feed-sample-value { color: var(--text); }
 
+/* Situation Report */
+.sitrep-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
+.sitrep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; border-top: 3px solid var(--border); }
+.sitrep-card.green { border-top-color: var(--accent3); }
+.sitrep-card.yellow { border-top-color: var(--accent4); }
+.sitrep-card.red { border-top-color: var(--accent2); }
+.sitrep-question { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 8px; line-height: 1.3; }
+.sitrep-indicator { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+.sitrep-card.green .sitrep-indicator { color: var(--accent3); }
+.sitrep-card.yellow .sitrep-indicator { color: var(--accent4); }
+.sitrep-card.red .sitrep-indicator { color: var(--accent2); }
+.sitrep-answer { font-size: 12px; color: var(--text); line-height: 1.4; }
+
+/* Briefing sections */
+.briefing-section { margin-bottom: 28px; }
+.briefing-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.briefing-header h2 { font-size: 16px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; margin: 0; }
+.section-num { background: var(--accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.briefing-context { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 16px; padding: 12px 16px; background: rgba(79,140,255,0.05); border-radius: 8px; border-left: 3px solid var(--accent); }
+.briefing-context.threat { background: rgba(255,107,107,0.05); border-left-color: var(--accent2); }
+
+/* Arctic full layout */
+.arctic-full { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+.arctic-stats-panel { display: flex; flex-direction: column; gap: 12px; }
+.arctic-kpi { background: var(--bg); border-radius: 8px; padding: 14px; text-align: center; }
+.arctic-kpi .kpi-num { font-size: 36px; font-weight: 700; }
+.arctic-kpi .kpi-num.warn { color: var(--accent2); }
+.arctic-kpi .kpi-num.ok { color: var(--accent3); }
+.arctic-kpi .kpi-num.neutral { color: var(--accent); }
+.arctic-kpi .kpi-desc { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+/* back-compat for old .num/.desc classes */
+.arctic-kpi .num { font-size: 36px; font-weight: 700; }
+.arctic-kpi .num.warn { color: var(--accent2); }
+.arctic-kpi .num.ok { color: var(--accent3); }
+.arctic-kpi .num.neutral { color: var(--accent); }
+.arctic-kpi .desc { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+/* Adversary list */
+.adversary-list-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.adversary-list-item:last-child { border-bottom: none; }
+.adversary-list-item:hover { background: rgba(79,140,255,0.04); }
+.adversary-rank { color: var(--text-dim); font-size: 11px; width: 24px; }
+.adversary-value { color: var(--accent4); font-weight: 600; }
+
 @media (max-width: 1200px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .ca-metrics { grid-template-columns: repeat(2, 1fr); }
   .bloc-columns { grid-template-columns: 1fr; }
   .feeds-grid { grid-template-columns: 1fr; }
+  .sitrep-row { grid-template-columns: repeat(3, 1fr); }
+  .arctic-full { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -437,78 +487,165 @@ tr:hover td { background: rgba(79,140,255,0.05); }
       </div>
     </div>
 
-    <!-- Live News + DSCA Sales + Canada Alerts -->
-    <div class="grid grid-3" style="margin-bottom:20px;">
-      <div class="card" style="border-top:3px solid var(--accent3);">
-        <h2>Live Defense News <span id="news-count" style="font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
-        <div id="live-news-feed" style="max-height:400px;overflow-y:auto;"></div>
+    <!-- Section 1: SITUATION REPORT -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">1</span>
+        <h2>Situation Report</h2>
       </div>
-      <div class="card" style="border-top:3px solid var(--accent4);">
-        <h2>Recent US Arms Sales (DSCA)</h2>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Congressional notifications under Section 36(b) of the Arms Export Control Act. Updated within days of approval.</p>
-        <div id="dsca-sales-feed" style="max-height:370px;overflow-y:auto;"></div>
-      </div>
-      <div>
-        <div id="insights-alerts"></div>
-      </div>
+      <div id="sitrep-row" class="sitrep-row"></div>
     </div>
 
-    <!-- US Monthly Trade (Census) -->
-    <div class="grid grid-2" style="margin-bottom:20px;">
-      <div class="card" style="border-top:3px solid var(--accent);">
-        <h2>US Arms Exports — Monthly (Census Bureau) <span id="census-latest" style="font-size:11px;color:var(--accent3);text-transform:none;letter-spacing:0"></span></h2>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Real USD values updated monthly. HS Chapter 93 (Arms & Ammunition). ~2 month lag.</p>
-        <div class="chart-container"><canvas id="census-monthly-chart"></canvas></div>
+    <!-- Section 2: WHAT'S HAPPENING NOW -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">2</span>
+        <h2>What's Happening Now</h2>
       </div>
-      <div class="card" style="border-top:3px solid var(--accent);">
-        <h2>Top US Export Destinations (Last 6 Months)</h2>
-        <div class="chart-container"><canvas id="census-partners-chart"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Row 2: Emerging + Fading Relationships -->
-    <div class="grid grid-2">
-      <div class="card" style="border-top:3px solid var(--accent3);">
-        <h2>Emerging Relationships</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">New trade partnerships established since 2020 — countries that had no prior arms trade relationship.</p>
-        <div id="insights-emerging"></div>
-      </div>
-      <div class="card" style="border-top:3px solid var(--accent2);">
-        <h2>Fading Relationships</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Declining or dead trade partnerships — significant drops from historical averages.</p>
-        <div id="insights-fading"></div>
-      </div>
-    </div>
-
-    <!-- Row 3: Biggest Movers + Supplier Shifts -->
-    <div class="grid grid-2">
-      <div class="card">
-        <h2>Biggest Movers</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Countries with the largest absolute change in arms imports between periods.</p>
-        <div id="insights-movers"></div>
-      </div>
-      <div class="card" style="border-top:3px solid var(--accent4);">
-        <h2>Supplier Shifts</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">These countries changed their primary arms supplier between 2015-2019 and 2020-2023. A shift in supplier often signals a broader geopolitical realignment.</p>
-        <div id="insights-shifts"></div>
-      </div>
-    </div>
-
-    <!-- Row 4: Regional Hotspots + Weapon Trends -->
-    <div class="grid grid-2">
-      <div class="card">
-        <h2>Regional Hotspots</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Countries arming up fastest — ranked by absolute growth in imports.</p>
-        <div id="insights-hotspots"></div>
-      </div>
-      <div class="card">
-        <h2>Weapon Type Trends</h2>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Which weapon categories are growing or shrinking in global trade volume.</p>
-        <div id="insights-weapons" style="position:relative;height:350px;">
-          <canvas id="insights-weapons-chart"></canvas>
+      <div class="grid grid-3">
+        <div class="card" style="border-top:3px solid var(--accent3);">
+          <h2>Live Defense News <span id="news-count" style="font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
+          <div id="live-news-feed" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--accent4);">
+          <h2>DSCA Arms Sales</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Congressional notifications under Section 36(b) of the Arms Export Control Act.</p>
+          <div id="dsca-sales-feed" style="max-height:370px;overflow-y:auto;"></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--accent2);">
+          <h2>Breaking Alerts for Canada</h2>
+          <div id="insights-alerts"></div>
         </div>
       </div>
     </div>
+
+    <!-- Section 3: NORTHERN APPROACHES -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">3</span>
+        <h2>Northern Approaches</h2>
+      </div>
+      <div class="card">
+        <div class="briefing-context threat" id="arctic-context">
+          Canada's Arctic sovereignty depends on monitoring military activity across the polar region.
+          Russian and Chinese military flights near Canadian airspace and the CADIZ (Canadian Air Defence Identification Zone) are tracked here in near real-time.
+          Increased adversary presence signals potential escalation or intelligence-gathering operations.
+        </div>
+        <div class="arctic-full">
+          <div id="insights-arctic-map" style="height:450px;border-radius:8px;overflow:hidden;"></div>
+          <div class="arctic-stats-panel">
+            <div class="arctic-kpi">
+              <div class="num warn" id="ins-arctic-russian">-</div>
+              <div class="desc">Russian military aircraft scanned</div>
+            </div>
+            <div class="arctic-kpi">
+              <div class="num warn" id="ins-arctic-chinese">-</div>
+              <div class="desc">Chinese military aircraft scanned</div>
+            </div>
+            <div class="arctic-kpi">
+              <div class="num ok" id="ins-arctic-allied">-</div>
+              <div class="desc">Allied military aircraft in Arctic</div>
+            </div>
+            <div class="arctic-kpi">
+              <div class="num neutral" id="ins-arctic-suspicious">-</div>
+              <div class="desc">Suspicious route detections</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: ADVERSARY ARMS FLOWS -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">4</span>
+        <h2>Adversary Arms Flows</h2>
+      </div>
+      <div class="grid grid-2">
+        <div class="card" style="border-top:3px solid var(--accent2);">
+          <h2>Russia — Top Buyers</h2>
+          <div class="briefing-context threat">
+            Russian arms exports fund its war machine and create dependency among buyer nations. Tracking where Russian weapons go reveals adversary influence networks.
+          </div>
+          <div id="ins-russia-buyers" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--accent2);">
+          <h2>China — Top Buyers</h2>
+          <div class="briefing-context threat">
+            China's arms exports expand its strategic influence in Asia, Africa, and the Middle East. Growing Chinese arms trade displaces Western suppliers and creates new security alliances.
+          </div>
+          <div id="ins-china-buyers" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: CANADA'S POSITION -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">5</span>
+        <h2>Canada's Position</h2>
+      </div>
+      <div class="grid grid-2">
+        <div class="card" style="border-top:3px solid var(--accent);">
+          <h2>Canada Monthly Arms Trade (CAD)</h2>
+          <div id="ins-canada-trade-meta" style="font-size:12px;color:var(--text-dim);margin-bottom:12px;"></div>
+          <div class="chart-container tall"><canvas id="ins-canada-monthly-chart"></canvas></div>
+          <div id="ins-canada-top-partners" style="margin-top:12px;"></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--accent4);">
+          <h2>NATO Defence Spending (% GDP)</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">2% GDP target shown as red dashed line. Canada highlighted in yellow.</p>
+          <div class="chart-container tall"><canvas id="ins-nato-spending-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: SHIFTING ALLIANCES -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">6</span>
+        <h2>Shifting Alliances</h2>
+      </div>
+      <div class="grid grid-2">
+        <div class="card" style="border-top:3px solid var(--accent4);">
+          <h2>Supplier Shifts</h2>
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Countries whose primary arms supplier changed between 2015-2019 and 2020-2023. Context annotations show relevance to Canada.</p>
+          <div id="ins-shifts"></div>
+        </div>
+        <div class="card">
+          <h2>Relationship Changes</h2>
+          <div class="tabs" id="ins-rel-tabs">
+            <button class="tab active" onclick="insToggleRelTab('emerging')">Emerging</button>
+            <button class="tab" onclick="insToggleRelTab('fading')">Fading</button>
+          </div>
+          <div id="ins-emerging" style="max-height:500px;overflow-y:auto;"></div>
+          <div id="ins-fading" style="display:none;max-height:500px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 7: WHAT TO WATCH -->
+    <div class="briefing-section">
+      <div class="briefing-header">
+        <span class="section-num">7</span>
+        <h2>What to Watch</h2>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>Countries Arming Up Fastest</h2>
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Ranked by absolute growth in arms imports between periods.</p>
+          <div id="ins-hotspots"></div>
+        </div>
+        <div class="card">
+          <h2>Weapon Categories in Demand</h2>
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Which weapon types are growing or shrinking in global trade volume.</p>
+          <div style="position:relative;height:350px;">
+            <canvas id="ins-weapons-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ════ OVERVIEW PAGE ════ -->
@@ -785,6 +922,8 @@ let worldMap = null;
 let flightsMap = null;
 let flightMarkers = [];
 let flightRefreshTimer = null;
+let insightsArcticMap = null;
+let insightsArcticMarkers = [];
 
 // Country centroids for map bubbles (major arms trading nations)
 const CENTROIDS = {
@@ -1896,25 +2035,43 @@ async function loadInsights() {
 
   loadLiveNews();
   loadDSCASales();
-  loadCensusMonthly();
 
   try {
-    const resp = await fetch(API + '/insights/all');
-    if (!resp.ok) {
+    const results = await Promise.allSettled([
+      fetch(API + '/insights/all').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/flights/analysis').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/adversary-trade/buyer-mirror?seller=Russia&years=2022,2023').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/adversary-trade/buyer-mirror?seller=China&years=2022,2023').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/canada-trade/monthly').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/nato/spending?year=2025').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/sanctions/embargoes').then(r => r.ok ? r.json() : null),
+    ]);
+
+    const val = i => results[i].status === 'fulfilled' ? results[i].value : null;
+    const insightsData = val(0);
+    const flightData = val(1);
+    const russiaMirror = val(2);
+    const chinaMirror = val(3);
+    const canadaTrade = val(4);
+    const natoData = val(5);
+    const embargoes = val(6);
+
+    if (!insightsData) {
       document.getElementById('insights-alerts').innerHTML =
         '<div class="insight-alert info"><div class="alert-title">Insights Unavailable</div>' +
-        '<div class="alert-detail">Could not load insights data. The API returned status ' + esc(resp.status) + '.</div></div>';
+        '<div class="alert-detail">Could not load insights data from the API.</div></div>';
       insightsLoaded = false;
       return;
     }
-    const data = await resp.json();
-    renderInsightsAlerts(data.canada_alerts || []);
-    renderInsightsEmerging(data.emerging_relationships || []);
-    renderInsightsFading(data.fading_relationships || []);
-    renderInsightsMovers(data.biggest_movers || []);
-    renderInsightsShifts(data.supplier_shifts || []);
-    renderInsightsHotspots(data.regional_hotspots || []);
-    renderInsightsWeapons(data.weapon_trends || []);
+
+    const sitReport = insightsData.situation_report || {};
+    renderInsightsAlerts(insightsData.canada_alerts || []);
+    renderSitRep(sitReport, flightData, natoData, embargoes);
+    renderNorthernApproaches(flightData);
+    renderAdversaryFlows(russiaMirror, chinaMirror);
+    renderCanadaTradePosition(canadaTrade, natoData);
+    renderShiftingAlliancesNew(insightsData.supplier_shifts || [], insightsData.emerging_relationships || [], insightsData.fading_relationships || []);
+    renderWhatToWatch(insightsData.regional_hotspots || [], insightsData.weapon_trends || []);
   } catch (e) {
     console.error('Insights load error:', e);
     document.getElementById('insights-alerts').innerHTML =
@@ -1929,9 +2086,25 @@ function insCountryLink(name) {
   return '<span class="ins-country-link" onclick="showCountryDetail(\'' + safe + '\')">' + esc(name) + '</span>';
 }
 
+function insToggleRelTab(tab) {
+  const emEl = document.getElementById('ins-emerging');
+  const fdEl = document.getElementById('ins-fading');
+  const tabs = document.querySelectorAll('#ins-rel-tabs .tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  if (tab === 'emerging') {
+    emEl.style.display = '';
+    fdEl.style.display = 'none';
+    tabs[0].classList.add('active');
+  } else {
+    emEl.style.display = 'none';
+    fdEl.style.display = '';
+    tabs[1].classList.add('active');
+  }
+}
+
 function renderInsightsAlerts(alerts) {
   const container = document.getElementById('insights-alerts');
-  if (!alerts.length) { container.innerHTML = ''; return; }
+  if (!alerts.length) { container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px;">No breaking alerts.</p>'; return; }
   container.innerHTML = alerts.map(a => {
     const level = esc(a.level || 'info');
     return '<div class="insight-alert ' + level + '">' +
@@ -1941,125 +2114,446 @@ function renderInsightsAlerts(alerts) {
   }).join('');
 }
 
-function renderInsightsEmerging(items) {
-  const container = document.getElementById('insights-emerging');
-  if (!items.length) { container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No new relationships detected.</p>'; return; }
-  container.innerHTML = items.slice(0, 12).map(r => {
-    return '<div class="ins-card-item">' +
-      '<div class="ins-flow">' +
-        '<div>' +
-          '<span class="ins-flow-route">' + insCountryLink(r.seller) + '<span class="arrow">&rarr;</span>' + insCountryLink(r.buyer) + '</span>' +
-        '</div>' +
-        '<span class="ins-badge up">NEW</span>' +
-      '</div>' +
-      '<div class="ins-flow-meta">' +
-        'TIV: <span class="tiv">' + esc(fmt(r.tiv)) + '</span> across ' + esc(fmtInt(r.deals)) + ' deal' + (r.deals !== 1 ? 's' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
+// ── Section 1: Situation Report ──
+function renderSitRep(sitReport, flightData, natoData, embargoes) {
+  const container = document.getElementById('sitrep-row');
+
+  // 1. Arctic Threat (from backend)
+  const arctic = sitReport.arctic_threat || {};
+  // 2. Supply Chain Risk (from backend)
+  const supply = sitReport.supply_chain_risk || {};
+  // 3. Adversary Expansion (from backend)
+  const adversary = sitReport.adversary_expansion || {};
+  // 4. Sanctions Compliance (from backend)
+  const sanctions = sitReport.sanctions_compliance || {};
+
+  // 5. Allied Rearmament (client-side from NATO data)
+  let alliedMeetingTarget = 0;
+  let alliedTotal = 0;
+  if (Array.isArray(natoData)) {
+    const nonAgg = natoData.filter(n => !n.is_aggregate);
+    alliedTotal = nonAgg.length;
+    alliedMeetingTarget = nonAgg.filter(n => n.pct_gdp >= 2.0).length;
+  }
+  const alliedLevel = alliedTotal > 0 && (alliedMeetingTarget / alliedTotal) >= 0.5 ? 'green' : alliedMeetingTarget >= 5 ? 'yellow' : 'red';
+
+  // 6. Canada NATO Rank (client-side)
+  let canadaRank = '-';
+  let canadaPct = null;
+  if (Array.isArray(natoData)) {
+    const nonAgg = natoData.filter(n => !n.is_aggregate).sort((a, b) => b.pct_gdp - a.pct_gdp);
+    const idx = nonAgg.findIndex(n => (n.country || n.name || '').toLowerCase().includes('canada'));
+    if (idx >= 0) {
+      canadaRank = '#' + (idx + 1) + '/' + nonAgg.length;
+      canadaPct = nonAgg[idx].pct_gdp;
+    }
+  }
+  const canadaNatoLevel = canadaPct != null && canadaPct >= 2.0 ? 'green' : canadaPct != null && canadaPct >= 1.5 ? 'yellow' : 'red';
+
+  function levelClass(level) {
+    if (level === 'high' || level === 'red') return 'red';
+    if (level === 'medium' || level === 'yellow' || level === 'elevated') return 'yellow';
+    return 'green';
+  }
+
+  const cards = [
+    {
+      question: 'Arctic Threat Level',
+      indicator: esc(arctic.indicator || arctic.level || 'N/A'),
+      answer: esc(arctic.answer || arctic.detail || 'Monitoring adversary flights near Canadian airspace.'),
+      level: levelClass(arctic.level || 'yellow'),
+    },
+    {
+      question: 'Supply Chain Risk',
+      indicator: esc(supply.indicator || supply.level || 'N/A'),
+      answer: esc(supply.answer || supply.detail || 'Assessing concentration risk in defence imports.'),
+      level: levelClass(supply.level || 'yellow'),
+    },
+    {
+      question: 'Adversary Expansion',
+      indicator: esc(adversary.indicator || adversary.level || 'N/A'),
+      answer: esc(adversary.answer || adversary.detail || 'Tracking Russian and Chinese arms export growth.'),
+      level: levelClass(adversary.level || 'red'),
+    },
+    {
+      question: 'Sanctions Compliance',
+      indicator: esc(sanctions.indicator || sanctions.level || 'N/A'),
+      answer: esc(sanctions.answer || sanctions.detail || 'Monitoring embargoed nations for violations.'),
+      level: levelClass(sanctions.level || 'green'),
+    },
+    {
+      question: 'Allied Rearmament',
+      indicator: alliedTotal > 0 ? alliedMeetingTarget + '/' + alliedTotal : 'N/A',
+      answer: alliedTotal > 0 ? alliedMeetingTarget + ' of ' + alliedTotal + ' NATO members meet 2% GDP target' : 'NATO spending data unavailable.',
+      level: alliedLevel,
+    },
+    {
+      question: 'Canada NATO Rank',
+      indicator: canadaRank,
+      answer: canadaPct != null ? 'Canada at ' + canadaPct.toFixed(1) + '% GDP defence spending' : 'Canada spending data unavailable.',
+      level: canadaNatoLevel,
+    },
+  ];
+
+  container.innerHTML = cards.map(c =>
+    '<div class="sitrep-card ' + c.level + '">' +
+      '<div class="sitrep-question">' + c.question + '</div>' +
+      '<div class="sitrep-indicator">' + c.indicator + '</div>' +
+      '<div class="sitrep-answer">' + c.answer + '</div>' +
+    '</div>'
+  ).join('');
 }
 
-function renderInsightsFading(items) {
-  const container = document.getElementById('insights-fading');
-  if (!items.length) { container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No fading relationships detected.</p>'; return; }
-  container.innerHTML = items.slice(0, 12).map(r => {
-    const pct = r.change_pct != null ? parseFloat(r.change_pct).toFixed(0) : '?';
-    return '<div class="ins-card-item">' +
-      '<div class="ins-flow">' +
-        '<div>' +
-          '<span class="ins-flow-route">' + insCountryLink(r.seller) + '<span class="arrow">&rarr;</span>' + insCountryLink(r.buyer) + '</span>' +
-        '</div>' +
-        '<span class="ins-badge down">' + esc(pct) + '%</span>' +
-      '</div>' +
-      '<div class="ins-flow-meta">' +
-        'Was ' + esc(fmt(r.old_tiv)) + ' &rarr; now ' + esc(fmt(r.new_tiv)) +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
+// ── Section 3: Northern Approaches ──
+function renderNorthernApproaches(flightData) {
+  // Init Leaflet map
+  if (!insightsArcticMap) {
+    insightsArcticMap = L.map('insights-arctic-map', { zoomControl: true, attributionControl: false }).setView([72, -80], 3);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(insightsArcticMap);
 
-function renderInsightsMovers(items) {
-  const container = document.getElementById('insights-movers');
-  if (!items.length) { container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No significant movers detected.</p>'; return; }
-  container.innerHTML = items.slice(0, 12).map(m => {
-    const isUp = m.direction === 'up';
-    const arrow = isUp ? '&#9650;' : '&#9660;';
-    const color = isUp ? 'var(--accent3)' : 'var(--accent2)';
-    const pct = m.change_pct != null ? parseFloat(m.change_pct).toFixed(0) : '?';
-    return '<div class="ins-card-item">' +
-      '<div class="ins-mover">' +
-        '<div>' +
-          '<span style="font-weight:600;">' + insCountryLink(m.country) + '</span>' +
-          ' <span style="color:' + color + ';font-size:14px;">' + arrow + '</span>' +
-        '</div>' +
-        '<div style="text-align:right;">' +
-          '<span class="ins-badge ' + (isUp ? 'up' : 'down') + '">' + (isUp ? '+' : '') + esc(pct) + '%</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="ins-flow-meta">' +
-        'Change: ' + esc(fmt(m.abs_change)) + ' TIV (' + esc(fmt(m.old_tiv)) + ' &rarr; ' + esc(fmt(m.new_tiv)) + ')' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
+    // Draw CADIZ polygon
+    L.polygon([
+      [90, -141], [90, -50], [55, -50], [55, -80], [48, -80], [42, -67], [42, -141]
+    ], { color: '#ff6b6b', weight: 1, fillColor: '#ff6b6b', fillOpacity: 0.05, dashArray: '8 4' }).addTo(insightsArcticMap);
 
-function renderInsightsShifts(items) {
-  const container = document.getElementById('insights-shifts');
-  if (!items.length) { container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No supplier shifts detected in the current dataset.</p>'; return; }
-  container.innerHTML = items.slice(0, 12).map(s => {
-    return '<div class="ins-card-item">' +
-      '<div class="ins-flow">' +
-        '<div>' +
-          '<span style="font-weight:600;">' + insCountryLink(s.buyer) + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<div style="margin-top:4px;">' +
-        '<span style="color:var(--accent2);">' + insCountryLink(s.old_supplier) + '</span>' +
-        '<span class="shift-arrow to">&rarr;</span>' +
-        '<span style="color:var(--accent3);">' + insCountryLink(s.new_supplier) + '</span>' +
-      '</div>' +
-      '<div class="ins-flow-meta">' +
-        'Old supplier TIV: ' + esc(fmt(s.old_tiv)) + ' &rarr; New supplier TIV: ' + esc(fmt(s.new_tiv)) +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
+    // Draw 60N line
+    L.polyline([[60, -180], [60, 180]], { color: '#ffd43b', weight: 1, dashArray: '4 8', opacity: 0.5 }).addTo(insightsArcticMap)
+      .bindTooltip('60\u00b0N Latitude', { sticky: true });
+  }
 
-function renderInsightsHotspots(items) {
-  const container = document.getElementById('insights-hotspots');
-  if (!items.length) { container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No regional hotspots detected.</p>'; return; }
-  const maxGrowth = Math.max(...items.map(h => h.growth || 0), 1);
-  container.innerHTML = items.slice(0, 10).map(h => {
-    const pct = h.growth_pct != null ? parseFloat(h.growth_pct).toFixed(0) : '?';
-    const barWidth = Math.max(((h.growth || 0) / maxGrowth) * 100, 2);
-    return '<div class="ins-card-item">' +
-      '<div class="ins-mover">' +
-        '<span style="font-weight:600;">' + insCountryLink(h.country) + '</span>' +
-        '<span class="ins-badge up">+' + esc(pct) + '%</span>' +
-      '</div>' +
-      '<div class="ins-flow-meta">' + esc(fmt(h.old_tiv)) + ' &rarr; ' + esc(fmt(h.new_tiv)) + '</div>' +
-      '<div class="ins-growth-bar">' +
-        '<div class="ins-growth-fill" style="width:' + barWidth + '%;background:var(--accent3);">+' + esc(fmt(h.growth)) + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
+  // Clear old markers
+  insightsArcticMarkers.forEach(m => insightsArcticMap.removeLayer(m));
+  insightsArcticMarkers = [];
 
-function renderInsightsWeapons(items) {
-  if (!items.length) {
-    document.getElementById('insights-weapons').innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No weapon trend data available.</p>';
+  if (!flightData) {
+    document.getElementById('ins-arctic-russian').textContent = '-';
+    document.getElementById('ins-arctic-chinese').textContent = '-';
+    document.getElementById('ins-arctic-allied').textContent = '-';
+    document.getElementById('ins-arctic-suspicious').textContent = '-';
     return;
   }
-  destroyChart('insights-weapons-chart');
-  const sorted = [...items].sort((a, b) => (b.abs_change || 0) - (a.abs_change || 0));
-  const labels = sorted.map(w => esc(w.weapon));
-  const values = sorted.map(w => {
-    const change = (w.new_tiv || 0) - (w.old_tiv || 0);
-    return change;
+
+  let russianCount = 0;
+  let chineseCount = 0;
+  let alliedCount = 0;
+  let suspicious = 0;
+
+  const russianFlights = (flightData.russian_military || []).filter(f => f.latitude > 55);
+  const chineseFlights = (flightData.chinese_military || []).filter(f => f.latitude > 55);
+
+  russianCount = russianFlights.length;
+  chineseCount = chineseFlights.length;
+
+  // Count allied from flight data
+  if (flightData.allied_arctic) {
+    alliedCount = flightData.allied_arctic.length || 0;
+  } else if (flightData.total_scanned != null) {
+    alliedCount = (flightData.total_scanned || 0) - russianCount - chineseCount;
+    if (alliedCount < 0) alliedCount = 0;
+  }
+
+  suspicious = flightData.suspicious_routes || 0;
+
+  // Plot Russian aircraft
+  russianFlights.forEach(f => {
+    const icon = L.divIcon({
+      className: '',
+      html: '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + (f.heading || 0) + 'deg)">' +
+        '<polygon points="10,2 4,18 10,14 16,18" fill="#ff6b6b" opacity="0.9"/></svg>',
+      iconSize: [18, 18], iconAnchor: [9, 9],
+    });
+    const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(insightsArcticMap);
+    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#ff6b6b">RUSSIAN</span>', { sticky: true });
+    insightsArcticMarkers.push(marker);
   });
+
+  // Plot Chinese aircraft
+  chineseFlights.forEach(f => {
+    const icon = L.divIcon({
+      className: '',
+      html: '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + (f.heading || 0) + 'deg)">' +
+        '<polygon points="10,2 4,18 10,14 16,18" fill="#ffd43b" opacity="0.9"/></svg>',
+      iconSize: [18, 18], iconAnchor: [9, 9],
+    });
+    const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(insightsArcticMap);
+    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#ffd43b">CHINESE</span>', { sticky: true });
+    insightsArcticMarkers.push(marker);
+  });
+
+  document.getElementById('ins-arctic-russian').textContent = russianCount;
+  document.getElementById('ins-arctic-chinese').textContent = chineseCount;
+  document.getElementById('ins-arctic-allied').textContent = alliedCount;
+  document.getElementById('ins-arctic-suspicious').textContent = suspicious;
+}
+
+// ── Section 4: Adversary Arms Flows ──
+function renderAdversaryFlows(russiaMirror, chinaMirror) {
+  function renderBuyerList(containerId, mirror) {
+    const container = document.getElementById(containerId);
+    if (!mirror || !Array.isArray(mirror)) {
+      // Try mirror.by_buyer
+      if (mirror && mirror.by_buyer) {
+        return renderBuyerList(containerId, mirror.by_buyer);
+      }
+      container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px;">No trade data available.</p>';
+      return;
+    }
+    const items = mirror.slice(0, 15);
+    if (!items.length) {
+      container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px;">No trade data available.</p>';
+      return;
+    }
+    container.innerHTML = items.map((b, i) => {
+      const name = b.buyer || b.importer || b.country || 'Unknown';
+      const val = b.value_usd || b.total_usd || b.tiv || 0;
+      let valStr;
+      if (val >= 1e9) valStr = '$' + (val / 1e9).toFixed(2) + 'B';
+      else if (val >= 1e6) valStr = '$' + (val / 1e6).toFixed(1) + 'M';
+      else if (val >= 1e3) valStr = '$' + (val / 1e3).toFixed(0) + 'K';
+      else valStr = val > 0 ? '$' + val.toLocaleString() : '-';
+      return '<div class="adversary-list-item">' +
+        '<div><span class="adversary-rank">' + (i + 1) + '.</span> ' + insCountryLink(name) + '</div>' +
+        '<span class="adversary-value">' + esc(valStr) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  renderBuyerList('ins-russia-buyers', russiaMirror);
+  renderBuyerList('ins-china-buyers', chinaMirror);
+}
+
+// ── Section 5: Canada's Position ──
+function renderCanadaTradePosition(canadaTrade, natoData) {
+  // Left: Canada monthly trade chart
+  destroyChart('ins-canada-monthly-chart');
+  const meta = document.getElementById('ins-canada-trade-meta');
+  const partnersDiv = document.getElementById('ins-canada-top-partners');
+
+  if (canadaTrade && canadaTrade.months) {
+    const months = Object.keys(canadaTrade.months).sort();
+    if (canadaTrade.trend) {
+      meta.textContent = esc(canadaTrade.trend);
+    }
+
+    const exportVals = months.map(m => {
+      const v = canadaTrade.months[m];
+      return typeof v === 'object' ? (v.exports || 0) : v;
+    });
+    const importVals = months.map(m => {
+      const v = canadaTrade.months[m];
+      return typeof v === 'object' ? (v.imports || 0) : 0;
+    });
+    const hasImports = importVals.some(v => v > 0);
+
+    const datasets = [{
+      label: 'Exports (CAD)',
+      data: exportVals,
+      backgroundColor: '#4f8cff88',
+      borderColor: '#4f8cff',
+      borderWidth: 1,
+    }];
+    if (hasImports) {
+      datasets.push({
+        label: 'Imports (CAD)',
+        data: importVals,
+        backgroundColor: '#ff6b6b88',
+        borderColor: '#ff6b6b',
+        borderWidth: 1,
+      });
+    }
+
+    chartInstances['ins-canada-monthly-chart'] = new Chart(document.getElementById('ins-canada-monthly-chart'), {
+      type: 'bar',
+      data: { labels: months, datasets: datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: { y: { title: { display: true, text: 'CAD' } } },
+      },
+    });
+
+    // Top partners list
+    if (canadaTrade.top_partners) {
+      const partners = Array.isArray(canadaTrade.top_partners)
+        ? canadaTrade.top_partners
+        : Object.entries(canadaTrade.top_partners).map(([k, v]) => ({ name: k, value: v }));
+      partnersDiv.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Top Partners</div>' +
+        partners.slice(0, 5).map(p => {
+          const n = p.name || p.country || p.partner || '';
+          const v = p.value || p.total || p.tiv || 0;
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border);">' +
+            '<span>' + insCountryLink(n) + '</span>' +
+            '<span class="tiv">' + esc(typeof v === 'number' ? '$' + (v / 1e6).toFixed(1) + 'M' : v) + '</span></div>';
+        }).join('');
+    }
+  } else {
+    meta.textContent = 'No Canada trade data available.';
+  }
+
+  // Right: NATO spending chart
+  destroyChart('ins-nato-spending-chart');
+  if (Array.isArray(natoData) && natoData.length) {
+    const nonAgg = natoData.filter(n => !n.is_aggregate).sort((a, b) => b.pct_gdp - a.pct_gdp);
+    const labels = nonAgg.map(n => n.country || n.name || '-');
+    const values = nonAgg.map(n => n.pct_gdp || 0);
+    const bgColors = nonAgg.map(n => {
+      const name = (n.country || n.name || '').toLowerCase();
+      if (name.includes('canada')) return '#ffd43b88';
+      return n.pct_gdp >= 2.0 ? '#51cf6688' : '#ff6b6b88';
+    });
+    const borderColors = nonAgg.map(n => {
+      const name = (n.country || n.name || '').toLowerCase();
+      if (name.includes('canada')) return '#ffd43b';
+      return n.pct_gdp >= 2.0 ? '#51cf66' : '#ff6b6b';
+    });
+
+    chartInstances['ins-nato-spending-chart'] = new Chart(document.getElementById('ins-nato-spending-chart'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '% GDP',
+          data: values,
+          backgroundColor: bgColors,
+          borderColor: borderColors,
+          borderWidth: 1,
+        }],
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          annotation: {
+            annotations: {
+              targetLine: {
+                type: 'line',
+                xMin: 2.0,
+                xMax: 2.0,
+                borderColor: '#ff6b6b',
+                borderWidth: 2,
+                borderDash: [6, 4],
+                label: {
+                  display: true,
+                  content: '2% Target',
+                  position: 'start',
+                  color: '#ff6b6b',
+                  font: { size: 10 },
+                  backgroundColor: 'transparent',
+                },
+              },
+            },
+          },
+        },
+        scales: { x: { title: { display: true, text: '% of GDP' } } },
+      },
+    });
+  }
+}
+
+// ── Section 6: Shifting Alliances ──
+function renderShiftingAlliancesNew(shifts, emerging, fading) {
+  // Shifts with context
+  const shiftsContainer = document.getElementById('ins-shifts');
+  if (!shifts || !shifts.length) {
+    shiftsContainer.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No supplier shifts detected in the current dataset.</p>';
+  } else {
+    shiftsContainer.innerHTML = shifts.slice(0, 12).map(s => {
+      let contextColor = 'var(--accent)';
+      let contextBg = 'rgba(79,140,255,0.05)';
+      if (s.context_type === 'threat') { contextColor = 'var(--accent2)'; contextBg = 'rgba(255,107,107,0.05)'; }
+      else if (s.context_type === 'opportunity') { contextColor = 'var(--accent3)'; contextBg = 'rgba(81,207,102,0.05)'; }
+      else if (s.context_type === 'competition') { contextColor = 'var(--accent4)'; contextBg = 'rgba(255,212,59,0.05)'; }
+
+      return '<div class="ins-card-item">' +
+        '<div class="ins-flow">' +
+          '<div><span style="font-weight:600;">' + insCountryLink(s.buyer) + '</span></div>' +
+        '</div>' +
+        '<div style="margin-top:4px;">' +
+          '<span style="color:var(--accent2);">' + insCountryLink(s.old_supplier) + '</span>' +
+          '<span class="shift-arrow to">&rarr;</span>' +
+          '<span style="color:var(--accent3);">' + insCountryLink(s.new_supplier) + '</span>' +
+        '</div>' +
+        '<div class="ins-flow-meta">' +
+          'Old supplier TIV: ' + esc(fmt(s.old_tiv)) + ' &rarr; New supplier TIV: ' + esc(fmt(s.new_tiv)) +
+        '</div>' +
+        (s.context ? '<div style="margin-top:6px;padding:6px 10px;border-radius:6px;font-size:12px;line-height:1.4;background:' + contextBg + ';border-left:2px solid ' + contextColor + ';color:var(--text-dim);">' + esc(s.context) + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  // Emerging relationships
+  const emContainer = document.getElementById('ins-emerging');
+  if (!emerging || !emerging.length) {
+    emContainer.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No new relationships detected.</p>';
+  } else {
+    emContainer.innerHTML = emerging.slice(0, 12).map(r => {
+      return '<div class="ins-card-item">' +
+        '<div class="ins-flow">' +
+          '<div><span class="ins-flow-route">' + insCountryLink(r.seller) + '<span class="arrow">&rarr;</span>' + insCountryLink(r.buyer) + '</span></div>' +
+          '<span class="ins-badge up">NEW</span>' +
+        '</div>' +
+        '<div class="ins-flow-meta">' +
+          'TIV: <span class="tiv">' + esc(fmt(r.tiv)) + '</span> across ' + esc(fmtInt(r.deals)) + ' deal' + (r.deals !== 1 ? 's' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Fading relationships
+  const fdContainer = document.getElementById('ins-fading');
+  if (!fading || !fading.length) {
+    fdContainer.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No fading relationships detected.</p>';
+  } else {
+    fdContainer.innerHTML = fading.slice(0, 12).map(r => {
+      const pct = r.change_pct != null ? parseFloat(r.change_pct).toFixed(0) : '?';
+      return '<div class="ins-card-item">' +
+        '<div class="ins-flow">' +
+          '<div><span class="ins-flow-route">' + insCountryLink(r.seller) + '<span class="arrow">&rarr;</span>' + insCountryLink(r.buyer) + '</span></div>' +
+          '<span class="ins-badge down">' + esc(pct) + '%</span>' +
+        '</div>' +
+        '<div class="ins-flow-meta">' +
+          'Was ' + esc(fmt(r.old_tiv)) + ' &rarr; now ' + esc(fmt(r.new_tiv)) +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+// ── Section 7: What to Watch ──
+function renderWhatToWatch(hotspots, weapons) {
+  // Left: Countries arming up (growth bars)
+  const hsContainer = document.getElementById('ins-hotspots');
+  if (!hotspots || !hotspots.length) {
+    hsContainer.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:12px 0;">No regional hotspots detected.</p>';
+  } else {
+    const maxGrowth = Math.max(...hotspots.map(h => h.growth || 0), 1);
+    hsContainer.innerHTML = hotspots.slice(0, 10).map(h => {
+      const pct = h.growth_pct != null ? parseFloat(h.growth_pct).toFixed(0) : '?';
+      const barWidth = Math.max(((h.growth || 0) / maxGrowth) * 100, 2);
+      return '<div class="ins-card-item">' +
+        '<div class="ins-mover">' +
+          '<span style="font-weight:600;">' + insCountryLink(h.country) + '</span>' +
+          '<span class="ins-badge up">+' + esc(pct) + '%</span>' +
+        '</div>' +
+        '<div class="ins-flow-meta">' + esc(fmt(h.old_tiv)) + ' &rarr; ' + esc(fmt(h.new_tiv)) + '</div>' +
+        '<div class="ins-growth-bar">' +
+          '<div class="ins-growth-fill" style="width:' + barWidth + '%;background:var(--accent3);">+' + esc(fmt(h.growth)) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Right: Weapon trends (horizontal bar chart)
+  destroyChart('ins-weapons-chart');
+  if (!weapons || !weapons.length) {
+    return;
+  }
+  const sorted = [...weapons].sort((a, b) => (b.abs_change || 0) - (a.abs_change || 0));
+  const labels = sorted.map(w => esc(w.weapon));
+  const values = sorted.map(w => (w.new_tiv || 0) - (w.old_tiv || 0));
   const bgColors = values.map(v => v >= 0 ? 'rgba(81,207,102,0.6)' : 'rgba(255,107,107,0.6)');
   const borderColors = values.map(v => v >= 0 ? '#51cf66' : '#ff6b6b');
-  chartInstances['insights-weapons-chart'] = new Chart(document.getElementById('insights-weapons-chart'), {
+  chartInstances['ins-weapons-chart'] = new Chart(document.getElementById('ins-weapons-chart'), {
     type: 'bar',
     data: {
       labels: labels,
@@ -2076,9 +2570,7 @@ function renderInsightsWeapons(items) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { title: { display: true, text: 'TIV change (millions)' } },
-      },
+      scales: { x: { title: { display: true, text: 'TIV change (millions)' } } },
     },
   });
 }
