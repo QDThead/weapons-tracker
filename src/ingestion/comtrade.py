@@ -223,6 +223,7 @@ class ComtradeClient:
         top_exporters = [842, 251, 276, 380, 826, 156, 410, 724, 376, 643]
         query = ComtradeQuery(
             reporter_codes=top_exporters,
+            partner_codes=[0],  # World aggregate (explicitly requested)
             years=years or [2020, 2021, 2022, 2023],
             flow_codes=["X"],
             hs_codes=["93"],

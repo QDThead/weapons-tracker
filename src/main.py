@@ -15,6 +15,7 @@ from src.storage.database import init_db
 from src.api.routes import app
 from src.api.trend_routes import router as trend_router
 from src.api.dashboard_routes import router as dashboard_router
+from src.api.insights_routes import router as insights_router
 from src.ingestion.scheduler import create_scheduler
 
 logging.basicConfig(
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 # Register routes
 app.include_router(trend_router)
 app.include_router(dashboard_router)
+app.include_router(insights_router)
 
 # Serve dashboard UI
 _static_dir = Path(__file__).parent / "static"
