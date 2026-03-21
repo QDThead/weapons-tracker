@@ -17,6 +17,7 @@ alembic>=1.13
 pandas>=2.2
 geopandas>=0.14
 numpy>=1.26
+openpyxl>=3.1
 
 # Geospatial
 shapely>=2.0
