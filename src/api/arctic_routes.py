@@ -7,11 +7,13 @@ Provides Arctic-focused intelligence for Canadian government:
   - Weapon accumulation timelines
   - Russia weakness signals (import dependency)
   - Live Arctic military flights
+  - Arctic base registry with threat scoring
 """
 
 from __future__ import annotations
 
 import logging
+import math
 import time
 
 from fastapi import APIRouter, Query
@@ -23,9 +25,511 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/arctic", tags=["Arctic"])
 
-# 5-minute cache
-_arctic_cache: dict[str, tuple[float, dict]] = {}
+# 5-minute cache for assessment, 1-hour cache for bases
+_arctic_cache: dict[str, tuple[float, dict | list]] = {}
 _ARCTIC_TTL = 300
+_BASES_TTL = 3600
+
+
+# ---------------------------------------------------------------------------
+# Arctic Bases Registry
+# ---------------------------------------------------------------------------
+
+# Ottawa coordinates for distance calculations
+OTTAWA_LAT, OTTAWA_LON = 45.42, -75.70
+
+ARCTIC_BASES = [
+    # --- RUSSIA ---
+    {
+        "name": "Severomorsk",
+        "country": "Russia",
+        "lat": 69.07, "lon": 33.42,
+        "type": "naval",
+        "alliance": "russia",
+        "status": "active",
+        "capability": "Northern Fleet HQ, nuclear submarines (Borei/Yasen-class), surface combatants, anti-ship missiles",
+        "personnel": 25000,
+        "recent_developments": "Russia's primary Arctic naval base. Continuous submarine patrols under ice. New Yasen-M SSGNs deploying.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Olenya/Olenegorsk",
+        "country": "Russia",
+        "lat": 68.15, "lon": 33.85,
+        "type": "air",
+        "alliance": "russia",
+        "status": "expanding",
+        "capability": "Long-range bombers (Tu-22M3 Backfire, Tu-95 Bear), aerial refueling, nuclear strike capability",
+        "personnel": 3000,
+        "recent_developments": "Reinforced 2025 with additional Tu-22M3 bombers. Regular Arctic patrol flights along Canadian ADIZ.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Rogachevo, Novaya Zemlya",
+        "country": "Russia",
+        "lat": 71.62, "lon": 52.47,
+        "type": "air",
+        "alliance": "russia",
+        "status": "active",
+        "capability": "S-400 SAMs, radar, electronic warfare, 'Trefoil' autonomous base module",
+        "personnel": 500,
+        "recent_developments": "S-400 SAMs deployed 2019. Autonomous base design allows year-round operation with minimal personnel.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Nagurskoye, Franz Josef Land",
+        "country": "Russia",
+        "lat": 80.80, "lon": 47.65,
+        "type": "air",
+        "alliance": "russia",
+        "status": "expanding",
+        "capability": "MiG-31 interceptors, 'Arctic Shamrock' base, northernmost military installation on Earth",
+        "personnel": 800,
+        "recent_developments": "World's northernmost military base. MiG-31BM interceptors deployed. 2,500m runway operational.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Temp, Kotelny Island",
+        "country": "Russia",
+        "lat": 75.98, "lon": 137.86,
+        "type": "ground",
+        "alliance": "russia",
+        "status": "active",
+        "capability": "Bastion coastal defense missiles (P-800 Oniks), 'Northern Clover' base, radar coverage",
+        "personnel": 400,
+        "recent_developments": "'Northern Clover' base with Bastion-P coastal defense systems. Controls access to Northern Sea Route eastern sector.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Wrangel Island",
+        "country": "Russia",
+        "lat": 71.23, "lon": -179.77,
+        "type": "research",
+        "alliance": "russia",
+        "status": "active",
+        "capability": "Radar station, drone surveillance, signals intelligence",
+        "personnel": 100,
+        "recent_developments": "Upgraded radar and drone surveillance capability. Monitors Bering Strait and approaches to NSR.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Murmansk",
+        "country": "Russia",
+        "lat": 68.97, "lon": 33.08,
+        "type": "naval",
+        "alliance": "russia",
+        "status": "expanding",
+        "capability": "Icebreaker fleet (nuclear + conventional), upgraded docking, logistics hub",
+        "personnel": 5000,
+        "recent_developments": "Upgraded docking facilities. Home port for world's largest nuclear icebreaker fleet. New Arktika-class icebreakers deploying.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    {
+        "name": "Gadzhiyevo",
+        "country": "Russia",
+        "lat": 69.25, "lon": 33.32,
+        "type": "naval",
+        "alliance": "russia",
+        "status": "active",
+        "capability": "Nuclear submarine base (Borei-A class SSBNs), Bulava SLBMs, second-strike nuclear deterrent",
+        "personnel": 8000,
+        "recent_developments": "Home base for Borei-A class SSBNs carrying Bulava ICBMs. Russia's primary sea-based nuclear deterrent.",
+        "flag_emoji": "\U0001f1f7\U0001f1fa",
+    },
+    # --- USA ---
+    {
+        "name": "Pituffik Space Base, Greenland",
+        "country": "United States",
+        "lat": 76.53, "lon": -68.70,
+        "type": "space",
+        "alliance": "nato",
+        "status": "expanding",
+        "capability": "Missile warning radar, space surveillance, BMEWS. $25M upgrade program",
+        "personnel": 150,
+        "recent_developments": "$25M upgrade to missile warning and space surveillance systems. Critical for early warning of ICBM launches over the pole.",
+        "flag_emoji": "\U0001f1fa\U0001f1f8",
+    },
+    {
+        "name": "Eielson AFB, Alaska",
+        "country": "United States",
+        "lat": 64.66, "lon": -147.10,
+        "type": "air",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "F-35A Lightning II squadrons, Arctic air superiority, RED FLAG-Alaska exercises",
+        "personnel": 5500,
+        "recent_developments": "Two F-35A squadrons now operational. Primary USAF Arctic air superiority base.",
+        "flag_emoji": "\U0001f1fa\U0001f1f8",
+    },
+    {
+        "name": "Clear SFS, Alaska",
+        "country": "United States",
+        "lat": 64.29, "lon": -149.19,
+        "type": "space",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "LRDR missile warning radar, ICBM tracking, space domain awareness",
+        "personnel": 200,
+        "recent_developments": "Long Range Discrimination Radar (LRDR) operational. Tracks ICBMs and space objects over the Arctic.",
+        "flag_emoji": "\U0001f1fa\U0001f1f8",
+    },
+    {
+        "name": "Fort Greely, Alaska",
+        "country": "United States",
+        "lat": 63.96, "lon": -145.74,
+        "type": "ground",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "Ground-Based Interceptors (GBI), missile defense, Next Generation Interceptor site",
+        "personnel": 1500,
+        "recent_developments": "40 Ground-Based Interceptors for ICBM defense. Next Generation Interceptor in development.",
+        "flag_emoji": "\U0001f1fa\U0001f1f8",
+    },
+    # --- CANADA ---
+    {
+        "name": "CFB Yellowknife",
+        "country": "Canada",
+        "lat": 62.46, "lon": -114.44,
+        "type": "ground",
+        "alliance": "nato",
+        "status": "planned",
+        "capability": "Northern Operational Support Hub (announced 2025, $2.67B program), staging base",
+        "personnel": 300,
+        "recent_developments": "Announced 2025 as part of $2.67B Northern Operations program. Will serve as primary staging base for Arctic operations.",
+        "flag_emoji": "\U0001f1e8\U0001f1e6",
+    },
+    {
+        "name": "Inuvik",
+        "country": "Canada",
+        "lat": 68.36, "lon": -133.72,
+        "type": "air",
+        "alliance": "nato",
+        "status": "expanding",
+        "capability": "NORAD Forward Operating Location, radar, upgrading to full operational base",
+        "personnel": 100,
+        "recent_developments": "Upgrading from FOL to full operational base. NORAD modernization priority. New radar systems planned.",
+        "flag_emoji": "\U0001f1e8\U0001f1e6",
+    },
+    {
+        "name": "Iqaluit",
+        "country": "Canada",
+        "lat": 63.75, "lon": -68.51,
+        "type": "air",
+        "alliance": "nato",
+        "status": "planned",
+        "capability": "Northern Operational Support Hub, fighter staging, surveillance",
+        "personnel": 100,
+        "recent_developments": "Planned Northern Operational Support Hub. Will support fighter deployments and surveillance missions.",
+        "flag_emoji": "\U0001f1e8\U0001f1e6",
+    },
+    {
+        "name": "CFB Goose Bay",
+        "country": "Canada",
+        "lat": 53.32, "lon": -60.42,
+        "type": "air",
+        "alliance": "nato",
+        "status": "expanding",
+        "capability": "NORAD modernization, fighter staging, Allied training",
+        "personnel": 400,
+        "recent_developments": "NORAD modernization investment. Fighter staging for Arctic intercepts. Allied training exercises.",
+        "flag_emoji": "\U0001f1e8\U0001f1e6",
+    },
+    {
+        "name": "Nanisivik Naval Facility",
+        "country": "Canada",
+        "lat": 73.07, "lon": -84.54,
+        "type": "naval",
+        "alliance": "nato",
+        "status": "delayed",
+        "capability": "Arctic naval refueling depot (NOT YET OPERATIONAL). Critical gap in Canada's Arctic naval capability.",
+        "personnel": 0,
+        "recent_developments": "DELAYED - still not fully operational. Originally promised 2015. Canada's only planned Arctic deep-water port for naval vessels.",
+        "flag_emoji": "\U0001f1e8\U0001f1e6",
+    },
+    # --- NORWAY ---
+    {
+        "name": "Bardufoss",
+        "country": "Norway",
+        "lat": 69.06, "lon": 18.54,
+        "type": "air",
+        "alliance": "nato",
+        "status": "expanding",
+        "capability": "F-35A fighters, reactivated 2024, NATO's northernmost fighter base",
+        "personnel": 2000,
+        "recent_developments": "Reactivated 2024 for F-35 operations. NATO's northernmost operational fighter base.",
+        "flag_emoji": "\U0001f1f3\U0001f1f4",
+    },
+    {
+        "name": "Bod\u00f8",
+        "country": "Norway",
+        "lat": 67.27, "lon": 14.40,
+        "type": "air",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "NATO Combined Air Operations Centre (CAOC), opened Oct 2025, QRA",
+        "personnel": 500,
+        "recent_developments": "NATO CAOC Finmark opened Oct 2025. Commands all NATO air operations in the High North.",
+        "flag_emoji": "\U0001f1f3\U0001f1f4",
+    },
+    {
+        "name": "Troms\u00f8",
+        "country": "Norway",
+        "lat": 69.68, "lon": 18.94,
+        "type": "research",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "Intelligence, surveillance center, satellite ground station, submarine tracking",
+        "personnel": 300,
+        "recent_developments": "Norwegian Intelligence Service HQ North. Monitors Russian submarine activity in Barents Sea.",
+        "flag_emoji": "\U0001f1f3\U0001f1f4",
+    },
+    # --- FINLAND ---
+    {
+        "name": "Rovaniemi",
+        "country": "Finland",
+        "lat": 66.56, "lon": 25.83,
+        "type": "air",
+        "alliance": "nato",
+        "status": "expanding",
+        "capability": "Lapland Air Command, F-35s arriving late 2026, close to Russian border",
+        "personnel": 1000,
+        "recent_developments": "F-35s arriving late 2026. Finland's newest NATO member. 1,340km border with Russia makes this a frontline base.",
+        "flag_emoji": "\U0001f1eb\U0001f1ee",
+    },
+    # --- ICELAND ---
+    {
+        "name": "Keflav\u00edk",
+        "country": "Iceland",
+        "lat": 63.97, "lon": -22.61,
+        "type": "air",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "NATO air policing rotations, P-8A Poseidon patrols, GIUK gap surveillance",
+        "personnel": 100,
+        "recent_developments": "NATO air policing rotations. Critical for monitoring GIUK gap submarine transits.",
+        "flag_emoji": "\U0001f1ee\U0001f1f8",
+    },
+    # --- DENMARK ---
+    {
+        "name": "Station Nord, Greenland",
+        "country": "Denmark",
+        "lat": 81.60, "lon": -16.67,
+        "type": "research",
+        "alliance": "nato",
+        "status": "active",
+        "capability": "Northernmost permanently inhabited military outpost, Arctic surveillance, weather monitoring",
+        "personnel": 5,
+        "recent_developments": "World's northernmost permanently manned military outpost. Minimal staff but strategically important for Arctic presence.",
+        "flag_emoji": "\U0001f1e9\U0001f1f0",
+    },
+    # --- CHINA ---
+    {
+        "name": "Yellow River Station, Svalbard",
+        "country": "China",
+        "lat": 78.92, "lon": 11.93,
+        "type": "research",
+        "alliance": "china",
+        "status": "active",
+        "capability": "'Research' station with dual-use radar/satellite tracking. Possible missile early warning capability.",
+        "personnel": 25,
+        "recent_developments": "Officially a research station, but intelligence analysts assess dual-use radar and satellite tracking capability. China's Arctic foothold.",
+        "flag_emoji": "\U0001f1e8\U0001f1f3",
+    },
+    {
+        "name": "Icebreaker Fleet (various)",
+        "country": "China",
+        "lat": 72.0, "lon": 125.0,
+        "type": "naval",
+        "alliance": "china",
+        "status": "expanding",
+        "capability": "5 icebreakers, 3 deployed Arctic 2024, record NSR transits. Xuelong 2 polar-class.",
+        "personnel": 500,
+        "recent_developments": "Record NSR transits in 2025. 3 icebreakers deployed to Arctic in 2024. Building nuclear icebreaker. 'Near-Arctic state' doctrine.",
+        "flag_emoji": "\U0001f1e8\U0001f1f3",
+    },
+]
+
+# Country name to ISO-alpha3 mapping for DB queries
+_COUNTRY_ISO3 = {
+    "Russia": "RUS",
+    "United States": "USA",
+    "Canada": "CAN",
+    "Norway": "NOR",
+    "Finland": "FIN",
+    "Iceland": "ISL",
+    "Denmark": "DNK",
+    "China": "CHN",
+}
+
+# Canadian base coordinates for distance-from-Canada calculations
+CANADIAN_BASES = [
+    b for b in ARCTIC_BASES if b["country"] == "Canada"
+]
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Compute great-circle distance between two points in kilometres."""
+    R = 6371.0
+    rlat1, rlon1, rlat2, rlon2 = (
+        math.radians(lat1), math.radians(lon1),
+        math.radians(lat2), math.radians(lon2),
+    )
+    dlat = rlat2 - rlat1
+    dlon = rlon2 - rlon1
+    a = math.sin(dlat / 2) ** 2 + math.cos(rlat1) * math.cos(rlat2) * math.sin(dlon / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _compute_base_threat_level(base: dict) -> int:
+    """Assign a 1-5 threat score.
+
+    Factors:
+      - Proximity to Ottawa (closer = higher)
+      - Offensive capability (bombers/missiles/subs = higher than radar/research)
+      - Recent expansion (status=expanding = +1)
+      - Alliance (russia/china = threat, nato = friendly -> low)
+    """
+    if base["alliance"] == "nato":
+        # NATO bases are friendly -- score 1 always
+        return 1
+
+    score = 2  # baseline for adversary bases
+
+    # Proximity to Ottawa
+    dist = _haversine_km(base["lat"], base["lon"], OTTAWA_LAT, OTTAWA_LON)
+    if dist < 3000:
+        score += 2
+    elif dist < 5000:
+        score += 1
+
+    # Offensive capability keywords
+    cap_lower = base["capability"].lower()
+    offensive_keywords = [
+        "bomber", "icbm", "slbm", "nuclear", "missile", "submarine",
+        "interceptor", "fighter", "strike",
+    ]
+    if any(kw in cap_lower for kw in offensive_keywords):
+        score += 1
+
+    # Status expansion
+    if base["status"] == "expanding":
+        score += 1
+
+    return min(score, 5)
+
+
+def _nearest_canadian_base(lat: float, lon: float) -> tuple[str, float]:
+    """Return (name, distance_km) of the nearest Canadian base."""
+    best_name = "N/A"
+    best_dist = float("inf")
+    for cb in CANADIAN_BASES:
+        d = _haversine_km(lat, lon, cb["lat"], cb["lon"])
+        if d < best_dist:
+            best_dist = d
+            best_name = cb["name"]
+    return best_name, round(best_dist)
+
+
+@router.get("/bases")
+async def get_arctic_bases():
+    """Comprehensive Arctic base registry with threat scoring.
+
+    Returns all known military bases in the Arctic region, enriched with
+    arms import data from the database and threat level scoring.
+    Cached for 1 hour.
+    """
+    cache_key = "arctic_bases"
+    cached = _arctic_cache.get(cache_key)
+    if cached and time.time() - cached[0] < _BASES_TTL:
+        return cached[1]
+
+    # Query DB for arms imports by country since 2020
+    country_imports: dict[str, float] = {}
+    try:
+        session = SessionLocal()
+        try:
+            # Use trade_indicators table (World Bank mirror of SIPRI TIV)
+            rows = session.execute(text("""
+                SELECT c.name, SUM(COALESCE(ti.arms_imports_tiv, 0)) as total_tiv
+                FROM trade_indicators ti
+                JOIN countries c ON ti.country_id = c.id
+                WHERE ti.year >= 2020
+                  AND c.name IN (:r, :us, :ca, :no, :fi, :is_, :dk, :cn)
+                GROUP BY c.name
+            """), {
+                "r": "Russia", "us": "United States", "ca": "Canada",
+                "no": "Norway", "fi": "Finland", "is_": "Iceland",
+                "dk": "Denmark", "cn": "China",
+            }).fetchall()
+            for r in rows:
+                country_imports[r[0]] = float(r[1])
+        finally:
+            session.close()
+    except Exception as e:
+        logger.warning("Could not query arms imports for bases: %s", e)
+
+    # Also try arms_transfers table as fallback/supplement
+    try:
+        session = SessionLocal()
+        try:
+            rows = session.execute(text("""
+                SELECT c.name, SUM(COALESCE(at.tiv_delivered, 0)) as total_tiv
+                FROM arms_transfers at
+                JOIN countries c ON at.buyer_id = c.id
+                WHERE at.order_year >= 2020
+                  AND c.name IN (:r, :us, :ca, :no, :fi, :is_, :dk, :cn)
+                GROUP BY c.name
+            """), {
+                "r": "Russia", "us": "United States", "ca": "Canada",
+                "no": "Norway", "fi": "Finland", "is_": "Iceland",
+                "dk": "Denmark", "cn": "China",
+            }).fetchall()
+            for r in rows:
+                existing = country_imports.get(r[0], 0)
+                transfer_tiv = float(r[1])
+                # Use whichever is larger
+                country_imports[r[0]] = max(existing, transfer_tiv)
+        finally:
+            session.close()
+    except Exception as e:
+        logger.warning("Could not query arms_transfers for bases: %s", e)
+
+    # Build enriched response
+    bases = []
+    for b in ARCTIC_BASES:
+        threat = _compute_base_threat_level(b)
+        dist_ottawa = round(_haversine_km(b["lat"], b["lon"], OTTAWA_LAT, OTTAWA_LON))
+        nearest_ca_name, nearest_ca_dist = _nearest_canadian_base(b["lat"], b["lon"])
+
+        bases.append({
+            **b,
+            "threat_level": threat,
+            "distance_to_ottawa_km": dist_ottawa,
+            "nearest_canadian_base": nearest_ca_name,
+            "distance_to_nearest_canadian_km": nearest_ca_dist,
+            "arms_imports_tiv": country_imports.get(b["country"], 0),
+        })
+
+    # Sort by threat level descending, then distance ascending
+    bases.sort(key=lambda x: (-x["threat_level"], x["distance_to_ottawa_km"]))
+
+    result = {
+        "bases": bases,
+        "summary": {
+            "total_bases": len(bases),
+            "russia_bases": sum(1 for b in bases if b["alliance"] == "russia"),
+            "nato_bases": sum(1 for b in bases if b["alliance"] == "nato"),
+            "china_bases": sum(1 for b in bases if b["alliance"] == "china"),
+            "expanding": sum(1 for b in bases if b["status"] == "expanding"),
+            "delayed": sum(1 for b in bases if b["status"] == "delayed"),
+            "threat_5_count": sum(1 for b in bases if b["threat_level"] == 5),
+            "threat_4_count": sum(1 for b in bases if b["threat_level"] == 4),
+        },
+        "timestamp": time.time(),
+    }
+
+    _arctic_cache[cache_key] = (time.time(), result)
+    return result
 
 ARCTIC_NATO_NATIONS = [
     "Norway", "Finland", "Sweden", "Denmark", "Estonia", "Latvia",
