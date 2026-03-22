@@ -346,7 +346,7 @@ def _emerging_relationships(session) -> list[dict]:
         FROM arms_transfers at
         JOIN countries c1 ON at.seller_id = c1.id
         JOIN countries c2 ON at.buyer_id = c2.id
-        WHERE at.order_year >= 2020 AND at.order_year <= 2023
+        WHERE at.order_year >= 2020 AND at.order_year <= 2025
         GROUP BY c1.name, c2.name
         HAVING SUM(COALESCE(at.tiv_delivered, 0)) > 50
         AND c1.name || '|' || c2.name NOT IN (
@@ -381,7 +381,7 @@ def _fading_relationships(session) -> list[dict]:
             FROM arms_transfers at
             JOIN countries c1 ON at.seller_id = c1.id
             JOIN countries c2 ON at.buyer_id = c2.id
-            WHERE at.order_year >= 2020 AND at.order_year <= 2023
+            WHERE at.order_year >= 2020 AND at.order_year <= 2025
             GROUP BY c1.name, c2.name
         )
         SELECT old_pairs.seller, old_pairs.buyer, old_pairs.old_tiv,
@@ -411,7 +411,7 @@ def _biggest_movers(session) -> list[dict]:
             SELECT c.name as country, SUM(COALESCE(at.tiv_delivered, 0)) as tiv
             FROM arms_transfers at
             JOIN countries c ON at.buyer_id = c.id
-            WHERE at.order_year >= 2020 AND at.order_year <= 2023
+            WHERE at.order_year >= 2020 AND at.order_year <= 2025
             GROUP BY c.name
             HAVING tiv > 50
         )
@@ -443,7 +443,7 @@ def _biggest_movers(session) -> list[dict]:
                 SELECT c.name as country, SUM(COALESCE(at.tiv_delivered, 0)) as tiv
                 FROM arms_transfers at
                 JOIN countries c ON at.buyer_id = c.id
-                WHERE at.order_year >= 2020 AND at.order_year <= 2023
+                WHERE at.order_year >= 2020 AND at.order_year <= 2025
                 GROUP BY c.name HAVING tiv > 50
             ),
             combined AS (
@@ -490,7 +490,7 @@ def _supplier_shifts(session) -> list[dict]:
                 FROM arms_transfers at
                 JOIN countries c1 ON at.seller_id = c1.id
                 JOIN countries c2 ON at.buyer_id = c2.id
-                WHERE at.order_year >= 2020 AND at.order_year <= 2023
+                WHERE at.order_year >= 2020 AND at.order_year <= 2025
                 GROUP BY c2.name, c1.name
                 HAVING tiv > 20
             )
@@ -527,7 +527,7 @@ def _weapon_trends(session) -> list[dict]:
             LEFT JOIN (
                 SELECT at.weapon_description as weapon, SUM(COALESCE(at.tiv_delivered, 0)) as tiv
                 FROM arms_transfers at
-                WHERE at.order_year >= 2020 AND at.order_year <= 2023
+                WHERE at.order_year >= 2020 AND at.order_year <= 2025
                 GROUP BY at.weapon_description HAVING tiv > 100
             ) n ON o.weapon = n.weapon
             UNION ALL
@@ -535,7 +535,7 @@ def _weapon_trends(session) -> list[dict]:
             FROM (
                 SELECT at.weapon_description as weapon, SUM(COALESCE(at.tiv_delivered, 0)) as tiv
                 FROM arms_transfers at
-                WHERE at.order_year >= 2020 AND at.order_year <= 2023
+                WHERE at.order_year >= 2020 AND at.order_year <= 2025
                 GROUP BY at.weapon_description HAVING tiv > 100
             ) n
             LEFT JOIN (
@@ -563,7 +563,7 @@ def _regional_hotspots(session) -> list[dict]:
             SELECT c.name as country,
                    SUM(CASE WHEN at.order_year >= 2015 AND at.order_year < 2020
                        THEN COALESCE(at.tiv_delivered, 0) ELSE 0 END) as old_tiv,
-                   SUM(CASE WHEN at.order_year >= 2020 AND at.order_year <= 2023
+                   SUM(CASE WHEN at.order_year >= 2020 AND at.order_year <= 2025
                        THEN COALESCE(at.tiv_delivered, 0) ELSE 0 END) as new_tiv
             FROM arms_transfers at
             JOIN countries c ON at.buyer_id = c.id
@@ -620,7 +620,7 @@ def _canada_alerts(session) -> list[dict]:
         buyers = ", ".join(f"{r[0]} ({r[1]:.0f}M)" for r in rows)
         alerts.append({
             "level": "threat",
-            "title": "Russia's top arms customers (2020-2023)",
+            "title": "Russia's top arms customers (2020-2025)",
             "detail": f"Active supply relationships: {buyers}",
         })
 
@@ -637,7 +637,7 @@ def _canada_alerts(session) -> list[dict]:
         buyers = ", ".join(f"{r[0]} ({r[1]:.0f}M)" for r in rows)
         alerts.append({
             "level": "threat",
-            "title": "China's top arms customers (2020-2023)",
+            "title": "China's top arms customers (2020-2025)",
             "detail": f"Active supply relationships: {buyers}",
         })
 
@@ -654,7 +654,7 @@ def _canada_alerts(session) -> list[dict]:
         customers = ", ".join(f"{r[0]} (TIV {r[1]:.0f}M)" for r in rows)
         alerts.append({
             "level": "info",
-            "title": "Canada's top export customers (2020-2023)",
+            "title": "Canada's top export customers (2020-2025)",
             "detail": customers,
         })
 

@@ -1690,7 +1690,7 @@ function initWorldMap() {
 
 async function loadComtrade() {
   try {
-    const resp = await fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023');
+    const resp = await fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023,2024');
     const records = resp.ok ? await resp.json() : [];
     if (!records.length) return;
 
@@ -1866,7 +1866,7 @@ async function loadCanadaIntel() {
   const [profileResp, flightsResp, comtradeResp] = await Promise.all([
     fetch(API + '/trends/country/Canada/profile?start_year=2015&end_year=2025'),
     fetch(API + '/tracking/flights/military').catch(() => ({ ok: false })),
-    fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023').catch(() => ({ ok: false })),
+    fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023,2024').catch(() => ({ ok: false })),
   ]);
 
   const profile = profileResp.ok ? await profileResp.json() : {};
@@ -2346,8 +2346,8 @@ async function loadInsights() {
     const results = await Promise.allSettled([
       fetch(API + '/insights/all').then(r => r.ok ? r.json() : null),
       fetch(API + '/dashboard/flights/analysis').then(r => r.ok ? r.json() : null),
-      fetch(API + '/dashboard/adversary-trade/buyer-mirror?seller=Russia&years=2022,2023').then(r => r.ok ? r.json() : null),
-      fetch(API + '/dashboard/adversary-trade/buyer-mirror?seller=China&years=2022,2023').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/adversary-trade/buyer-mirror?seller=Russia&years=2022,2023,2024').then(r => r.ok ? r.json() : null),
+      fetch(API + '/dashboard/adversary-trade/buyer-mirror?seller=China&years=2022,2023,2024').then(r => r.ok ? r.json() : null),
       fetch(API + '/dashboard/canada-trade/monthly').then(r => r.ok ? r.json() : null),
       fetch(API + '/dashboard/nato/spending?year=2025').then(r => r.ok ? r.json() : null),
       fetch(API + '/dashboard/sanctions/embargoes').then(r => r.ok ? r.json() : null),
