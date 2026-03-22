@@ -1,158 +1,161 @@
 # CLAUDE.md — Weapons Tracker Project Context
 
 ## Project Goal
-Geopolitical intelligence platform tracking global weapons sales and trade using OSINT data sources.
-Built for the Canadian government (DND) to answer: who is selling what to whom, when, for how much,
-and can we detect shifts in alliances and deliveries in real-time.
+Geopolitical intelligence platform tracking global weapons sales, military spending, and force deployments
+using OSINT data sources. Built for the Canadian government (DND) to understand: who is arming whom,
+where are the threats, what's happening in the Arctic, and how is the world reshaping geopolitically.
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn
+- **API Framework:** FastAPI + Uvicorn (52 API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
-- **Data Processing:** pandas, geopandas
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step)
+- **Data Processing:** pandas, geopandas, openpyxl
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~4,000 lines)
+- **Codebase:** 33 Python files, ~12,800 total lines
 
 ## Project Structure
 ```
 weapons-tracker/
 ├── src/
-│   ├── ingestion/          # Data source connectors
-│   │   ├── sipri_transfers.py    # SIPRI Arms Transfers DB (atbackend.sipri.org API)
-│   │   ├── sipri_companies.py    # SIPRI Top 100 defense companies (Excel parser)
-│   │   ├── worldbank.py          # World Bank arms trade indicators (REST API)
-│   │   ├── gdelt_news.py         # GDELT arms trade news (REST API, 15-min updates)
-│   │   ├── flight_tracker.py     # Military flight tracking via adsb.lol (live)
-│   │   ├── maritime_tracker.py   # Maritime vessel tracking via aisstream.io (WebSocket)
-│   │   ├── comtrade.py           # UN Comtrade real USD trade values (HS Chapter 93)
-│   │   └── scheduler.py          # APScheduler ingestion pipeline
+│   ├── ingestion/              # 15 data source connectors
+│   │   ├── sipri_transfers.py        # SIPRI Arms Transfers (atbackend.sipri.org API)
+│   │   ├── comtrade.py               # UN Comtrade USD values + buyer-side mirror
+│   │   ├── census_trade.py           # US Census monthly trade (HS 93)
+│   │   ├── uk_hmrc_trade.py          # UK HMRC monthly trade (OData API)
+│   │   ├── eurostat_trade.py         # EU Eurostat monthly trade (Comext SDMX)
+│   │   ├── statcan_trade.py          # Statistics Canada CIMT monthly trade
+│   │   ├── nato_spending.py          # NATO defence expenditure (Excel parser)
+│   │   ├── worldbank.py              # World Bank arms trade indicators
+│   │   ├── gdelt_news.py             # GDELT arms trade news (15-min updates)
+│   │   ├── defense_news_rss.py       # Defense news RSS (4 feeds)
+│   │   ├── dsca_sales.py             # DSCA arms sales (Federal Register API)
+│   │   ├── flight_tracker.py         # Military flights via adsb.lol (live)
+│   │   ├── sanctions.py              # OFAC SDN + EU sanctions + 17 embargoes
+│   │   ├── maritime_tracker.py       # Maritime vessels via aisstream.io (needs key)
+│   │   ├── sipri_companies.py        # SIPRI Top 100 defense companies
+│   │   └── scheduler.py              # APScheduler ingestion pipeline
 │   ├── storage/
-│   │   ├── models.py             # SQLAlchemy models (7 tables)
-│   │   ├── database.py           # DB connection + session management
-│   │   └── persistence.py        # Upsert/dedup logic for all entity types
+│   │   ├── models.py                 # SQLAlchemy models (7 tables)
+│   │   ├── database.py               # DB connection + session management
+│   │   └── persistence.py            # Upsert/dedup logic for all entity types
 │   ├── analysis/
-│   │   └── trends.py             # Historical trend analysis engine (14 query methods)
+│   │   ├── trends.py                 # Historical trend analysis (14 query methods)
+│   │   └── flight_patterns.py        # Russian/Chinese flight pattern analyzer
 │   ├── api/
-│   │   ├── routes.py             # Core API endpoints (transfers, indicators, news, flights)
-│   │   ├── trend_routes.py       # Trend analysis endpoints (/trends/*)
-│   │   └── dashboard_routes.py   # Dashboard-specific DB-backed + Comtrade endpoints
+│   │   ├── routes.py                 # Core API endpoints (live external sources)
+│   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
+│   │   ├── dashboard_routes.py       # Dashboard endpoints (DB-backed + cached)
+│   │   ├── insights_routes.py        # Intelligence insights + situation report
+│   │   └── arctic_routes.py          # Arctic security assessment + bases
 │   ├── static/
-│   │   └── index.html            # Dashboard UI (5 tabs, ~1500 lines)
-│   ├── alerts/                   # (placeholder — not yet implemented)
-│   └── main.py                   # App entry point (starts API + scheduler + serves dashboard)
+│   │   └── index.html                # Dashboard UI (8 tabs, 4,030 lines)
+│   ├── alerts/                       # (placeholder — not yet implemented)
+│   └── main.py                       # App entry point
 ├── scripts/
-│   └── seed_database.py          # Initial full data load script
+│   └── seed_database.py              # Initial data load
 ├── config/
-│   └── .env.example              # API key template
-├── tests/                        # (placeholder — no tests yet)
+│   └── .env.example                  # API key template
+├── tests/                            # (placeholder — no tests yet)
 ├── requirements.txt
 └── README.md
 ```
 
-## Data Sources
+## Data Sources (12 active + 2 inactive)
 
-| Source | Connector | Data Type | Auth | Status |
-|--------|-----------|-----------|------|--------|
-| SIPRI Arms Transfers | `sipri_transfers.py` | Deal-level transfers (TIV) | None | Working |
-| UN Comtrade | `comtrade.py` | Real USD trade values (HS 93) | None (preview) | Working |
-| World Bank | `worldbank.py` | Aggregate TIV, mil. spending | None | Working |
-| GDELT | `gdelt_news.py` | Arms trade news articles | None | Working |
-| adsb.lol | `flight_tracker.py` | Live military aircraft positions | None | Working |
-| AIS Stream | `maritime_tracker.py` | Maritime vessel tracking | API key | Not tested |
-| SIPRI Companies | `sipri_companies.py` | Top 100 defense companies | None | Not tested |
+| # | Source | Connector | Freshness | Auth | Status |
+|---|--------|-----------|-----------|------|--------|
+| 1 | Defense News RSS | `defense_news_rss.py` | Hours (4 feeds) | None | Working |
+| 2 | Military Flights | `flight_tracker.py` | Live (5 min) | None | Working |
+| 3 | GDELT News | `gdelt_news.py` | 15 min | None | Working |
+| 4 | DSCA Arms Sales | `dsca_sales.py` | Days | None | Working |
+| 5 | Statistics Canada | `statcan_trade.py` | Monthly | None | Working |
+| 6 | US Census Trade | `census_trade.py` | Monthly | None | Working |
+| 7 | UK HMRC Trade | `uk_hmrc_trade.py` | Monthly | None | Working |
+| 8 | Eurostat EU Trade | `eurostat_trade.py` | Monthly | None | Working |
+| 9 | NATO Spending | `nato_spending.py` | Annual (2025 est.) | None | Working |
+| 10 | SIPRI Transfers | `sipri_transfers.py` | Annual (2025) | None | Working |
+| 11 | World Bank | `worldbank.py` | Annual (2024) | None | Working |
+| 12 | UN Comtrade | `comtrade.py` | Annual (2023) | None | Working |
+| 13 | Sanctions/Embargoes | `sanctions.py` | On-demand | None | Working |
+| - | Maritime (AIS) | `maritime_tracker.py` | Live | API key | Needs key |
+| - | SIPRI Companies | `sipri_companies.py` | Annual | None | Needs URL |
 
-## Dashboard UI (src/static/index.html)
+## Intelligence Features
 
-5-tab single-page application served by FastAPI at `/`:
+| Feature | Source | What It Does |
+|---------|--------|-------------|
+| **Situation Report** | insights_routes.py | 6 threat indicators (Arctic, supply chain, adversary expansion, NATO rearmament, Canada rank, sanctions) |
+| **Buyer-side Mirror** | comtrade.py | Tracks Russia/China exports by querying what buyers report importing |
+| **Sanctions Overlay** | sanctions.py | 17 embargoed countries, OFAC SDN list, EU sanctions |
+| **Flight Pattern Analysis** | flight_patterns.py | Identifies Russian/Chinese military aircraft, flags suspicious routes |
+| **Arctic Base Registry** | arctic_routes.py | 25 Arctic bases with threat levels, distances to Canada |
+| **Shift Detection** | insights_routes.py | Detects countries changing primary arms supplier with context |
+| **Arctic Routes** | index.html | 3 labeled shipping routes (NSR, NWP, Transpolar) with ownership |
 
-| Tab | Description |
-|-----|-------------|
+## Dashboard UI (8 tabs)
+
+| Tab | Purpose |
+|-----|---------|
+| **Insights** | Intelligence briefing: situation report, live news, DSCA sales, alerts, adversary flows, Canada position, shifting alliances, what to watch |
 | **Overview** | Trade flow network (D3), top exporters/importers, weapon types, timeline |
-| **World Map** | Leaflet choropleth with trade arcs, regional breakdown, UN Comtrade USD values |
-| **Live Flights** | Real-time military aircraft map (auto-refreshes 30s), transport detection |
-| **Deals** | Searchable/filterable table of all transfers with seller/buyer dropdowns |
+| **World Map** | Leaflet map with trade arcs, country bubbles, Comtrade USD values, regional breakdown |
+| **Arctic** | Force balance map with 25 bases, 3 shipping routes, Northern Sea Route threats, weapon timeline, live airspace |
+| **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) |
+| **Deals** | Searchable/filterable table of all 4,623 transfers |
 | **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances |
+| **Data Feeds** | Operations view: 16 feed status cards with freshness, sample data, health indicators |
 
-## API Endpoints
+## API Endpoints (52 total)
 
-### Core (src/api/routes.py)
-- `GET /transfers/exports/{country}` — SIPRI arms exports (live API)
-- `GET /transfers/imports/{country}` — SIPRI arms imports (live API)
-- `GET /transfers/bilateral/{seller}/{buyer}` — bilateral trade (live API)
-- `GET /indicators/{country_iso3}` — World Bank indicators
-- `GET /indicators/top/importers` and `/exporters`
-- `GET /news/latest` and `/news/country/{country}` — GDELT news
-- `GET /tracking/flights/military` and `/transports` — live flights
+### Core (src/api/routes.py) — live external APIs
+- `GET /transfers/exports/{country}`, `/imports/{country}`, `/bilateral/{seller}/{buyer}`
+- `GET /indicators/{country_iso3}`, `/top/importers`, `/top/exporters`
+- `GET /news/latest`, `/news/country/{country}`
+- `GET /tracking/flights/military`, `/transports`
 
-### Dashboard (src/api/dashboard_routes.py) — fast, DB-backed
-- `GET /dashboard/transfers` — all transfers from DB (paginated)
-- `GET /dashboard/flows` — aggregated seller→buyer trade flows
-- `GET /dashboard/country-totals` — per-country export/import totals
-- `GET /dashboard/weapon-types` — weapon type breakdown
-- `GET /dashboard/comtrade/exports` — UN Comtrade USD values (cached 1hr)
-- `GET /dashboard/comtrade/country/{name}` — country-specific Comtrade data (cached 1hr)
+### Dashboard (src/api/dashboard_routes.py) — DB-backed + cached
+- `GET /dashboard/transfers`, `/flows`, `/country-totals`, `/weapon-types`
+- `GET /dashboard/comtrade/exports`, `/comtrade/country/{name}`
+- `GET /dashboard/census/monthly`, `/uk-trade/monthly`, `/eu-trade/monthly`, `/canada-trade/monthly`
+- `GET /dashboard/nato/spending`
+- `GET /dashboard/news/live`, `/dsca/recent`
+- `GET /dashboard/sanctions/embargoes`, `/sanctions/check/{country}`, `/sanctions/ofac-sdn`, `/sanctions/eu`
+- `GET /dashboard/adversary-trade/buyer-mirror`
+- `GET /dashboard/flights/analysis`
+
+### Insights (src/api/insights_routes.py)
+- `GET /insights/all` — 8 insight categories + situation report
+- `GET /insights/freshness` — data source freshness for all 14 sources
+
+### Arctic (src/api/arctic_routes.py)
+- `GET /arctic/assessment` — force balance, NATO vs Russia, NSR threats, weapon timeline, Russia weakness
+- `GET /arctic/bases` — 25-base registry with threat levels + distances
+- `GET /arctic/flights` — live Arctic military flights classified by nation
 
 ### Trends (src/api/trend_routes.py)
-- `GET /trends/summary` — DB stats
-- `GET /trends/global/volume` — global TIV by year
-- `GET /trends/global/categories` — by weapon type
-- `GET /trends/global/top-pairs` — seller→buyer pairs
-- `GET /trends/country/{name}/profile` — full country profile
-- `GET /trends/country/{name}/exports` and `/imports`
-- `GET /trends/changes/imports` — biggest YoY changes
-- `GET /trends/companies/{name}` and `/top/{year}`
-- `GET /trends/activity/flights` and `/news`
+- `GET /trends/summary`, `/global/volume`, `/global/categories`, `/global/top-pairs`
+- `GET /trends/country/{name}/profile`, `/exports`, `/imports`
+- `GET /trends/changes/imports`
+- `GET /trends/companies/{name}`, `/top/{year}`
+- `GET /trends/activity/flights`, `/news`
 
-## Scheduler (src/ingestion/scheduler.py)
-| Job | Interval |
-|-----|----------|
-| Military flights (adsb.lol) | Every 5 min |
-| GDELT arms news | Every 15 min |
-| SIPRI transfers | Daily 2 AM |
-| World Bank indicators | Daily 3 AM |
-
-## Known Issues (as of March 2026)
-
-### FIXED: SIPRI Export URL (March 2026)
-- **Resolution:** Connector rewritten to use SIPRI's new backend API at `https://atbackend.sipri.org/api/p/`
-- **How it works:** POST filter-based queries to `/trades/trade-register-csv/`, response is base64-encoded CSV
-- **Country lookup:** Entity IDs fetched from `/countries/getAllCountriesTrimmed` (385 countries/entities)
-- **Weapon categories:** Fetched from `/typelists/getAllArmamentCategories` (13 categories)
-- **Note:** "Turkey" renamed to "Turkiye" in SIPRI's database
-
-### TESTED & FIXED (March 2026)
-- World Bank connector (`worldbank.py`) — works; minor: `country_iso3` stores 2-letter codes, top importers/exporters include aggregate regions
-- GDELT connector (`gdelt_news.py`) — works after fixes: added 5s rate limit delay between queries, fixed OR query parentheses, guarded non-JSON responses
-- adsb.lol flight tracker (`flight_tracker.py`) — works after fix: defensive float parsing for `alt_baro="ground"`
-
-### NOT YET TESTED
-- Maritime tracker (`maritime_tracker.py`) — requires `AISSTREAM_API_KEY` env var
-- SIPRI Top 100 companies (`sipri_companies.py`) — needs valid Excel download URL
-
-### NOT YET BUILT
-- Alerting system (`src/alerts/`) — notifications for unusual patterns
-- PDF briefing export for decision-makers
-- Tests — no test suite yet
-- SIPRI Top 100 ingestion in scheduler (only transfers and World Bank are scheduled)
-- Maritime ingestion in scheduler (WebSocket streaming not integrated yet)
-
-### Known Code Quality Items
-- `routes.py` endpoints hit live external APIs per-request (no caching); dashboard routes serve from DB instead
-- Sync SQLAlchemy sessions in async endpoints — acceptable for SQLite dev, needs async sessions for PostgreSQL prod
-- `main.py` uses deprecated `@app.on_event` instead of lifespan context manager
-- Multiple `_safe_float`/`_safe_int` implementations across connectors could be consolidated
+## Database
+- **7 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking
+- **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles
+- **Coverage:** 26 seller countries, 174 buyer countries, 256 countries total
 
 ## How to Run
 ```bash
 cd /Users/billdennis/weapons-tracker
-source venv/bin/activate          # venv already created with all deps installed
+source venv/bin/activate
 
-# Seed database
+# Seed database (one-time)
 python -m scripts.seed_database
 
-# Start API server (includes scheduler + dashboard)
+# Start server (dashboard + API + scheduler)
 python -m src.main
 # Dashboard at http://localhost:8000
 # API docs at http://localhost:8000/docs
@@ -161,20 +164,25 @@ python -m src.main
 ## Key Design Decisions
 - SQLite for dev (zero config), PostgreSQL+PostGIS for prod
 - All connectors are async (httpx + asyncio)
-- Persistence layer handles deduplication via unique constraints
-- Flight/vessel data stored as time-series snapshots (not deduplicated — intentional for trend analysis)
 - `from __future__ import annotations` required in all files (Python 3.9 compat)
 - Dashboard served as static HTML by FastAPI — no build step, CDN-loaded libs
-- Comtrade API responses cached in-memory (1hr TTL) since data is annual
-- Canada Intel tab provides geopolitical framing for DND analysts
+- External API responses cached in-memory (15min–24hr TTL depending on source)
+- Insights tab is the default landing page — structured as an intelligence briefing
+- Arctic tab provides dedicated northern security assessment with base-level detail
+- Buyer-side Comtrade mirror circumvents Russia/China data opacity
+- Sanctions overlay flags embargoed trade partners automatically
+
+## Known Code Quality Items
+- `routes.py` endpoints hit live external APIs per-request; dashboard routes serve from DB instead
+- Sync SQLAlchemy sessions in async endpoints — acceptable for SQLite, needs async for PostgreSQL
+- `main.py` uses deprecated `@app.on_event` instead of lifespan context manager
+- 5 large files (>500 lines): arctic_routes, dashboard_routes, insights_routes, sanctions, trends
 
 ## Next Steps (Priority Order)
-1. ~~Fix SIPRI connector~~ — DONE
-2. ~~Test remaining connectors~~ — DONE
-3. ~~Build dashboard/UI~~ — DONE (5 tabs including Canada Intel)
-4. ~~Add UN Comtrade~~ — DONE (real USD values)
-5. Build PDF briefing export for decision-makers
-6. Build alerting system (unusual pattern detection)
-7. Add sanctions/embargo overlay
-8. Add test suite
-9. Migrate to async SQLAlchemy sessions for production
+1. Build PDF briefing export for decision-makers
+2. Build automated alerting system (unusual pattern detection)
+3. Add test suite
+4. Activate maritime tracker (needs aisstream.io API key)
+5. Migrate to async SQLAlchemy sessions for production
+6. Add satellite imagery integration for base monitoring
+7. Add user authentication for multi-tenant deployment
