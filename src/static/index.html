@@ -481,8 +481,8 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .arctic-base-popup .base-status.planned { color: #4f8cff; }
 .arctic-base-popup .base-dev { font-size: 11px; color: #aaa; margin-top: 6px; line-height: 1.4; }
 .arctic-base-popup .base-arms { font-size: 11px; color: var(--accent4); margin-top: 4px; }
-@keyframes pulse-marker { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }
-.pulsing-marker { animation: pulse-marker 2s ease-in-out infinite; }
+@keyframes pulse-marker { 0%,100% { opacity: 0.9; } 50% { opacity: 0.25; } }
+.pulsing-marker { animation: pulse-marker 1.5s ease-in-out infinite; transform-origin: center; }
 
 /* Leaflet popup dark theme */
 .leaflet-popup-content-wrapper { background: #1a1d27 !important; color: #e0e0e8 !important; border: 1px solid #2a2d3a !important; border-radius: 8px !important; }
@@ -524,7 +524,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .arctic-base-legend .leg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .arctic-base-legend .leg-pulse {
   width: 12px; height: 12px; border-radius: 50%; display: inline-block;
-  background: #ff6b6b; animation: pulse-marker 2s ease-in-out infinite;
+  background: #ff6b6b; animation: pulse-marker 1.5s ease-in-out infinite;
 }
 
 .arctic-naval-item {
