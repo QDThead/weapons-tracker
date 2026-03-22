@@ -2218,64 +2218,6 @@ async function loadDSCASales() {
   }
 }
 
-async function loadCensusMonthly() {
-  try {
-    const resp = await fetch(API + '/dashboard/census/monthly');
-    if (!resp.ok) return;
-    const data = await resp.json();
-
-    if (data.latest_month) {
-      document.getElementById('census-latest').textContent = 'Latest: ' + data.latest_month;
-    }
-
-    // Monthly bar chart
-    const months = Object.keys(data.months).sort();
-    destroyChart('census-monthly-chart');
-    chartInstances['census-monthly-chart'] = new Chart(document.getElementById('census-monthly-chart'), {
-      type: 'bar',
-      data: {
-        labels: months,
-        datasets: [{
-          label: 'US Arms Exports (USD)',
-          data: months.map(m => data.months[m] / 1e6),
-          backgroundColor: '#4f8cff88',
-          borderColor: '#4f8cff',
-          borderWidth: 1,
-        }],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { title: { display: true, text: 'USD (millions)' } } },
-      },
-    });
-
-    // Top partners bar chart
-    const partners = Object.entries(data.top_partners).slice(0, 12);
-    destroyChart('census-partners-chart');
-    chartInstances['census-partners-chart'] = new Chart(document.getElementById('census-partners-chart'), {
-      type: 'bar',
-      data: {
-        labels: partners.map(([n]) => n),
-        datasets: [{
-          label: 'Total (USD)',
-          data: partners.map(([, v]) => v / 1e6),
-          backgroundColor: '#51cf6688',
-          borderColor: '#51cf66',
-          borderWidth: 1,
-        }],
-      },
-      options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { x: { title: { display: true, text: 'USD (millions)' } } },
-      },
-    });
-  } catch (e) {
-    console.error('Census load error:', e);
-  }
-}
-
 function timeAgo(date) {
   const now = new Date();
   const diff = Math.floor((now - date) / 1000);

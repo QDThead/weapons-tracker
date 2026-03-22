@@ -12,6 +12,8 @@ Schedule:
   - SIPRI Top 100:         daily
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 

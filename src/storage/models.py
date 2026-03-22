@@ -1,5 +1,7 @@
 """Core data models for global weapons trade tracking."""
 
+from __future__ import annotations
+
 from datetime import datetime, date
 from enum import Enum
 from typing import Optional

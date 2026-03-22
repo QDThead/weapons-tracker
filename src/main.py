@@ -4,6 +4,8 @@ Starts the FastAPI server with scheduled data ingestion
 for the global weapons trade tracking platform.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 
