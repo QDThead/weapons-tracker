@@ -900,7 +900,9 @@ tr:hover td { background: rgba(79,140,255,0.05); }
         <div class="leg-item"><div class="leg-dot" style="background:#51cf66"></div> Canada</div>
         <div class="leg-item"><div class="leg-pulse"></div> Expanding/Planned</div>
         <div class="leg-item" style="color:var(--text-dim);">Size = threat level (1-5)</div>
-        <div class="leg-item" style="color:var(--text-dim);">Yellow dashed = Northern Sea Route</div>
+        <div class="leg-item" style="color:var(--accent2);">\ud83c\uddf7\ud83c\uddfa Red dashed = Northern Sea Route (Russia)</div>
+        <div class="leg-item" style="color:var(--accent);">\ud83c\udde8\ud83c\udde6 Blue dashed = Northwest Passage (Canada)</div>
+        <div class="leg-item" style="color:var(--text-dim);">\ud83c\udf0d Gray dashed = Transpolar Route (International)</div>
         <div class="leg-item" style="color:var(--text-dim);">Red zone = Canadian ADIZ</div>
       </div>
       <div id="arctic-main-map" style="height:600px;border-radius:8px;overflow:hidden;"></div>
@@ -3124,23 +3126,50 @@ let arcticBasesData = null;  // cached bases response
 let arcticIntelSortCol = 'threat_level';
 let arcticIntelSortAsc = false;
 
-// Northern Sea Route waypoints for the dashed polyline
-const NSR_WAYPOINTS = [
-  [66.0, -168.8],  // Bering Strait
-  [70.0, -175.0],
-  [72.0, 175.0],
-  [73.0, 160.0],
-  [74.0, 140.0],
-  [75.0, 120.0],
-  [76.0, 100.0],
-  [76.5, 80.0],
-  [76.0, 70.0],   // Kara Sea
-  [74.0, 55.0],
-  [73.0, 45.0],
-  [72.0, 35.0],   // Barents Sea
-  [70.0, 25.0],
-  [68.0, 15.0],
-  [67.0, 2.0],    // Norwegian Sea
+// Arctic shipping routes with ownership
+const ARCTIC_ROUTES = [
+  {
+    name: "Northern Sea Route",
+    flag: "\ud83c\uddf7\ud83c\uddfa",
+    owner: "Russia",
+    status: "Active \u2014 37.8M tons in 2024. China-Russia joint agreement Oct 2025.",
+    color: "#ff6b6b",
+    weight: 4,
+    points: [
+      [66.0, -168.8],[70.0, -175.0],[72.0, 175.0],[73.0, 160.0],[74.0, 140.0],
+      [75.0, 120.0],[76.0, 100.0],[76.5, 80.0],[76.0, 70.0],[74.0, 55.0],
+      [73.0, 45.0],[72.0, 35.0],[70.0, 25.0],[68.0, 15.0],[67.0, 2.0],
+    ],
+    labelPos: [75.5, 100.0],
+  },
+  {
+    name: "Northwest Passage",
+    flag: "\ud83c\udde8\ud83c\udde6",
+    owner: "Canada (claimed \u2014 US disputes)",
+    status: "Contested. Canada says internal waters; US says international strait. Low traffic but opening with ice melt.",
+    color: "#4f8cff",
+    weight: 4,
+    points: [
+      [66.0, -168.8],[68.5, -163.0],[70.0, -150.0],[71.5, -135.0],
+      [73.0, -120.0],[74.5, -105.0],[74.0, -95.0],[73.0, -85.0],
+      [72.0, -78.0],[70.0, -72.0],[68.0, -65.0],[65.0, -58.0],
+      [60.0, -52.0],[55.0, -48.0],
+    ],
+    labelPos: [73.5, -105.0],
+  },
+  {
+    name: "Transpolar Route",
+    flag: "\ud83c\udf0d",
+    owner: "International (outside EEZs)",
+    status: "Future. Ice too thick for regular shipping. First to establish presence wins.",
+    color: "#888888",
+    weight: 2,
+    points: [
+      [66.0, -168.8],[72.0, -175.0],[78.0, 180.0],[82.0, 140.0],
+      [85.0, 80.0],[84.0, 20.0],[80.0, 0.0],[75.0, -10.0],[67.0, 2.0],
+    ],
+    labelPos: [83.0, 60.0],
+  },
 ];
 
 // CADIZ approximate boundary
@@ -3159,7 +3188,7 @@ const WATERWAY_LABELS = [
   { name: "Barents Sea", lat: 73.0, lon: 35.0 },
   { name: "Kara Sea", lat: 76.0, lon: 70.0 },
   { name: "Norwegian Sea", lat: 67.0, lon: 2.0 },
-  { name: "Northwest Passage", lat: 74.0, lon: -100.0 },
+  { name: "Beaufort Sea", lat: 74.0, lon: -140.0 },
   { name: "Davis Strait", lat: 66.5, lon: -58.0 },
   { name: "Baffin Bay", lat: 73.0, lon: -70.0 },
 ];
@@ -3314,10 +3343,27 @@ function renderArcticMainMap(basesData, flights) {
       fillOpacity: 0.06, dashArray: '10 5'
     }).addTo(arcticMainMap).bindTooltip('Canadian ADIZ (approximate)', { sticky: true });
 
-    // Draw Northern Sea Route (thick dashed yellow)
-    L.polyline(NSR_WAYPOINTS, {
-      color: '#ffd43b', weight: 3, dashArray: '12 8', opacity: 0.8
-    }).addTo(arcticMainMap).bindTooltip('Northern Sea Route', { sticky: true });
+    // Draw all Arctic shipping routes with flags and ownership
+    ARCTIC_ROUTES.forEach(route => {
+      const line = L.polyline(route.points, {
+        color: route.color, weight: route.weight, dashArray: '10 6', opacity: 0.7
+      }).addTo(arcticMainMap);
+      line.bindTooltip(
+        '<div style="font-size:13px;"><b>' + route.flag + ' ' + esc(route.name) + '</b><br>' +
+        '<span style="color:#ccc;">Controlled by: ' + esc(route.owner) + '</span><br>' +
+        '<span style="font-size:11px;color:#aaa;">' + esc(route.status) + '</span></div>',
+        { sticky: true }
+      );
+      // Flag + name label on the route
+      const labelIcon = L.divIcon({
+        className: '',
+        html: '<div style="font-size:12px;color:' + route.color + ';font-weight:700;white-space:nowrap;text-shadow:0 0 6px #000,0 0 3px #000;pointer-events:none;">' +
+          route.flag + ' ' + esc(route.name) + '</div>',
+        iconSize: [200, 18],
+        iconAnchor: [100, 9],
+      });
+      L.marker(route.labelPos, { icon: labelIcon, interactive: false }).addTo(arcticMainMap);
+    });
 
     // Draw approximate permanent ice edge at ~75N
     L.polyline(ICE_EDGE, {
