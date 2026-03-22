@@ -542,6 +542,35 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .arctic-weakness-supplier.iran { color: var(--accent4); }
 .arctic-weakness-supplier.china { color: var(--accent2); }
 
+/* Arctic Current Intelligence panel */
+.arctic-dsca-card {
+  padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.arctic-dsca-card:last-child { border-bottom: none; }
+.arctic-dsca-card:hover { background: rgba(79,140,255,0.04); }
+.arctic-dsca-card .dsca-buyer { font-weight: 600; color: var(--accent); }
+.arctic-dsca-card .dsca-value { font-weight: 600; color: var(--accent4); white-space: nowrap; }
+.arctic-dsca-card .dsca-weapons { font-size: 11px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
+.arctic-dsca-card .dsca-date { font-size: 10px; color: var(--text-dim); }
+
+.arctic-news-item {
+  padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.arctic-news-item:last-child { border-bottom: none; }
+.arctic-news-item:hover { background: rgba(79,140,255,0.04); }
+.arctic-news-item a { color: var(--accent); text-decoration: none; }
+.arctic-news-item a:hover { text-decoration: underline; }
+.arctic-news-item .news-source { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+.arctic-trade-card {
+  background: var(--bg); border-radius: 8px; padding: 14px;
+}
+.arctic-trade-card h4 { font-size: 13px; margin: 0 0 6px 0; color: var(--accent); }
+.arctic-trade-card .trade-total { font-size: 20px; font-weight: 700; color: var(--text); }
+.arctic-trade-card .trade-source { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+.arctic-trade-card .trade-error { font-size: 11px; color: var(--accent2); font-style: italic; }
+
 @media (max-width: 1200px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
@@ -963,9 +992,89 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
     <!-- Section 5: Arctic Weapon Timeline (full width) -->
     <div class="card" style="margin-bottom:20px;">
-      <h2>Arctic Weapon Accumulation Timeline (2015-2025)</h2>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Arms imports by Arctic nation per year. Look for the post-2020 acceleration in NATO spending.</p>
+      <h2>Arctic Weapon Accumulation Timeline (2015-2026)</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Arms imports by Arctic nation per year. Look for the post-2020 acceleration in NATO spending.</p>
+      <div id="arctic-timeline-sources" style="display:flex;gap:16px;margin-bottom:12px;font-size:11px;color:var(--text-dim);">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px;vertical-align:middle;"></span>2015-2023: SIPRI (complete)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent4);margin-right:4px;vertical-align:middle;"></span>2024-2025: SIPRI (partial) + monthly trade</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent2);margin-right:4px;vertical-align:middle;opacity:0.6;"></span>DSCA pipeline (approved, not yet delivered)</span>
+      </div>
       <div class="chart-container tall" style="height:400px;"><canvas id="arctic-timeline-chart"></canvas></div>
+    </div>
+
+    <!-- Section 5b: Arctic Current Intelligence Panel -->
+    <div class="card" style="margin-bottom:20px;">
+      <h2>Arctic Current Intelligence (2024-2026)
+        <span id="arctic-current-status" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0;font-weight:400;"></span>
+      </h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">
+        Fills the SIPRI data gap with real-time sources: DSCA sales pipeline, defense news, flight tracking, and NATO spending data.
+      </p>
+
+      <div id="arctic-current-loading" style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">
+        Loading current intelligence from multiple sources...
+      </div>
+
+      <div id="arctic-current-content" style="display:none;">
+        <!-- Top row: DSCA pipeline + NATO spending mini chart -->
+        <div class="grid grid-2" style="margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">DSCA Arms Sales Pipeline</h3>
+            <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Approved US arms sales to Arctic NATO nations -- weapons in the delivery pipeline.</p>
+            <div id="arctic-dsca-summary" style="display:flex;gap:12px;margin-bottom:10px;">
+              <div style="background:var(--bg);border-radius:6px;padding:10px 16px;text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:var(--accent);" id="arctic-dsca-count">-</div>
+                <div style="font-size:10px;color:var(--text-dim);">SALES</div>
+              </div>
+              <div style="background:var(--bg);border-radius:6px;padding:10px 16px;text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:var(--accent4);" id="arctic-dsca-value">-</div>
+                <div style="font-size:10px;color:var(--text-dim);">TOTAL VALUE</div>
+              </div>
+            </div>
+            <div id="arctic-dsca-list" style="max-height:250px;overflow-y:auto;"></div>
+          </div>
+          <div>
+            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">NATO Arctic Spending Trend</h3>
+            <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Defence spending acceleration for Arctic NATO nations (million USD).</p>
+            <div class="chart-container" style="height:260px;"><canvas id="arctic-nato-spending-chart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Middle row: Defense news + Flight trends -->
+        <div class="grid grid-2" style="margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">Arctic Defense News</h3>
+            <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Recent headlines mentioning Arctic military activity.</p>
+            <div id="arctic-news-list" style="max-height:300px;overflow-y:auto;"></div>
+          </div>
+          <div>
+            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">Arctic Flight Activity (30 days)</h3>
+            <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Military flights detected above latitude 55N.</p>
+            <div style="display:flex;gap:12px;margin-bottom:10px;">
+              <div style="background:var(--bg);border-radius:6px;padding:8px 14px;text-align:center;">
+                <div style="font-size:18px;font-weight:700;color:var(--accent);" id="arctic-flights-total">-</div>
+                <div style="font-size:10px;color:var(--text-dim);">TOTAL</div>
+              </div>
+              <div style="background:var(--bg);border-radius:6px;padding:8px 14px;text-align:center;">
+                <div style="font-size:18px;font-weight:700;color:#4f8cff;" id="arctic-flights-nato">-</div>
+                <div style="font-size:10px;color:var(--text-dim);">NATO</div>
+              </div>
+              <div style="background:var(--bg);border-radius:6px;padding:8px 14px;text-align:center;">
+                <div style="font-size:18px;font-weight:700;color:#ff6b6b;" id="arctic-flights-russian">-</div>
+                <div style="font-size:10px;color:var(--text-dim);">RUSSIAN</div>
+              </div>
+            </div>
+            <div class="chart-container" style="height:200px;"><canvas id="arctic-flights-trend-chart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Bottom row: Monthly trade data summary -->
+        <div>
+          <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">Monthly Arms Trade (HS 93) -- Arctic Nations</h3>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Real customs data from US Census, Eurostat, and Statistics Canada. Most current data available.</p>
+          <div id="arctic-trade-summary" class="grid grid-3" style="gap:12px;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Section 6: Live Arctic Airspace (2-column) -->
@@ -3242,6 +3351,44 @@ async function loadArctic() {
   // Auto-refresh flights every 60 seconds while on Arctic tab
   clearTimeout(arcticRefreshTimer);
   scheduleArcticRefresh();
+
+  // Fetch current intelligence (slower — external APIs) in background
+  loadArcticCurrentIntel(assessment);
+}
+
+async function loadArcticCurrentIntel(assessment) {
+  const statusEl = document.getElementById('arctic-current-status');
+  const loadingEl = document.getElementById('arctic-current-loading');
+  const contentEl = document.getElementById('arctic-current-content');
+
+  statusEl.textContent = 'Fetching from external sources...';
+
+  try {
+    const resp = await fetch(API + '/arctic/current');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+
+    loadingEl.style.display = 'none';
+    contentEl.style.display = 'block';
+    statusEl.textContent = 'Updated: ' + new Date(data.generated_at + 'Z').toLocaleString();
+
+    renderArcticDSCA(data.dsca_pipeline);
+    renderArcticNATOSpendingChart(data.nato_spending_trend);
+    renderArcticDefenseNews(data.defense_news);
+    renderArcticFlightTrends(data.flight_trends);
+    renderArcticTradeSummary(data.monthly_trade);
+
+    // Enhance the timeline chart with current intel annotations
+    if (assessment) {
+      enhanceArcticTimeline(assessment, data);
+    }
+  } catch (e) {
+    console.error('Arctic current intel error:', e);
+    loadingEl.innerHTML = 'Failed to load current intelligence: ' + esc(e.message) +
+      '<br><span style="font-size:11px;color:var(--text-dim);margin-top:8px;display:block;">' +
+      'This endpoint aggregates multiple external APIs and may take 30-60 seconds on first load.</span>';
+    statusEl.textContent = 'Error loading';
+  }
 }
 
 function scheduleArcticRefresh() {
@@ -3776,6 +3923,13 @@ function renderArcticTimeline(assessment) {
     borderWidth: 1.5,
     fill: true,
     tension: 0.3,
+    // Mark partial years with dashed lines
+    segment: {
+      borderDash: ctx => {
+        const year = years[ctx.p1DataIndex];
+        return year >= 2024 ? [4, 4] : undefined;
+      },
+    },
   })).filter(ds => ds.data.some(v => v > 0));
 
   destroyChart('arctic-timeline-chart');
@@ -3805,6 +3959,23 @@ function renderArcticTimeline(assessment) {
                 backgroundColor: 'rgba(26,29,39,0.8)',
               },
             },
+            partialDataBox: {
+              type: 'box',
+              xMin: '2024',
+              xMax: years[years.length - 1],
+              backgroundColor: 'rgba(255,212,59,0.05)',
+              borderColor: 'rgba(255,212,59,0.3)',
+              borderWidth: 1,
+              borderDash: [4, 4],
+              label: {
+                content: 'Partial data (SIPRI lag)',
+                display: true,
+                position: 'start',
+                font: { size: 9 },
+                color: '#ffd43b',
+                backgroundColor: 'rgba(26,29,39,0.8)',
+              },
+            },
           },
         },
       },
@@ -3814,6 +3985,251 @@ function renderArcticTimeline(assessment) {
       },
     },
   });
+}
+
+function enhanceArcticTimeline(assessment, currentIntel) {
+  // Add DSCA pipeline annotation to existing chart
+  const chart = chartInstances['arctic-timeline-chart'];
+  if (!chart) return;
+
+  const pipeline = currentIntel.dsca_pipeline || {};
+  const totalDSCA = pipeline.total_value_usd || 0;
+  if (totalDSCA <= 0) return;
+
+  // Add a point annotation for DSCA pipeline value
+  const dscaBillions = (totalDSCA / 1e9).toFixed(1);
+  if (chart.options.plugins.annotation && chart.options.plugins.annotation.annotations) {
+    chart.options.plugins.annotation.annotations.dscaPipeline = {
+      type: 'label',
+      xValue: chart.data.labels[chart.data.labels.length - 1],
+      yValue: 0,
+      yAdjust: -30,
+      backgroundColor: 'rgba(255,107,107,0.15)',
+      borderColor: 'rgba(255,107,107,0.5)',
+      borderWidth: 1,
+      borderRadius: 4,
+      content: ['DSCA Pipeline: $' + dscaBillions + 'B', 'approved, not yet delivered'],
+      font: { size: 10 },
+      color: '#ff6b6b',
+      padding: 6,
+    };
+    chart.update();
+  }
+}
+
+function fmtUSD(n) {
+  if (n == null || isNaN(n)) return '-';
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(0) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+  return '$' + n.toFixed(0);
+}
+
+function renderArcticDSCA(pipeline) {
+  const sales = pipeline.sales || [];
+  document.getElementById('arctic-dsca-count').textContent = pipeline.count || 0;
+  document.getElementById('arctic-dsca-value').textContent = fmtUSD(pipeline.total_value_usd);
+
+  const list = document.getElementById('arctic-dsca-list');
+  if (sales.length === 0) {
+    list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:12px;">No recent Arctic DSCA sales found.</div>';
+    return;
+  }
+
+  list.innerHTML = sales.map(s => `<div class="arctic-dsca-card">
+    <div>
+      <span class="dsca-buyer">${esc(s.buyer)}</span>
+      <span class="dsca-date" style="margin-left:8px;">${esc(s.date)}</span>
+      <div class="dsca-weapons">${esc(s.weapons || 'Details pending')}</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="dsca-value">${fmtUSD(s.value_usd)}</div>
+      ${s.url ? '<a href="' + esc(s.url) + '" target="_blank" style="font-size:10px;color:var(--accent);">Source</a>' : ''}
+    </div>
+  </div>`).join('');
+}
+
+function renderArcticNATOSpendingChart(spendingData) {
+  const nations = spendingData.nations || {};
+  if (Object.keys(nations).length === 0) {
+    document.getElementById('arctic-nato-spending-chart').parentElement.innerHTML =
+      '<div style="padding:20px;color:var(--text-dim);font-size:12px;">NATO spending data unavailable.</div>';
+    return;
+  }
+
+  const spendingColors = {
+    "Norway": '#51cf66', "Finland": '#20c997', "Denmark": '#66d9e8',
+    "Canada": '#e599f7', "United States": '#4f8cff', "Poland": '#ff922b',
+    "Estonia": '#748ffc', "Latvia": '#a9e34b', "Lithuania": '#ffd43b',
+    "Iceland": '#f06595',
+  };
+
+  // Get all years from the data
+  const allYears = new Set();
+  Object.values(nations).forEach(yearData => {
+    Object.keys(yearData).forEach(y => allYears.add(y));
+  });
+  const years = [...allYears].sort().filter(y => parseInt(y) >= 2018);
+
+  // Only show nations with significant spending
+  const topNations = Object.entries(nations)
+    .filter(([name, _]) => name !== 'United States')
+    .slice(0, 8);
+
+  const datasets = topNations.map(([name, yearData]) => ({
+    label: name,
+    data: years.map(y => {
+      const entry = yearData[y];
+      return entry ? (entry.spending_usd_m || 0) : 0;
+    }),
+    borderColor: spendingColors[name] || '#888',
+    backgroundColor: (spendingColors[name] || '#888') + '33',
+    borderWidth: 2,
+    fill: false,
+    tension: 0.3,
+    pointRadius: 2,
+  })).filter(ds => ds.data.some(v => v > 0));
+
+  destroyChart('arctic-nato-spending-chart');
+  chartInstances['arctic-nato-spending-chart'] = new Chart(
+    document.getElementById('arctic-nato-spending-chart'), {
+    type: 'line',
+    data: { labels: years, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 } } },
+        y: {
+          title: { display: true, text: 'USD millions', font: { size: 10 } },
+          ticks: { font: { size: 10 } },
+        },
+      },
+    },
+  });
+}
+
+function renderArcticDefenseNews(newsData) {
+  const articles = newsData.articles || [];
+  const list = document.getElementById('arctic-news-list');
+
+  if (articles.length === 0) {
+    list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:12px;">No Arctic defense news found in current feeds.</div>';
+    return;
+  }
+
+  list.innerHTML = articles.map(a => `<div class="arctic-news-item">
+    <a href="${esc(a.url)}" target="_blank">${esc(a.title)}</a>
+    <div class="news-source">${esc(a.source)} ${a.published_at ? ' | ' + new Date(a.published_at).toLocaleDateString() : ''}</div>
+  </div>`).join('');
+}
+
+function renderArcticFlightTrends(flightData) {
+  document.getElementById('arctic-flights-total').textContent = flightData.total_detections || 0;
+  document.getElementById('arctic-flights-nato').textContent = flightData.nato_detections || 0;
+  document.getElementById('arctic-flights-russian').textContent = flightData.russian_detections || 0;
+
+  const dailyCounts = flightData.daily_counts || {};
+  const days = Object.keys(dailyCounts).sort();
+
+  if (days.length === 0) {
+    document.getElementById('arctic-flights-trend-chart').parentElement.innerHTML +=
+      '<div style="padding:10px;color:var(--text-dim);font-size:11px;text-align:center;">No stored flight data yet. Flight tracking stores snapshots over time.</div>';
+    return;
+  }
+
+  destroyChart('arctic-flights-trend-chart');
+  chartInstances['arctic-flights-trend-chart'] = new Chart(
+    document.getElementById('arctic-flights-trend-chart'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => d.substring(5)),
+      datasets: [{
+        label: 'Detections',
+        data: days.map(d => dailyCounts[d]),
+        backgroundColor: '#4f8cff66',
+        borderColor: '#4f8cff',
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45 } },
+        y: { ticks: { font: { size: 10 } }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+function renderArcticTradeSummary(tradeData) {
+  const container = document.getElementById('arctic-trade-summary');
+  const cards = [];
+
+  // US Census exports to Arctic
+  const usTrade = tradeData.us_exports_to_arctic;
+  if (usTrade && !usTrade.error) {
+    const partners = usTrade.partners || {};
+    const totalUSD = Object.values(partners).reduce((s, p) => s + (p.total || 0), 0);
+    const partnerNames = Object.keys(partners).slice(0, 4).join(', ');
+    cards.push(`<div class="arctic-trade-card">
+      <h4>US Exports to Arctic Nations</h4>
+      <div class="trade-total">${fmtUSD(totalUSD)}</div>
+      <div class="trade-source">${esc(usTrade.source)} (${esc(usTrade.currency)})</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Partners: ${esc(partnerNames)}</div>
+    </div>`);
+  } else {
+    cards.push(`<div class="arctic-trade-card">
+      <h4>US Exports to Arctic Nations</h4>
+      <div class="trade-error">${usTrade ? esc(usTrade.error) : 'No data'}</div>
+      <div class="trade-source">US Census Bureau</div>
+    </div>`);
+  }
+
+  // Eurostat Arctic imports
+  const euTrade = tradeData.eu_arctic_imports;
+  if (euTrade && !euTrade.error) {
+    const euNations = euTrade.nations || {};
+    const totalEUR = Object.values(euNations).reduce((s, n) => s + (n.total || 0), 0);
+    const nationNames = Object.keys(euNations).join(', ');
+    cards.push(`<div class="arctic-trade-card">
+      <h4>Nordic Arms Imports (EU)</h4>
+      <div class="trade-total">${'\u20AC'}${totalEUR >= 1e6 ? (totalEUR/1e6).toFixed(1) + 'M' : totalEUR >= 1e3 ? (totalEUR/1e3).toFixed(0) + 'K' : totalEUR.toFixed(0)}</div>
+      <div class="trade-source">${esc(euTrade.source)} (${esc(euTrade.currency)})</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Reporters: ${esc(nationNames)}</div>
+    </div>`);
+  } else {
+    cards.push(`<div class="arctic-trade-card">
+      <h4>Nordic Arms Imports (EU)</h4>
+      <div class="trade-error">${euTrade ? esc(euTrade.error) : 'No data'}</div>
+      <div class="trade-source">Eurostat Comext</div>
+    </div>`);
+  }
+
+  // Canada trade
+  const caTrade = tradeData.canada_trade;
+  if (caTrade && !caTrade.error) {
+    const totalCAD = caTrade.total || 0;
+    cards.push(`<div class="arctic-trade-card">
+      <h4>Canada Arms Trade</h4>
+      <div class="trade-total">C$${totalCAD >= 1e6 ? (totalCAD/1e6).toFixed(1) + 'M' : totalCAD >= 1e3 ? (totalCAD/1e3).toFixed(0) + 'K' : totalCAD.toFixed(0)}</div>
+      <div class="trade-source">${esc(caTrade.source)} (${esc(caTrade.currency)})</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">HS 93 total (exports + imports)</div>
+    </div>`);
+  } else {
+    cards.push(`<div class="arctic-trade-card">
+      <h4>Canada Arms Trade</h4>
+      <div class="trade-error">${caTrade ? esc(caTrade.error) : 'No data'}</div>
+      <div class="trade-source">Statistics Canada</div>
+    </div>`);
+  }
+
+  container.innerHTML = cards.join('');
 }
 
 function renderArcticAirspace(flights) {
