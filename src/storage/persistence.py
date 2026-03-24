@@ -15,6 +15,8 @@ from src.storage.models import (
     Country, WeaponSystem, ArmsTransfer, DefenseCompany,
     TradeIndicator, ArmsTradeNews, DeliveryTracking,
     WeaponCategory, DealStatus,
+    SupplyChainMaterial, SupplyChainNode, SupplyChainEdge,
+    SupplyChainRoute, SupplyChainAlert,
 )
 from src.ingestion.sipri_transfers import SIPRITransferRecord
 from src.ingestion.sipri_companies import DefenseCompanyRecord
@@ -376,4 +378,194 @@ class PersistenceService:
 
         self.session.commit()
         logger.info("Stored %d vessel position records", inserted)
+        return inserted
+
+    # --- Supply Chain Materials ---
+
+    def store_materials(self, records: list[dict]) -> int:
+        """Store critical material records, upserting by name.
+
+        Each dict should have keys: name, category, top_producers (JSON str),
+        concentration_index, strategic_importance, defense_applications, notes.
+        """
+        inserted = 0
+        for rec in records:
+            existing = self.session.execute(
+                select(SupplyChainMaterial).where(
+                    SupplyChainMaterial.name == rec["name"]
+                )
+            ).scalar_one_or_none()
+
+            if existing:
+                existing.category = rec.get("category", existing.category)
+                existing.top_producers = rec.get("top_producers", existing.top_producers)
+                existing.concentration_index = rec.get("concentration_index", existing.concentration_index)
+                existing.strategic_importance = rec.get("strategic_importance", existing.strategic_importance)
+                existing.defense_applications = rec.get("defense_applications", existing.defense_applications)
+                existing.updated_at = datetime.utcnow()
+                continue
+
+            material = SupplyChainMaterial(
+                name=rec["name"],
+                category=rec["category"],
+                top_producers=rec.get("top_producers"),
+                concentration_index=rec.get("concentration_index"),
+                strategic_importance=rec.get("strategic_importance"),
+                defense_applications=rec.get("defense_applications"),
+                notes=rec.get("notes"),
+            )
+            self.session.add(material)
+            inserted += 1
+
+        self.session.commit()
+        logger.info("Stored %d new materials (%d total processed)", inserted, len(records))
+        return inserted
+
+    # --- Supply Chain Nodes ---
+
+    def store_supply_chain_nodes(self, records: list[dict]) -> int:
+        """Store supply-chain graph nodes, upserting by (node_type, name).
+
+        Each dict should have keys: node_type, name, and optionally
+        description, country_id, company_name, material_id, weapon_system_id.
+        """
+        inserted = 0
+        for rec in records:
+            existing = self.session.execute(
+                select(SupplyChainNode).where(
+                    SupplyChainNode.node_type == rec["node_type"],
+                    SupplyChainNode.name == rec["name"],
+                )
+            ).scalar_one_or_none()
+
+            if existing:
+                for key in ("description", "country_id", "company_name",
+                            "material_id", "weapon_system_id"):
+                    if key in rec and rec[key] is not None:
+                        setattr(existing, key, rec[key])
+                continue
+
+            node = SupplyChainNode(
+                node_type=rec["node_type"],
+                name=rec["name"],
+                description=rec.get("description"),
+                country_id=rec.get("country_id"),
+                company_name=rec.get("company_name"),
+                material_id=rec.get("material_id"),
+                weapon_system_id=rec.get("weapon_system_id"),
+            )
+            self.session.add(node)
+            inserted += 1
+
+        self.session.commit()
+        logger.info("Stored %d new supply-chain nodes (%d total processed)", inserted, len(records))
+        return inserted
+
+    # --- Supply Chain Edges ---
+
+    def store_supply_chain_edges(self, records: list[dict]) -> int:
+        """Store supply-chain graph edges, upserting by (parent_id, child_id).
+
+        Each dict should have keys: parent_node_id, child_node_id,
+        dependency_type, and optionally is_sole_source, alternative_count,
+        confidence, source, notes.
+        """
+        inserted = 0
+        for rec in records:
+            existing = self.session.execute(
+                select(SupplyChainEdge).where(
+                    SupplyChainEdge.parent_node_id == rec["parent_node_id"],
+                    SupplyChainEdge.child_node_id == rec["child_node_id"],
+                )
+            ).scalar_one_or_none()
+
+            if existing:
+                for key in ("dependency_type", "is_sole_source",
+                            "alternative_count", "confidence", "source", "notes"):
+                    if key in rec and rec[key] is not None:
+                        setattr(existing, key, rec[key])
+                continue
+
+            edge = SupplyChainEdge(
+                parent_node_id=rec["parent_node_id"],
+                child_node_id=rec["child_node_id"],
+                dependency_type=rec["dependency_type"],
+                is_sole_source=rec.get("is_sole_source", False),
+                alternative_count=rec.get("alternative_count", 0),
+                confidence=rec.get("confidence", 0.5),
+                source=rec.get("source"),
+                notes=rec.get("notes"),
+            )
+            self.session.add(edge)
+            inserted += 1
+
+        self.session.commit()
+        logger.info("Stored %d new supply-chain edges (%d total processed)", inserted, len(records))
+        return inserted
+
+    # --- Supply Chain Routes ---
+
+    def store_supply_chain_routes(self, records: list[dict]) -> int:
+        """Store shipping routes with chokepoint data."""
+        inserted = 0
+        for rec in records:
+            existing = self.session.execute(
+                select(SupplyChainRoute).where(
+                    SupplyChainRoute.origin_country_id == rec["origin_country_id"],
+                    SupplyChainRoute.destination_country_id == rec["destination_country_id"],
+                    SupplyChainRoute.route_name == rec.get("route_name", ""),
+                )
+            ).scalar_one_or_none()
+
+            if existing:
+                for key in ("chokepoints", "distance_nm", "risk_score", "notes"):
+                    if key in rec and rec[key] is not None:
+                        setattr(existing, key, rec[key])
+                continue
+
+            route = SupplyChainRoute(
+                origin_country_id=rec["origin_country_id"],
+                destination_country_id=rec["destination_country_id"],
+                route_name=rec.get("route_name", ""),
+                chokepoints=rec.get("chokepoints"),
+                distance_nm=rec.get("distance_nm"),
+                risk_score=rec.get("risk_score"),
+                notes=rec.get("notes"),
+            )
+            self.session.add(route)
+            inserted += 1
+
+        self.session.commit()
+        logger.info("Stored %d new supply-chain routes (%d total processed)", inserted, len(records))
+        return inserted
+
+    # --- Supply Chain Alerts ---
+
+    def store_supply_chain_alerts(self, records: list[dict]) -> int:
+        """Store supply-chain disruption alerts, deduplicating by title."""
+        inserted = 0
+        for rec in records:
+            existing = self.session.execute(
+                select(SupplyChainAlert).where(
+                    SupplyChainAlert.title == rec["title"],
+                    SupplyChainAlert.is_active == True,  # noqa: E712
+                )
+            ).scalar_one_or_none()
+
+            if existing:
+                continue
+
+            alert = SupplyChainAlert(
+                alert_type=rec["alert_type"],
+                severity=rec["severity"],
+                title=rec["title"],
+                description=rec.get("description"),
+                affected_node_id=rec.get("affected_node_id"),
+                affected_country_id=rec.get("affected_country_id"),
+            )
+            self.session.add(alert)
+            inserted += 1
+
+        self.session.commit()
+        logger.info("Stored %d new supply-chain alerts (%d total processed)", inserted, len(records))
         return inserted

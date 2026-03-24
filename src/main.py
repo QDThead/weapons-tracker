@@ -19,6 +19,7 @@ from src.api.trend_routes import router as trend_router
 from src.api.dashboard_routes import router as dashboard_router
 from src.api.insights_routes import router as insights_router
 from src.api.arctic_routes import router as arctic_router
+from src.api.psi_routes import router as psi_router
 from src.ingestion.scheduler import create_scheduler
 
 logging.basicConfig(
@@ -33,6 +34,7 @@ app.include_router(trend_router)
 app.include_router(dashboard_router)
 app.include_router(insights_router)
 app.include_router(arctic_router)
+app.include_router(psi_router)
 
 # Serve dashboard UI
 _static_dir = Path(__file__).parent / "static"

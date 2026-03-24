@@ -18,6 +18,7 @@ pandas>=2.2
 geopandas>=0.14
 numpy>=1.26
 openpyxl>=3.1
+networkx>=3.2
 
 # Geospatial
 shapely>=2.0

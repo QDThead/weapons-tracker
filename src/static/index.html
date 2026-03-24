@@ -604,6 +604,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   <button class="nav-tab" data-page="live-flights">Live Flights</button>
   <button class="nav-tab" data-page="deals">Deals</button>
   <button class="nav-tab" data-page="canada-intel">Canada Intel</button>
+  <button class="nav-tab" data-page="supply-chain">Supply Chain</button>
   <button class="nav-tab" data-page="data-feeds">Data Feeds</button>
 </nav>
 
@@ -1255,6 +1256,132 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
   </div>
 
+  <!-- ════ SUPPLY CHAIN (PSI) PAGE ════ -->
+  <div id="page-supply-chain" class="page">
+
+    <div style="display:flex; gap:10px; margin-bottom:18px;">
+      <button class="tab active" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
+      <button class="tab" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
+      <button class="tab" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
+      <button class="tab" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
+    </div>
+
+    <!-- PSI Overview -->
+    <div id="psi-overview" class="psi-sub">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:18px;">
+        <div class="card" style="text-align:center; padding:20px;">
+          <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Global Risk Score</div>
+          <div id="psi-global-score" style="font-size:42px; font-weight:700; color:var(--accent4);">--</div>
+          <div style="font-size:11px; color:var(--text-dim);">composite (0-100)</div>
+        </div>
+        <div class="card" style="text-align:center; padding:20px;">
+          <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Active Alerts</div>
+          <div id="psi-alert-count" style="font-size:42px; font-weight:700; color:var(--accent2);">--</div>
+          <div style="font-size:11px; color:var(--text-dim);">supply chain disruptions</div>
+        </div>
+        <div class="card" style="text-align:center; padding:20px;">
+          <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Graph Nodes</div>
+          <div id="psi-node-count" style="font-size:42px; font-weight:700; color:var(--accent);">--</div>
+          <div style="font-size:11px; color:var(--text-dim);">materials + components + platforms</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px;">
+        <!-- Risk dimensions -->
+        <div class="card" style="padding:18px;">
+          <h3 style="margin-bottom:14px;">Canada Risk Dimensions</h3>
+          <canvas id="psi-radar-chart" height="280"></canvas>
+        </div>
+        <!-- Top material risks -->
+        <div class="card" style="padding:18px;">
+          <h3 style="margin-bottom:14px;">Critical Material Risks</h3>
+          <div id="psi-material-list" style="max-height:350px; overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <!-- Active alerts -->
+      <div class="card" style="padding:18px; margin-top:14px;">
+        <h3 style="margin-bottom:14px;">Active Supply Chain Alerts</h3>
+        <div id="psi-alerts-list"></div>
+      </div>
+
+      <!-- Chokepoints -->
+      <div class="card" style="padding:18px; margin-top:14px;">
+        <h3 style="margin-bottom:14px;">Strategic Chokepoint Status</h3>
+        <div id="psi-chokepoints-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- PSI Knowledge Graph -->
+    <div id="psi-graph" class="psi-sub" style="display:none;">
+      <div class="card" style="padding:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3>Supply Chain Knowledge Graph</h3>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="psi-graph-type-filter" style="background:var(--surface); color:var(--text); border:1px solid var(--border); padding:4px 8px; border-radius:4px;">
+              <option value="">All Types</option>
+              <option value="material">Materials</option>
+              <option value="component">Components</option>
+              <option value="subsystem">Subsystems</option>
+              <option value="platform">Platforms</option>
+            </select>
+            <label style="font-size:12px; color:var(--text-dim);">Min Risk:
+              <input id="psi-graph-risk-slider" type="range" min="0" max="100" value="0" style="width:100px; vertical-align:middle;">
+              <span id="psi-graph-risk-val">0</span>
+            </label>
+            <button onclick="loadPsiGraph()" style="background:var(--accent); color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer;">Refresh</button>
+          </div>
+        </div>
+        <div id="psi-graph-container" style="width:100%; height:550px; position:relative;"></div>
+        <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+          <span style="display:inline-block; width:12px; height:12px; background:#ff9f43; border-radius:50%; vertical-align:middle;"></span> Material
+          <span style="display:inline-block; width:12px; height:12px; background:#4f8cff; border-radius:2px; vertical-align:middle; margin-left:12px;"></span> Component
+          <span style="display:inline-block; width:12px; height:12px; background:#51cf66; border-radius:2px; vertical-align:middle; margin-left:12px; transform:rotate(45deg);"></span> Subsystem
+          <span style="display:inline-block; width:12px; height:12px; background:#ff6b6b; border-radius:50%; vertical-align:middle; margin-left:12px;"></span> Platform
+        </div>
+      </div>
+    </div>
+
+    <!-- PSI Risk Matrix -->
+    <div id="psi-risks" class="psi-sub" style="display:none;">
+      <div class="card" style="padding:18px;">
+        <h3 style="margin-bottom:14px;">Risk-Impact Matrix</h3>
+        <div style="position:relative;">
+          <canvas id="psi-risk-matrix" height="400"></canvas>
+          <div style="position:absolute; top:10px; right:20px; font-size:11px; color:var(--accent2); font-weight:600;">MITIGATE NOW</div>
+          <div style="position:absolute; top:10px; left:20px; font-size:11px; color:var(--accent4); font-weight:600;">MONITOR</div>
+          <div style="position:absolute; bottom:40px; right:20px; font-size:11px; color:var(--accent); font-weight:600;">TRANSFER</div>
+          <div style="position:absolute; bottom:40px; left:20px; font-size:11px; color:var(--accent3); font-weight:600;">ACCEPT</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PSI Scenario Sandbox -->
+    <div id="psi-scenarios" class="psi-sub" style="display:none;">
+      <div class="card" style="padding:18px;">
+        <h3 style="margin-bottom:14px;">Scenario Sandbox</h3>
+        <div style="display:grid; grid-template-columns:300px 1fr; gap:18px;">
+          <div>
+            <label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:4px;">Scenario Type</label>
+            <select id="psi-scenario-type" onchange="updateScenarioFields()" style="width:100%; background:var(--surface); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:4px; margin-bottom:12px;">
+              <option value="sanctions_expansion">Sanctions Expansion</option>
+              <option value="material_shortage">Material Shortage</option>
+              <option value="route_disruption">Route Disruption</option>
+              <option value="demand_surge">Demand Surge</option>
+              <option value="supplier_substitution">Supplier Substitution</option>
+            </select>
+            <div id="psi-scenario-fields"></div>
+            <button id="psi-run-scenario" onclick="runScenario()" style="width:100%; margin-top:14px; background:var(--accent); color:#fff; border:none; padding:10px; border-radius:4px; cursor:pointer; font-weight:600;">Run Scenario</button>
+          </div>
+          <div id="psi-scenario-results" style="min-height:300px;">
+            <div style="color:var(--text-dim); text-align:center; padding:60px 0;">Select a scenario type and click "Run Scenario"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- ════ DATA FEEDS PAGE ════ -->
   <div id="page-data-feeds" class="page">
     <div class="feeds-header">
@@ -1343,6 +1470,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     if (tab.dataset.page === 'arctic') loadArctic();
     if (tab.dataset.page === 'live-flights') loadFlights();
     if (tab.dataset.page === 'canada-intel') loadCanadaIntel();
+    if (tab.dataset.page === 'supply-chain') loadSupplyChain();
     if (tab.dataset.page === 'data-feeds') loadDataFeeds();
   });
 });
@@ -4434,6 +4562,333 @@ async function toggleFeedSample(cardId, sectionIdx, feedIdx) {
   } catch (e) {
     sampleEl.innerHTML = '<div style="color:var(--accent2);">Failed to load: ' + esc(e.message) + '</div>';
   }
+}
+
+// ═══════════════════════════════════════════════════
+// ── PSI / Supply Chain Tab ──
+// ═══════════════════════════════════════════════════
+
+let psiLoaded = false;
+let psiRadarChart = null;
+let psiRiskMatrixChart = null;
+let psiGraphSim = null;
+
+function switchPsiTab(btn) {
+  document.querySelectorAll('[data-psi-tab]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.psi-sub').forEach(d => d.style.display = 'none');
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.psiTab).style.display = '';
+  if (btn.dataset.psiTab === 'psi-graph' && !psiGraphSim) loadPsiGraph();
+}
+
+async function loadSupplyChain() {
+  if (psiLoaded) return;
+  psiLoaded = true;
+
+  const [overviewRes, alertsRes, chokepointsRes] = await Promise.allSettled([
+    fetch(API + '/psi/overview').then(r => r.ok ? r.json() : null),
+    fetch(API + '/psi/alerts?severity_min=1').then(r => r.ok ? r.json() : null),
+    fetch(API + '/psi/chokepoints').then(r => r.ok ? r.json() : null),
+  ]);
+
+  const overview = overviewRes.status === 'fulfilled' ? overviewRes.value : null;
+  const alerts = alertsRes.status === 'fulfilled' ? alertsRes.value : [];
+  const chokepoints = chokepointsRes.status === 'fulfilled' ? chokepointsRes.value : [];
+
+  if (overview) renderPsiOverview(overview);
+  if (alerts) renderPsiAlerts(alerts);
+  if (chokepoints) renderPsiChokepoints(chokepoints);
+  renderPsiRiskMatrix(alerts || []);
+  updateScenarioFields();
+}
+
+function renderPsiOverview(data) {
+  document.getElementById('psi-global-score').textContent = Math.round(data.global_risk_score || 0);
+  document.getElementById('psi-alert-count').textContent = (data.active_alerts || []).length;
+  document.getElementById('psi-node-count').textContent = data.graph_stats ? data.graph_stats.nodes : 0;
+
+  // Color global score
+  const score = data.global_risk_score || 0;
+  const scoreEl = document.getElementById('psi-global-score');
+  scoreEl.style.color = score > 70 ? 'var(--accent2)' : score > 40 ? 'var(--accent4)' : 'var(--accent3)';
+
+  // Radar chart for risk dimensions
+  const dims = data.risk_dimensions || {};
+  const labels = Object.keys(dims).map(k => k.replace(/_/g, ' '));
+  const values = Object.values(dims);
+  const ctx = document.getElementById('psi-radar-chart').getContext('2d');
+  if (psiRadarChart) psiRadarChart.destroy();
+  psiRadarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Canada Risk',
+        data: values,
+        borderColor: '#4f8cff',
+        backgroundColor: 'rgba(79,140,255,0.15)',
+        pointBackgroundColor: '#4f8cff',
+      }],
+    },
+    options: {
+      scales: { r: { beginAtZero: true, max: 100, grid: { color: '#2a2d3a' }, ticks: { display: false } } },
+      plugins: { legend: { display: false } },
+    },
+  });
+
+  // Material risk list
+  const matEl = document.getElementById('psi-material-list');
+  const mats = data.top_material_risks || [];
+  matEl.innerHTML = mats.map(m => {
+    const color = m.scarcity_score > 70 ? 'var(--accent2)' : m.scarcity_score > 40 ? 'var(--accent4)' : 'var(--accent3)';
+    const stars = '★'.repeat(m.strategic_importance) + '☆'.repeat(5 - m.strategic_importance);
+    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-weight:600;">${esc(m.name)}</div>
+        <div style="font-size:11px; color:var(--text-dim);">${esc(m.category)} — CI: ${(m.concentration_index).toFixed(2)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:18px; font-weight:700; color:${color};">${Math.round(m.scarcity_score)}</div>
+        <div style="font-size:10px; color:var(--accent4);">${stars}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPsiAlerts(alerts) {
+  const el = document.getElementById('psi-alerts-list');
+  if (!alerts.length) { el.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">No active alerts</div>'; return; }
+  el.innerHTML = alerts.map(a => {
+    const sevColors = { 5: '#ff6b6b', 4: '#ff9f43', 3: '#ffd43b', 2: '#4f8cff', 1: '#51cf66' };
+    const color = sevColors[a.severity] || '#888';
+    return `<div style="display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border);">
+      <div style="min-width:32px; height:32px; background:${color}22; color:${color}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">${a.severity}</div>
+      <div>
+        <div style="font-weight:600;">${esc(a.title)}</div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">${esc(a.type.replace(/_/g, ' '))} — ${esc(a.description || '').slice(0, 120)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPsiChokepoints(data) {
+  const el = document.getElementById('psi-chokepoints-list');
+  el.innerHTML = data.map(cp => {
+    const color = cp.risk_factor > 70 ? 'var(--accent2)' : cp.risk_factor > 40 ? 'var(--accent4)' : 'var(--accent3)';
+    return `<div class="card" style="padding:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-weight:600;">${esc(cp.name)}</div>
+        <div style="font-size:20px; font-weight:700; color:${color};">${cp.risk_factor}</div>
+      </div>
+      <div style="font-size:12px; color:var(--text-dim); margin-top:4px;">${cp.affected_routes} route(s) affected</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadPsiGraph() {
+  const typeFilter = document.getElementById('psi-graph-type-filter').value;
+  const riskMin = parseInt(document.getElementById('psi-graph-risk-slider').value);
+  document.getElementById('psi-graph-risk-val').textContent = riskMin;
+
+  let url = API + '/psi/graph?risk_min=' + riskMin;
+  if (typeFilter) url += '&node_type=' + typeFilter;
+
+  const container = document.getElementById('psi-graph-container');
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading graph...</div>';
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Failed');
+    const data = await resp.json();
+    renderPsiForceGraph(data, container);
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--accent2); text-align:center; padding:40px;">Failed to load graph: ' + esc(e.message) + '</div>';
+  }
+}
+
+function renderPsiForceGraph(data, container) {
+  container.innerHTML = '';
+  const width = container.clientWidth;
+  const height = 550;
+
+  const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
+
+  const typeColors = { material: '#ff9f43', component: '#4f8cff', subsystem: '#51cf66', platform: '#ff6b6b' };
+  const typeShapes = { material: d3.symbolCircle, component: d3.symbolSquare, subsystem: d3.symbolDiamond, platform: d3.symbolStar };
+
+  // Build node/link arrays
+  const nodeMap = {};
+  const nodes = data.nodes.map(n => { const o = {...n}; nodeMap[n.id] = o; return o; });
+  const links = data.edges.filter(e => nodeMap[e.source] && nodeMap[e.target]).map(e => ({...e}));
+
+  if (!nodes.length) {
+    container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:60px;">No nodes to display. Run the seed script first:<br><code>python -m src.analysis.supply_chain_seed</code></div>';
+    return;
+  }
+
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(60))
+    .force('charge', d3.forceManyBody().strength(-120))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collision', d3.forceCollide().radius(18));
+
+  psiGraphSim = sim;
+
+  const link = svg.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke', d => d.is_sole_source ? '#ff6b6b' : '#3a3d4a')
+    .attr('stroke-width', d => d.is_sole_source ? 2 : 1)
+    .attr('stroke-dasharray', d => d.is_sole_source ? '' : '4 2');
+
+  const node = svg.append('g').selectAll('path').data(nodes).join('path')
+    .attr('d', d => d3.symbol().type(typeShapes[d.type] || d3.symbolCircle).size(d.type === 'platform' ? 200 : 120)())
+    .attr('fill', d => typeColors[d.type] || '#888')
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 0.5)
+    .attr('cursor', 'pointer')
+    .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
+
+  node.append('title').text(d => `${d.name} (${d.type})${d.company ? ' — ' + d.company : ''}\nRisk: ${d.risk || 0}`);
+
+  const labels = svg.append('g').selectAll('text').data(nodes.filter(d => d.type === 'platform' || d.type === 'subsystem')).join('text')
+    .text(d => d.name.length > 20 ? d.name.slice(0, 18) + '…' : d.name)
+    .attr('font-size', 9).attr('fill', '#ccc').attr('text-anchor', 'middle').attr('dy', -12);
+
+  sim.on('tick', () => {
+    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+    labels.attr('x', d => d.x).attr('y', d => d.y);
+  });
+
+  function dragstarted(event) { if (!event.active) sim.alphaTarget(0.3).restart(); event.subject.fx = event.subject.x; event.subject.fy = event.subject.y; }
+  function dragged(event) { event.subject.fx = event.x; event.subject.fy = event.y; }
+  function dragended(event) { if (!event.active) sim.alphaTarget(0); event.subject.fx = null; event.subject.fy = null; }
+}
+
+document.getElementById('psi-graph-risk-slider').addEventListener('input', function() {
+  document.getElementById('psi-graph-risk-val').textContent = this.value;
+});
+
+function renderPsiRiskMatrix(alerts) {
+  const ctx = document.getElementById('psi-risk-matrix').getContext('2d');
+  if (psiRiskMatrixChart) psiRiskMatrixChart.destroy();
+
+  const typeColors = {
+    material_shortage: '#ff9f43', supplier_disruption: '#ff6b6b', sanctions_risk: '#e64980',
+    chokepoint_blocked: '#4f8cff', demand_surge: '#ffd43b', concentration_risk: '#cc5de8',
+  };
+
+  const points = alerts.map((a, i) => ({
+    x: (a.severity / 5) * 80 + Math.random() * 20, // probability proxy
+    y: (a.severity / 5) * 80 + Math.random() * 20, // criticality proxy
+    r: 6 + a.severity * 2,
+    label: a.title,
+    backgroundColor: typeColors[a.type] || '#888',
+  }));
+
+  psiRiskMatrixChart = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data: points,
+        backgroundColor: points.map(p => p.backgroundColor + '99'),
+        borderColor: points.map(p => p.backgroundColor),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      scales: {
+        x: { title: { display: true, text: 'Probability of Disruption', color: '#8888a0' }, min: 0, max: 100, grid: { color: '#2a2d3a' } },
+        y: { title: { display: true, text: 'Operational Criticality', color: '#8888a0' }, min: 0, max: 100, grid: { color: '#2a2d3a' } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.raw.label } },
+        annotation: {
+          annotations: {
+            midX: { type: 'line', xMin: 50, xMax: 50, borderColor: '#3a3d4a', borderDash: [4, 4] },
+            midY: { type: 'line', yMin: 50, yMax: 50, borderColor: '#3a3d4a', borderDash: [4, 4] },
+          },
+        },
+      },
+    },
+  });
+}
+
+function updateScenarioFields() {
+  const type = document.getElementById('psi-scenario-type').value;
+  const el = document.getElementById('psi-scenario-fields');
+  const field = (label, id, placeholder, val) =>
+    `<label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:2px; margin-top:8px;">${label}</label>
+     <input id="${id}" value="${val || ''}" placeholder="${placeholder}" style="width:100%; background:var(--surface); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:4px;">`;
+
+  const configs = {
+    sanctions_expansion: field('Country', 'sc-country', 'e.g. China', 'China'),
+    material_shortage: field('Material', 'sc-material', 'e.g. Cobalt', 'Cobalt') + field('Reduction %', 'sc-reduction', '40', '40'),
+    route_disruption: field('Chokepoint', 'sc-chokepoint', 'e.g. Strait of Hormuz', 'Strait of Hormuz') + field('Duration (days)', 'sc-duration', '90', '90'),
+    demand_surge: field('Region', 'sc-region', 'NATO', 'NATO') + field('Increase %', 'sc-increase', '30', '30'),
+    supplier_substitution: field('Original Supplier', 'sc-original', 'e.g. Russia', 'Russia') + field('Replacement', 'sc-replacement', 'e.g. South Korea', 'South Korea'),
+  };
+  el.innerHTML = configs[type] || '';
+}
+
+async function runScenario() {
+  const type = document.getElementById('psi-scenario-type').value;
+  const params = {};
+  if (type === 'sanctions_expansion') params.country = document.getElementById('sc-country').value;
+  if (type === 'material_shortage') { params.material = document.getElementById('sc-material').value; params.reduction_pct = parseInt(document.getElementById('sc-reduction').value) || 40; }
+  if (type === 'route_disruption') { params.chokepoint = document.getElementById('sc-chokepoint').value; params.duration_days = parseInt(document.getElementById('sc-duration').value) || 90; }
+  if (type === 'demand_surge') { params.region = document.getElementById('sc-region').value; params.increase_pct = parseInt(document.getElementById('sc-increase').value) || 30; }
+  if (type === 'supplier_substitution') { params.original_supplier = document.getElementById('sc-original').value; params.replacement_supplier = document.getElementById('sc-replacement').value; }
+
+  const resEl = document.getElementById('psi-scenario-results');
+  resEl.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-dim);">Running simulation...</div>';
+
+  try {
+    const resp = await fetch(API + '/psi/scenario', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, parameters: params }),
+    });
+    if (!resp.ok) throw new Error('Scenario failed');
+    const data = await resp.json();
+    renderScenarioResults(data, resEl);
+  } catch (e) {
+    resEl.innerHTML = '<div style="color:var(--accent2); padding:20px;">' + esc(e.message) + '</div>';
+  }
+}
+
+function renderScenarioResults(data, el) {
+  const summary = data.impact_summary || {};
+  let html = '<div style="margin-bottom:14px;"><h4 style="margin-bottom:8px;">Impact Summary</h4><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:8px;">';
+  for (const [k, v] of Object.entries(summary)) {
+    html += `<div class="card" style="padding:10px; text-align:center;"><div style="font-size:20px; font-weight:700; color:var(--accent4);">${typeof v === 'number' ? v.toLocaleString() : v}</div><div style="font-size:10px; color:var(--text-dim);">${k.replace(/_/g, ' ')}</div></div>`;
+  }
+  html += '</div></div>';
+
+  // Recommendations
+  if (data.recommendations && data.recommendations.length) {
+    html += '<h4 style="margin-bottom:8px;">Recommended Actions</h4>';
+    data.recommendations.forEach(r => {
+      const pColor = r.priority === 'critical' ? 'var(--accent2)' : r.priority === 'high' ? 'var(--accent4)' : 'var(--accent)';
+      html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center;">
+        <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:${pColor}; min-width:60px;">${esc(r.priority)}</span>
+        <span>${esc(r.action)}</span></div>`;
+    });
+  }
+
+  // Affected items
+  const affected = data.affected_countries || data.affected_platforms || data.affected_routes || data.bottlenecks || data.affected_buyers || [];
+  if (affected.length) {
+    html += '<h4 style="margin:14px 0 8px;">Affected Entities (' + affected.length + ')</h4>';
+    html += '<div style="max-height:200px; overflow-y:auto;">';
+    affected.forEach(item => {
+      const label = item.country || item.platform || item.route || item.supplier || item.route_name || JSON.stringify(item);
+      const detail = item.tiv_at_risk ? `TIV: ${item.tiv_at_risk.toLocaleString()}M` : item.tiv_to_replace ? `TIV: ${item.tiv_to_replace.toLocaleString()}M` : '';
+      html += `<div style="padding:5px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;"><span>${esc(String(label))}</span><span style="color:var(--text-dim); font-size:12px;">${detail}</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
 }
 
 // ── Init ──

@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Optional
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Date, DateTime, Text,
+    Boolean, Column, Integer, String, Float, Date, DateTime, Text,
     ForeignKey, Index, Enum as SQLEnum, UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -224,4 +224,199 @@ class DeliveryTracking(Base):
 
     __table_args__ = (
         Index("ix_delivery_type_time", "tracking_type", "detected_at"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# PSI (Predictive Supplier Insights) models — supply-chain graph & risk
+# ---------------------------------------------------------------------------
+
+class MaterialCategory(str, Enum):
+    """Critical material categories for defense supply chains."""
+    RARE_EARTH = "rare_earth"
+    LITHIUM = "lithium"
+    COBALT = "cobalt"
+    TUNGSTEN = "tungsten"
+    TITANIUM = "titanium"
+    CHROMIUM = "chromium"
+    MANGANESE = "manganese"
+    NICKEL = "nickel"
+    URANIUM = "uranium"
+    BERYLLIUM = "beryllium"
+    GERMANIUM = "germanium"
+    GALLIUM = "gallium"
+    TANTALUM = "tantalum"
+    NIOBIUM = "niobium"
+    COPPER = "copper"
+    SEMICONDUCTOR = "semiconductor"
+    EXPLOSIVE_PRECURSOR = "explosive_precursor"
+    OTHER = "other"
+
+
+class SupplyChainNodeType(str, Enum):
+    """Types of nodes in the supply-chain knowledge graph."""
+    MATERIAL = "material"
+    COMPONENT = "component"
+    SUBSYSTEM = "subsystem"
+    PLATFORM = "platform"
+
+
+class AlertType(str, Enum):
+    """Types of supply-chain disruption alerts."""
+    MATERIAL_SHORTAGE = "material_shortage"
+    SUPPLIER_DISRUPTION = "supplier_disruption"
+    SANCTIONS_RISK = "sanctions_risk"
+    CHOKEPOINT_BLOCKED = "chokepoint_blocked"
+    DEMAND_SURGE = "demand_surge"
+    CONCENTRATION_RISK = "concentration_risk"
+
+
+class SupplyChainMaterial(Base):
+    """A critical defense material (e.g. cobalt, titanium, rare earths)."""
+    __tablename__ = "supply_chain_materials"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False, unique=True)
+    category = Column(SQLEnum(MaterialCategory), nullable=False)
+    top_producers = Column(Text)  # JSON: [{"country": "DRC", "pct": 73, "tonnes": 130000}, ...]
+    concentration_index = Column(Float)  # 0-1 Herfindahl-Hirschman Index
+    strategic_importance = Column(Integer)  # 1-5
+    defense_applications = Column(Text)
+    notes = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    nodes = relationship("SupplyChainNode", back_populates="material")
+
+    def __repr__(self):
+        return f"<SupplyChainMaterial(name='{self.name}', category='{self.category}')>"
+
+
+class SupplyChainNode(Base):
+    """A node in the supply-chain knowledge graph.
+
+    Represents a material, component, subsystem, or weapon platform.
+    Edges in ``supply_chain_edges`` encode dependency relationships
+    between nodes (BOM hierarchy).
+    """
+    __tablename__ = "supply_chain_nodes"
+
+    id = Column(Integer, primary_key=True)
+    node_type = Column(SQLEnum(SupplyChainNodeType), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+
+    country_id = Column(Integer, ForeignKey("countries.id"))
+    company_name = Column(String(255))
+    material_id = Column(Integer, ForeignKey("supply_chain_materials.id"))
+    weapon_system_id = Column(Integer, ForeignKey("weapon_systems.id"))
+
+    risk_score = Column(Float)  # 0-100
+    risk_updated_at = Column(DateTime)
+
+    country = relationship("Country")
+    material = relationship("SupplyChainMaterial", back_populates="nodes")
+    weapon_system = relationship("WeaponSystem")
+
+    parent_edges = relationship(
+        "SupplyChainEdge",
+        foreign_keys="SupplyChainEdge.child_node_id",
+        back_populates="child_node",
+    )
+    child_edges = relationship(
+        "SupplyChainEdge",
+        foreign_keys="SupplyChainEdge.parent_node_id",
+        back_populates="parent_node",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("node_type", "name", name="uq_node_type_name"),
+        Index("ix_node_type", "node_type"),
+    )
+
+    def __repr__(self):
+        return f"<SupplyChainNode(type='{self.node_type}', name='{self.name}')>"
+
+
+class SupplyChainEdge(Base):
+    """A directed dependency edge: child_node depends on parent_node.
+
+    For example a platform (child) *contains* a component (parent),
+    or a component *requires* a material.
+    """
+    __tablename__ = "supply_chain_edges"
+
+    id = Column(Integer, primary_key=True)
+    parent_node_id = Column(Integer, ForeignKey("supply_chain_nodes.id"), nullable=False)
+    child_node_id = Column(Integer, ForeignKey("supply_chain_nodes.id"), nullable=False)
+    dependency_type = Column(String(50), nullable=False)  # "requires", "contains", "assembled_by"
+    is_sole_source = Column(Boolean, default=False)
+    alternative_count = Column(Integer, default=0)
+    confidence = Column(Float, default=0.5)  # 0-1
+    source = Column(String(50))  # "wikidata", "wikipedia", "manual", "usgs"
+    notes = Column(Text)
+
+    parent_node = relationship("SupplyChainNode", foreign_keys=[parent_node_id], back_populates="child_edges")
+    child_node = relationship("SupplyChainNode", foreign_keys=[child_node_id], back_populates="parent_edges")
+
+    __table_args__ = (
+        UniqueConstraint("parent_node_id", "child_node_id", name="uq_edge_parent_child"),
+    )
+
+    def __repr__(self):
+        return f"<SupplyChainEdge(parent={self.parent_node_id}, child={self.child_node_id}, type='{self.dependency_type}')>"
+
+
+class SupplyChainRoute(Base):
+    """A shipping route between countries with chokepoint exposure."""
+    __tablename__ = "supply_chain_routes"
+
+    id = Column(Integer, primary_key=True)
+    origin_country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
+    destination_country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
+    route_name = Column(String(255))
+    chokepoints = Column(Text)  # JSON list: ["Strait of Hormuz", "Suez Canal"]
+    distance_nm = Column(Float)
+    risk_score = Column(Float)  # 0-100
+    notes = Column(Text)
+
+    origin_country = relationship("Country", foreign_keys=[origin_country_id])
+    destination_country = relationship("Country", foreign_keys=[destination_country_id])
+
+    __table_args__ = (
+        UniqueConstraint(
+            "origin_country_id", "destination_country_id", "route_name",
+            name="uq_route_origin_dest_name",
+        ),
+        Index("ix_route_origin_dest", "origin_country_id", "destination_country_id"),
+    )
+
+    def __repr__(self):
+        return f"<SupplyChainRoute(route='{self.route_name}')>"
+
+
+class SupplyChainAlert(Base):
+    """An active or resolved supply-chain disruption alert."""
+    __tablename__ = "supply_chain_alerts"
+
+    id = Column(Integer, primary_key=True)
+    alert_type = Column(SQLEnum(AlertType), nullable=False)
+    severity = Column(Integer, nullable=False)  # 1-5
+    title = Column(String(500), nullable=False)
+    description = Column(Text)
+
+    affected_node_id = Column(Integer, ForeignKey("supply_chain_nodes.id"))
+    affected_country_id = Column(Integer, ForeignKey("countries.id"))
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime)
+
+    affected_node = relationship("SupplyChainNode")
+    affected_country = relationship("Country")
+
+    __table_args__ = (
+        UniqueConstraint("title", "is_active", name="uq_alert_title_active"),
+        Index("ix_alert_active_severity", "is_active", "severity"),
     )

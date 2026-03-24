@@ -139,20 +139,31 @@ class GDELTArmsNewsClient:
         all_articles: dict[str, ArmsNewsArticle] = {}
 
         for i, query in enumerate(ARMS_TRADE_QUERIES):
-            # GDELT enforces a 5-second rate limit between requests
+            # GDELT enforces a strict rate limit (~1 request per 10 seconds)
             if i > 0:
-                await asyncio.sleep(5)
-            try:
-                articles = await self.search_articles(
-                    query=query,
-                    timespan=str(timespan_minutes),
-                    max_records=max_per_query,
-                )
-                for article in articles:
-                    if article.url not in all_articles:
-                        all_articles[article.url] = article
-            except Exception as e:
-                logger.warning("GDELT query failed for '%s': %s", query[:40], e)
+                await asyncio.sleep(10)
+            for attempt in range(3):
+                try:
+                    articles = await self.search_articles(
+                        query=query,
+                        timespan=str(timespan_minutes),
+                        max_records=max_per_query,
+                    )
+                    for article in articles:
+                        if article.url not in all_articles:
+                            all_articles[article.url] = article
+                    break  # success
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 429 and attempt < 2:
+                        wait = 15 * (attempt + 1)
+                        logger.info("GDELT rate limited, waiting %ds (attempt %d)", wait, attempt + 1)
+                        await asyncio.sleep(wait)
+                    else:
+                        logger.warning("GDELT query failed for '%s': %s", query[:40], e)
+                        break
+                except Exception as e:
+                    logger.warning("GDELT query failed for '%s': %s", query[:40], e)
+                    break
 
         results = list(all_articles.values())
         results.sort(key=lambda a: a.published_at or datetime.min, reverse=True)

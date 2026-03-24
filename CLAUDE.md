@@ -7,14 +7,15 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (52 API endpoints)
+- **API Framework:** FastAPI + Uvicorn (62 API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~4,000 lines)
-- **Codebase:** 33 Python files, ~12,800 total lines
+- **Graph Analysis:** NetworkX (supply chain knowledge graph)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,200 lines)
+- **Codebase:** 41 Python files, ~16,000 total lines
 
 ## Project Structure
 ```
@@ -36,6 +37,10 @@ weapons-tracker/
 │   │   ├── sanctions.py              # OFAC SDN + EU sanctions + 17 embargoes
 │   │   ├── maritime_tracker.py       # Maritime vessels via aisstream.io (needs key)
 │   │   ├── sipri_companies.py        # SIPRI Top 100 defense companies
+│   │   ├── critical_minerals.py     # PSI: USGS/EU critical minerals data
+│   │   ├── wikidata_bom.py          # PSI: Wikidata SPARQL BOM connector
+│   │   ├── wikipedia_weapons.py     # PSI: Wikipedia weapon infobox parser
+│   │   ├── corporate_graph.py       # PSI: Company ownership graph
 │   │   └── scheduler.py              # APScheduler ingestion pipeline
 │   ├── storage/
 │   │   ├── models.py                 # SQLAlchemy models (7 tables)
@@ -43,13 +48,17 @@ weapons-tracker/
 │   │   └── persistence.py            # Upsert/dedup logic for all entity types
 │   ├── analysis/
 │   │   ├── trends.py                 # Historical trend analysis (14 query methods)
-│   │   └── flight_patterns.py        # Russian/Chinese flight pattern analyzer
+│   │   ├── flight_patterns.py        # Russian/Chinese flight pattern analyzer
+│   │   ├── supply_chain.py          # PSI: 6-dimension risk scoring + scenarios
+│   │   ├── supply_chain_graph.py    # PSI: NetworkX knowledge graph engine
+│   │   └── supply_chain_seed.py     # PSI: BOM seed data for 20 platforms
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
 │   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
 │   │   ├── dashboard_routes.py       # Dashboard endpoints (DB-backed + cached)
 │   │   ├── insights_routes.py        # Intelligence insights + situation report
-│   │   └── arctic_routes.py          # Arctic security assessment + bases
+│   │   ├── arctic_routes.py          # Arctic security assessment + bases
+│   │   └── psi_routes.py            # Predictive Supplier Insights (10 endpoints)
 │   ├── static/
 │   │   └── index.html                # Dashboard UI (8 tabs, 4,030 lines)
 │   ├── alerts/                       # (placeholder — not yet implemented)
@@ -94,8 +103,14 @@ weapons-tracker/
 | **Arctic Base Registry** | arctic_routes.py | 25 Arctic bases with threat levels, distances to Canada |
 | **Shift Detection** | insights_routes.py | Detects countries changing primary arms supplier with context |
 | **Arctic Routes** | index.html | 3 labeled shipping routes (NSR, NWP, Transpolar) with ownership |
+| **PSI: Supply Chain Risk** | supply_chain.py | 6-dimension risk scoring (concentration, sanctions, chokepoints, instability, scarcity, alternatives) |
+| **PSI: Knowledge Graph** | supply_chain_graph.py | NetworkX graph: 90 nodes (materials, components, platforms), 97 edges, BOM explosion |
+| **PSI: BOM Explosion** | supply_chain_graph.py | Trace weapon platform -> subsystems -> components -> raw materials -> source countries |
+| **PSI: Scenario Modeling** | supply_chain.py | 5 what-if simulations: sanctions expansion, material shortage, route disruption, demand surge, supplier substitution |
+| **PSI: Critical Minerals** | critical_minerals.py | 30 defense-critical materials with USGS production data, HHI concentration indices |
+| **PSI: Material Trade** | comtrade.py | 27 expanded HS codes: ores, rare earths, specialty metals, semiconductors, propellants |
 
-## Dashboard UI (8 tabs)
+## Dashboard UI (9 tabs)
 
 | Tab | Purpose |
 |-----|---------|
@@ -106,9 +121,10 @@ weapons-tracker/
 | **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) |
 | **Deals** | Searchable/filterable table of all 4,623 transfers |
 | **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances |
+| **Supply Chain** | PSI: Risk overview (radar chart, material risks, alerts), Knowledge Graph (D3.js force-directed), Risk Matrix (scatter plot), Scenario Sandbox (what-if simulations) |
 | **Data Feeds** | Operations view: 16 feed status cards with freshness, sample data, health indicators |
 
-## API Endpoints (52 total)
+## API Endpoints (62 total)
 
 ### Core (src/api/routes.py) — live external APIs
 - `GET /transfers/exports/{country}`, `/imports/{country}`, `/bilateral/{seller}/{buyer}`
@@ -142,9 +158,21 @@ weapons-tracker/
 - `GET /trends/companies/{name}`, `/top/{year}`
 - `GET /trends/activity/flights`, `/news`
 
+### PSI / Supply Chain (src/api/psi_routes.py)
+- `GET /psi/overview` — Global risk summary, top risks, material dependencies, alerts
+- `GET /psi/risk/{country}` — 6-dimension risk scores + composite + mitigations
+- `GET /psi/material/{name}` — Material scarcity, source countries, dependent platforms
+- `GET /psi/platform/{weapon}` — BOM tree with risk at each tier
+- `POST /psi/scenario` — What-if simulation (5 scenario types)
+- `GET /psi/graph` — Knowledge graph as D3.js-ready JSON
+- `GET /psi/suppliers/{name}` — Company profile, alternatives
+- `GET /psi/alerts` — Active supply chain disruption alerts
+- `GET /psi/chokepoints` — Strategic chokepoint status
+- `GET /psi/propagation` — Disruption cascade analysis
+
 ## Database
-- **7 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking
-- **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles
+- **12 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts
+- **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles, 30 materials, 90 supply chain nodes, 97 edges, 20 routes, 8 alerts
 - **Coverage:** 26 seller countries, 174 buyer countries, 256 countries total
 
 ## How to Run

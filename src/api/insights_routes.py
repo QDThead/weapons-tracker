@@ -314,6 +314,71 @@ def _compute_situation_report(session) -> dict:
         "summary": f"{len(flagged)} trade partner(s) under embargo: {', '.join(flagged)}" if flagged else "No trade partners under active embargoes",
     }
 
+    # --- PSI indicators (7-9) — each wrapped individually for resilience ---
+    _psi_gray = "PSI data not yet seeded"
+    try:
+        from src.analysis.supply_chain import SupplyChainAnalyzer
+        psi = SupplyChainAnalyzer(session)
+    except Exception:
+        psi = None
+
+    # 7. Supply chain concentration (HHI)
+    try:
+        if psi is None:
+            raise RuntimeError("PSI not available")
+        conc_score = psi.score_supplier_concentration("Canada")
+        report["supply_chain_concentration"] = {
+            "level": "red" if conc_score > 70 else ("yellow" if conc_score > 40 else "green"),
+            "score": round(conc_score, 1),
+            "summary": f"Supplier concentration score: {conc_score:.0f}/100"
+                       f" — {'high single-source dependency' if conc_score > 70 else 'moderate diversity' if conc_score > 40 else 'well diversified'}",
+        }
+    except Exception:
+        report["supply_chain_concentration"] = {"level": "gray", "score": 0, "summary": _psi_gray}
+
+    # 8. Material dependency on adversaries
+    try:
+        import json as _json
+        from sqlalchemy import select as _sel
+        from src.storage.models import SupplyChainMaterial
+        materials = session.execute(_sel(SupplyChainMaterial)).scalars().all()
+        adversary_materials = []
+        for m in materials:
+            if not m.top_producers:
+                continue
+            try:
+                producers = _json.loads(m.top_producers)
+            except Exception:
+                continue
+            for p in producers:
+                if p.get("country") in ("China", "Russia") and p.get("pct", 0) > 60:
+                    adversary_materials.append(f"{m.name} ({p['country']} {p['pct']}%)")
+                    break
+
+        report["material_dependency"] = {
+            "level": "red" if len(adversary_materials) >= 3 else ("yellow" if adversary_materials else "green"),
+            "count": len(adversary_materials),
+            "flagged": adversary_materials[:5],
+            "summary": f"{len(adversary_materials)} critical material(s) >60% from adversaries"
+                       if adversary_materials else "No critical material dependency on adversaries",
+        }
+    except Exception:
+        report["material_dependency"] = {"level": "gray", "count": 0, "flagged": [], "summary": _psi_gray}
+
+    # 9. Chokepoint exposure
+    try:
+        if psi is None:
+            raise RuntimeError("PSI not available")
+        choke_score = psi.score_chokepoint_exposure("Canada")
+        report["chokepoint_exposure"] = {
+            "level": "red" if choke_score > 60 else ("yellow" if choke_score > 30 else "green"),
+            "score": round(choke_score, 1),
+            "summary": f"Chokepoint exposure score: {choke_score:.0f}/100"
+                       f" — {'high route vulnerability' if choke_score > 60 else 'moderate exposure' if choke_score > 30 else 'low exposure'}",
+        }
+    except Exception:
+        report["chokepoint_exposure"] = {"level": "gray", "score": 0, "summary": _psi_gray}
+
     return report
 
 

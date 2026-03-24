@@ -314,3 +314,133 @@ class ComtradeClient:
         )
 
         return await self.fetch(query)
+
+
+# ---------------------------------------------------------------------------
+# PSI: Expanded HS codes for defense-critical materials ("Rocks" layer)
+# ---------------------------------------------------------------------------
+
+HS_DEFENSE_MATERIALS: dict[str, dict[str, str]] = {
+    # Ores and concentrates
+    "2602": {"name": "Manganese ore", "material": "manganese", "application": "Armor steel alloys, submarine hulls"},
+    "2603": {"name": "Copper ore", "material": "copper", "application": "Ammunition casings, electronics, wiring"},
+    "2604": {"name": "Nickel ore", "material": "nickel", "application": "Jet engine superalloys, armor plating"},
+    "2605": {"name": "Cobalt ore", "material": "cobalt", "application": "Jet engine superalloys, battery cathodes"},
+    "2607": {"name": "Lead ore", "material": "lead", "application": "Ammunition, radiation shielding"},
+    "2608": {"name": "Zinc ore", "material": "zinc", "application": "Galvanization of military vehicles/ships"},
+    "2609": {"name": "Tin ore", "material": "tin", "application": "Solder for electronics, bearing alloys"},
+    "2610": {"name": "Chromium ore", "material": "chromium", "application": "Stainless steel, armor hardening"},
+    "2611": {"name": "Tungsten ore", "material": "tungsten", "application": "Armor-piercing ammunition, kinetic penetrators"},
+    "2612": {"name": "Uranium/thorium ore", "material": "uranium", "application": "Nuclear propulsion, DU ammunition/armor"},
+    "2615": {"name": "Niobium/tantalum/zirconium ore", "material": "niobium", "application": "Superconductors, capacitors, nuclear cladding"},
+    # Rare earths and radioactive
+    "2846": {"name": "Rare earth compounds", "material": "rare_earth", "application": "Magnets for guidance, lasers, optics, motors"},
+    "2844": {"name": "Radioactive elements", "material": "uranium", "application": "Nuclear warheads, reactor fuel, DU armor"},
+    # Specialty metals
+    "8101": {"name": "Tungsten articles", "material": "tungsten", "application": "AP rounds, kinetic energy penetrators"},
+    "8102": {"name": "Molybdenum articles", "material": "molybdenum", "application": "High-strength steel alloys, reactor vessels"},
+    "8103": {"name": "Tantalum articles", "material": "tantalum", "application": "Capacitors in every guided weapon"},
+    "8104": {"name": "Magnesium articles", "material": "magnesium", "application": "Flares, incendiary munitions, lightweight airframes"},
+    "8105": {"name": "Cobalt articles", "material": "cobalt", "application": "Superalloys for F110/F135 jet engines, permanent magnets"},
+    "8108": {"name": "Titanium articles", "material": "titanium", "application": "Airframes (F-22, F-35, Su-57), submarine hulls"},
+    "8109": {"name": "Zirconium articles", "material": "zirconium", "application": "Nuclear cladding, armor ceramics"},
+    "8110": {"name": "Antimony articles", "material": "antimony", "application": "Ammunition hardening, flame retardants, night vision"},
+    "8112": {"name": "Beryllium/Germanium/Gallium/other", "material": "beryllium", "application": "Satellites, gyroscopes, IR optics, semiconductors"},
+    # Semiconductors
+    "8541": {"name": "Semiconductor devices", "material": "semiconductor", "application": "Guidance systems, radar, EW, seekers"},
+    "8542": {"name": "Integrated circuits", "material": "semiconductor", "application": "Avionics, weapon computers, FPGAs"},
+    # Propellants and explosives
+    "3601": {"name": "Propellant powders", "material": "explosive_precursor", "application": "Ammunition and missile propulsion"},
+    "3602": {"name": "Prepared explosives", "material": "explosive_precursor", "application": "Warheads, demolition charges"},
+    "3603": {"name": "Detonating fuses", "material": "explosive_precursor", "application": "Fuzing systems for munitions"},
+}
+
+# Top mineral-producing countries for material flow queries (UN M49 codes)
+MATERIAL_SOURCE_COUNTRIES: dict[str, list[int]] = {
+    "cobalt": [180, 643, 36, 586, 104],    # DRC, Russia, Australia, Philippines, Myanmar
+    "lithium": [36, 152, 156, 32, 76],      # Australia, Chile, China, Argentina, Brazil
+    "rare_earth": [156, 104, 36, 699, 840], # China, Myanmar, Australia, India, USA
+    "titanium": [156, 392, 643, 398, 804],  # China, Japan, Russia, Kazakhstan, Ukraine
+    "tungsten": [156, 704, 643, 36, 40],    # China, Vietnam, Russia, Australia, Austria
+    "chromium": [710, 792, 398, 699, 10],   # S. Africa, Turkey, Kazakhstan, India, Azerbaijan
+    "nickel": [360, 608, 643, 156, 36],     # Indonesia, Philippines, Russia, China, Australia
+    "tantalum": [180, 646, 76, 156, 36],    # DRC, Rwanda, Brazil, China, Australia
+    "uranium": [398, 516, 124, 36, 508],    # Kazakhstan, Namibia, Canada, Australia, Mozambique
+    "gallium": [156, 392, 410, 643, 276],   # China, Japan, S. Korea, Russia, Germany
+    "germanium": [156, 56, 643, 124, 840],  # China, Belgium, Russia, Canada, USA
+}
+
+
+class ComtradeMaterialsClient(ComtradeClient):
+    """Extended Comtrade client for querying defense-critical material trade flows.
+
+    Queries HS codes beyond Chapter 93 to track the "Rocks" layer:
+    ores, rare earths, specialty metals, semiconductors, propellants.
+    """
+
+    async def fetch_material_trade(
+        self,
+        material: str,
+        years: list[int] | None = None,
+    ) -> list[ComtradeRecord]:
+        """Fetch global trade flows for a specific defense material.
+
+        Args:
+            material: Material key from MATERIAL_SOURCE_COUNTRIES.
+            years: Years to query (default: [2022, 2023]).
+
+        Returns:
+            List of ComtradeRecords for the material's HS codes.
+        """
+        source_codes = MATERIAL_SOURCE_COUNTRIES.get(material)
+        if source_codes is None:
+            raise ValueError(f"Unknown material: {material}")
+
+        # Find matching HS codes for this material
+        hs_codes = [
+            code for code, info in HS_DEFENSE_MATERIALS.items()
+            if info["material"] == material
+        ]
+        if not hs_codes:
+            raise ValueError(f"No HS codes mapped for material: {material}")
+
+        query = ComtradeQuery(
+            reporter_codes=source_codes,
+            partner_codes=[0],  # World aggregate
+            years=years or [2022, 2023],
+            flow_codes=["X"],
+            hs_codes=hs_codes,
+        )
+
+        logger.info(
+            "Material trade query: %s (HS %s) from %d source countries",
+            material, ",".join(hs_codes), len(source_codes),
+        )
+        return await self.fetch(query)
+
+    async def fetch_material_imports_by_country(
+        self,
+        country_name: str,
+        years: list[int] | None = None,
+    ) -> list[ComtradeRecord]:
+        """Fetch all defense-material imports for a specific country.
+
+        Returns trade records for all HS codes in HS_DEFENSE_MATERIALS.
+        """
+        code = COMTRADE_COUNTRY_CODES.get(country_name)
+        if code is None:
+            raise ValueError(f"Unknown country: {country_name}")
+
+        all_hs = list(HS_DEFENSE_MATERIALS.keys())
+        query = ComtradeQuery(
+            reporter_codes=[code],
+            years=years or [2022, 2023],
+            flow_codes=["M"],
+            hs_codes=all_hs,
+        )
+
+        logger.info(
+            "Material imports for %s: %d HS codes",
+            country_name, len(all_hs),
+        )
+        return await self.fetch(query)

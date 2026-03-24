@@ -1,0 +1,539 @@
+"""Predictive Supplier Insights (PSI) API endpoints.
+
+Provides supply chain risk analysis, knowledge graph data,
+scenario simulation, and disruption alerting.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import time
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import select, func
+
+from src.storage.database import SessionLocal
+from src.storage.models import (
+    SupplyChainAlert,
+    SupplyChainMaterial,
+    SupplyChainNode,
+    SupplyChainEdge,
+    SupplyChainRoute,
+    SupplyChainNodeType,
+    Country,
+)
+from src.analysis.supply_chain import SupplyChainAnalyzer
+from src.analysis.supply_chain_graph import SupplyChainGraph
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/psi", tags=["Supply Chain"])
+
+# Cache following existing dashboard_routes.py pattern
+_psi_cache: dict[str, tuple[float, dict | list]] = {}
+_PSI_TTL = 300         # 5 minutes for risk scores
+_PSI_GRAPH_TTL = 3600  # 1 hour for knowledge graph
+
+
+def _check_cache(key: str, ttl: int) -> dict | list | None:
+    cached = _psi_cache.get(key)
+    if cached and time.time() - cached[0] < ttl:
+        return cached[1]
+    return None
+
+
+def _set_cache(key: str, data: dict | list) -> None:
+    _psi_cache[key] = (time.time(), data)
+
+
+# ------------------------------------------------------------------
+# Pydantic models for request bodies
+# ------------------------------------------------------------------
+
+class ScenarioRequest(BaseModel):
+    type: str
+    parameters: dict
+
+
+# ------------------------------------------------------------------
+# Endpoints
+# ------------------------------------------------------------------
+
+@router.get("/overview")
+async def get_supply_chain_overview():
+    """Global supply chain risk dashboard summary."""
+    cached = _check_cache("overview", _PSI_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        analyzer = SupplyChainAnalyzer(session)
+        result = analyzer.get_overview()
+        _set_cache("overview", result)
+        return result
+    except Exception as e:
+        logger.error("PSI overview failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to compute supply chain overview")
+    finally:
+        session.close()
+
+
+@router.get("/risk/{country}")
+async def get_country_risk(country: str):
+    """6-dimension risk assessment for a country."""
+    cache_key = f"risk:{country}"
+    cached = _check_cache(cache_key, _PSI_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        analyzer = SupplyChainAnalyzer(session)
+        profile = analyzer.compute_country_risk(country)
+        mitigations = analyzer.generate_mitigations(profile)
+
+        result = {
+            **profile.to_dict(),
+            "mitigations": [
+                {
+                    "priority": m.priority,
+                    "title": m.title,
+                    "description": m.description,
+                    "risk_type": m.risk_type,
+                    "timeline_months": m.estimated_timeline_months,
+                }
+                for m in mitigations
+            ],
+        }
+        _set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("PSI risk for %s failed: %s", country, e)
+        raise HTTPException(status_code=500, detail=f"Failed to compute risk for {country}")
+    finally:
+        session.close()
+
+
+@router.get("/material/{name}")
+async def get_material_risk(name: str):
+    """Risk assessment for a specific critical material."""
+    cache_key = f"material:{name}"
+    cached = _check_cache(cache_key, _PSI_GRAPH_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        analyzer = SupplyChainAnalyzer(session)
+        scarcity = analyzer.score_material_scarcity(name)
+
+        material = session.execute(
+            select(SupplyChainMaterial).where(SupplyChainMaterial.name == name)
+        ).scalar_one_or_none()
+
+        if not material:
+            raise HTTPException(status_code=404, detail=f"Material not found: {name}")
+
+        producers = []
+        if material.top_producers:
+            try:
+                producers = json.loads(material.top_producers)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        # Find dependent platforms
+        mat_node = session.execute(
+            select(SupplyChainNode).where(
+                SupplyChainNode.material_id == material.id,
+                SupplyChainNode.node_type == SupplyChainNodeType.MATERIAL,
+            )
+        ).scalar_one_or_none()
+
+        dependent_platforms: list[str] = []
+        if mat_node:
+            # Walk edges upward to find platforms
+            visited: set[int] = set()
+            queue = [mat_node.id]
+            while queue:
+                nid = queue.pop(0)
+                if nid in visited:
+                    continue
+                visited.add(nid)
+                node = session.execute(
+                    select(SupplyChainNode).where(SupplyChainNode.id == nid)
+                ).scalar_one_or_none()
+                if node and node.node_type == SupplyChainNodeType.PLATFORM:
+                    dependent_platforms.append(node.name)
+                edges = session.execute(
+                    select(SupplyChainEdge).where(
+                        SupplyChainEdge.parent_node_id == nid
+                    )
+                ).scalars().all()
+                for edge in edges:
+                    queue.append(edge.child_node_id)
+
+        result = {
+            "name": material.name,
+            "category": material.category.value if material.category else "other",
+            "scarcity_score": round(scarcity, 1),
+            "concentration_index": round(material.concentration_index or 0, 3),
+            "strategic_importance": material.strategic_importance or 1,
+            "defense_applications": material.defense_applications or "",
+            "top_producers": producers,
+            "dependent_platforms": dependent_platforms,
+        }
+        _set_cache(cache_key, result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("PSI material %s failed: %s", name, e)
+        raise HTTPException(status_code=500, detail=f"Failed to get material info: {name}")
+    finally:
+        session.close()
+
+
+@router.get("/platform/{weapon}")
+async def get_platform_vulnerability(weapon: str):
+    """BOM tree and risk analysis for a weapon platform."""
+    cache_key = f"platform:{weapon}"
+    cached = _check_cache(cache_key, _PSI_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        graph = SupplyChainGraph(session)
+        graph.build()
+        bom = graph.explode_bom(weapon)
+
+        if not bom:
+            raise HTTPException(status_code=404, detail=f"Platform not found: {weapon}")
+
+        def bom_to_dict(entry) -> dict:
+            return {
+                "name": entry.name,
+                "type": entry.node_type,
+                "company": entry.company,
+                "country": entry.country,
+                "is_sole_source": entry.is_sole_source,
+                "confidence": entry.confidence,
+                "children": [bom_to_dict(c) for c in entry.children],
+            }
+
+        result = {
+            "platform": weapon,
+            "bom": bom_to_dict(bom),
+            "total_components": _count_bom_nodes(bom),
+            "sole_source_count": _count_sole_source(bom),
+        }
+        _set_cache(cache_key, result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("PSI platform %s failed: %s", weapon, e)
+        raise HTTPException(status_code=500, detail=f"Failed to analyze platform: {weapon}")
+    finally:
+        session.close()
+
+
+@router.post("/scenario")
+async def run_scenario(request: ScenarioRequest):
+    """Run a what-if scenario simulation."""
+    session = SessionLocal()
+    try:
+        analyzer = SupplyChainAnalyzer(session)
+        result = analyzer.simulate_scenario({
+            "type": request.type,
+            "parameters": request.parameters,
+        })
+        return result
+    except Exception as e:
+        logger.error("PSI scenario failed: %s", e)
+        raise HTTPException(status_code=500, detail="Scenario simulation failed")
+    finally:
+        session.close()
+
+
+@router.get("/graph")
+async def get_knowledge_graph(
+    node_type: str | None = Query(None, description="Filter by node type"),
+    risk_min: float = Query(0, description="Minimum risk score"),
+    country: str | None = Query(None, description="Filter by country"),
+):
+    """Knowledge graph data for D3.js visualization."""
+    cache_key = f"graph:{node_type}:{risk_min}:{country}"
+    cached = _check_cache(cache_key, _PSI_GRAPH_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        graph = SupplyChainGraph(session)
+        graph.build()
+        result = graph.to_d3_json(
+            node_type_filter=node_type,
+            risk_min=risk_min,
+            country_filter=country,
+        )
+        _set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("PSI graph failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to build knowledge graph")
+    finally:
+        session.close()
+
+
+@router.get("/suppliers/{name}")
+async def get_supplier_profile(name: str):
+    """Supplier company profile with risk factors and alternatives."""
+    cache_key = f"supplier:{name}"
+    cached = _check_cache(cache_key, _PSI_GRAPH_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        from src.storage.models import DefenseCompany
+
+        # Escape LIKE wildcards in user input
+        escaped = name.replace("%", r"\%").replace("_", r"\_")
+
+        # Get company data
+        companies = session.execute(
+            select(DefenseCompany)
+            .where(DefenseCompany.name.ilike(f"%{escaped}%"))
+            .order_by(DefenseCompany.year.desc())
+        ).scalars().all()
+
+        if not companies:
+            raise HTTPException(status_code=404, detail=f"Supplier not found: {name}")
+
+        latest = companies[0]
+        country = session.execute(
+            select(Country).where(Country.id == latest.country_id)
+        ).scalar_one_or_none()
+
+        # Revenue trend
+        revenue_trend = [
+            {"year": c.year, "arms_revenue_usd_m": c.arms_revenue_usd, "rank": c.rank}
+            for c in companies
+        ]
+
+        # Supply chain nodes linked to this company
+        nodes = session.execute(
+            select(SupplyChainNode).where(
+                SupplyChainNode.company_name.ilike(f"%{escaped}%")
+            )
+        ).scalars().all()
+
+        # Find alternatives via graph
+        graph = SupplyChainGraph(session)
+        graph.build()
+        alternatives = []
+        for node in nodes:
+            alts = graph.find_alternatives(node.name)
+            alternatives.extend(alts)
+
+        result = {
+            "name": latest.name,
+            "country": country.name if country else "unknown",
+            "latest_rank": latest.rank,
+            "latest_arms_revenue_usd_m": latest.arms_revenue_usd,
+            "revenue_trend": revenue_trend[:10],
+            "supply_chain_nodes": [
+                {"name": n.name, "type": n.node_type.value if n.node_type else "unknown"}
+                for n in nodes
+            ],
+            "alternatives": alternatives[:10],
+        }
+        _set_cache(cache_key, result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("PSI supplier %s failed: %s", name, e)
+        raise HTTPException(status_code=500, detail=f"Failed to get supplier: {name}")
+    finally:
+        session.close()
+
+
+@router.get("/alerts")
+async def get_supply_chain_alerts(
+    severity_min: int = Query(1, description="Minimum severity (1-5)"),
+    is_active: bool = Query(True, description="Only active alerts"),
+):
+    """Active supply chain disruption alerts."""
+    cache_key = f"alerts:{severity_min}:{is_active}"
+    cached = _check_cache(cache_key, _PSI_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        query = select(SupplyChainAlert).where(
+            SupplyChainAlert.severity >= severity_min,
+        )
+        if is_active:
+            query = query.where(SupplyChainAlert.is_active == True)  # noqa: E712
+
+        query = query.order_by(SupplyChainAlert.severity.desc())
+        alerts = session.execute(query).scalars().all()
+
+        result = [
+            {
+                "id": a.id,
+                "type": a.alert_type.value if a.alert_type else "unknown",
+                "severity": a.severity,
+                "title": a.title,
+                "description": a.description or "",
+                "is_active": a.is_active,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in alerts
+        ]
+        _set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("PSI alerts failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to get alerts")
+    finally:
+        session.close()
+
+
+@router.get("/chokepoints")
+async def get_chokepoint_status():
+    """Strategic chokepoint status with risk levels and affected routes."""
+    cached = _check_cache("chokepoints", _PSI_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        from src.analysis.supply_chain import CHOKEPOINT_RISK
+
+        routes = session.execute(select(SupplyChainRoute)).scalars().all()
+
+        # Aggregate per chokepoint
+        cp_data: dict[str, dict] = {}
+        for cp_name, risk in CHOKEPOINT_RISK.items():
+            cp_data[cp_name] = {
+                "name": cp_name,
+                "risk_factor": risk,
+                "affected_routes": 0,
+                "routes": [],
+            }
+
+        for route in routes:
+            if not route.chokepoints:
+                continue
+            try:
+                cps = json.loads(route.chokepoints)
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+            origin = session.execute(
+                select(Country).where(Country.id == route.origin_country_id)
+            ).scalar_one_or_none()
+            dest = session.execute(
+                select(Country).where(Country.id == route.destination_country_id)
+            ).scalar_one_or_none()
+
+            for cp in cps:
+                if cp in cp_data:
+                    cp_data[cp]["affected_routes"] += 1
+                    cp_data[cp]["routes"].append({
+                        "origin": origin.name if origin else "unknown",
+                        "destination": dest.name if dest else "unknown",
+                        "route_name": route.route_name or "",
+                    })
+
+        result = sorted(
+            cp_data.values(),
+            key=lambda x: x["risk_factor"],
+            reverse=True,
+        )
+        _set_cache("chokepoints", result)
+        return result
+    except Exception as e:
+        logger.error("PSI chokepoints failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to get chokepoint data")
+    finally:
+        session.close()
+
+
+@router.get("/propagation")
+async def get_disruption_propagation(
+    disruption_type: str = Query(..., description="material, country, component, or company"),
+    entity: str = Query(..., description="Name of disrupted entity"),
+    severity: float = Query(1.0, description="Severity multiplier 0.0-1.0"),
+):
+    """Disruption cascade analysis showing affected platforms."""
+    cache_key = f"propagation:{disruption_type}:{entity}:{severity}"
+    cached = _check_cache(cache_key, _PSI_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        graph = SupplyChainGraph(session)
+        graph.build()
+        affected = graph.propagate_disruption(disruption_type, entity, severity)
+
+        result = {
+            "disruption": {
+                "type": disruption_type,
+                "entity": entity,
+                "severity": severity,
+            },
+            "affected_count": len(affected),
+            "affected_items": [
+                {
+                    "name": a.node_name,
+                    "type": a.node_type,
+                    "depth": a.depth,
+                    "severity": a.severity,
+                    "path": a.path,
+                }
+                for a in affected[:50]
+            ],
+            "by_type": _group_by_type(affected),
+        }
+        _set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("PSI propagation failed: %s", e)
+        raise HTTPException(status_code=500, detail="Propagation analysis failed")
+    finally:
+        session.close()
+
+
+# ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
+
+def _count_bom_nodes(entry) -> int:
+    count = 1
+    for child in entry.children:
+        count += _count_bom_nodes(child)
+    return count
+
+
+def _count_sole_source(entry) -> int:
+    count = 1 if entry.is_sole_source else 0
+    for child in entry.children:
+        count += _count_sole_source(child)
+    return count
+
+
+def _group_by_type(items) -> dict[str, int]:
+    groups: dict[str, int] = {}
+    for item in items:
+        t = item.node_type
+        groups[t] = groups.get(t, 0) + 1
+    return groups

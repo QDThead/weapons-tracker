@@ -10,6 +10,7 @@ Schedule:
   - SIPRI transfers:       daily (checks for new annual data)
   - World Bank indicators: daily
   - SIPRI Top 100:         daily
+  - PSI supply chain seed: weekly (refreshes BOM + material data)
 """
 
 from __future__ import annotations
@@ -113,6 +114,22 @@ async def ingest_worldbank_indicators():
         logger.error("[scheduler] World Bank ingestion failed: %s", e)
 
 
+async def refresh_supply_chain():
+    """Refresh PSI supply chain data (materials, BOM, risk scores)."""
+    try:
+        from src.analysis.supply_chain_seed import SupplyChainSeeder
+
+        session = SessionLocal()
+        try:
+            seeder = SupplyChainSeeder(session)
+            counts = seeder.seed_all()
+            logger.info("[scheduler] PSI refresh: %s", counts)
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error("[scheduler] PSI supply chain refresh failed: %s", e)
+
+
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the ingestion scheduler."""
     scheduler = AsyncIOScheduler()
@@ -149,6 +166,15 @@ def create_scheduler() -> AsyncIOScheduler:
         trigger=CronTrigger(hour=3, minute=0),
         id="worldbank",
         name="World Bank indicators",
+        max_instances=1,
+    )
+
+    # PSI: weekly supply chain refresh (Sunday 4 AM)
+    scheduler.add_job(
+        refresh_supply_chain,
+        trigger=CronTrigger(day_of_week="sun", hour=4, minute=0),
+        id="psi_supply_chain",
+        name="PSI supply chain refresh",
         max_instances=1,
     )
 
