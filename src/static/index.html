@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Global Arms Trade Tracker</title>
+<title>ARMSTRACKER — Defence Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -11,75 +14,128 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <style>
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --border: #2a2d3a;
-  --text: #e0e0e8;
-  --text-dim: #8888a0;
-  --accent: #4f8cff;
-  --accent2: #ff6b6b;
-  --accent3: #51cf66;
-  --accent4: #ffd43b;
+  --bg: #0a0e1a;
+  --surface: #111827;
+  --surface-glass: rgba(17, 24, 39, 0.65);
+  --border: rgba(0, 212, 255, 0.1);
+  --border-hover: rgba(0, 212, 255, 0.25);
+  --text: #e2e8f0;
+  --text-dim: #64748b;
+  --text-muted: #475569;
+  --accent: #00d4ff;
+  --accent2: #ef4444;
+  --accent3: #10b981;
+  --accent4: #f59e0b;
+  --accent5: #8b5cf6;
+  --glow: 0 0 20px rgba(0, 212, 255, 0.15);
+  --maple: #ff2d2d;
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  background:
+    radial-gradient(ellipse at 15% 85%, rgba(0, 212, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 15%, rgba(239, 68, 68, 0.02) 0%, transparent 50%),
+    var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes pulse-marker { 0%,100% { opacity: 0.9; } 50% { opacity: 0.25; } }
 
 /* Header */
 header {
-  background: var(--surface);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
   border-bottom: 1px solid var(--border);
-  padding: 12px 32px;
+  padding: 16px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
 }
-header h1 { font-size: 20px; font-weight: 600; }
+header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px);
+  pointer-events: none;
+}
+header h1 { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 header h1 span { color: var(--accent); }
-.stats-bar { display: flex; gap: 24px; font-size: 13px; color: var(--text-dim); }
-.stats-bar .val { color: var(--accent); font-weight: 600; font-size: 15px; }
+.stats-bar {
+  display: flex; gap: 24px; z-index: 1; position: relative;
+  font-family: var(--font-mono);
+}
+.stats-bar > div { text-align: center; }
+.stats-label {
+  display: block;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-dim); margin-bottom: 2px;
+}
+.stats-bar .val {
+  font-size: 16px; font-weight: 600; color: var(--accent);
+}
 
 /* Nav tabs */
 .nav {
-  background: var(--surface);
+  display: flex; gap: 4px; padding: 8px 32px;
+  background: rgba(15, 23, 42, 0.8);
   border-bottom: 1px solid var(--border);
-  padding: 0 32px;
-  display: flex;
-  gap: 0;
+  overflow-x: auto;
 }
 .nav-tab {
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-weight: 500; font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-dim);
-  border: none;
-  background: none;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
 }
-.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.nav-tab:hover:not(.active) { color: var(--text); }
+.nav-tab:hover { color: var(--text); background: rgba(0,212,255,0.05); }
+.nav-tab.active {
+  color: var(--accent);
+  background: rgba(0,212,255,0.08);
+  border-color: rgba(0,212,255,0.2);
+  box-shadow: 0 0 12px rgba(0,212,255,0.1);
+}
 
 /* Layout */
 .container { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
 .page { display: none; }
-.page.active { display: block; }
+.page.active { display: block; animation: fadeIn 0.35s ease; }
 .grid { display: grid; gap: 20px; margin-bottom: 20px; }
 .grid-2 { grid-template-columns: 1fr 1fr; }
 .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
 
 /* Cards */
 .card {
-  background: var(--surface);
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 20px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--glow);
 }
 .card h2 {
+  font-family: var(--font-display);
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -92,10 +148,14 @@ header h1 span { color: var(--accent); }
 .tabs { display: flex; gap: 2px; margin-bottom: 16px; background: var(--bg); border-radius: 8px; padding: 3px; }
 .tab {
   padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  font-family: var(--font-display);
   color: var(--text-dim); border: none; background: none; transition: all 0.2s;
 }
 .tab.active { background: var(--accent); color: #fff; }
 .tab:hover:not(.active) { color: var(--text); }
+
+/* PSI sub-pages */
+.psi-sub { }
 
 /* Network */
 #network { width: 100%; height: 500px; }
@@ -110,7 +170,7 @@ header h1 span { color: var(--accent); }
 
 /* Maps */
 .map-container { height: 500px; border-radius: 8px; overflow: hidden; }
-.leaflet-container { background: #1a1d27; }
+.leaflet-container { background: #111827; }
 
 /* Table */
 .table-wrap { max-height: 500px; overflow-y: auto; }
@@ -118,24 +178,26 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th {
   position: sticky; top: 0; background: var(--surface); text-align: left;
   padding: 10px 12px; color: var(--text-dim); font-weight: 500;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
   border-bottom: 2px solid var(--border);
 }
 td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
-tr:hover td { background: rgba(79,140,255,0.05); }
-.tiv { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+tr:hover td { background: rgba(0,212,255,0.04); }
+.tiv { color: var(--accent); font-weight: 600; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .seller-tag {
-  background: rgba(79,140,255,0.15); color: var(--accent);
+  background: rgba(0,212,255,0.12); color: var(--accent);
   padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;
 }
 .buyer-tag {
-  background: rgba(255,107,107,0.15); color: var(--accent2);
+  background: rgba(239,68,68,0.12); color: var(--accent2);
   padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;
 }
 .filters { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
 .filters input, .filters select {
   background: var(--bg); border: 1px solid var(--border); color: var(--text);
-  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px; font-family: var(--font-body);
 }
+.filters input:focus, .filters select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,212,255,0.1); }
 .filters label { font-size: 12px; color: var(--text-dim); }
 
 /* Country detail */
@@ -144,29 +206,31 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .back-btn {
   background: var(--bg); border: 1px solid var(--border); color: var(--accent);
   padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 12px;
+  font-family: var(--font-display); transition: all 0.2s;
 }
-.back-btn:hover { background: var(--border); }
+.back-btn:hover { background: rgba(0,212,255,0.08); border-color: var(--border-hover); }
 .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.metric { background: var(--bg); border-radius: 8px; padding: 16px; text-align: center; }
-.metric .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
-.metric .value { font-size: 24px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+.metric { background: var(--bg); border-radius: 8px; padding: 16px; text-align: center; border: 1px solid var(--border); }
+.metric .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.metric .value { font-size: 24px; font-weight: 700; color: var(--accent); margin-top: 4px; font-family: var(--font-mono); }
 .metric .value.red { color: var(--accent2); }
 
 /* Flights */
 .flight-count {
   font-size: 48px; font-weight: 700; color: var(--accent3);
-  text-align: center; padding: 20px 0;
+  text-align: center; padding: 20px 0; font-family: var(--font-mono);
 }
-.flight-count small { font-size: 14px; color: var(--text-dim); font-weight: 400; display: block; }
+.flight-count small { font-size: 14px; color: var(--text-dim); font-weight: 400; display: block; font-family: var(--font-body); }
 .flight-list { max-height: 400px; overflow-y: auto; }
 .flight-item {
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
+  transition: background 0.15s;
 }
-.flight-item:hover { background: rgba(79,140,255,0.05); }
-.callsign { font-weight: 600; color: var(--accent3); font-family: monospace; }
+.flight-item:hover { background: rgba(0,212,255,0.04); }
+.callsign { font-weight: 600; color: var(--accent3); font-family: var(--font-mono); }
 .aircraft-type { color: var(--text-dim); font-size: 12px; }
-.altitude { color: var(--accent4); font-variant-numeric: tabular-nums; }
+.altitude { color: var(--accent4); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* Legend */
 .legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: 12px; color: var(--text-dim); }
@@ -175,19 +239,24 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 /* Canada Intel */
 .ca-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .ca-metric {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  padding: 20px; text-align: center;
+  background: var(--surface-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; text-align: center; transition: border-color 0.3s, box-shadow 0.3s;
 }
+.ca-metric:hover { border-color: var(--border-hover); box-shadow: var(--glow); }
 .ca-metric .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-.ca-metric .value { font-size: 28px; font-weight: 700; color: var(--accent); margin-top: 6px; }
+.ca-metric .value { font-size: 28px; font-weight: 700; color: var(--accent); margin-top: 6px; font-family: var(--font-mono); }
 .ca-metric .value.red { color: var(--accent2); }
 .ca-metric .value.green { color: var(--accent3); }
 .ca-metric .sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
 .bloc-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
 .bloc-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px;
+  background: var(--surface-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
-.bloc-card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.bloc-card:hover { border-color: var(--border-hover); box-shadow: var(--glow); }
+.bloc-card h2 { font-family: var(--font-display); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
 .bloc-card .bloc-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
 .bloc-card.allied { border-left: 3px solid var(--accent); }
 .bloc-card.adversary { border-left: 3px solid var(--accent2); }
@@ -197,11 +266,11 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase;
 }
 .threat-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
-.threat-table tr:hover td { background: rgba(79,140,255,0.05); }
+.threat-table tr:hover td { background: rgba(0,212,255,0.04); }
 .threat-flag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.threat-flag.high { background: rgba(255,107,107,0.2); color: var(--accent2); }
-.threat-flag.medium { background: rgba(255,212,59,0.2); color: var(--accent4); }
-.threat-flag.low { background: rgba(81,207,102,0.2); color: var(--accent3); }
+.threat-flag.high { background: rgba(239,68,68,0.15); color: var(--accent2); }
+.threat-flag.medium { background: rgba(245,158,11,0.15); color: var(--accent4); }
+.threat-flag.low { background: rgba(16,185,129,0.15); color: var(--accent3); }
 .concentration-bar { background: var(--bg); border-radius: 4px; height: 24px; margin-top: 8px; overflow: hidden; position: relative; }
 .concentration-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; }
 .shift-item {
@@ -212,32 +281,36 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .shift-arrow { color: var(--accent2); font-weight: 600; margin: 0 8px; }
 .shift-arrow.to { color: var(--accent3); }
 .arctic-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.arctic-stat { background: var(--bg); border-radius: 8px; padding: 14px; text-align: center; }
-.arctic-stat .num { font-size: 32px; font-weight: 700; }
+.arctic-stat { background: var(--bg); border-radius: 8px; padding: 14px; text-align: center; border: 1px solid var(--border); }
+.arctic-stat .num { font-size: 32px; font-weight: 700; font-family: var(--font-mono); }
 .arctic-stat .num.warn { color: var(--accent2); }
 .arctic-stat .num.ok { color: var(--accent3); }
 .arctic-stat .desc { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
 
 /* Insights page */
 .insight-alert {
-  background: var(--surface);
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 10px;
   border-left: 4px solid var(--accent);
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
-.insight-alert.threat { border-left-color: #ff6b6b; }
-.insight-alert.warning { border-left-color: #ffd43b; }
-.insight-alert.info { border-left-color: #4f8cff; }
+.insight-alert:hover { box-shadow: var(--glow); }
+.insight-alert.threat { border-left-color: var(--accent2); }
+.insight-alert.warning { border-left-color: var(--accent4); }
+.insight-alert.info { border-left-color: var(--accent); }
 .insight-alert .alert-title {
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 4px;
 }
-.insight-alert.threat .alert-title { color: #ff6b6b; }
-.insight-alert.warning .alert-title { color: #ffd43b; }
-.insight-alert.info .alert-title { color: #4f8cff; }
+.insight-alert.threat .alert-title { color: var(--accent2); }
+.insight-alert.warning .alert-title { color: var(--accent4); }
+.insight-alert.info .alert-title { color: var(--accent); }
 .insight-alert .alert-detail {
   font-size: 13px;
   color: var(--text-dim);
@@ -249,7 +322,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   font-size: 13px;
 }
 .ins-card-item:last-child { border-bottom: none; }
-.ins-card-item:hover { background: rgba(79,140,255,0.04); }
+.ins-card-item:hover { background: rgba(0,212,255,0.04); }
 .ins-flow {
   display: flex;
   justify-content: space-between;
@@ -265,8 +338,8 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   font-size: 12px;
   font-weight: 600;
 }
-.ins-badge.up { background: rgba(81,207,102,0.15); color: var(--accent3); }
-.ins-badge.down { background: rgba(255,107,107,0.15); color: var(--accent2); }
+.ins-badge.up { background: rgba(16,185,129,0.15); color: var(--accent3); }
+.ins-badge.down { background: rgba(239,68,68,0.15); color: var(--accent2); }
 .ins-mover {
   display: flex;
   justify-content: space-between;
@@ -296,11 +369,11 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   color: var(--accent);
   cursor: pointer;
   text-decoration: none;
-  border-bottom: 1px dotted rgba(79,140,255,0.3);
+  border-bottom: 1px dotted rgba(0,212,255,0.3);
 }
 .ins-country-link:hover {
-  color: #7fadff;
-  border-bottom-color: rgba(79,140,255,0.6);
+  color: #66e3ff;
+  border-bottom-color: rgba(0,212,255,0.6);
 }
 
 /* Live news feed */
@@ -316,13 +389,13 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .dsca-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .dsca-item:last-child { border-bottom: none; }
 .dsca-buyer { font-weight: 600; color: var(--text); font-size: 14px; }
-.dsca-value { color: var(--accent4); font-weight: 700; font-size: 14px; float: right; }
+.dsca-value { color: var(--accent4); font-weight: 700; font-size: 14px; float: right; font-family: var(--font-mono); }
 .dsca-weapons { font-size: 12px; color: var(--text-dim); margin-top: 3px; line-height: 1.3; }
 .dsca-date { font-size: 11px; color: var(--text-dim); }
 
 /* Freshness indicators */
 .fresh-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-.fresh-dot.green { background: var(--accent3); }
+.fresh-dot.green { background: var(--accent3); animation: pulse 2s infinite; }
 .fresh-dot.yellow { background: var(--accent4); }
 .fresh-dot.red { background: var(--accent2); }
 .fresh-dot.gray { background: var(--text-dim); }
@@ -335,40 +408,41 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
 }
-.feeds-header h2 { font-size: 18px; font-weight: 600; color: var(--text); margin: 0; }
+.feeds-header h2 { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--text); margin: 0; }
 .feeds-stats { display: flex; gap: 20px; font-size: 13px; color: var(--text-dim); }
-.feeds-stats .val { color: var(--accent); font-weight: 600; }
+.feeds-stats .val { color: var(--accent); font-weight: 600; font-family: var(--font-mono); }
 .feeds-refresh-btn {
-  background: var(--accent); color: #fff; border: none; padding: 8px 18px;
-  border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
-  transition: opacity 0.2s;
+  background: var(--accent); color: #0a0e1a; border: none; padding: 8px 18px;
+  border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+  font-family: var(--font-display); transition: all 0.2s;
 }
-.feeds-refresh-btn:hover { opacity: 0.85; }
+.feeds-refresh-btn:hover { opacity: 0.85; box-shadow: 0 0 16px rgba(0,212,255,0.3); }
 .feeds-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .feeds-section { margin-bottom: 28px; }
 .feeds-section-title {
-  font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+  font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
   color: var(--text-dim); margin-bottom: 12px; font-weight: 500;
   border-bottom: 1px solid var(--border); padding-bottom: 8px;
 }
 .feeds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
 .feed-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  padding: 18px; transition: border-color 0.2s;
+  background: var(--surface-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; transition: border-color 0.3s, box-shadow 0.3s;
 }
-.feed-card:hover { border-color: var(--accent); }
+.feed-card:hover { border-color: var(--border-hover); box-shadow: var(--glow); }
 .feed-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .feed-dot {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }
-.feed-dot.green { background: #51cf66; box-shadow: 0 0 6px rgba(81,207,102,0.4); }
-.feed-dot.yellow { background: #ffd43b; box-shadow: 0 0 6px rgba(255,212,59,0.4); }
-.feed-dot.orange { background: #ff922b; box-shadow: 0 0 6px rgba(255,146,43,0.4); }
-.feed-dot.red { background: #ff6b6b; box-shadow: 0 0 6px rgba(255,107,107,0.4); }
-.feed-dot.gray { background: #666; }
-.feed-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.feed-dot.green { background: var(--accent3); box-shadow: 0 0 6px rgba(16,185,129,0.4); animation: pulse 2s infinite; }
+.feed-dot.yellow { background: var(--accent4); box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+.feed-dot.orange { background: #f97316; box-shadow: 0 0 6px rgba(255,146,43,0.4); }
+.feed-dot.red { background: var(--accent2); box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+.feed-dot.gray { background: var(--text-muted); }
+.feed-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text); }
 .feed-latest {
-  font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 6px;
+  font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 6px;
 }
 .feed-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
 .feed-meta-item { display: flex; align-items: center; gap: 4px; }
@@ -377,13 +451,13 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .feed-sample-toggle {
   background: var(--bg); border: 1px solid var(--border); color: var(--text-dim);
   padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;
-  transition: all 0.2s; width: 100%;
+  transition: all 0.2s; width: 100%; font-family: var(--font-body);
 }
 .feed-sample-toggle:hover { color: var(--text); border-color: var(--accent); }
 .feed-sample {
   display: none; margin-top: 10px; background: var(--bg); border-radius: 6px;
   padding: 10px 12px; font-size: 12px; max-height: 250px; overflow-y: auto;
-  line-height: 1.5;
+  line-height: 1.5; border: 1px solid var(--border);
 }
 .feed-sample.open { display: block; }
 .feed-sample-row {
@@ -395,12 +469,17 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
 /* Situation Report */
 .sitrep-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
-.sitrep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; border-top: 3px solid var(--border); }
+.sitrep-card {
+  background: var(--surface-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;
+  border-top: 3px solid var(--border); transition: border-color 0.3s, box-shadow 0.3s;
+}
+.sitrep-card:hover { box-shadow: var(--glow); }
 .sitrep-card.green { border-top-color: var(--accent3); }
 .sitrep-card.yellow { border-top-color: var(--accent4); }
 .sitrep-card.red { border-top-color: var(--accent2); }
 .sitrep-question { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 8px; line-height: 1.3; }
-.sitrep-indicator { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+.sitrep-indicator { font-size: 28px; font-weight: 700; margin-bottom: 4px; font-family: var(--font-mono); }
 .sitrep-card.green .sitrep-indicator { color: var(--accent3); }
 .sitrep-card.yellow .sitrep-indicator { color: var(--accent4); }
 .sitrep-card.red .sitrep-indicator { color: var(--accent2); }
@@ -409,22 +488,22 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 /* Briefing sections */
 .briefing-section { margin-bottom: 28px; }
 .briefing-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.briefing-header h2 { font-size: 16px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; margin: 0; }
-.section-num { background: var(--accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-.briefing-context { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 16px; padding: 12px 16px; background: rgba(79,140,255,0.05); border-radius: 8px; border-left: 3px solid var(--accent); }
-.briefing-context.threat { background: rgba(255,107,107,0.05); border-left-color: var(--accent2); }
+.briefing-header h2 { font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; margin: 0; }
+.section-num { background: var(--accent); color: #0a0e1a; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.briefing-context { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 16px; padding: 12px 16px; background: rgba(0,212,255,0.05); border-radius: 8px; border-left: 3px solid var(--accent); }
+.briefing-context.threat { background: rgba(239,68,68,0.05); border-left-color: var(--accent2); }
 
 /* Arctic full layout */
 .arctic-full { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
 .arctic-stats-panel { display: flex; flex-direction: column; gap: 12px; }
-.arctic-kpi { background: var(--bg); border-radius: 8px; padding: 14px; text-align: center; }
-.arctic-kpi .kpi-num { font-size: 36px; font-weight: 700; }
+.arctic-kpi { background: var(--bg); border-radius: 8px; padding: 14px; text-align: center; border: 1px solid var(--border); }
+.arctic-kpi .kpi-num { font-size: 36px; font-weight: 700; font-family: var(--font-mono); }
 .arctic-kpi .kpi-num.warn { color: var(--accent2); }
 .arctic-kpi .kpi-num.ok { color: var(--accent3); }
 .arctic-kpi .kpi-num.neutral { color: var(--accent); }
 .arctic-kpi .kpi-desc { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
 /* back-compat for old .num/.desc classes */
-.arctic-kpi .num { font-size: 36px; font-weight: 700; }
+.arctic-kpi .num { font-size: 36px; font-weight: 700; font-family: var(--font-mono); }
 .arctic-kpi .num.warn { color: var(--accent2); }
 .arctic-kpi .num.ok { color: var(--accent3); }
 .arctic-kpi .num.neutral { color: var(--accent); }
@@ -436,21 +515,24 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
 }
 .adversary-list-item:last-child { border-bottom: none; }
-.adversary-list-item:hover { background: rgba(79,140,255,0.04); }
+.adversary-list-item:hover { background: rgba(0,212,255,0.04); }
 .adversary-rank { color: var(--text-dim); font-size: 11px; width: 24px; }
-.adversary-value { color: var(--accent4); font-weight: 600; }
+.adversary-value { color: var(--accent4); font-weight: 600; font-family: var(--font-mono); }
 
 /* Arctic Dedicated Tab */
 .arctic-metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
 .arctic-metric-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 12px;
   padding: 18px; text-align: center; border-top: 3px solid var(--accent);
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
+.arctic-metric-card:hover { box-shadow: var(--glow); }
 .arctic-metric-card.red { border-top-color: var(--accent2); }
 .arctic-metric-card.green { border-top-color: var(--accent3); }
 .arctic-metric-card.yellow { border-top-color: var(--accent4); }
 .arctic-metric-card .amc-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 6px; }
-.arctic-metric-card .amc-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+.arctic-metric-card .amc-value { font-size: 28px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
 .arctic-metric-card.red .amc-value { color: var(--accent2); }
 .arctic-metric-card.green .amc-value { color: var(--accent3); }
 .arctic-metric-card.yellow .amc-value { color: var(--accent4); }
@@ -462,7 +544,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .arctic-force-bar .afb-label { width: 120px; font-weight: 500; flex-shrink: 0; }
 .arctic-force-bar .afb-bar-wrap { flex: 1; background: var(--bg); border-radius: 4px; height: 22px; overflow: hidden; position: relative; margin: 0 10px; }
 .arctic-force-bar .afb-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; color: #fff; min-width: 2px; transition: width 0.6s ease; }
-.arctic-force-bar .afb-val { width: 80px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+.arctic-force-bar .afb-val { width: 80px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-dim); font-family: var(--font-mono); }
 .arctic-force-bar .afb-trend { width: 60px; text-align: right; font-size: 12px; font-weight: 600; }
 .arctic-force-bar .afb-trend.up { color: var(--accent2); }
 .arctic-force-bar .afb-trend.down { color: var(--accent3); }
@@ -471,24 +553,23 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
 /* Arctic base popups */
 .arctic-base-popup { font-size: 13px; max-width: 280px; }
-.arctic-base-popup h3 { font-size: 14px; margin: 0 0 6px 0; }
-.arctic-base-popup .base-type { font-size: 11px; color: #888; text-transform: uppercase; }
+.arctic-base-popup h3 { font-family: var(--font-display); font-size: 14px; margin: 0 0 6px 0; }
+.arctic-base-popup .base-type { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
 .arctic-base-popup .base-capability { margin: 6px 0; font-size: 12px; }
 .arctic-base-popup .base-status { font-size: 12px; font-weight: 600; }
-.arctic-base-popup .base-status.expanding { color: #ffd43b; }
-.arctic-base-popup .base-status.active { color: #51cf66; }
-.arctic-base-popup .base-status.delayed { color: #ff6b6b; }
-.arctic-base-popup .base-status.planned { color: #4f8cff; }
-.arctic-base-popup .base-dev { font-size: 11px; color: #aaa; margin-top: 6px; line-height: 1.4; }
+.arctic-base-popup .base-status.expanding { color: var(--accent4); }
+.arctic-base-popup .base-status.active { color: var(--accent3); }
+.arctic-base-popup .base-status.delayed { color: var(--accent2); }
+.arctic-base-popup .base-status.planned { color: var(--accent); }
+.arctic-base-popup .base-dev { font-size: 11px; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
 .arctic-base-popup .base-arms { font-size: 11px; color: var(--accent4); margin-top: 4px; }
-@keyframes pulse-marker { 0%,100% { opacity: 0.9; } 50% { opacity: 0.25; } }
 .pulsing-marker { animation: pulse-marker 1.5s ease-in-out infinite; transform-origin: center; }
 
 /* Leaflet popup dark theme */
-.leaflet-popup-content-wrapper { background: #1a1d27 !important; color: #e0e0e8 !important; border: 1px solid #2a2d3a !important; border-radius: 8px !important; }
-.leaflet-popup-tip { background: #1a1d27 !important; border: 1px solid #2a2d3a !important; }
-.leaflet-popup-close-button { color: #8888a0 !important; }
-.leaflet-popup-close-button:hover { color: #e0e0e8 !important; }
+.leaflet-popup-content-wrapper { background: #111827 !important; color: #e2e8f0 !important; border: 1px solid rgba(0,212,255,0.15) !important; border-radius: 10px !important; }
+.leaflet-popup-tip { background: #111827 !important; border: 1px solid rgba(0,212,255,0.15) !important; }
+.leaflet-popup-close-button { color: var(--text-dim) !important; }
+.leaflet-popup-close-button:hover { color: var(--text) !important; }
 
 /* Arctic base intelligence table */
 .arctic-intel-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -498,23 +579,23 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   cursor: pointer; user-select: none; white-space: nowrap;
 }
 .arctic-intel-table th:hover { color: var(--accent); }
-.arctic-intel-table th.sorted-asc::after { content: ' \u25B2'; font-size: 9px; }
-.arctic-intel-table th.sorted-desc::after { content: ' \u25BC'; font-size: 9px; }
+.arctic-intel-table th.sorted-asc::after { content: ' \25B2'; font-size: 9px; }
+.arctic-intel-table th.sorted-desc::after { content: ' \25BC'; font-size: 9px; }
 .arctic-intel-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.arctic-intel-table tr:hover { background: rgba(79,140,255,0.04); }
-.arctic-intel-table tr.row-russia { border-left: 3px solid #ff6b6b; }
-.arctic-intel-table tr.row-china { border-left: 3px solid #ffd43b; }
-.arctic-intel-table tr.row-nato { border-left: 3px solid #4f8cff; }
-.arctic-intel-table tr.row-canada { border-left: 3px solid #51cf66; }
+.arctic-intel-table tr:hover { background: rgba(0,212,255,0.04); }
+.arctic-intel-table tr.row-russia { border-left: 3px solid var(--accent2); }
+.arctic-intel-table tr.row-china { border-left: 3px solid var(--accent4); }
+.arctic-intel-table tr.row-nato { border-left: 3px solid var(--accent); }
+.arctic-intel-table tr.row-canada { border-left: 3px solid var(--accent3); }
 .arctic-intel-table .threat-badge {
   display: inline-block; width: 24px; height: 24px; border-radius: 50%;
   text-align: center; line-height: 24px; font-weight: 700; font-size: 12px; color: #fff;
 }
-.arctic-intel-table .threat-5 { background: #ff3333; }
-.arctic-intel-table .threat-4 { background: #ff6b6b; }
-.arctic-intel-table .threat-3 { background: #ffa94d; }
-.arctic-intel-table .threat-2 { background: #ffd43b; color: #333; }
-.arctic-intel-table .threat-1 { background: #4f8cff; }
+.arctic-intel-table .threat-5 { background: #dc2626; }
+.arctic-intel-table .threat-4 { background: var(--accent2); }
+.arctic-intel-table .threat-3 { background: #f97316; }
+.arctic-intel-table .threat-2 { background: var(--accent4); color: #0a0e1a; }
+.arctic-intel-table .threat-1 { background: var(--accent); color: #0a0e1a; }
 
 /* Map legend for bases */
 .arctic-base-legend {
@@ -524,14 +605,14 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .arctic-base-legend .leg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .arctic-base-legend .leg-pulse {
   width: 12px; height: 12px; border-radius: 50%; display: inline-block;
-  background: #ff6b6b; animation: pulse-marker 1.5s ease-in-out infinite;
+  background: var(--accent2); animation: pulse-marker 1.5s ease-in-out infinite;
 }
 
 .arctic-naval-item {
   padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
 }
 .arctic-naval-item:last-child { border-bottom: none; }
-.arctic-naval-item:hover { background: rgba(79,140,255,0.04); }
+.arctic-naval-item:hover { background: rgba(0,212,255,0.04); }
 
 .arctic-weakness-item {
   padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px;
@@ -540,7 +621,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 .arctic-weakness-item:last-child { border-bottom: none; }
 .arctic-weakness-supplier { font-weight: 600; }
 .arctic-weakness-supplier.iran { color: var(--accent4); }
-.arctic-weakness-supplier.china { color: var(--accent2); }
+.arctic-weakness-supplier.china { color: var(--accent4); }
 
 /* Arctic Current Intelligence panel */
 .arctic-dsca-card {
@@ -548,9 +629,9 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
 }
 .arctic-dsca-card:last-child { border-bottom: none; }
-.arctic-dsca-card:hover { background: rgba(79,140,255,0.04); }
+.arctic-dsca-card:hover { background: rgba(0,212,255,0.04); }
 .arctic-dsca-card .dsca-buyer { font-weight: 600; color: var(--accent); }
-.arctic-dsca-card .dsca-value { font-weight: 600; color: var(--accent4); white-space: nowrap; }
+.arctic-dsca-card .dsca-value { font-weight: 600; color: var(--accent4); white-space: nowrap; font-family: var(--font-mono); }
 .arctic-dsca-card .dsca-weapons { font-size: 11px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
 .arctic-dsca-card .dsca-date { font-size: 10px; color: var(--text-dim); }
 
@@ -558,18 +639,137 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
 }
 .arctic-news-item:last-child { border-bottom: none; }
-.arctic-news-item:hover { background: rgba(79,140,255,0.04); }
+.arctic-news-item:hover { background: rgba(0,212,255,0.04); }
 .arctic-news-item a { color: var(--accent); text-decoration: none; }
 .arctic-news-item a:hover { text-decoration: underline; }
 .arctic-news-item .news-source { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
 
 .arctic-trade-card {
-  background: var(--bg); border-radius: 8px; padding: 14px;
+  background: var(--bg); border-radius: 8px; padding: 14px; border: 1px solid var(--border);
 }
-.arctic-trade-card h4 { font-size: 13px; margin: 0 0 6px 0; color: var(--accent); }
-.arctic-trade-card .trade-total { font-size: 20px; font-weight: 700; color: var(--text); }
+.arctic-trade-card h4 { font-family: var(--font-display); font-size: 13px; margin: 0 0 6px 0; color: var(--accent); }
+.arctic-trade-card .trade-total { font-size: 20px; font-weight: 700; color: var(--text); font-family: var(--font-mono); }
 .arctic-trade-card .trade-source { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
 .arctic-trade-card .trade-error { font-size: 11px; color: var(--accent2); font-style: italic; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.3); }
+
+/* ─── Remaining section polish ─── */
+
+/* PSI section refinements */
+.psi-sub h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.psi-tab-bar {
+  display: flex; gap: 4px; margin-bottom: 18px;
+  background: var(--bg); border-radius: 10px;
+  padding: 4px; border: 1px solid var(--border);
+}
+.psi-tab-bar .tab { border-radius: 7px; }
+
+/* Inline stat boxes — unified pattern for KPI counters */
+.stat-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.stat-box:hover { border-color: var(--border-hover); }
+.stat-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* Action buttons — gradient primary */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #0891b2);
+  color: #0a0e1a;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.25s;
+  box-shadow: 0 2px 8px rgba(0,212,255,0.2);
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(0,212,255,0.35);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Loading text pulse */
+.loading-text {
+  color: var(--text-dim);
+  font-size: 13px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* PSI controls — selects and inputs */
+.psi-controls select,
+.psi-controls input[type="range"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+.psi-controls select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+}
+
+/* Nation legend colors — semantic */
+.clr-russia { color: var(--accent2); }
+.clr-nato { color: var(--accent); }
+.clr-china { color: var(--accent4); }
+.clr-canada { color: var(--accent3); }
+.clr-allied { color: var(--accent); }
+.clr-unknown { color: var(--text-dim); }
+.bg-russia { background: var(--accent2); }
+.bg-nato { background: var(--accent); }
+.bg-china { background: var(--accent4); }
+.bg-canada { background: var(--accent3); }
+.bg-transport { background: var(--accent3); }
+.bg-fighter { background: var(--accent4); }
+.bg-tanker { background: var(--accent5); }
+.bg-unknown { background: var(--text-dim); }
+
+/* Graph legend dot */
+.graph-legend-dot {
+  display: inline-block;
+  width: 12px; height: 12px;
+  vertical-align: middle;
+  margin-left: 12px;
+}
+.graph-legend-dot:first-child { margin-left: 0; }
+.graph-legend-dot.circle { border-radius: 50%; }
+.graph-legend-dot.square { border-radius: 2px; }
+.graph-legend-dot.diamond { border-radius: 2px; transform: rotate(45deg); }
 
 @media (max-width: 1200px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
@@ -581,18 +781,37 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   .arctic-full { grid-template-columns: 1fr; }
   .arctic-metrics { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-width: 768px) {
+  .container { padding: 16px; }
+  header { padding: 12px 16px; flex-direction: column; gap: 10px; }
+  .nav { padding: 6px 16px; }
+  .stats-bar { gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .sitrep-row { grid-template-columns: 1fr 1fr; }
+  .metric-grid { grid-template-columns: 1fr 1fr; }
+  .ca-metrics { grid-template-columns: 1fr; }
+  .arctic-metrics { grid-template-columns: 1fr; }
+  .arctic-full { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 
 <header>
-  <h1><span>ARMS</span>TRACKER</h1>
+  <div style="display:flex; align-items:center; gap:14px; z-index:1; position:relative;">
+    <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--accent), #0891b2); display:flex; align-items:center; justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10"/><path d="M12 2a15 15 0 0 0-4 10 15 15 0 0 0 4 10"/></svg>
+    </div>
+    <div>
+      <h1 style="font-family:var(--font-display); font-size:20px; font-weight:700; letter-spacing:-0.02em; color:#fff; margin:0;">ARMS<span style="color:var(--accent);">TRACKER</span></h1>
+      <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase;">Defence Intelligence Platform — DND/MDN</div>
+    </div>
+  </div>
   <div class="stats-bar" id="stats-bar">
-    <div>Transfers: <span class="val" id="stat-transfers">-</span></div>
-    <div>Countries: <span class="val" id="stat-countries">-</span></div>
-    <div>Sellers: <span class="val" id="stat-sellers">-</span></div>
-    <div>Total TIV: <span class="val" id="stat-tiv">-</span></div>
-    <div>Data: <span class="val" id="stat-freshness" style="cursor:pointer" title="Click for details">-</span></div>
+    <div><span class="stats-label">Transfers</span><span class="val" id="stat-transfers">-</span></div>
+    <div><span class="stats-label">Countries</span><span class="val" id="stat-countries">-</span></div>
+    <div><span class="stats-label">Sellers</span><span class="val" id="stat-sellers">-</span></div>
+    <div><span class="stats-label">Total TIV</span><span class="val" id="stat-tiv">-</span></div>
+    <div><span class="stats-label">Data</span><span class="val" id="stat-freshness" style="cursor:pointer" title="Click for details">-</span></div>
   </div>
 </header>
 
@@ -849,8 +1068,8 @@ tr:hover td { background: rgba(79,140,255,0.05); }
     <div class="card">
       <h2>Global Arms Trade Map</h2>
       <div class="legend">
-        <span><span class="legend-dot" style="background:#4f8cff"></span> Net Exporter</span>
-        <span><span class="legend-dot" style="background:#ff6b6b"></span> Net Importer</span>
+        <span><span class="legend-dot" style="background:var(--accent)"></span> Net Exporter</span>
+        <span><span class="legend-dot" style="background:var(--accent2)"></span> Net Importer</span>
         <span>Circle size = total trade volume. Click a country for details.</span>
       </div>
       <div id="world-map" class="map-container"></div>
@@ -924,10 +1143,10 @@ tr:hover td { background: rgba(79,140,255,0.05); }
     <div class="card" style="margin-bottom:20px;">
       <h2>Arctic Force Balance Map <span id="arctic-map-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
       <div class="arctic-base-legend">
-        <div class="leg-item"><div class="leg-dot" style="background:#ff6b6b"></div> Russia</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#4f8cff"></div> NATO</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#ffd43b"></div> China</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#51cf66"></div> Canada</div>
+        <div class="leg-item"><div class="leg-dot bg-russia"></div> Russia</div>
+        <div class="leg-item"><div class="leg-dot bg-nato"></div> NATO</div>
+        <div class="leg-item"><div class="leg-dot bg-china"></div> China</div>
+        <div class="leg-item"><div class="leg-dot bg-canada"></div> Canada</div>
         <div class="leg-item"><div class="leg-pulse"></div> Expanding/Planned</div>
         <div class="leg-item" style="color:var(--text-dim);">Size = threat level (1-5)</div>
         <div class="leg-item" style="color:var(--accent2);">\ud83c\uddf7\ud83c\uddfa Red dashed = Northern Sea Route (Russia)</div>
@@ -1012,7 +1231,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
         Fills the SIPRI data gap with real-time sources: DSCA sales pipeline, defense news, flight tracking, and NATO spending data.
       </p>
 
-      <div id="arctic-current-loading" style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">
+      <div id="arctic-current-loading" class="loading-text" style="text-align:center;padding:40px 0;">
         Loading current intelligence from multiple sources...
       </div>
 
@@ -1020,22 +1239,22 @@ tr:hover td { background: rgba(79,140,255,0.05); }
         <!-- Top row: DSCA pipeline + NATO spending mini chart -->
         <div class="grid grid-2" style="margin-bottom:20px;">
           <div>
-            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">DSCA Arms Sales Pipeline</h3>
+            <h3 style="font-family:var(--font-display);font-size:14px;margin-bottom:10px;color:var(--accent);">DSCA Arms Sales Pipeline</h3>
             <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Approved US arms sales to Arctic NATO nations -- weapons in the delivery pipeline.</p>
             <div id="arctic-dsca-summary" style="display:flex;gap:12px;margin-bottom:10px;">
-              <div style="background:var(--bg);border-radius:6px;padding:10px 16px;text-align:center;">
-                <div style="font-size:22px;font-weight:700;color:var(--accent);" id="arctic-dsca-count">-</div>
-                <div style="font-size:10px;color:var(--text-dim);">SALES</div>
+              <div class="stat-box">
+                <div class="stat-num" style="font-size:22px;color:var(--accent);" id="arctic-dsca-count">-</div>
+                <div class="stat-label">SALES</div>
               </div>
-              <div style="background:var(--bg);border-radius:6px;padding:10px 16px;text-align:center;">
-                <div style="font-size:22px;font-weight:700;color:var(--accent4);" id="arctic-dsca-value">-</div>
-                <div style="font-size:10px;color:var(--text-dim);">TOTAL VALUE</div>
+              <div class="stat-box">
+                <div class="stat-num" style="font-size:22px;color:var(--accent4);" id="arctic-dsca-value">-</div>
+                <div class="stat-label">TOTAL VALUE</div>
               </div>
             </div>
             <div id="arctic-dsca-list" style="max-height:250px;overflow-y:auto;"></div>
           </div>
           <div>
-            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">NATO Arctic Spending Trend</h3>
+            <h3 style="font-family:var(--font-display);font-size:14px;margin-bottom:10px;color:var(--accent);">NATO Arctic Spending Trend</h3>
             <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Defence spending acceleration for Arctic NATO nations (million USD).</p>
             <div class="chart-container" style="height:260px;"><canvas id="arctic-nato-spending-chart"></canvas></div>
           </div>
@@ -1044,25 +1263,25 @@ tr:hover td { background: rgba(79,140,255,0.05); }
         <!-- Middle row: Defense news + Flight trends -->
         <div class="grid grid-2" style="margin-bottom:20px;">
           <div>
-            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">Arctic Defense News</h3>
+            <h3 style="font-family:var(--font-display);font-size:14px;margin-bottom:10px;color:var(--accent);">Arctic Defense News</h3>
             <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Recent headlines mentioning Arctic military activity.</p>
             <div id="arctic-news-list" style="max-height:300px;overflow-y:auto;"></div>
           </div>
           <div>
-            <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">Arctic Flight Activity (30 days)</h3>
+            <h3 style="font-family:var(--font-display);font-size:14px;margin-bottom:10px;color:var(--accent);">Arctic Flight Activity (30 days)</h3>
             <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Military flights detected above latitude 55N.</p>
             <div style="display:flex;gap:12px;margin-bottom:10px;">
-              <div style="background:var(--bg);border-radius:6px;padding:8px 14px;text-align:center;">
-                <div style="font-size:18px;font-weight:700;color:var(--accent);" id="arctic-flights-total">-</div>
-                <div style="font-size:10px;color:var(--text-dim);">TOTAL</div>
+              <div class="stat-box" style="padding:8px 14px;">
+                <div class="stat-num" style="font-size:18px;color:var(--accent);" id="arctic-flights-total">-</div>
+                <div class="stat-label">TOTAL</div>
               </div>
-              <div style="background:var(--bg);border-radius:6px;padding:8px 14px;text-align:center;">
-                <div style="font-size:18px;font-weight:700;color:#4f8cff;" id="arctic-flights-nato">-</div>
-                <div style="font-size:10px;color:var(--text-dim);">NATO</div>
+              <div class="stat-box" style="padding:8px 14px;">
+                <div class="stat-num clr-nato" style="font-size:18px;" id="arctic-flights-nato">-</div>
+                <div class="stat-label">NATO</div>
               </div>
-              <div style="background:var(--bg);border-radius:6px;padding:8px 14px;text-align:center;">
-                <div style="font-size:18px;font-weight:700;color:#ff6b6b;" id="arctic-flights-russian">-</div>
-                <div style="font-size:10px;color:var(--text-dim);">RUSSIAN</div>
+              <div class="stat-box" style="padding:8px 14px;">
+                <div class="stat-num clr-russia" style="font-size:18px;" id="arctic-flights-russian">-</div>
+                <div class="stat-label">RUSSIAN</div>
               </div>
             </div>
             <div class="chart-container" style="height:200px;"><canvas id="arctic-flights-trend-chart"></canvas></div>
@@ -1071,7 +1290,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
 
         <!-- Bottom row: Monthly trade data summary -->
         <div>
-          <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent);">Monthly Arms Trade (HS 93) -- Arctic Nations</h3>
+          <h3 style="font-family:var(--font-display);font-size:14px;margin-bottom:10px;color:var(--accent);">Monthly Arms Trade (HS 93) -- Arctic Nations</h3>
           <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Real customs data from US Census, Eurostat, and Statistics Canada. Most current data available.</p>
           <div id="arctic-trade-summary" class="grid grid-3" style="gap:12px;"></div>
         </div>
@@ -1083,31 +1302,31 @@ tr:hover td { background: rgba(79,140,255,0.05); }
       <div class="card">
         <h2>Live Arctic Airspace <span id="arctic-airspace-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
         <div class="legend" style="margin-bottom:8px;">
-          <span><span class="legend-dot" style="background:#4f8cff"></span> NATO</span>
-          <span><span class="legend-dot" style="background:#ff6b6b"></span> Russian</span>
-          <span><span class="legend-dot" style="background:#ffd43b"></span> Chinese</span>
-          <span><span class="legend-dot" style="background:#888"></span> Unknown</span>
+          <span><span class="legend-dot bg-nato"></span> NATO</span>
+          <span><span class="legend-dot bg-russia"></span> Russian</span>
+          <span><span class="legend-dot bg-china"></span> Chinese</span>
+          <span><span class="legend-dot bg-unknown"></span> Unknown</span>
         </div>
         <div id="arctic-airspace-map" style="height:400px;border-radius:8px;overflow:hidden;"></div>
       </div>
       <div class="card">
         <h2>Arctic Aircraft List</h2>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-          <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px;">
-            <div style="font-size:22px;font-weight:700;color:#ff6b6b;" id="arctic-count-russian">0</div>
-            <div style="font-size:10px;color:var(--text-dim);">RUSSIAN</div>
+          <div class="stat-box">
+            <div class="stat-num clr-russia" style="font-size:22px;" id="arctic-count-russian">0</div>
+            <div class="stat-label">RUSSIAN</div>
           </div>
-          <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px;">
-            <div style="font-size:22px;font-weight:700;color:#ffd43b;" id="arctic-count-chinese">0</div>
-            <div style="font-size:10px;color:var(--text-dim);">CHINESE</div>
+          <div class="stat-box">
+            <div class="stat-num clr-china" style="font-size:22px;" id="arctic-count-chinese">0</div>
+            <div class="stat-label">CHINESE</div>
           </div>
-          <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px;">
-            <div style="font-size:22px;font-weight:700;color:#4f8cff;" id="arctic-count-nato">0</div>
-            <div style="font-size:10px;color:var(--text-dim);">NATO</div>
+          <div class="stat-box">
+            <div class="stat-num clr-nato" style="font-size:22px;" id="arctic-count-nato">0</div>
+            <div class="stat-label">NATO</div>
           </div>
-          <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px;">
-            <div style="font-size:22px;font-weight:700;color:#888;" id="arctic-count-unknown">0</div>
-            <div style="font-size:10px;color:var(--text-dim);">UNKNOWN</div>
+          <div class="stat-box">
+            <div class="stat-num clr-unknown" style="font-size:22px;" id="arctic-count-unknown">0</div>
+            <div class="stat-label">UNKNOWN</div>
           </div>
         </div>
         <div class="flight-list" id="arctic-flight-list" style="max-height:340px;overflow-y:auto;"></div>
@@ -1122,9 +1341,9 @@ tr:hover td { background: rgba(79,140,255,0.05); }
       <div class="card" style="grid-column: 1 / 3;">
         <h2>Military Aircraft Positions <span id="flight-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
         <div class="legend">
-          <span><span class="legend-dot" style="background:#51cf66"></span> Transport</span>
-          <span><span class="legend-dot" style="background:#ffd43b"></span> Fighter/Other</span>
-          <span><span class="legend-dot" style="background:#cc5de8"></span> Tanker/Refueler</span>
+          <span><span class="legend-dot bg-transport"></span> Transport</span>
+          <span><span class="legend-dot bg-fighter"></span> Fighter/Other</span>
+          <span><span class="legend-dot bg-tanker"></span> Tanker/Refueler</span>
         </div>
         <div id="flights-map" class="map-container"></div>
       </div>
@@ -1259,7 +1478,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
   <!-- ════ SUPPLY CHAIN (PSI) PAGE ════ -->
   <div id="page-supply-chain" class="page">
 
-    <div style="display:flex; gap:10px; margin-bottom:18px;">
+    <div class="psi-tab-bar">
       <button class="tab active" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
       <button class="tab" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
       <button class="tab" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
@@ -1270,18 +1489,18 @@ tr:hover td { background: rgba(79,140,255,0.05); }
     <div id="psi-overview" class="psi-sub">
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:18px;">
         <div class="card" style="text-align:center; padding:20px;">
-          <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Global Risk Score</div>
-          <div id="psi-global-score" style="font-size:42px; font-weight:700; color:var(--accent4);">--</div>
+          <div class="stat-label">Global Risk Score</div>
+          <div id="psi-global-score" class="stat-num" style="font-size:42px; color:var(--accent4);">--</div>
           <div style="font-size:11px; color:var(--text-dim);">composite (0-100)</div>
         </div>
         <div class="card" style="text-align:center; padding:20px;">
-          <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Active Alerts</div>
-          <div id="psi-alert-count" style="font-size:42px; font-weight:700; color:var(--accent2);">--</div>
+          <div class="stat-label">Active Alerts</div>
+          <div id="psi-alert-count" class="stat-num" style="font-size:42px; color:var(--accent2);">--</div>
           <div style="font-size:11px; color:var(--text-dim);">supply chain disruptions</div>
         </div>
         <div class="card" style="text-align:center; padding:20px;">
-          <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Graph Nodes</div>
-          <div id="psi-node-count" style="font-size:42px; font-weight:700; color:var(--accent);">--</div>
+          <div class="stat-label">Graph Nodes</div>
+          <div id="psi-node-count" class="stat-num" style="font-size:42px; color:var(--accent);">--</div>
           <div style="font-size:11px; color:var(--text-dim);">materials + components + platforms</div>
         </div>
       </div>
@@ -1317,8 +1536,8 @@ tr:hover td { background: rgba(79,140,255,0.05); }
       <div class="card" style="padding:18px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <h3>Supply Chain Knowledge Graph</h3>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <select id="psi-graph-type-filter" style="background:var(--surface); color:var(--text); border:1px solid var(--border); padding:4px 8px; border-radius:4px;">
+          <div class="psi-controls" style="display:flex; gap:8px; align-items:center;">
+            <select id="psi-graph-type-filter">
               <option value="">All Types</option>
               <option value="material">Materials</option>
               <option value="component">Components</option>
@@ -1327,17 +1546,17 @@ tr:hover td { background: rgba(79,140,255,0.05); }
             </select>
             <label style="font-size:12px; color:var(--text-dim);">Min Risk:
               <input id="psi-graph-risk-slider" type="range" min="0" max="100" value="0" style="width:100px; vertical-align:middle;">
-              <span id="psi-graph-risk-val">0</span>
+              <span id="psi-graph-risk-val" style="font-family:var(--font-mono);">0</span>
             </label>
-            <button onclick="loadPsiGraph()" style="background:var(--accent); color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer;">Refresh</button>
+            <button onclick="loadPsiGraph()" class="btn-primary" style="padding:5px 14px;">Refresh</button>
           </div>
         </div>
         <div id="psi-graph-container" style="width:100%; height:550px; position:relative;"></div>
         <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
-          <span style="display:inline-block; width:12px; height:12px; background:#ff9f43; border-radius:50%; vertical-align:middle;"></span> Material
-          <span style="display:inline-block; width:12px; height:12px; background:#4f8cff; border-radius:2px; vertical-align:middle; margin-left:12px;"></span> Component
-          <span style="display:inline-block; width:12px; height:12px; background:#51cf66; border-radius:2px; vertical-align:middle; margin-left:12px; transform:rotate(45deg);"></span> Subsystem
-          <span style="display:inline-block; width:12px; height:12px; background:#ff6b6b; border-radius:50%; vertical-align:middle; margin-left:12px;"></span> Platform
+          <span class="graph-legend-dot circle" style="background:var(--accent4);"></span> Material
+          <span class="graph-legend-dot square" style="background:var(--accent);"></span> Component
+          <span class="graph-legend-dot diamond" style="background:var(--accent3);"></span> Subsystem
+          <span class="graph-legend-dot circle" style="background:var(--accent2);"></span> Platform
         </div>
       </div>
     </div>
@@ -1363,7 +1582,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
         <div style="display:grid; grid-template-columns:300px 1fr; gap:18px;">
           <div>
             <label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:4px;">Scenario Type</label>
-            <select id="psi-scenario-type" onchange="updateScenarioFields()" style="width:100%; background:var(--surface); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:4px; margin-bottom:12px;">
+            <select id="psi-scenario-type" onchange="updateScenarioFields()" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:6px; margin-bottom:12px; font-family:var(--font-body); transition:border-color 0.2s;">
               <option value="sanctions_expansion">Sanctions Expansion</option>
               <option value="material_shortage">Material Shortage</option>
               <option value="route_disruption">Route Disruption</option>
@@ -1371,7 +1590,7 @@ tr:hover td { background: rgba(79,140,255,0.05); }
               <option value="supplier_substitution">Supplier Substitution</option>
             </select>
             <div id="psi-scenario-fields"></div>
-            <button id="psi-run-scenario" onclick="runScenario()" style="width:100%; margin-top:14px; background:var(--accent); color:#fff; border:none; padding:10px; border-radius:4px; cursor:pointer; font-weight:600;">Run Scenario</button>
+            <button id="psi-run-scenario" onclick="runScenario()" class="btn-primary" style="width:100%; margin-top:14px; padding:10px;">Run Scenario</button>
           </div>
           <div id="psi-scenario-results" style="min-height:300px;">
             <div style="color:var(--text-dim); text-align:center; padding:60px 0;">Select a scenario type and click "Run Scenario"</div>
@@ -1449,8 +1668,8 @@ function fmt(n) {
   return n.toFixed(2) + 'M';
 }
 function fmtInt(n) { return n == null ? '-' : n.toLocaleString(); }
-const COLORS = ['#4f8cff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#20c997',
-  '#ff922b','#748ffc','#f06595','#66d9e8','#a9e34b','#e599f7'];
+const COLORS = ['#00d4ff','#ef4444','#10b981','#f59e0b','#8b5cf6','#14b8a6',
+  '#f97316','#38bdf8','#f43f5e','#22d3ee','#84cc16','#c084fc'];
 function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
 
 // ── Navigation ──
@@ -1477,9 +1696,9 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
 
 // ── Data Loading ──
 async function loadData() {
-  Chart.defaults.color = '#8888a0';
-  Chart.defaults.borderColor = '#2a2d3a';
-  Chart.defaults.font.family = "-apple-system, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.borderColor = 'rgba(0,212,255,0.08)';
+  Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
 
   const responses = await Promise.all([
     fetch(API + '/dashboard/transfers?limit=5000'),
@@ -1546,7 +1765,7 @@ function renderBarChart(mode) {
     .slice(0, 15);
   const labels = sorted.map(c => c.country);
   const values = sorted.map(c => mode === 'exporters' ? c.exports_tiv : c.imports_tiv);
-  const color = mode === 'exporters' ? '#4f8cff' : '#ff6b6b';
+  const color = mode === 'exporters' ? '#00d4ff' : '#ef4444';
   chartInstances['bar-chart'] = new Chart(document.getElementById('bar-chart'), {
     type: 'bar',
     data: { labels, datasets: [{ label: mode === 'exporters' ? 'Exports TIV (M)' : 'Imports TIV (M)', data: values, backgroundColor: color + '88', borderColor: color, borderWidth: 1 }] },
@@ -1587,13 +1806,13 @@ function renderNetwork() {
     .force('charge', d3.forceManyBody().strength(-300))
     .force('center', d3.forceCenter(width / 2, height / 2))
     .force('collision', d3.forceCollide().radius(d => nodeSize(d.exports + d.imports) + 5));
-  const link = svg.append('g').selectAll('line').data(links).join('line').attr('class', 'link').attr('stroke', '#4f8cff').attr('stroke-width', d => linkWidth(d.value));
+  const link = svg.append('g').selectAll('line').data(links).join('line').attr('class', 'link').attr('stroke', '#00d4ff').attr('stroke-width', d => linkWidth(d.value));
   const node = svg.append('g').selectAll('g').data(nodes).join('g').attr('class', 'node')
     .call(d3.drag()
       .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
       .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
       .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
-  node.append('circle').attr('r', d => nodeSize(d.exports + d.imports)).attr('fill', d => d.exports > d.imports ? '#4f8cff' : '#ff6b6b').attr('opacity', 0.8).on('click', (e, d) => showCountryDetail(d.id));
+  node.append('circle').attr('r', d => nodeSize(d.exports + d.imports)).attr('fill', d => d.exports > d.imports ? '#00d4ff' : '#ef4444').attr('opacity', 0.8).on('click', (e, d) => showCountryDetail(d.id));
   node.append('text').text(d => d.id).attr('dx', d => nodeSize(d.exports + d.imports) + 4).attr('dy', 4);
   node.append('title').text(d => `${d.id}\nExports: ${fmt(d.exports)}\nImports: ${fmt(d.imports)}`);
   link.append('title').text(d => `${d.source.id || d.source} \u2192 ${d.target.id || d.target}\nTIV: ${fmt(d.value)} (${d.deals} deals)`);
@@ -1622,8 +1841,8 @@ function renderTimeline(volume) {
     data: {
       labels: volume.map(v => v.year),
       datasets: [
-        { type: 'bar', label: 'TIV (M)', data: volume.map(v => v.tiv_total), backgroundColor: '#4f8cff44', borderColor: '#4f8cff', borderWidth: 1, yAxisID: 'y' },
-        { type: 'line', label: 'Deal Count', data: volume.map(v => v.deal_count), borderColor: '#ff6b6b', backgroundColor: '#ff6b6b', pointRadius: 3, yAxisID: 'y1' },
+        { type: 'bar', label: 'TIV (M)', data: volume.map(v => v.tiv_total), backgroundColor: '#00d4ff44', borderColor: '#00d4ff', borderWidth: 1, yAxisID: 'y' },
+        { type: 'line', label: 'Deal Count', data: volume.map(v => v.deal_count), borderColor: '#ef4444', backgroundColor: '#ef4444', pointRadius: 3, yAxisID: 'y1' },
       ],
     },
     options: {
@@ -1691,7 +1910,7 @@ async function showCountryDetail(country) {
   const ep = (profile.top_export_partners || []).slice(0, 10);
   if (ep.length) {
     chartInstances['export-partners-chart'] = new Chart(document.getElementById('export-partners-chart'), {
-      type: 'bar', data: { labels: ep.map(p => p.partner), datasets: [{ data: ep.map(p => p.tiv), backgroundColor: '#4f8cff88', borderColor: '#4f8cff', borderWidth: 1 }] },
+      type: 'bar', data: { labels: ep.map(p => p.partner), datasets: [{ data: ep.map(p => p.tiv), backgroundColor: '#00d4ff88', borderColor: '#00d4ff', borderWidth: 1 }] },
       options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
     });
   }
@@ -1699,7 +1918,7 @@ async function showCountryDetail(country) {
   const ip = (profile.top_import_partners || []).slice(0, 10);
   if (ip.length) {
     chartInstances['import-partners-chart'] = new Chart(document.getElementById('import-partners-chart'), {
-      type: 'bar', data: { labels: ip.map(p => p.partner), datasets: [{ data: ip.map(p => p.tiv), backgroundColor: '#ff6b6b88', borderColor: '#ff6b6b', borderWidth: 1 }] },
+      type: 'bar', data: { labels: ip.map(p => p.partner), datasets: [{ data: ip.map(p => p.tiv), backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 1 }] },
       options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
     });
   }
@@ -1734,7 +1953,7 @@ function initWorldMap() {
 
     const weight = 1 + (f.total_tiv / maxFlowTIV) * 5;
     const line = L.polyline([from, to], {
-      color: '#4f8cff',
+      color: '#00d4ff',
       weight: weight,
       opacity: 0.25,
       dashArray: '4 6',
@@ -1756,8 +1975,8 @@ function initWorldMap() {
 
     const circle = L.circleMarker(coords, {
       radius: radius,
-      fillColor: isExporter ? '#4f8cff' : '#ff6b6b',
-      color: isExporter ? '#4f8cff' : '#ff6b6b',
+      fillColor: isExporter ? '#00d4ff' : '#ef4444',
+      color: isExporter ? '#00d4ff' : '#ef4444',
       weight: 1,
       fillOpacity: 0.6,
       opacity: 0.8,
@@ -1804,8 +2023,8 @@ function initWorldMap() {
     data: {
       labels: regionNames,
       datasets: [
-        { label: 'Exports TIV', data: regionNames.map(r => regions[r].exports), backgroundColor: '#4f8cff88', borderColor: '#4f8cff', borderWidth: 1 },
-        { label: 'Imports TIV', data: regionNames.map(r => regions[r].imports), backgroundColor: '#ff6b6b88', borderColor: '#ff6b6b', borderWidth: 1 },
+        { label: 'Exports TIV', data: regionNames.map(r => regions[r].exports), backgroundColor: '#00d4ff88', borderColor: '#00d4ff', borderWidth: 1 },
+        { label: 'Imports TIV', data: regionNames.map(r => regions[r].imports), backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 1 },
       ],
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } },
@@ -1842,8 +2061,8 @@ async function loadComtrade() {
         datasets: [{
           label: 'Arms Exports (USD)',
           data: sorted.map(([, v]) => v / 1e9),
-          backgroundColor: '#51cf6688',
-          borderColor: '#51cf66',
+          backgroundColor: '#10b98188',
+          borderColor: '#10b981',
           borderWidth: 1,
         }],
       },
@@ -1857,7 +2076,7 @@ async function loadComtrade() {
     // Trend chart: top 5 exporters over time
     const top5 = sorted.slice(0, 5).map(([c]) => c);
     const years = [2020, 2021, 2022, 2023];
-    const trendColors = ['#4f8cff', '#ff6b6b', '#51cf66', '#ffd43b', '#cc5de8'];
+    const trendColors = ['#00d4ff', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
     destroyChart('comtrade-trend-chart');
     chartInstances['comtrade-trend-chart'] = new Chart(document.getElementById('comtrade-trend-chart'), {
       type: 'line',
@@ -1913,9 +2132,9 @@ async function loadFlights() {
     flights.forEach(f => {
       const isTransport = TRANSPORT_TYPES.includes(f.aircraft_type);
       const isTanker = TANKER_TYPES.includes(f.aircraft_type);
-      let color = '#ffd43b';
-      if (isTransport && !isTanker) color = '#51cf66';
-      if (isTanker) color = '#cc5de8';
+      let color = '#f59e0b';
+      if (isTransport && !isTanker) color = '#10b981';
+      if (isTanker) color = '#8b5cf6';
 
       // Rotated triangle icon for aircraft heading
       const icon = L.divIcon({
@@ -1942,9 +2161,9 @@ async function loadFlights() {
     document.getElementById('flight-list').innerHTML = sorted.slice(0, 100).map(f => {
       const isTransport = TRANSPORT_TYPES.includes(f.aircraft_type);
       const isTanker = TANKER_TYPES.includes(f.aircraft_type);
-      let dotColor = '#ffd43b';
-      if (isTransport && !isTanker) dotColor = '#51cf66';
-      if (isTanker) dotColor = '#cc5de8';
+      let dotColor = '#f59e0b';
+      if (isTransport && !isTanker) dotColor = '#10b981';
+      if (isTanker) dotColor = '#8b5cf6';
       return `<div class="flight-item">
         <div><span class="legend-dot" style="background:${dotColor}"></span> <span class="callsign">${f.callsign || '---'}</span>
         <span class="aircraft-type">${f.aircraft_description}</span></div>
@@ -2072,10 +2291,10 @@ function renderBlocCharts() {
           label: 'Allied Exports TIV (M)',
           data: alliedSorted.map(([, v]) => v),
           backgroundColor: alliedSorted.map(([c]) =>
-            NATO_COUNTRIES.includes(c) ? '#4f8cff44' : ADVERSARY_COUNTRIES.includes(c) ? '#ff6b6b88' : '#4f8cff88'
+            NATO_COUNTRIES.includes(c) ? '#00d4ff44' : ADVERSARY_COUNTRIES.includes(c) ? '#ef444488' : '#00d4ff88'
           ),
           borderColor: alliedSorted.map(([c]) =>
-            ADVERSARY_COUNTRIES.includes(c) ? '#ff6b6b' : '#4f8cff'
+            ADVERSARY_COUNTRIES.includes(c) ? '#ef4444' : '#00d4ff'
           ),
           borderWidth: 1,
         }],
@@ -2100,9 +2319,9 @@ function renderBlocCharts() {
           label: 'Adversary Exports TIV (M)',
           data: advSorted.map(([, v]) => v),
           backgroundColor: advSorted.map(([c]) =>
-            NATO_COUNTRIES.includes(c) ? '#4f8cff88' : '#ff6b6b88'
+            NATO_COUNTRIES.includes(c) ? '#00d4ff88' : '#ef444488'
           ),
-          borderColor: '#ff6b6b',
+          borderColor: '#ef4444',
           borderWidth: 1,
         }],
       },
@@ -2170,7 +2389,7 @@ function renderArcticMonitor(flights) {
     // Draw CADIZ-like approximate zone
     const cadizApprox = L.polygon([
       [90, -141], [90, -50], [55, -50], [55, -80], [48, -80], [42, -67], [42, -141]
-    ], { color: '#ff6b6b', weight: 1, fillColor: '#ff6b6b', fillOpacity: 0.05, dashArray: '8 4' }).addTo(arcticMap);
+    ], { color: '#ef4444', weight: 1, fillColor: '#ef4444', fillOpacity: 0.05, dashArray: '8 4' }).addTo(arcticMap);
     cadizApprox.bindTooltip('Canadian ADIZ (approximate)', { sticky: true });
   }
 
@@ -2192,7 +2411,7 @@ function renderArcticMonitor(flights) {
     if (isRussian) russianCount++;
     else alliedCount++;
 
-    const color = isRussian ? '#ff6b6b' : '#51cf66';
+    const color = isRussian ? '#ef4444' : '#10b981';
     const icon = L.divIcon({
       className: '',
       html: `<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(${f.heading || 0}deg)">
@@ -2206,7 +2425,7 @@ function renderArcticMonitor(flights) {
     marker.bindTooltip(
       `<b>${cs || 'Unknown'}</b><br>${f.aircraft_description || ''}<br>` +
       `Alt: ${(f.altitude_ft || 0).toLocaleString()} ft<br>` +
-      `${isRussian ? '<span style="color:#ff6b6b">RUSSIAN</span>' : 'Allied/Other'}`,
+      `${isRussian ? '<span style="color:#ef4444">RUSSIAN</span>' : 'Allied/Other'}`,
       { sticky: true }
     );
     arcticMarkers.push(marker);
@@ -2235,13 +2454,13 @@ function renderCanadaSupplyChain(profile) {
       <div class="concentration-bar">
         ${importPartners.slice(0, 5).map((p, i) => {
           const pct = (p.tiv / totalTIV) * 100;
-          const colors = ['#4f8cff', '#ff6b6b', '#51cf66', '#ffd43b', '#cc5de8'];
+          const colors = ['#00d4ff', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
           return `<div class="concentration-fill" style="width:${pct}%;background:${colors[i]};display:inline-flex;">${pct >= 10 ? p.partner : ''}</div>`;
         }).join('')}
       </div>
       <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;">
         ${importPartners.slice(0, 5).map((p, i) => {
-          const colors = ['#4f8cff', '#ff6b6b', '#51cf66', '#ffd43b', '#cc5de8'];
+          const colors = ['#00d4ff', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
           const pct = ((p.tiv / totalTIV) * 100).toFixed(1);
           return `<span><span class="legend-dot" style="background:${colors[i]}"></span>${p.partner} (${pct}%)</span>`;
         }).join('')}
@@ -2260,14 +2479,14 @@ function renderCanadaSupplyChain(profile) {
           label: 'Import TIV (M)',
           data: importPartners.map(p => p.tiv),
           backgroundColor: importPartners.map((p, i) => {
-            if (ADVERSARY_COUNTRIES.includes(p.partner)) return '#ff6b6b88';
-            if (NATO_COUNTRIES.includes(p.partner)) return '#4f8cff88';
-            return '#ffd43b88';
+            if (ADVERSARY_COUNTRIES.includes(p.partner)) return '#ef444488';
+            if (NATO_COUNTRIES.includes(p.partner)) return '#00d4ff88';
+            return '#f59e0b88';
           }),
           borderColor: importPartners.map(p => {
-            if (ADVERSARY_COUNTRIES.includes(p.partner)) return '#ff6b6b';
-            if (NATO_COUNTRIES.includes(p.partner)) return '#4f8cff';
-            return '#ffd43b';
+            if (ADVERSARY_COUNTRIES.includes(p.partner)) return '#ef4444';
+            if (NATO_COUNTRIES.includes(p.partner)) return '#00d4ff';
+            return '#f59e0b';
           }),
           borderWidth: 1,
         }],
@@ -2648,10 +2867,10 @@ function renderNorthernApproaches(flightData) {
     // Draw CADIZ polygon
     L.polygon([
       [90, -141], [90, -50], [55, -50], [55, -80], [48, -80], [42, -67], [42, -141]
-    ], { color: '#ff6b6b', weight: 1, fillColor: '#ff6b6b', fillOpacity: 0.05, dashArray: '8 4' }).addTo(insightsArcticMap);
+    ], { color: '#ef4444', weight: 1, fillColor: '#ef4444', fillOpacity: 0.05, dashArray: '8 4' }).addTo(insightsArcticMap);
 
     // Draw 60N line
-    L.polyline([[60, -180], [60, 180]], { color: '#ffd43b', weight: 1, dashArray: '4 8', opacity: 0.5 }).addTo(insightsArcticMap)
+    L.polyline([[60, -180], [60, 180]], { color: '#f59e0b', weight: 1, dashArray: '4 8', opacity: 0.5 }).addTo(insightsArcticMap)
       .bindTooltip('60\u00b0N Latitude', { sticky: true });
   }
 
@@ -2693,11 +2912,11 @@ function renderNorthernApproaches(flightData) {
     const icon = L.divIcon({
       className: '',
       html: '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + (f.heading || 0) + 'deg)">' +
-        '<polygon points="10,2 4,18 10,14 16,18" fill="#ff6b6b" opacity="0.9"/></svg>',
+        '<polygon points="10,2 4,18 10,14 16,18" fill="#ef4444" opacity="0.9"/></svg>',
       iconSize: [18, 18], iconAnchor: [9, 9],
     });
     const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(insightsArcticMap);
-    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#ff6b6b">RUSSIAN</span>', { sticky: true });
+    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#ef4444">RUSSIAN</span>', { sticky: true });
     insightsArcticMarkers.push(marker);
   });
 
@@ -2706,11 +2925,11 @@ function renderNorthernApproaches(flightData) {
     const icon = L.divIcon({
       className: '',
       html: '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + (f.heading || 0) + 'deg)">' +
-        '<polygon points="10,2 4,18 10,14 16,18" fill="#ffd43b" opacity="0.9"/></svg>',
+        '<polygon points="10,2 4,18 10,14 16,18" fill="#f59e0b" opacity="0.9"/></svg>',
       iconSize: [18, 18], iconAnchor: [9, 9],
     });
     const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(insightsArcticMap);
-    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#ffd43b">CHINESE</span>', { sticky: true });
+    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#f59e0b">CHINESE</span>', { sticky: true });
     insightsArcticMarkers.push(marker);
   });
 
@@ -2782,16 +3001,16 @@ function renderCanadaTradePosition(canadaTrade, natoData) {
     const datasets = [{
       label: 'Exports (CAD)',
       data: exportVals,
-      backgroundColor: '#4f8cff88',
-      borderColor: '#4f8cff',
+      backgroundColor: '#00d4ff88',
+      borderColor: '#00d4ff',
       borderWidth: 1,
     }];
     if (hasImports) {
       datasets.push({
         label: 'Imports (CAD)',
         data: importVals,
-        backgroundColor: '#ff6b6b88',
-        borderColor: '#ff6b6b',
+        backgroundColor: '#ef444488',
+        borderColor: '#ef4444',
         borderWidth: 1,
       });
     }
@@ -2832,13 +3051,13 @@ function renderCanadaTradePosition(canadaTrade, natoData) {
     const values = nonAgg.map(n => n.pct_gdp || 0);
     const bgColors = nonAgg.map(n => {
       const name = (n.country || n.name || '').toLowerCase();
-      if (name.includes('canada')) return '#ffd43b88';
-      return n.pct_gdp >= 2.0 ? '#51cf6688' : '#ff6b6b88';
+      if (name.includes('canada')) return '#f59e0b88';
+      return n.pct_gdp >= 2.0 ? '#10b98188' : '#ef444488';
     });
     const borderColors = nonAgg.map(n => {
       const name = (n.country || n.name || '').toLowerCase();
-      if (name.includes('canada')) return '#ffd43b';
-      return n.pct_gdp >= 2.0 ? '#51cf66' : '#ff6b6b';
+      if (name.includes('canada')) return '#f59e0b';
+      return n.pct_gdp >= 2.0 ? '#10b981' : '#ef4444';
     });
 
     chartInstances['ins-nato-spending-chart'] = new Chart(document.getElementById('ins-nato-spending-chart'), {
@@ -2863,14 +3082,14 @@ function renderCanadaTradePosition(canadaTrade, natoData) {
                 type: 'line',
                 xMin: 2.0,
                 xMax: 2.0,
-                borderColor: '#ff6b6b',
+                borderColor: '#ef4444',
                 borderWidth: 2,
                 borderDash: [6, 4],
                 label: {
                   display: true,
                   content: '2% Target',
                   position: 'start',
-                  color: '#ff6b6b',
+                  color: '#ef4444',
                   font: { size: 10 },
                   backgroundColor: 'transparent',
                 },
@@ -2893,7 +3112,7 @@ function renderShiftingAlliancesNew(shifts, emerging, fading) {
   } else {
     shiftsContainer.innerHTML = shifts.slice(0, 12).map(s => {
       let contextColor = 'var(--accent)';
-      let contextBg = 'rgba(79,140,255,0.05)';
+      let contextBg = 'rgba(0,212,255,0.05)';
       if (s.context_type === 'threat') { contextColor = 'var(--accent2)'; contextBg = 'rgba(255,107,107,0.05)'; }
       else if (s.context_type === 'opportunity') { contextColor = 'var(--accent3)'; contextBg = 'rgba(81,207,102,0.05)'; }
       else if (s.context_type === 'competition') { contextColor = 'var(--accent4)'; contextBg = 'rgba(255,212,59,0.05)'; }
@@ -2986,7 +3205,7 @@ function renderWhatToWatch(hotspots, weapons) {
   const labels = sorted.map(w => esc(w.weapon));
   const values = sorted.map(w => (w.new_tiv || 0) - (w.old_tiv || 0));
   const bgColors = values.map(v => v >= 0 ? 'rgba(81,207,102,0.6)' : 'rgba(255,107,107,0.6)');
-  const borderColors = values.map(v => v >= 0 ? '#51cf66' : '#ff6b6b');
+  const borderColors = values.map(v => v >= 0 ? '#10b981' : '#ef4444');
   chartInstances['ins-weapons-chart'] = new Chart(document.getElementById('ins-weapons-chart'), {
     type: 'bar',
     data: {
@@ -3036,7 +3255,7 @@ async function loadFreshness() {
       if (hoursAgo < 1) headerEl.textContent = 'Live';
       else if (hoursAgo < 24) headerEl.textContent = hoursAgo + 'h ago';
       else headerEl.textContent = Math.floor(hoursAgo / 24) + 'd ago';
-      headerEl.style.color = hoursAgo < 1 ? '#51cf66' : hoursAgo < 24 ? '#ffd43b' : '#ff6b6b';
+      headerEl.style.color = hoursAgo < 1 ? '#10b981' : hoursAgo < 24 ? '#f59e0b' : '#ef4444';
     }
 
     // Insights banner
@@ -3312,7 +3531,7 @@ const ARCTIC_ROUTES = [
     flag: "\ud83c\uddf7\ud83c\uddfa",
     owner: "Russia",
     status: "Active \u2014 37.8M tons in 2024. China-Russia joint development agreement Oct 2025. Record Chinese container voyages in 2025.",
-    color: "#ff6b6b",
+    color: "#ef4444",
     weight: 4,
     // Bering Strait → Chukchi Sea → East Siberian Sea → Laptev Sea →
     // Vilkitsky Strait → Kara Sea → Kara Gate (S of Novaya Zemlya) → Barents Sea → Murmansk → Norway
@@ -3336,7 +3555,7 @@ const ARCTIC_ROUTES = [
     flag: "\ud83c\udde8\ud83c\udde6",
     owner: "Canada (claimed as internal waters \u2014 US disputes as international strait)",
     status: "Contested sovereignty. Low traffic but ice is melting. Canada investing $2.67B in Arctic hubs. Nanisivik Naval Facility still delayed.",
-    color: "#4f8cff",
+    color: "#00d4ff",
     weight: 4,
     // Bering Strait → Beaufort Sea → Amundsen Gulf → Dolphin & Union Strait →
     // Coronation Gulf → Queen Maud Gulf → Simpson Strait → James Ross Strait →
@@ -3361,7 +3580,7 @@ const ARCTIC_ROUTES = [
     flag: "\ud83c\udf0d",
     owner: "International (mostly outside EEZs)",
     status: "Future route. Ice still too thick for regular shipping. First nation to establish presence and infrastructure wins strategic control.",
-    color: "#888888",
+    color: "#64748b",
     weight: 2,
     // Bering Strait → across open Arctic Ocean → over the pole → Greenland Sea → Norwegian Sea
     points: [
@@ -3578,7 +3797,7 @@ function renderArcticMainMap(basesData, flights) {
 
     // Draw CADIZ
     L.polygon(CADIZ_BOUNDARY, {
-      color: '#ff6b6b', weight: 1.5, fillColor: '#ff6b6b',
+      color: '#ef4444', weight: 1.5, fillColor: '#ef4444',
       fillOpacity: 0.06, dashArray: '10 5'
     }).addTo(arcticMainMap).bindTooltip('Canadian ADIZ (approximate)', { sticky: true });
 
@@ -3662,7 +3881,7 @@ function renderArcticMainMap(basesData, flights) {
     // Connect sequential bases
     for (let i = 0; i < russCoords.length - 1; i++) {
       const line = L.polyline([russCoords[i], russCoords[i+1]], {
-        color: '#ff6b6b', weight: 1, opacity: 0.3, dashArray: '4 4'
+        color: '#ef4444', weight: 1, opacity: 0.3, dashArray: '4 4'
       }).addTo(arcticMainMap);
       arcticMainLayers.push(line);
     }
@@ -3673,7 +3892,7 @@ function renderArcticMainMap(basesData, flights) {
     const natoCoords = natoBases.map(b => [b.lat, b.lon]);
     for (let i = 0; i < natoCoords.length - 1; i++) {
       const line = L.polyline([natoCoords[i], natoCoords[i+1]], {
-        color: '#4f8cff', weight: 1, opacity: 0.2, dashArray: '4 4'
+        color: '#00d4ff', weight: 1, opacity: 0.2, dashArray: '4 4'
       }).addTo(arcticMainMap);
       arcticMainLayers.push(line);
     }
@@ -3689,14 +3908,14 @@ function renderArcticMainMap(basesData, flights) {
 
     // Dashed line
     const distLine = L.polyline([[b.lat, b.lon], [nearest.lat, nearest.lon]], {
-      color: '#ff6b6b', weight: 1, opacity: 0.4, dashArray: '6 6'
+      color: '#ef4444', weight: 1, opacity: 0.4, dashArray: '6 6'
     }).addTo(arcticMainMap);
     arcticMainLayers.push(distLine);
 
     // Distance label at midpoint
     const distLabel = L.divIcon({
       className: '',
-      html: `<div style="font-size:9px;color:#ff8888;white-space:nowrap;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none;">${nearest.dist.toLocaleString()} km</div>`,
+      html: `<div style="font-size:9px;color:#ef4444;white-space:nowrap;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none;">${nearest.dist.toLocaleString()} km</div>`,
       iconSize: [60, 12],
       iconAnchor: [30, 6],
     });
@@ -3706,10 +3925,10 @@ function renderArcticMainMap(basesData, flights) {
 
   // Color mapping
   function baseColor(b) {
-    if (b.country === 'Canada') return '#51cf66';
-    if (b.alliance === 'russia') return '#ff6b6b';
-    if (b.alliance === 'china') return '#ffd43b';
-    return '#4f8cff';
+    if (b.country === 'Canada') return '#10b981';
+    if (b.alliance === 'russia') return '#ef4444';
+    if (b.alliance === 'china') return '#f59e0b';
+    return '#00d4ff';
   }
 
   // Add base markers
@@ -3752,7 +3971,7 @@ function renderArcticMainMap(basesData, flights) {
         `<div class="base-type">${esc(base.type)} base \u2014 ${esc(base.country)}</div>` +
         `<div class="base-capability">${esc(base.capability)}</div>` +
         `<div class="base-status ${statusClass}">Status: ${esc(base.status).toUpperCase()}${base.personnel > 0 ? ' | ~' + base.personnel.toLocaleString() + ' personnel' : ''}</div>` +
-        `<div style="font-size:11px;margin-top:4px;">Threat Level: <b style="color:${threat >= 4 ? '#ff6b6b' : threat >= 3 ? '#ffa94d' : '#4f8cff'};">${threat}/5</b></div>` +
+        `<div style="font-size:11px;margin-top:4px;">Threat Level: <b style="color:${threat >= 4 ? '#ef4444' : threat >= 3 ? '#fb923c' : '#00d4ff'};">${threat}/5</b></div>` +
         (distStr ? `<div style="font-size:11px;margin-top:2px;">${distStr}</div>` : '') +
         (armsStr ? `<div class="base-arms">${armsStr}</div>` : '') +
         `<div class="base-dev">${esc(base.recent_developments)}</div>` +
@@ -3766,8 +3985,8 @@ function renderArcticMainMap(basesData, flights) {
   // Add live aircraft on top
   if (flights && flights.flights) {
     flights.flights.forEach(f => {
-      const nationColors = { russian: '#ff6b6b', chinese: '#ffd43b', nato: '#4f8cff', unknown: '#888' };
-      const color = nationColors[f.nation] || '#888';
+      const nationColors = { russian: '#ef4444', chinese: '#f59e0b', nato: '#00d4ff', unknown: '#64748b' };
+      const color = nationColors[f.nation] || '#64748b';
       const icon = L.divIcon({
         className: '',
         html: `<svg width="16" height="16" viewBox="0 0 20 20" style="transform:rotate(${f.heading || 0}deg)">
@@ -3843,7 +4062,7 @@ function _renderIntelRows(bases) {
       : b.alliance === 'russia' ? 'row-russia'
       : b.alliance === 'china' ? 'row-china'
       : 'row-nato';
-    const statusColor = {active:'#51cf66',expanding:'#ffd43b',planned:'#4f8cff',delayed:'#ff6b6b'}[b.status] || '#888';
+    const statusColor = {active:'#10b981',expanding:'#f59e0b',planned:'#00d4ff',delayed:'#ef4444'}[b.status] || '#64748b';
     const threatClass = 'threat-' + b.threat_level;
 
     const distStr = b.country === 'Canada'
@@ -3887,7 +4106,7 @@ function renderArcticNatoBars(assessment) {
     return `<div class="arctic-force-bar">
       <div class="afb-label">${esc(nation.nation)}</div>
       <div class="afb-bar-wrap">
-        <div class="afb-fill" style="width:${pct}%;background:#4f8cff88;"></div>
+        <div class="afb-fill" style="width:${pct}%;background:#00d4ff88;"></div>
       </div>
       <div class="afb-val">${fmt(tiv)}</div>
       ${trendHtml}
@@ -3920,15 +4139,15 @@ function renderArcticVsChart(assessment) {
         {
           label: 'NATO Arctic Imports',
           data: catList.map(c => natoMap[c] || 0),
-          backgroundColor: '#4f8cff66',
-          borderColor: '#4f8cff',
+          backgroundColor: '#00d4ff66',
+          borderColor: '#00d4ff',
           borderWidth: 1,
         },
         {
           label: 'Russia Exports',
           data: catList.map(c => rusMap[c] || 0),
-          backgroundColor: '#ff6b6b66',
-          borderColor: '#ff6b6b',
+          backgroundColor: '#ef444466',
+          borderColor: '#ef4444',
           borderWidth: 1,
         },
       ],
@@ -4031,23 +4250,23 @@ function renderArcticTimeline(assessment) {
 
   const nations = ["Russia", "United States", "Norway", "Finland", "Sweden", "Denmark", "Poland", "Canada", "Iceland"];
   const nationColors = {
-    "Russia": '#ff6b6b',
-    "United States": '#4f8cff',
-    "Canada": '#e599f7',
-    "Norway": '#51cf66',
-    "Finland": '#20c997',
-    "Sweden": '#ffd43b',
-    "Denmark": '#66d9e8',
-    "Poland": '#ff922b',
-    "Iceland": '#748ffc',
+    "Russia": '#ef4444',
+    "United States": '#00d4ff',
+    "Canada": '#10b981',
+    "Norway": '#10b981',
+    "Finland": '#14b8a6',
+    "Sweden": '#f59e0b',
+    "Denmark": '#22d3ee',
+    "Poland": '#f97316',
+    "Iceland": '#38bdf8',
   };
 
   const years = timeline.map(t => t.year);
   const datasets = nations.map(nation => ({
     label: nation,
     data: timeline.map(t => (t.countries[nation] || {}).tiv || 0),
-    backgroundColor: (nationColors[nation] || '#888') + '66',
-    borderColor: nationColors[nation] || '#888',
+    backgroundColor: (nationColors[nation] || '#64748b') + '66',
+    borderColor: nationColors[nation] || '#64748b',
     borderWidth: 1.5,
     fill: true,
     tension: 0.3,
@@ -4083,7 +4302,7 @@ function renderArcticTimeline(assessment) {
                 display: true,
                 position: 'start',
                 font: { size: 10 },
-                color: '#ff6b6b',
+                color: '#ef4444',
                 backgroundColor: 'rgba(26,29,39,0.8)',
               },
             },
@@ -4100,7 +4319,7 @@ function renderArcticTimeline(assessment) {
                 display: true,
                 position: 'start',
                 font: { size: 9 },
-                color: '#ffd43b',
+                color: '#f59e0b',
                 backgroundColor: 'rgba(26,29,39,0.8)',
               },
             },
@@ -4138,7 +4357,7 @@ function enhanceArcticTimeline(assessment, currentIntel) {
       borderRadius: 4,
       content: ['DSCA Pipeline: $' + dscaBillions + 'B', 'approved, not yet delivered'],
       font: { size: 10 },
-      color: '#ff6b6b',
+      color: '#ef4444',
       padding: 6,
     };
     chart.update();
@@ -4186,10 +4405,10 @@ function renderArcticNATOSpendingChart(spendingData) {
   }
 
   const spendingColors = {
-    "Norway": '#51cf66', "Finland": '#20c997', "Denmark": '#66d9e8',
-    "Canada": '#e599f7', "United States": '#4f8cff', "Poland": '#ff922b',
-    "Estonia": '#748ffc', "Latvia": '#a9e34b', "Lithuania": '#ffd43b',
-    "Iceland": '#f06595',
+    "Norway": '#10b981', "Finland": '#14b8a6', "Denmark": '#22d3ee',
+    "Canada": '#10b981', "United States": '#00d4ff', "Poland": '#f97316',
+    "Estonia": '#38bdf8', "Latvia": '#84cc16', "Lithuania": '#f59e0b',
+    "Iceland": '#f43f5e',
   };
 
   // Get all years from the data
@@ -4210,8 +4429,8 @@ function renderArcticNATOSpendingChart(spendingData) {
       const entry = yearData[y];
       return entry ? (entry.spending_usd_m || 0) : 0;
     }),
-    borderColor: spendingColors[name] || '#888',
-    backgroundColor: (spendingColors[name] || '#888') + '33',
+    borderColor: spendingColors[name] || '#64748b',
+    backgroundColor: (spendingColors[name] || '#64748b') + '33',
     borderWidth: 2,
     fill: false,
     tension: 0.3,
@@ -4278,8 +4497,8 @@ function renderArcticFlightTrends(flightData) {
       datasets: [{
         label: 'Detections',
         data: days.map(d => dailyCounts[d]),
-        backgroundColor: '#4f8cff66',
-        borderColor: '#4f8cff',
+        backgroundColor: '#00d4ff66',
+        borderColor: '#00d4ff',
         borderWidth: 1,
       }],
     },
@@ -4373,7 +4592,7 @@ function renderArcticAirspace(flights) {
 
     // CADIZ overlay
     L.polygon(CADIZ_BOUNDARY, {
-      color: '#ff6b6b', weight: 1, fillColor: '#ff6b6b',
+      color: '#ef4444', weight: 1, fillColor: '#ef4444',
       fillOpacity: 0.05, dashArray: '8 4'
     }).addTo(arcticAirspaceMap).bindTooltip('Canadian ADIZ (approximate)', { sticky: true });
   }
@@ -4388,10 +4607,10 @@ function renderArcticAirspace(flights) {
   document.getElementById('arctic-count-nato').textContent = counts.nato;
   document.getElementById('arctic-count-unknown').textContent = counts.unknown;
 
-  const nationColors = { russian: '#ff6b6b', chinese: '#ffd43b', nato: '#4f8cff', unknown: '#888' };
+  const nationColors = { russian: '#ef4444', chinese: '#f59e0b', nato: '#00d4ff', unknown: '#64748b' };
 
   (flights.flights || []).forEach(f => {
-    const color = nationColors[f.nation] || '#888';
+    const color = nationColors[f.nation] || '#64748b';
     const icon = L.divIcon({
       className: '',
       html: `<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(${f.heading || 0}deg)">
@@ -4422,7 +4641,7 @@ function renderArcticAirspace(flights) {
 
   flightList.innerHTML = sorted.length > 0
     ? sorted.slice(0, 60).map(f => {
-      const color = nationColors[f.nation] || '#888';
+      const color = nationColors[f.nation] || '#64748b';
       return `<div class="flight-item">
         <div>
           <span class="legend-dot" style="background:${color}"></span>
@@ -4625,13 +4844,13 @@ function renderPsiOverview(data) {
       datasets: [{
         label: 'Canada Risk',
         data: values,
-        borderColor: '#4f8cff',
-        backgroundColor: 'rgba(79,140,255,0.15)',
-        pointBackgroundColor: '#4f8cff',
+        borderColor: '#00d4ff',
+        backgroundColor: 'rgba(0,212,255,0.15)',
+        pointBackgroundColor: '#00d4ff',
       }],
     },
     options: {
-      scales: { r: { beginAtZero: true, max: 100, grid: { color: '#2a2d3a' }, ticks: { display: false } } },
+      scales: { r: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,212,255,0.08)' }, ticks: { display: false } } },
       plugins: { legend: { display: false } },
     },
   });
@@ -4659,8 +4878,8 @@ function renderPsiAlerts(alerts) {
   const el = document.getElementById('psi-alerts-list');
   if (!alerts.length) { el.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">No active alerts</div>'; return; }
   el.innerHTML = alerts.map(a => {
-    const sevColors = { 5: '#ff6b6b', 4: '#ff9f43', 3: '#ffd43b', 2: '#4f8cff', 1: '#51cf66' };
-    const color = sevColors[a.severity] || '#888';
+    const sevColors = { 5: '#ef4444', 4: '#f97316', 3: '#f59e0b', 2: '#00d4ff', 1: '#10b981' };
+    const color = sevColors[a.severity] || '#64748b';
     return `<div style="display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border);">
       <div style="min-width:32px; height:32px; background:${color}22; color:${color}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">${a.severity}</div>
       <div>
@@ -4713,7 +4932,7 @@ function renderPsiForceGraph(data, container) {
 
   const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
 
-  const typeColors = { material: '#ff9f43', component: '#4f8cff', subsystem: '#51cf66', platform: '#ff6b6b' };
+  const typeColors = { material: '#f97316', component: '#00d4ff', subsystem: '#10b981', platform: '#ef4444' };
   const typeShapes = { material: d3.symbolCircle, component: d3.symbolSquare, subsystem: d3.symbolDiamond, platform: d3.symbolStar };
 
   // Build node/link arrays
@@ -4735,13 +4954,13 @@ function renderPsiForceGraph(data, container) {
   psiGraphSim = sim;
 
   const link = svg.append('g').selectAll('line').data(links).join('line')
-    .attr('stroke', d => d.is_sole_source ? '#ff6b6b' : '#3a3d4a')
+    .attr('stroke', d => d.is_sole_source ? '#ef4444' : '#1e293b')
     .attr('stroke-width', d => d.is_sole_source ? 2 : 1)
     .attr('stroke-dasharray', d => d.is_sole_source ? '' : '4 2');
 
   const node = svg.append('g').selectAll('path').data(nodes).join('path')
     .attr('d', d => d3.symbol().type(typeShapes[d.type] || d3.symbolCircle).size(d.type === 'platform' ? 200 : 120)())
-    .attr('fill', d => typeColors[d.type] || '#888')
+    .attr('fill', d => typeColors[d.type] || '#64748b')
     .attr('stroke', '#fff')
     .attr('stroke-width', 0.5)
     .attr('cursor', 'pointer')
@@ -4751,7 +4970,7 @@ function renderPsiForceGraph(data, container) {
 
   const labels = svg.append('g').selectAll('text').data(nodes.filter(d => d.type === 'platform' || d.type === 'subsystem')).join('text')
     .text(d => d.name.length > 20 ? d.name.slice(0, 18) + '…' : d.name)
-    .attr('font-size', 9).attr('fill', '#ccc').attr('text-anchor', 'middle').attr('dy', -12);
+    .attr('font-size', 9).attr('fill', '#94a3b8').attr('text-anchor', 'middle').attr('dy', -12);
 
   sim.on('tick', () => {
     link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
@@ -4773,8 +4992,8 @@ function renderPsiRiskMatrix(alerts) {
   if (psiRiskMatrixChart) psiRiskMatrixChart.destroy();
 
   const typeColors = {
-    material_shortage: '#ff9f43', supplier_disruption: '#ff6b6b', sanctions_risk: '#e64980',
-    chokepoint_blocked: '#4f8cff', demand_surge: '#ffd43b', concentration_risk: '#cc5de8',
+    material_shortage: '#f97316', supplier_disruption: '#ef4444', sanctions_risk: '#f43f5e',
+    chokepoint_blocked: '#00d4ff', demand_surge: '#f59e0b', concentration_risk: '#8b5cf6',
   };
 
   const points = alerts.map((a, i) => ({
@@ -4782,7 +5001,7 @@ function renderPsiRiskMatrix(alerts) {
     y: (a.severity / 5) * 80 + Math.random() * 20, // criticality proxy
     r: 6 + a.severity * 2,
     label: a.title,
-    backgroundColor: typeColors[a.type] || '#888',
+    backgroundColor: typeColors[a.type] || '#64748b',
   }));
 
   psiRiskMatrixChart = new Chart(ctx, {
@@ -4797,16 +5016,16 @@ function renderPsiRiskMatrix(alerts) {
     },
     options: {
       scales: {
-        x: { title: { display: true, text: 'Probability of Disruption', color: '#8888a0' }, min: 0, max: 100, grid: { color: '#2a2d3a' } },
-        y: { title: { display: true, text: 'Operational Criticality', color: '#8888a0' }, min: 0, max: 100, grid: { color: '#2a2d3a' } },
+        x: { title: { display: true, text: 'Probability of Disruption', color: '#64748b' }, min: 0, max: 100, grid: { color: 'rgba(0,212,255,0.08)' } },
+        y: { title: { display: true, text: 'Operational Criticality', color: '#64748b' }, min: 0, max: 100, grid: { color: 'rgba(0,212,255,0.08)' } },
       },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: ctx => ctx.raw.label } },
         annotation: {
           annotations: {
-            midX: { type: 'line', xMin: 50, xMax: 50, borderColor: '#3a3d4a', borderDash: [4, 4] },
-            midY: { type: 'line', yMin: 50, yMax: 50, borderColor: '#3a3d4a', borderDash: [4, 4] },
+            midX: { type: 'line', xMin: 50, xMax: 50, borderColor: '#1e293b', borderDash: [4, 4] },
+            midY: { type: 'line', yMin: 50, yMax: 50, borderColor: '#1e293b', borderDash: [4, 4] },
           },
         },
       },
@@ -4819,7 +5038,7 @@ function updateScenarioFields() {
   const el = document.getElementById('psi-scenario-fields');
   const field = (label, id, placeholder, val) =>
     `<label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:2px; margin-top:8px;">${label}</label>
-     <input id="${id}" value="${val || ''}" placeholder="${placeholder}" style="width:100%; background:var(--surface); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:4px;">`;
+     <input id="${id}" value="${val || ''}" placeholder="${placeholder}" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:6px; font-family:var(--font-body);">`;
 
   const configs = {
     sanctions_expansion: field('Country', 'sc-country', 'e.g. China', 'China'),
