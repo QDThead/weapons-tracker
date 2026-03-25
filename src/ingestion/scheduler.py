@@ -22,8 +22,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 
+from datetime import date
 from src.storage.database import SessionLocal
 from src.storage.persistence import PersistenceService
+from src.storage.models import DefenceSupplier, OwnershipType, ContractStatus
+from src.analysis.supplier_risk import SupplierRiskScorer
 from src.ingestion.sipri_transfers import SIPRITransfersClient, SIPRIQuery, SIPRI_COUNTRY_CODES
 from src.ingestion.worldbank import WorldBankClient
 from src.ingestion.gdelt_news import GDELTArmsNewsClient
@@ -130,6 +133,81 @@ async def refresh_supply_chain():
         logger.error("[scheduler] PSI supply chain refresh failed: %s", e)
 
 
+async def ingest_procurement():
+    """Fetch and store DND procurement contracts from Open Canada."""
+    try:
+        from src.ingestion.procurement_scraper import ProcurementScraperClient
+        client = ProcurementScraperClient()
+        records = await client.fetch_dnd_contracts()
+
+        session = SessionLocal()
+        try:
+            svc = PersistenceService(session)
+            for rec in records:
+                supplier = svc.upsert_supplier(
+                    name=rec.vendor_name_normalized,
+                    sector=rec.sector,
+                )
+                svc.upsert_contract(
+                    supplier_id=supplier.id,
+                    contract_number=rec.contract_number,
+                    contract_value_cad=rec.contract_value_cad,
+                    description=rec.description,
+                    department=rec.department,
+                    award_date=rec.award_date,
+                    end_date=rec.end_date,
+                    is_sole_source=rec.is_sole_source,
+                    sector=rec.sector,
+                    status=ContractStatus.ACTIVE if not rec.end_date or rec.end_date >= date.today() else ContractStatus.COMPLETED,
+                )
+            logger.info("[scheduler] Procurement: stored %d contracts", len(records))
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error("[scheduler] Procurement ingestion failed: %s", e)
+
+
+async def enrich_suppliers():
+    """Enrich supplier records with Wikidata ownership data."""
+    try:
+        from src.ingestion.corporate_graph import CorporateGraphClient
+        corp_client = CorporateGraphClient()
+
+        session = SessionLocal()
+        try:
+            suppliers = session.query(DefenceSupplier).filter(
+                DefenceSupplier.parent_company.is_(None)
+            ).all()
+            enriched = 0
+            for s in suppliers:
+                entity = await corp_client.fetch_company_ownership(s.name)
+                if entity and entity.parent_name:
+                    s.parent_company = entity.parent_name
+                    s.parent_country = entity.country
+                    s.ownership_type = OwnershipType.FOREIGN_SUBSIDIARY if entity.country and entity.country != "Canada" else s.ownership_type
+                    enriched += 1
+            session.commit()
+            logger.info("[scheduler] Enriched %d suppliers with ownership data", enriched)
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error("[scheduler] Supplier enrichment failed: %s", e)
+
+
+async def score_suppliers():
+    """Compute risk scores for all defence suppliers."""
+    try:
+        session = SessionLocal()
+        try:
+            scorer = SupplierRiskScorer(session)
+            count = scorer.score_all_suppliers()
+            logger.info("[scheduler] Scored %d suppliers", count)
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error("[scheduler] Supplier scoring failed: %s", e)
+
+
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the ingestion scheduler."""
     scheduler = AsyncIOScheduler()
@@ -175,6 +253,31 @@ def create_scheduler() -> AsyncIOScheduler:
         trigger=CronTrigger(day_of_week="sun", hour=4, minute=0),
         id="psi_supply_chain",
         name="PSI supply chain refresh",
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_procurement,
+        CronTrigger(day_of_week="sun", hour=2),
+        id="procurement_scraper",
+        name="DND procurement scraper",
+        replace_existing=True,
+        max_instances=1,
+    )
+    scheduler.add_job(
+        enrich_suppliers,
+        CronTrigger(day_of_week="sun", hour=3),
+        id="supplier_enrichment",
+        name="Supplier ownership enrichment",
+        replace_existing=True,
+        max_instances=1,
+    )
+    scheduler.add_job(
+        score_suppliers,
+        CronTrigger(day_of_week="sun", hour=5),
+        id="supplier_scoring",
+        name="Supplier risk scoring",
+        replace_existing=True,
         max_instances=1,
     )
 
