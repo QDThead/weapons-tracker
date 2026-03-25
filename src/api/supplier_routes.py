@@ -11,7 +11,7 @@ import time
 from collections import defaultdict
 
 from fastapi import APIRouter
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from src.storage.database import SessionLocal
 from src.storage.models import (
@@ -19,6 +19,7 @@ from src.storage.models import (
     SupplierContract,
     SupplierRiskScore,
     OwnershipType,
+    ContractStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,25 +64,51 @@ async def get_suppliers():
             reverse=True,
         )
 
+        def _risk_level(score):
+            if score is None: return "unknown"
+            if score >= 70: return "red"
+            if score >= 40: return "amber"
+            return "green"
+
+        supplier_data = []
+        total_score = 0
+        scored_count = 0
+        for s in sorted_suppliers:
+            top_risk = session.execute(
+                select(SupplierRiskScore).where(SupplierRiskScore.supplier_id == s.id)
+                .order_by(SupplierRiskScore.score.desc())
+            ).scalars().first()
+            active_count = session.execute(
+                select(func.count()).where(
+                    SupplierContract.supplier_id == s.id,
+                    SupplierContract.status == ContractStatus.ACTIVE,
+                )
+            ).scalar() or 0
+            total_value = session.execute(
+                select(func.sum(SupplierContract.contract_value_cad))
+                .where(SupplierContract.supplier_id == s.id)
+            ).scalar() or 0
+
+            supplier_data.append({
+                "name": s.name,
+                "sector": s.sector.value if s.sector else "other",
+                "ownership_type": s.ownership_type.value if s.ownership_type else "unknown",
+                "parent_company": s.parent_company,
+                "parent_country": s.parent_country,
+                "contract_value_total_cad": total_value,
+                "active_contracts": active_count,
+                "risk_score_composite": s.risk_score_composite,
+                "risk_level": _risk_level(s.risk_score_composite),
+                "top_risk_dimension": top_risk.dimension.value if top_risk else None,
+            })
+            if s.risk_score_composite is not None:
+                total_score += s.risk_score_composite
+                scored_count += 1
+
         result = {
             "total_suppliers": len(sorted_suppliers),
-            "suppliers": [
-                {
-                    "id": s.id,
-                    "name": s.name,
-                    "sector": s.sector.value if s.sector else None,
-                    "ownership_type": s.ownership_type.value if s.ownership_type else None,
-                    "parent_company": s.parent_company,
-                    "parent_country": s.parent_country,
-                    "headquarters_city": s.headquarters_city,
-                    "headquarters_province": s.headquarters_province,
-                    "risk_score_composite": s.risk_score_composite,
-                    "estimated_revenue_cad": s.estimated_revenue_cad,
-                    "dnd_contract_revenue_cad": s.dnd_contract_revenue_cad,
-                    "employee_count": s.employee_count,
-                }
-                for s in sorted_suppliers
-            ],
+            "avg_risk_score": round(total_score / scored_count) if scored_count else 0,
+            "suppliers": supplier_data,
         }
         _set_cache("suppliers", result)
         return result
