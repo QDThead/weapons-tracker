@@ -92,6 +92,42 @@ class CorporateGraphClient:
         logger.info("Fetched %d defense companies from Wikidata", len(entities))
         return entities
 
+    async def fetch_company_ownership(self, company_name: str) -> CorporateEntity | None:
+        """Look up a specific company's ownership chain from Wikidata."""
+        sparql = f"""
+        SELECT ?company ?companyLabel ?parent ?parentLabel ?country ?countryLabel
+        WHERE {{
+          ?company rdfs:label "{company_name}"@en .
+          OPTIONAL {{ ?company wdt:P749 ?parent . }}
+          OPTIONAL {{ ?company wdt:P17 ?country . }}
+          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+        }}
+        LIMIT 1
+        """
+        headers = {"Accept": "application/sparql-results+json"}
+        params = {"query": sparql}
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(WIKIDATA_SPARQL_URL, params=params, headers=headers)
+                resp.raise_for_status()
+
+            data = resp.json()
+            bindings = data.get("results", {}).get("bindings", [])
+            if not bindings:
+                return None
+
+            b = bindings[0]
+            return CorporateEntity(
+                name=b.get("companyLabel", {}).get("value", company_name),
+                country=b.get("countryLabel", {}).get("value", ""),
+                parent_name=b.get("parentLabel", {}).get("value"),
+                source="wikidata",
+            )
+        except Exception as e:
+            logger.warning("Wikidata lookup failed for %s: %s", company_name, e)
+            return None
+
     async def search_opencorporates(self, company_name: str) -> dict | None:
         """Search OpenCorporates for basic company info (free tier: 50/day)."""
         params = {"q": company_name}
