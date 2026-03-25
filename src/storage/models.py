@@ -420,3 +420,132 @@ class SupplyChainAlert(Base):
         UniqueConstraint("title", "is_active", name="uq_alert_title_active"),
         Index("ix_alert_active_severity", "is_active", "severity"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Defence Supplier Exposure models — Canadian supply base risk scoring
+# ---------------------------------------------------------------------------
+
+class SupplierSector(str, Enum):
+    """Defence industry sectors for Canadian suppliers."""
+    SHIPBUILDING = "shipbuilding"
+    LAND_VEHICLES = "land_vehicles"
+    AEROSPACE = "aerospace"
+    ELECTRONICS = "electronics"
+    SIMULATION = "simulation"
+    MUNITIONS = "munitions"
+    CYBER = "cyber"
+    MAINTENANCE = "maintenance"
+    SERVICES = "services"
+    OTHER = "other"
+
+
+class OwnershipType(str, Enum):
+    """Ownership classification for defence suppliers."""
+    CANADIAN_PRIVATE = "canadian_private"
+    CANADIAN_PUBLIC = "canadian_public"
+    FOREIGN_SUBSIDIARY = "foreign_subsidiary"
+    CROWN_CORP = "crown_corp"
+    JOINT_VENTURE = "joint_venture"
+
+
+class ContractStatus(str, Enum):
+    """Status of a procurement contract."""
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    TERMINATED = "terminated"
+
+
+class RiskDimension(str, Enum):
+    """Risk scoring dimensions for supplier exposure."""
+    FOREIGN_OWNERSHIP = "foreign_ownership"
+    CUSTOMER_CONCENTRATION = "customer_concentration"
+    SINGLE_SOURCE = "single_source"
+    CONTRACT_ACTIVITY = "contract_activity"
+    SANCTIONS_PROXIMITY = "sanctions_proximity"
+    CONTRACT_PERFORMANCE = "contract_performance"
+
+
+class DefenceSupplier(Base):
+    """A Canadian defence industry supplier."""
+    __tablename__ = "defence_suppliers"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    legal_name = Column(String(300))
+    headquarters_city = Column(String(100))
+    headquarters_province = Column(String(50))
+    parent_company = Column(String(200))
+    parent_country = Column(String(100))
+    ownership_type = Column(SQLEnum(OwnershipType))
+    sipri_rank = Column(Integer)
+    wikidata_id = Column(String(20))
+    sector = Column(SQLEnum(SupplierSector))
+    estimated_revenue_cad = Column(Float)
+    dnd_contract_revenue_cad = Column(Float)
+    employee_count = Column(Integer)
+    risk_score_composite = Column(Float)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    contracts = relationship("SupplierContract", back_populates="supplier")
+    risk_scores = relationship("SupplierRiskScore", back_populates="supplier")
+
+    __table_args__ = (
+        UniqueConstraint("name", name="uq_supplier_name"),
+    )
+
+    def __repr__(self):
+        return f"<DefenceSupplier(name='{self.name}', sector='{self.sector}')>"
+
+
+class SupplierContract(Base):
+    """A DND/PSPC procurement contract."""
+    __tablename__ = "supplier_contracts"
+
+    id = Column(Integer, primary_key=True)
+    supplier_id = Column(Integer, ForeignKey("defence_suppliers.id"), nullable=False)
+    contract_number = Column(String(100), nullable=False)
+    contract_value_cad = Column(Float)
+    description = Column(Text)
+    department = Column(String(50))
+    award_date = Column(Date)
+    end_date = Column(Date)
+    status = Column(SQLEnum(ContractStatus))
+    sector = Column(SQLEnum(SupplierSector))
+    is_sole_source = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    supplier = relationship("DefenceSupplier", back_populates="contracts")
+
+    __table_args__ = (
+        UniqueConstraint("contract_number", name="uq_contract_number"),
+        Index("ix_contract_supplier_date", "supplier_id", "award_date"),
+    )
+
+    def __repr__(self):
+        return f"<SupplierContract(number='{self.contract_number}', supplier={self.supplier_id})>"
+
+
+class SupplierRiskScore(Base):
+    """Per-supplier, per-dimension risk score."""
+    __tablename__ = "supplier_risk_scores"
+
+    id = Column(Integer, primary_key=True)
+    supplier_id = Column(Integer, ForeignKey("defence_suppliers.id"), nullable=False)
+    dimension = Column(SQLEnum(RiskDimension), nullable=False)
+    score = Column(Float, nullable=False)
+    rationale = Column(Text)
+    scored_at = Column(DateTime, default=datetime.utcnow)
+
+    supplier = relationship("DefenceSupplier", back_populates="risk_scores")
+
+    __table_args__ = (
+        UniqueConstraint("supplier_id", "dimension", name="uq_score_supplier_dimension"),
+        Index("ix_risk_score_supplier", "supplier_id"),
+    )
+
+    def __repr__(self):
+        return f"<SupplierRiskScore(supplier={self.supplier_id}, dim='{self.dimension}', score={self.score})>"
