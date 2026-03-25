@@ -17,6 +17,8 @@ from src.storage.models import (
     WeaponCategory, DealStatus,
     SupplyChainMaterial, SupplyChainNode, SupplyChainEdge,
     SupplyChainRoute, SupplyChainAlert,
+    DefenceSupplier, SupplierContract, SupplierRiskScore,
+    SupplierSector, OwnershipType, ContractStatus, RiskDimension,
 )
 from src.ingestion.sipri_transfers import SIPRITransferRecord
 from src.ingestion.sipri_companies import DefenseCompanyRecord
@@ -569,3 +571,52 @@ class PersistenceService:
         self.session.commit()
         logger.info("Stored %d new supply-chain alerts (%d total processed)", inserted, len(records))
         return inserted
+
+    # --- Defence Suppliers ---
+
+    def upsert_supplier(self, name: str, sector: SupplierSector | None = None, **kwargs) -> DefenceSupplier:
+        """Create or update a defence supplier by name."""
+        existing = self.session.query(DefenceSupplier).filter_by(name=name).first()
+        if existing:
+            if sector:
+                existing.sector = sector
+            for key, val in kwargs.items():
+                if val is not None and hasattr(existing, key):
+                    setattr(existing, key, val)
+            existing.updated_at = datetime.utcnow()
+        else:
+            existing = DefenceSupplier(name=name, sector=sector, **kwargs)
+            self.session.add(existing)
+        self.session.commit()
+        return existing
+
+    def upsert_contract(self, supplier_id: int, contract_number: str, **kwargs) -> SupplierContract:
+        """Create or update a procurement contract by contract number."""
+        existing = self.session.query(SupplierContract).filter_by(contract_number=contract_number).first()
+        if existing:
+            for key, val in kwargs.items():
+                if val is not None and hasattr(existing, key):
+                    setattr(existing, key, val)
+        else:
+            existing = SupplierContract(supplier_id=supplier_id, contract_number=contract_number, **kwargs)
+            self.session.add(existing)
+        self.session.commit()
+        return existing
+
+    def upsert_risk_score(self, supplier_id: int, dimension: RiskDimension, score: float, rationale: str) -> SupplierRiskScore:
+        """Create or update a risk score for a supplier+dimension."""
+        existing = self.session.query(SupplierRiskScore).filter_by(
+            supplier_id=supplier_id, dimension=dimension,
+        ).first()
+        if existing:
+            existing.score = score
+            existing.rationale = rationale
+            existing.scored_at = datetime.utcnow()
+        else:
+            existing = SupplierRiskScore(
+                supplier_id=supplier_id, dimension=dimension,
+                score=score, rationale=rationale,
+            )
+            self.session.add(existing)
+        self.session.commit()
+        return existing
