@@ -1473,6 +1473,56 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
+    <!-- Section 7: Defence Supply Base -->
+    <div style="margin-top:20px;">
+      <h2 style="font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:16px;color:var(--text);">
+        Defence Supply Base Exposure
+      </h2>
+
+      <!-- Alerts -->
+      <div id="ca-supplier-alerts" style="margin-bottom:16px;"></div>
+
+      <!-- KPI row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" id="ca-supplier-kpis">
+        <div class="stat-box">
+          <div class="stat-label">Total Suppliers</div>
+          <div class="stat-num" style="font-size:28px;color:var(--accent);" id="ca-sup-total">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Foreign-Controlled</div>
+          <div class="stat-num" style="font-size:28px;color:var(--accent4);" id="ca-sup-foreign-pct">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Sole-Source Sectors</div>
+          <div class="stat-num" style="font-size:28px;color:var(--accent2);" id="ca-sup-sole">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Avg Risk Score</div>
+          <div class="stat-num" style="font-size:28px;" id="ca-sup-avg-risk">-</div>
+        </div>
+      </div>
+
+      <!-- Risk overview chart -->
+      <div class="card" style="margin-bottom:20px;">
+        <h2>Supplier Risk Ranking</h2>
+        <div class="chart-container tall" style="height:400px;"><canvas id="ca-supplier-risk-chart"></canvas></div>
+      </div>
+
+      <!-- Sector + Ownership side by side -->
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>Sector Concentration</h2>
+          <div class="chart-container tall"><canvas id="ca-sector-chart"></canvas></div>
+          <div id="ca-sole-source-list" style="margin-top:12px;"></div>
+        </div>
+        <div class="card">
+          <h2>Ownership Exposure</h2>
+          <div class="chart-container" style="height:250px;"><canvas id="ca-ownership-chart"></canvas></div>
+          <div id="ca-foreign-list" style="margin-top:12px;max-height:200px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ════ SUPPLY CHAIN (PSI) PAGE ════ -->
@@ -2226,6 +2276,7 @@ async function loadCanadaIntel() {
   renderArcticMonitor(flights);
   renderCanadaSupplyChain(profile);
   renderShiftingAlliances();
+  loadSupplierData();
 }
 
 function renderCanadaMetrics(profile, comtradeData) {
@@ -5108,6 +5159,153 @@ function renderScenarioResults(data, el) {
   }
 
   el.innerHTML = html;
+}
+
+// ═══════ DEFENCE SUPPLY BASE (Canada Intel Section 7) ═══════
+
+let supplierRiskChart = null, sectorChart = null, ownershipChart = null;
+
+async function loadSupplierData() {
+  try {
+    const [supRes, concRes, ownRes, alertRes] = await Promise.all([
+      fetch('/dashboard/suppliers').then(r => r.json()),
+      fetch('/dashboard/suppliers/concentration').then(r => r.json()),
+      fetch('/dashboard/suppliers/ownership').then(r => r.json()),
+      fetch('/dashboard/suppliers/alerts').then(r => r.json()),
+    ]);
+    renderSupplierKPIs(supRes, concRes);
+    renderSupplierAlerts(alertRes);
+    renderSupplierRiskChart(supRes);
+    renderSectorChart(concRes);
+    renderOwnershipChart(ownRes);
+  } catch (e) {
+    console.error('Failed to load supplier data:', e);
+  }
+}
+
+function renderSupplierKPIs(data, concentration) {
+  document.getElementById('ca-sup-total').textContent = data.total_suppliers;
+  const foreign = data.suppliers.filter(s => s.ownership_type === 'foreign_subsidiary').length;
+  const pct = data.total_suppliers > 0 ? Math.round((foreign / data.total_suppliers) * 100) : 0;
+  document.getElementById('ca-sup-foreign-pct').textContent = pct + '%';
+  const soleCount = concentration.sectors.filter(s => s.is_sole_source).length;
+  document.getElementById('ca-sup-sole').textContent = soleCount;
+  const avgEl = document.getElementById('ca-sup-avg-risk');
+  avgEl.textContent = data.avg_risk_score;
+  avgEl.style.color = data.avg_risk_score >= 70 ? 'var(--accent2)' : data.avg_risk_score >= 40 ? 'var(--accent4)' : 'var(--accent3)';
+}
+
+function renderSupplierAlerts(data) {
+  const el = document.getElementById('ca-supplier-alerts');
+  if (!data.alerts || data.alerts.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = data.alerts.slice(0, 5).map(a => `
+    <div class="insight-alert ${a.severity === 'critical' ? 'threat' : 'warning'}">
+      <div class="alert-title">${esc(a.supplier)} — ${a.dimension.replace(/_/g, ' ')}</div>
+      <div class="alert-detail">${esc(a.rationale)} (score: ${a.score})</div>
+    </div>
+  `).join('');
+}
+
+function renderSupplierRiskChart(data) {
+  const ctx = document.getElementById('ca-supplier-risk-chart');
+  if (!ctx) return;
+  if (supplierRiskChart) supplierRiskChart.destroy();
+  const sorted = [...data.suppliers].sort((a, b) => (b.risk_score_composite || 0) - (a.risk_score_composite || 0));
+  supplierRiskChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(s => s.name),
+      datasets: [{
+        data: sorted.map(s => s.risk_score_composite || 0),
+        backgroundColor: sorted.map(s => {
+          const sc = s.risk_score_composite || 0;
+          return sc >= 70 ? '#ef444488' : sc >= 40 ? '#f59e0b88' : '#10b98188';
+        }),
+        borderColor: sorted.map(s => {
+          const sc = s.risk_score_composite || 0;
+          return sc >= 70 ? '#ef4444' : sc >= 40 ? '#f59e0b' : '#10b981';
+        }),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { max: 100, title: { display: true, text: 'Risk Score', color: '#64748b' }, grid: { color: 'rgba(0,212,255,0.08)' } },
+        y: { grid: { display: false } },
+      },
+    },
+  });
+}
+
+function renderSectorChart(data) {
+  const ctx = document.getElementById('ca-sector-chart');
+  if (!ctx) return;
+  if (sectorChart) sectorChart.destroy();
+  const sectors = data.sectors;
+  sectorChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sectors.map(s => s.sector),
+      datasets: [{
+        label: 'Suppliers',
+        data: sectors.map(s => s.supplier_count),
+        backgroundColor: sectors.map(s => s.is_sole_source ? '#ef444488' : '#00d4ff88'),
+        borderColor: sectors.map(s => s.is_sole_source ? '#ef4444' : '#00d4ff'),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,212,255,0.08)' } },
+        x: { grid: { display: false } },
+      },
+    },
+  });
+
+  const listEl = document.getElementById('ca-sole-source-list');
+  const soles = sectors.filter(s => s.is_sole_source);
+  if (soles.length > 0) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Sole-source suppliers:</div>' +
+      soles.map(s => `<div class="ins-card-item" style="display:flex;justify-content:space-between;">
+        <span style="font-weight:600;color:var(--accent2);">${esc(s.sole_supplier)}</span>
+        <span class="tiv">$${(s.total_contract_value_cad / 1e9).toFixed(1)}B</span>
+      </div>`).join('');
+  }
+}
+
+function renderOwnershipChart(data) {
+  const ctx = document.getElementById('ca-ownership-chart');
+  if (!ctx) return;
+  if (ownershipChart) ownershipChart.destroy();
+  const labels = Object.keys(data.breakdown).map(k => k.replace(/_/g, ' '));
+  const values = Object.values(data.breakdown).map(v => v.count);
+  const colors = ['#00d4ff', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+  ownershipChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels, datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#e2e8f0', font: { family: "'IBM Plex Sans'" } } } },
+    },
+  });
+
+  const listEl = document.getElementById('ca-foreign-list');
+  if (data.foreign_suppliers.length > 0) {
+    listEl.innerHTML = data.foreign_suppliers.map(f => `
+      <div class="ins-card-item" style="display:flex;justify-content:space-between;">
+        <div><span style="font-weight:600;">${esc(f.name)}</span>
+          <span style="font-size:11px;color:var(--text-dim);"> — ${esc(f.parent_company || '')} (${esc(f.parent_country || '')})</span></div>
+        <span class="tiv">$${(f.contract_value_cad / 1e6).toFixed(0)}M</span>
+      </div>
+    `).join('');
+  }
 }
 
 // ── Init ──
