@@ -4,11 +4,12 @@ Geopolitical intelligence platform tracking global weapons sales, military spend
 
 ## What It Does
 
-- **12 live data sources** from hours-old defense news to annual SIPRI transfers
-- **8-tab interactive dashboard** with maps, charts, and intelligence briefings
+- **13 live data sources** from hours-old defense news to annual SIPRI transfers
+- **9-tab interactive dashboard** with maps, charts, and intelligence briefings
 - **Arctic security assessment** with 25 mapped military bases and 3 shipping routes
 - **Russia/China tracking** via buyer-side import mirrors, flight pattern analysis, and sanctions overlay
-- **52 API endpoints** serving pre-computed intelligence and live data
+- **Canadian supplier exposure scoring** — 6-dimension risk analysis of DND's defence supply base
+- **65 API endpoints** serving pre-computed intelligence and live data
 - **4,623 arms transfers** across 26 seller countries and 174 buyers
 
 ## Dashboard
@@ -23,7 +24,8 @@ Open `http://localhost:8000` after starting the server:
 | **Arctic** | Force balance map with 25 bases (8 Russian, 15 NATO, 2 Chinese), 3 shipping routes with ownership, weapon accumulation timeline, live airspace monitoring |
 | **Live Flights** | Real-time military aircraft positions worldwide (auto-refreshes every 30s) |
 | **Deals** | Searchable table of all 4,623 individual arms transfers |
-| **Canada Intel** | Ally vs adversary arms flows, threat watchlist, Arctic monitor, supply chain risk, shifting alliances |
+| **Canada Intel** | Ally vs adversary arms flows, threat watchlist, Arctic monitor, supply chain risk, shifting alliances, **defence supply base exposure** |
+| **Supply Chain** | PSI: Risk overview, knowledge graph, risk matrix, scenario sandbox |
 | **Data Feeds** | Operations view showing health/freshness of all 16 data sources |
 
 ## Data Sources
@@ -57,16 +59,18 @@ Plus: **Sanctions/embargo overlay** (17 countries, OFAC SDN, EU sanctions), **bu
 | **NATO Spending Comparison** | Canada's defense spending ranked against 32 NATO allies | Shows Canada at 2.01% GDP — barely meeting the 2% target |
 | **Supplier Shift Detection** | Identifies countries changing primary arms supplier | Poland switched US→South Korea; Egypt switched Russia→Italy |
 | **Russia Weakness Signals** | Tracks what Russia imports (Iranian drones, Chinese engines) | Indicates Russian domestic production collapse |
+| **Supplier Exposure Scoring** | 6-dimension risk scoring of Canadian defence suppliers (ownership, concentration, single-source, activity, sanctions, performance) | Answers "how vulnerable is our supply base?" for DND |
+| **Procurement Intelligence** | Scrapes Open Canada DND contracts, normalizes vendors, classifies sectors | Shows who DND actually buys from and sole-source dependencies |
 
 ## Architecture
 
 ```
-                OSINT DATA SOURCES (12 active)
+                OSINT DATA SOURCES (13 active)
  ┌─────────────────────────────────────────────────────┐
  │  SIPRI ── Comtrade ── Census ── HMRC ── Eurostat    │
  │  StatCan ── NATO ── World Bank ── DSCA ── GDELT     │
  │  adsb.lol (flights) ── Defense News RSS             │
- │  + Sanctions (OFAC/EU) ── Flight Pattern Analyzer   │
+ │  + Sanctions ── Open Canada Procurement (DND)       │
  └──────────────────────┬──────────────────────────────┘
                         │
                         ▼
@@ -80,11 +84,12 @@ Plus: **Sanctions/embargo overlay** (17 countries, OFAC SDN, EU sanctions), **bu
             ┌───────────┴───────────┐
             ▼                       ▼
  ┌────────────────────┐  ┌─────────────────────────────┐
- │    REST API (52)    │  │      DASHBOARD (8 tabs)      │
+ │    REST API (65)    │  │      DASHBOARD (9 tabs)      │
  │  /insights/*        │  │  Insights ── Overview         │
  │  /arctic/*          │  │  World Map ── Arctic          │
  │  /dashboard/*       │  │  Live Flights ── Deals        │
- │  /trends/*          │  │  Canada Intel ── Data Feeds   │
+ │  /trends/*          │  │  Canada Intel ── Supply Chain │
+ │  Data Feeds                   │
  │  /transfers/*       │  │                               │
  │  /tracking/*        │  │  Chart.js + D3.js + Leaflet   │
  └────────────────────┘  └─────────────────────────────┘
@@ -139,16 +144,23 @@ curl http://localhost:8000/arctic/flights
 
 # Recent US arms sale notifications (DSCA)
 curl "http://localhost:8000/dashboard/dsca/recent?count=10"
+
+# Canadian defence supplier risk scores (NEW)
+curl http://localhost:8000/dashboard/suppliers
+curl "http://localhost:8000/dashboard/suppliers/Irving%20Shipbuilding/profile"
+curl http://localhost:8000/dashboard/suppliers/alerts
 ```
 
 ## Project Stats
 
-- **33 Python files**, ~8,800 lines
-- **1 HTML dashboard**, ~4,000 lines
-- **52 API endpoints**
-- **15 data connectors** (12 active, 2 inactive, 1 scheduler)
-- **12 data sources** spanning live to annual
-- **8 dashboard tabs**
+- **44 Python files**, ~15,000 lines
+- **1 HTML dashboard**, ~5,300 lines
+- **65 API endpoints**
+- **16 data connectors** (13 active, 2 inactive, 1 scheduler)
+- **13 data sources** spanning live to annual
+- **9 dashboard tabs**
+- **15 database tables**
+- **28 automated tests**
 - **25 Arctic bases** mapped with threat assessments
 - **17 embargoed countries** tracked
 - **4,623 arms transfers** in database

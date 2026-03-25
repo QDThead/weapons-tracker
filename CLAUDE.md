@@ -7,21 +7,23 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (62 API endpoints)
+- **API Framework:** FastAPI + Uvicorn (65 API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,200 lines)
-- **Codebase:** 41 Python files, ~16,000 total lines
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,300 lines)
+- **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
+- **Codebase:** 44 Python files, ~15,000 total lines
+- **Tests:** 28 tests (pytest) covering models, persistence, risk scoring, API endpoints, scraper utilities
 
 ## Project Structure
 ```
 weapons-tracker/
 ├── src/
-│   ├── ingestion/              # 15 data source connectors
+│   ├── ingestion/              # 16 data source connectors
 │   │   ├── sipri_transfers.py        # SIPRI Arms Transfers (atbackend.sipri.org API)
 │   │   ├── comtrade.py               # UN Comtrade USD values + buyer-side mirror
 │   │   ├── census_trade.py           # US Census monthly trade (HS 93)
@@ -40,10 +42,11 @@ weapons-tracker/
 │   │   ├── critical_minerals.py     # PSI: USGS/EU critical minerals data
 │   │   ├── wikidata_bom.py          # PSI: Wikidata SPARQL BOM connector
 │   │   ├── wikipedia_weapons.py     # PSI: Wikipedia weapon infobox parser
-│   │   ├── corporate_graph.py       # PSI: Company ownership graph
+│   │   ├── corporate_graph.py       # PSI: Company ownership graph + per-company lookup
+│   │   ├── procurement_scraper.py   # Open Canada DND procurement contracts
 │   │   └── scheduler.py              # APScheduler ingestion pipeline
 │   ├── storage/
-│   │   ├── models.py                 # SQLAlchemy models (7 tables)
+│   │   ├── models.py                 # SQLAlchemy models (15 tables)
 │   │   ├── database.py               # DB connection + session management
 │   │   └── persistence.py            # Upsert/dedup logic for all entity types
 │   ├── analysis/
@@ -51,28 +54,31 @@ weapons-tracker/
 │   │   ├── flight_patterns.py        # Russian/Chinese flight pattern analyzer
 │   │   ├── supply_chain.py          # PSI: 6-dimension risk scoring + scenarios
 │   │   ├── supply_chain_graph.py    # PSI: NetworkX knowledge graph engine
-│   │   └── supply_chain_seed.py     # PSI: BOM seed data for 20 platforms
+│   │   ├── supply_chain_seed.py     # PSI: BOM seed data for 20 platforms
+│   │   └── supplier_risk.py         # Canadian supplier 6-dimension exposure scoring
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
 │   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
 │   │   ├── dashboard_routes.py       # Dashboard endpoints (DB-backed + cached)
 │   │   ├── insights_routes.py        # Intelligence insights + situation report
 │   │   ├── arctic_routes.py          # Arctic security assessment + bases
-│   │   └── psi_routes.py            # Predictive Supplier Insights (10 endpoints)
+│   │   ├── psi_routes.py            # Predictive Supplier Insights (10 endpoints)
+│   │   └── supplier_routes.py       # Canadian supplier exposure (6 endpoints)
 │   ├── static/
-│   │   └── index.html                # Dashboard UI (8 tabs, 4,030 lines)
+│   │   └── index.html                # Dashboard UI (9 tabs, 5,317 lines)
 │   ├── alerts/                       # (placeholder — not yet implemented)
 │   └── main.py                       # App entry point
 ├── scripts/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # (placeholder — no tests yet)
+├── tests/                            # 28 tests (models, persistence, risk scoring, routes, scraper)
+├── docs/superpowers/                 # Design specs and implementation plans
 ├── requirements.txt
 └── README.md
 ```
 
-## Data Sources (12 active + 2 inactive)
+## Data Sources (13 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -89,6 +95,7 @@ weapons-tracker/
 | 11 | World Bank | `worldbank.py` | Annual (2024) | None | Working |
 | 12 | UN Comtrade | `comtrade.py` | Annual (2023) | None | Working |
 | 13 | Sanctions/Embargoes | `sanctions.py` | On-demand | None | Working |
+| 14 | DND Procurement | `procurement_scraper.py` | Weekly (Sun 02:00) | None | Working |
 | - | Maritime (AIS) | `maritime_tracker.py` | Live | API key | Needs key |
 | - | SIPRI Companies | `sipri_companies.py` | Annual | None | Needs URL |
 
@@ -109,6 +116,9 @@ weapons-tracker/
 | **PSI: Scenario Modeling** | supply_chain.py | 5 what-if simulations: sanctions expansion, material shortage, route disruption, demand surge, supplier substitution |
 | **PSI: Critical Minerals** | critical_minerals.py | 30 defense-critical materials with USGS production data, HHI concentration indices |
 | **PSI: Material Trade** | comtrade.py | 27 expanded HS codes: ores, rare earths, specialty metals, semiconductors, propellants |
+| **Supplier Exposure** | supplier_risk.py | 6-dimension risk scoring for Canadian defence suppliers (foreign ownership, concentration, single-source, contract activity, sanctions, performance) |
+| **Procurement Intel** | procurement_scraper.py | DND contracts from Open Canada disclosure portal, vendor normalization, sector classification |
+| **Ownership Enrichment** | corporate_graph.py | Wikidata SPARQL lookup for company parent chains and country of origin |
 
 ## Dashboard UI (9 tabs)
 
@@ -120,11 +130,11 @@ weapons-tracker/
 | **Arctic** | Force balance map with 25 bases, 3 shipping routes, Northern Sea Route threats, weapon timeline, live airspace |
 | **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) |
 | **Deals** | Searchable/filterable table of all 4,623 transfers |
-| **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances |
+| **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances, **defence supply base exposure** (risk ranking, sector concentration, ownership) |
 | **Supply Chain** | PSI: Risk overview (radar chart, material risks, alerts), Knowledge Graph (D3.js force-directed), Risk Matrix (scatter plot), Scenario Sandbox (what-if simulations) |
 | **Data Feeds** | Operations view: 16 feed status cards with freshness, sample data, health indicators |
 
-## API Endpoints (62 total)
+## API Endpoints (65 total)
 
 ### Core (src/api/routes.py) — live external APIs
 - `GET /transfers/exports/{country}`, `/imports/{country}`, `/bilateral/{seller}/{buyer}`
@@ -170,8 +180,16 @@ weapons-tracker/
 - `GET /psi/chokepoints` — Strategic chokepoint status
 - `GET /psi/propagation` — Disruption cascade analysis
 
+### Supplier Exposure (src/api/supplier_routes.py)
+- `GET /dashboard/suppliers` — All Canadian defence suppliers with 6-dimension risk scores
+- `GET /dashboard/suppliers/{name}/profile` — Single supplier detail with contracts and risk dimensions
+- `GET /dashboard/suppliers/concentration` — Sector-level analysis, sole-source detection
+- `GET /dashboard/suppliers/risk-matrix` — Scatter plot data (contract value vs risk score)
+- `GET /dashboard/suppliers/ownership` — Ownership type breakdown, foreign subsidiary list
+- `GET /dashboard/suppliers/alerts` — Suppliers with any risk dimension >70
+
 ## Database
-- **12 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts
+- **15 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, **defence_suppliers, supplier_contracts, supplier_risk_scores**
 - **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles, 30 materials, 90 supply chain nodes, 97 edges, 20 routes, 8 alerts
 - **Coverage:** 26 seller countries, 174 buyer countries, 256 countries total
 
@@ -206,11 +224,17 @@ python -m src.main
 - `main.py` uses deprecated `@app.on_event` instead of lifespan context manager
 - 5 large files (>500 lines): arctic_routes, dashboard_routes, insights_routes, sanctions, trends
 
+## UI Design System
+- **Fonts:** Outfit (display/headings), IBM Plex Sans (body), JetBrains Mono (numbers/stats)
+- **Colors:** `--accent` #00d4ff (cyan), `--accent2` #ef4444 (red), `--accent3` #10b981 (green), `--accent4` #f59e0b (amber), `--accent5` #8b5cf6 (purple)
+- **Surfaces:** Glass-morphism cards (`backdrop-filter: blur(16px)`), gradient header, cyan glow on hover
+- **Components:** `.card`, `.stat-box`, `.stat-num`, `.stat-label`, `.insight-alert`, `.btn-primary`, `.nav-tab`
+- **Responsive:** Breakpoints at 1200px and 768px
+
 ## Next Steps (Priority Order)
 1. Build PDF briefing export for decision-makers
 2. Build automated alerting system (unusual pattern detection)
-3. Add test suite
-4. Activate maritime tracker (needs aisstream.io API key)
-5. Migrate to async SQLAlchemy sessions for production
-6. Add satellite imagery integration for base monitoring
-7. Add user authentication for multi-tenant deployment
+3. Activate maritime tracker (needs aisstream.io API key)
+4. Migrate to async SQLAlchemy sessions for production
+5. Add satellite imagery integration for base monitoring
+6. Add user authentication for multi-tenant deployment
