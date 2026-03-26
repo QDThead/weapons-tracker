@@ -27,6 +27,7 @@ from src.storage.database import SessionLocal
 from src.storage.persistence import PersistenceService
 from src.storage.models import DefenceSupplier, OwnershipType, ContractStatus
 from src.analysis.supplier_risk import SupplierRiskScorer
+from src.analysis.risk_taxonomy import RiskTaxonomyScorer
 from src.ingestion.sipri_transfers import SIPRITransfersClient, SIPRIQuery, SIPRI_COUNTRY_CODES
 from src.ingestion.worldbank import WorldBankClient
 from src.ingestion.gdelt_news import GDELTArmsNewsClient
@@ -208,6 +209,20 @@ async def score_suppliers():
         logger.error("[scheduler] Supplier scoring failed: %s", e)
 
 
+async def score_taxonomy():
+    """Refresh DND risk taxonomy scores (live + seeded drift)."""
+    try:
+        session = SessionLocal()
+        try:
+            scorer = RiskTaxonomyScorer(session)
+            scorer.score_all()
+            logger.info("[scheduler] Taxonomy scoring complete")
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error("[scheduler] Taxonomy scoring failed: %s", e)
+
+
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the ingestion scheduler."""
     scheduler = AsyncIOScheduler()
@@ -277,6 +292,15 @@ def create_scheduler() -> AsyncIOScheduler:
         CronTrigger(day_of_week="sun", hour=5),
         id="supplier_scoring",
         name="Supplier risk scoring",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        score_taxonomy,
+        IntervalTrigger(hours=6),
+        id="taxonomy_scoring",
+        name="DND risk taxonomy scoring",
         replace_existing=True,
         max_instances=1,
     )

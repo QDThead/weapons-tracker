@@ -153,6 +153,12 @@ async def main():
         gdelt_count = await seed_gdelt_news(svc)
         flight_count = await seed_flight_snapshot(svc)
 
+        # Seed taxonomy scores
+        from src.analysis.risk_taxonomy import RiskTaxonomyScorer
+        scorer = RiskTaxonomyScorer(session)
+        taxonomy_count = scorer.seed_initial_scores()
+        print(f"  Taxonomy: seeded {taxonomy_count} risk scores across 13 categories")
+
         elapsed = time.time() - start_time
 
         logger.info("=" * 60)
