@@ -7,17 +7,17 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (65 API endpoints)
+- **API Framework:** FastAPI + Uvicorn (68 API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,300 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,500 lines)
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 44 Python files, ~15,000 total lines
-- **Tests:** 28 tests (pytest) covering models, persistence, risk scoring, API endpoints, scraper utilities
+- **Codebase:** 45 Python files, ~15,800 total lines
+- **Tests:** 37 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities
 
 ## Project Structure
 ```
@@ -46,7 +46,7 @@ weapons-tracker/
 │   │   ├── procurement_scraper.py   # Open Canada DND procurement contracts
 │   │   └── scheduler.py              # APScheduler ingestion pipeline
 │   ├── storage/
-│   │   ├── models.py                 # SQLAlchemy models (15 tables)
+│   │   ├── models.py                 # SQLAlchemy models (16 tables)
 │   │   ├── database.py               # DB connection + session management
 │   │   └── persistence.py            # Upsert/dedup logic for all entity types
 │   ├── analysis/
@@ -55,7 +55,8 @@ weapons-tracker/
 │   │   ├── supply_chain.py          # PSI: 6-dimension risk scoring + scenarios
 │   │   ├── supply_chain_graph.py    # PSI: NetworkX knowledge graph engine
 │   │   ├── supply_chain_seed.py     # PSI: BOM seed data for 20 platforms
-│   │   └── supplier_risk.py         # Canadian supplier 6-dimension exposure scoring
+│   │   ├── supplier_risk.py         # Canadian supplier 6-dimension exposure scoring
+│   │   └── risk_taxonomy.py         # DND Annex B 13-category risk taxonomy (121 sub-cats)
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
 │   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
@@ -65,14 +66,14 @@ weapons-tracker/
 │   │   ├── psi_routes.py            # Predictive Supplier Insights (10 endpoints)
 │   │   └── supplier_routes.py       # Canadian supplier exposure (6 endpoints)
 │   ├── static/
-│   │   └── index.html                # Dashboard UI (9 tabs, 5,317 lines)
+│   │   └── index.html                # Dashboard UI (9 tabs, 5,522 lines)
 │   ├── alerts/                       # (placeholder — not yet implemented)
 │   └── main.py                       # App entry point
 ├── scripts/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 28 tests (models, persistence, risk scoring, routes, scraper)
+├── tests/                            # 37 tests (models, persistence, risk scoring, taxonomy, routes, scraper)
 ├── docs/superpowers/                 # Design specs and implementation plans
 ├── requirements.txt
 └── README.md
@@ -119,22 +120,23 @@ weapons-tracker/
 | **Supplier Exposure** | supplier_risk.py | 6-dimension risk scoring for Canadian defence suppliers (foreign ownership, concentration, single-source, contract activity, sanctions, performance) |
 | **Procurement Intel** | procurement_scraper.py | DND contracts from Open Canada disclosure portal, vendor normalization, sector classification |
 | **Ownership Enrichment** | corporate_graph.py | Wikidata SPARQL lookup for company parent chains and country of origin |
+| **DND Risk Taxonomy** | risk_taxonomy.py | Full 13-category, 121 sub-category Annex B compliance. Live OSINT scoring for 4 categories, hybrid for 3, seeded with drift for 6. Displayed on Insights landing page (13-card strip) and Supply Chain tab (accordion drill-down) |
 
 ## Dashboard UI (9 tabs)
 
 | Tab | Purpose |
 |-----|---------|
-| **Insights** | Intelligence briefing: situation report, live news, DSCA sales, alerts, adversary flows, Canada position, shifting alliances, what to watch |
+| **Insights** | Intelligence briefing: **13-category risk taxonomy strip**, situation report, live news, DSCA sales, alerts, adversary flows, Canada position, shifting alliances, what to watch |
 | **Overview** | Trade flow network (D3), top exporters/importers, weapon types, timeline |
 | **World Map** | Leaflet map with trade arcs, country bubbles, Comtrade USD values, regional breakdown |
 | **Arctic** | Force balance map with 25 bases, 3 shipping routes, Northern Sea Route threats, weapon timeline, live airspace |
 | **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) |
 | **Deals** | Searchable/filterable table of all 4,623 transfers |
 | **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances, **defence supply base exposure** (risk ranking, sector concentration, ownership) |
-| **Supply Chain** | PSI: Risk overview (radar chart, material risks, alerts), Knowledge Graph (D3.js force-directed), Risk Matrix (scatter plot), Scenario Sandbox (what-if simulations) |
+| **Supply Chain** | PSI: Risk overview, Knowledge Graph, Risk Matrix, Scenario Sandbox, **Risk Taxonomy (13 categories, 121 sub-categories, accordion drill-down)** |
 | **Data Feeds** | Operations view: 16 feed status cards with freshness, sample data, health indicators |
 
-## API Endpoints (65 total)
+## API Endpoints (68 total)
 
 ### Core (src/api/routes.py) — live external APIs
 - `GET /transfers/exports/{country}`, `/imports/{country}`, `/bilateral/{seller}/{buyer}`
@@ -179,6 +181,9 @@ weapons-tracker/
 - `GET /psi/alerts` — Active supply chain disruption alerts
 - `GET /psi/chokepoints` — Strategic chokepoint status
 - `GET /psi/propagation` — Disruption cascade analysis
+- `GET /psi/taxonomy` — All 13 DND risk categories with composite scores
+- `GET /psi/taxonomy/summary` — Dashboard-ready 13-card summary for Insights strip
+- `GET /psi/taxonomy/{category_id}` — Single category drill-down with all sub-categories
 
 ### Supplier Exposure (src/api/supplier_routes.py)
 - `GET /dashboard/suppliers` — All Canadian defence suppliers with 6-dimension risk scores
@@ -189,7 +194,7 @@ weapons-tracker/
 - `GET /dashboard/suppliers/alerts` — Suppliers with any risk dimension >70
 
 ## Database
-- **15 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, **defence_suppliers, supplier_contracts, supplier_risk_scores**
+- **16 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, defence_suppliers, supplier_contracts, supplier_risk_scores, **risk_taxonomy_scores**
 - **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles, 30 materials, 90 supply chain nodes, 97 edges, 20 routes, 8 alerts
 - **Coverage:** 26 seller countries, 174 buyer countries, 256 countries total
 

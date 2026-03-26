@@ -9,7 +9,8 @@ Geopolitical intelligence platform tracking global weapons sales, military spend
 - **Arctic security assessment** with 25 mapped military bases and 3 shipping routes
 - **Russia/China tracking** via buyer-side import mirrors, flight pattern analysis, and sanctions overlay
 - **Canadian supplier exposure scoring** — 6-dimension risk analysis of DND's defence supply base
-- **65 API endpoints** serving pre-computed intelligence and live data
+- **68 API endpoints** serving pre-computed intelligence and live data
+- **DND Annex B risk taxonomy** — all 13 categories, 121 sub-categories scored and displayed
 - **4,623 arms transfers** across 26 seller countries and 174 buyers
 
 ## Dashboard
@@ -18,14 +19,14 @@ Open `http://localhost:8000` after starting the server:
 
 | Tab | What Analysts See |
 |-----|------------------|
-| **Insights** | Intelligence briefing: 6 threat indicators, live defense news, DSCA arms sales, adversary flows, Canada's NATO position, shifting alliances |
+| **Insights** | Intelligence briefing: **13-category risk taxonomy**, 6 threat indicators, live defense news, DSCA arms sales, adversary flows, Canada's NATO position, shifting alliances |
 | **Overview** | Interactive trade flow network, top exporters/importers, weapon types, volume timeline |
 | **World Map** | Global map with trade arcs, country bubbles, real USD values from UN Comtrade |
 | **Arctic** | Force balance map with 25 bases (8 Russian, 15 NATO, 2 Chinese), 3 shipping routes with ownership, weapon accumulation timeline, live airspace monitoring |
 | **Live Flights** | Real-time military aircraft positions worldwide (auto-refreshes every 30s) |
 | **Deals** | Searchable table of all 4,623 individual arms transfers |
 | **Canada Intel** | Ally vs adversary arms flows, threat watchlist, Arctic monitor, supply chain risk, shifting alliances, **defence supply base exposure** |
-| **Supply Chain** | PSI: Risk overview, knowledge graph, risk matrix, scenario sandbox |
+| **Supply Chain** | PSI: Risk overview, knowledge graph, risk matrix, scenario sandbox, **DND risk taxonomy (Annex B)** |
 | **Data Feeds** | Operations view showing health/freshness of all 16 data sources |
 
 ## Data Sources
@@ -61,6 +62,7 @@ Plus: **Sanctions/embargo overlay** (17 countries, OFAC SDN, EU sanctions), **bu
 | **Russia Weakness Signals** | Tracks what Russia imports (Iranian drones, Chinese engines) | Indicates Russian domestic production collapse |
 | **Supplier Exposure Scoring** | 6-dimension risk scoring of Canadian defence suppliers (ownership, concentration, single-source, activity, sanctions, performance) | Answers "how vulnerable is our supply base?" for DND |
 | **Procurement Intelligence** | Scrapes Open Canada DND contracts, normalizes vendors, classifies sectors | Shows who DND actually buys from and sole-source dependencies |
+| **DND Risk Taxonomy** | 13 risk categories, 121 sub-categories from Annex B with live/hybrid/seeded scoring | Full compliance with DND/CAF Defence Supply Chain Risk Taxonomy evaluation criteria |
 
 ## Architecture
 
@@ -84,7 +86,7 @@ Plus: **Sanctions/embargo overlay** (17 countries, OFAC SDN, EU sanctions), **bu
             ┌───────────┴───────────┐
             ▼                       ▼
  ┌────────────────────┐  ┌─────────────────────────────┐
- │    REST API (65)    │  │      DASHBOARD (9 tabs)      │
+ │    REST API (68)    │  │      DASHBOARD (9 tabs)      │
  │  /insights/*        │  │  Insights ── Overview         │
  │  /arctic/*          │  │  World Map ── Arctic          │
  │  /dashboard/*       │  │  Live Flights ── Deals        │
@@ -149,18 +151,24 @@ curl "http://localhost:8000/dashboard/dsca/recent?count=10"
 curl http://localhost:8000/dashboard/suppliers
 curl "http://localhost:8000/dashboard/suppliers/Irving%20Shipbuilding/profile"
 curl http://localhost:8000/dashboard/suppliers/alerts
+
+# DND Annex B Risk Taxonomy (NEW)
+curl http://localhost:8000/psi/taxonomy
+curl http://localhost:8000/psi/taxonomy/summary
+curl http://localhost:8000/psi/taxonomy/3
 ```
 
 ## Project Stats
 
-- **44 Python files**, ~15,000 lines
-- **1 HTML dashboard**, ~5,300 lines
-- **65 API endpoints**
+- **45 Python files**, ~15,800 lines
+- **1 HTML dashboard**, ~5,500 lines
+- **68 API endpoints**
 - **16 data connectors** (13 active, 2 inactive, 1 scheduler)
 - **13 data sources** spanning live to annual
 - **9 dashboard tabs**
-- **15 database tables**
-- **28 automated tests**
+- **16 database tables**
+- **37 automated tests**
+- **13 risk categories**, 121 sub-categories (DND Annex B compliant)
 - **25 Arctic bases** mapped with threat assessments
 - **17 embargoed countries** tracked
 - **4,623 arms transfers** in database
