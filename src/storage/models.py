@@ -549,3 +549,29 @@ class SupplierRiskScore(Base):
 
     def __repr__(self):
         return f"<SupplierRiskScore(supplier={self.supplier_id}, dim='{self.dimension}', score={self.score})>"
+
+
+class RiskTaxonomyScore(Base):
+    """DND Annex B risk taxonomy score — one row per sub-category."""
+    __tablename__ = "risk_taxonomy_scores"
+
+    id = Column(Integer, primary_key=True)
+    category_id = Column(Integer, nullable=False)
+    category_name = Column(String(100), nullable=False)
+    subcategory_key = Column(String(10), nullable=False)
+    subcategory_name = Column(String(200), nullable=False)
+    score = Column(Float, nullable=False)
+    baseline_score = Column(Float, nullable=False)
+    data_source = Column(String(10), nullable=False)
+    psi_module = Column(String(100))
+    rationale = Column(Text)
+    last_event = Column(Text)
+    scored_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("subcategory_key", name="uq_taxonomy_subcat"),
+        Index("ix_taxonomy_category", "category_id"),
+    )
+
+    def __repr__(self):
+        return f"<RiskTaxonomyScore(key='{self.subcategory_key}', score={self.score})>"
