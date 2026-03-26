@@ -19,6 +19,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 WIKIDATA_SPARQL_URL = "https://query.wikidata.org/sparql"
+WIKIDATA_USER_AGENT = "WeaponsTracker/1.0 (https://github.com/QDThead/weapons-tracker; bill@qdt.ai)"
 OPENCORPORATES_URL = "https://api.opencorporates.com/v0.4/companies/search"
 SEC_EDGAR_SEARCH_URL = "https://efts.sec.gov/LATEST/search-index"
 
@@ -48,7 +49,7 @@ class CorporateGraphClient:
         SELECT ?company ?companyLabel ?parent ?parentLabel
                ?country ?countryLabel ?ownerType ?ownerTypeLabel
         WHERE {{
-          ?company wdt:P452 wd:Q232405 .
+          ?company wdt:P31 wd:Q1934969 .
           OPTIONAL {{ ?company wdt:P749 ?parent . }}
           OPTIONAL {{ ?company wdt:P17 ?country . }}
           OPTIONAL {{ ?company wdt:P31 ?ownerType .
@@ -57,7 +58,7 @@ class CorporateGraphClient:
         }}
         LIMIT {limit}
         """
-        headers = {"Accept": "application/sparql-results+json"}
+        headers = {"Accept": "application/sparql-results+json", "User-Agent": WIKIDATA_USER_AGENT}
         params = {"query": sparql}
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -104,7 +105,7 @@ class CorporateGraphClient:
         }}
         LIMIT 1
         """
-        headers = {"Accept": "application/sparql-results+json"}
+        headers = {"Accept": "application/sparql-results+json", "User-Agent": WIKIDATA_USER_AGENT}
         params = {"query": sparql}
 
         try:
