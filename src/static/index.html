@@ -840,6 +840,24 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
+    <!-- Risk Taxonomy Summary Strip -->
+    <div id="taxonomy-strip" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <h2 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin:0;">Defence Supply Chain Risk Taxonomy</h2>
+          <div class="stat-box" style="padding:4px 12px;">
+            <span class="stat-num" style="font-size:18px;" id="taxonomy-global-score">--</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--text-dim);">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent3);margin-right:4px;"></span>Live</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:4px;"></span>Hybrid</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--text-dim);margin-right:4px;"></span>Seeded</span>
+        </div>
+      </div>
+      <div id="taxonomy-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div>
+    </div>
+
     <!-- Section 1: SITUATION REPORT -->
     <div class="briefing-section">
       <div class="briefing-header">
@@ -2733,6 +2751,38 @@ function timeAgo(date) {
   return Math.floor(diff / 86400) + 'd ago';
 }
 
+// ═══════ RISK TAXONOMY STRIP (Insights landing page) ═══════
+
+async function loadTaxonomyStrip() {
+  try {
+    const data = await fetch('/psi/taxonomy/summary').then(r => r.json());
+    if (data.error) return;
+
+    const globalEl = document.getElementById('taxonomy-global-score');
+    globalEl.textContent = Math.round(data.global_composite);
+    globalEl.style.color = data.global_composite >= 70 ? 'var(--accent2)' : data.global_composite >= 40 ? 'var(--accent4)' : 'var(--accent3)';
+
+    const icons = {shield:'🛡️',landmark:'🏛️',factory:'🏭',lock:'🔒',building:'🏗️',calendar:'📅',truck:'🚛',users:'👥',cloud:'🌩️',scale:'⚖️','chart-line':'📈','dollar-sign':'💰','check-circle':'✅'};
+    const cardsEl = document.getElementById('taxonomy-cards');
+    cardsEl.innerHTML = data.categories.map(c => {
+      const color = c.risk_level === 'red' ? 'var(--accent2)' : c.risk_level === 'amber' ? 'var(--accent4)' : 'var(--accent3)';
+      const srcDot = c.data_source === 'live' ? 'var(--accent3)' : c.data_source === 'hybrid' ? 'var(--accent)' : 'var(--text-dim)';
+      const trend = c.trend === 'rising' ? '↑' : c.trend === 'falling' ? '↓' : '→';
+      return `<div class="stat-box" style="cursor:pointer;border-top:3px solid ${color};padding:12px;" onclick="document.querySelectorAll('.nav-tab').forEach(t=>{if(t.dataset.page==='supply-chain')t.click()});setTimeout(()=>{const t=document.querySelector('[data-psi-tab=psi-taxonomy]');if(t)switchPsiTab(t);},200);">
+        <div style="font-size:18px;margin-bottom:4px;">${icons[c.icon] || '📊'}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${esc(c.short_name)}</div>
+        <div class="stat-num" style="font-size:22px;color:${color};">${Math.round(c.score)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">
+          <span style="color:${color};">${trend}</span>
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${srcDot};margin-left:4px;vertical-align:middle;"></span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load taxonomy strip:', e);
+  }
+}
+
 async function loadInsights() {
   if (insightsLoaded) return;
   insightsLoaded = true;
@@ -2783,6 +2833,7 @@ async function loadInsights() {
       '<div class="alert-detail">Could not reach the insights API. Check that the server is running.</div></div>';
     insightsLoaded = false;
   }
+  loadTaxonomyStrip();
 }
 
 function insCountryLink(name) {
