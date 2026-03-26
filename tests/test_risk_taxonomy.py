@@ -74,6 +74,54 @@ def test_seed_definitions_complete():
             assert "psi_module" in sub
 
 
+from fastapi.testclient import TestClient
+from src.api.routes import app
+from src.api.psi_routes import router as psi_router
+
+# Register PSI routes on app (main.py does this at startup)
+if not any(getattr(r, "path", "").startswith("/psi/taxonomy") for r in app.routes):
+    app.include_router(psi_router)
+
+client = TestClient(app)
+
+
+def _seed_taxonomy():
+    init_db()
+    session = SessionLocal()
+    try:
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+    finally:
+        session.close()
+
+
+def test_get_taxonomy():
+    _seed_taxonomy()
+    resp = client.get("/psi/taxonomy")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "global_composite" in data
+    assert len(data["categories"]) == 13
+
+
+def test_get_taxonomy_summary():
+    _seed_taxonomy()
+    resp = client.get("/psi/taxonomy/summary")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["categories"]) == 13
+    assert all("icon" in c for c in data["categories"])
+
+
+def test_get_taxonomy_category():
+    _seed_taxonomy()
+    resp = client.get("/psi/taxonomy/1")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["category_id"] == 1
+    assert len(data["subcategories"]) == 15
+
+
 from src.analysis.risk_taxonomy import RiskTaxonomyScorer, TAXONOMY_DEFINITIONS
 
 

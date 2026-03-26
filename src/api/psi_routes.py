@@ -35,6 +35,7 @@ router = APIRouter(prefix="/psi", tags=["Supply Chain"])
 _psi_cache: dict[str, tuple[float, dict | list]] = {}
 _PSI_TTL = 300         # 5 minutes for risk scores
 _PSI_GRAPH_TTL = 3600  # 1 hour for knowledge graph
+_PSI_TAXONOMY_TTL = 3600  # 1 hour for taxonomy scores
 
 
 def _check_cache(key: str, ttl: int) -> dict | list | None:
@@ -509,6 +510,142 @@ async def get_disruption_propagation(
     except Exception as e:
         logger.error("PSI propagation failed: %s", e)
         raise HTTPException(status_code=500, detail="Propagation analysis failed")
+    finally:
+        session.close()
+
+
+@router.get("/taxonomy")
+async def get_taxonomy():
+    """All 13 DND risk taxonomy categories with composite scores."""
+    cached = _check_cache("taxonomy", _PSI_TAXONOMY_TTL)
+    if cached:
+        return cached
+
+    from src.analysis.risk_taxonomy import RiskTaxonomyScorer
+    from src.storage.models import RiskTaxonomyScore
+    session = SessionLocal()
+    try:
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+        composites = scorer.compute_category_composites()
+
+        cats = sorted(composites.values(), key=lambda c: c["composite_score"], reverse=True)
+        global_score = sum(c["composite_score"] for c in cats) / len(cats) if cats else 0
+
+        result = {
+            "global_composite": round(global_score, 1),
+            "global_risk_level": "red" if global_score >= 70 else "amber" if global_score >= 40 else "green",
+            "categories": cats,
+            "live_count": sum(1 for c in cats if c["data_source"] == "live"),
+            "hybrid_count": sum(1 for c in cats if c["data_source"] == "hybrid"),
+            "seeded_count": sum(1 for c in cats if c["data_source"] == "seeded"),
+            "total_subcategories": 121,
+            "last_scored": session.query(func.max(RiskTaxonomyScore.scored_at)).scalar().isoformat() if session.query(func.max(RiskTaxonomyScore.scored_at)).scalar() else None,
+        }
+        _set_cache("taxonomy", result)
+        return result
+    except Exception as e:
+        logger.error("get_taxonomy failed: %s", e)
+        return {"error": str(e)}
+    finally:
+        session.close()
+
+
+@router.get("/taxonomy/summary")
+async def get_taxonomy_summary():
+    """Dashboard-ready 13-card summary for Insights page."""
+    cached = _check_cache("taxonomy_summary", _PSI_TAXONOMY_TTL)
+    if cached:
+        return cached
+
+    from src.analysis.risk_taxonomy import RiskTaxonomyScorer
+    session = SessionLocal()
+    try:
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+        composites = scorer.compute_category_composites()
+
+        cats = sorted(composites.values(), key=lambda c: c["category_id"])
+        global_score = sum(c["composite_score"] for c in cats) / len(cats) if cats else 0
+
+        result = {
+            "global_composite": round(global_score, 1),
+            "categories": [
+                {
+                    "category_id": c["category_id"],
+                    "short_name": c["short_name"],
+                    "icon": c["icon"],
+                    "score": c["composite_score"],
+                    "risk_level": c["risk_level"],
+                    "trend": c["trend"],
+                    "data_source": c["data_source"],
+                }
+                for c in cats
+            ],
+        }
+        _set_cache("taxonomy_summary", result)
+        return result
+    except Exception as e:
+        logger.error("get_taxonomy_summary failed: %s", e)
+        return {"error": str(e)}
+    finally:
+        session.close()
+
+
+@router.get("/taxonomy/{category_id}")
+async def get_taxonomy_category(category_id: int):
+    """Single category with all sub-category details."""
+    from src.analysis.risk_taxonomy import TAXONOMY_DEFINITIONS, RiskTaxonomyScorer
+    from src.storage.models import RiskTaxonomyScore
+
+    if category_id not in TAXONOMY_DEFINITIONS:
+        return {"error": f"Category {category_id} not found (valid: 1-13)"}
+
+    cache_key = f"taxonomy_cat_{category_id}"
+    cached = _check_cache(cache_key, _PSI_TAXONOMY_TTL)
+    if cached:
+        return cached
+
+    session = SessionLocal()
+    try:
+        cat = TAXONOMY_DEFINITIONS[category_id]
+        rows = session.query(RiskTaxonomyScore).filter_by(
+            category_id=category_id
+        ).order_by(RiskTaxonomyScore.score.desc()).all()
+
+        if not rows:
+            scorer = RiskTaxonomyScorer(session)
+            scorer.seed_initial_scores()
+            rows = session.query(RiskTaxonomyScore).filter_by(
+                category_id=category_id
+            ).order_by(RiskTaxonomyScore.score.desc()).all()
+
+        avg_score = sum(r.score for r in rows) / len(rows) if rows else 0
+
+        result = {
+            "category_id": category_id,
+            "category_name": cat["name"],
+            "short_name": cat["short_name"],
+            "composite_score": round(avg_score, 1),
+            "data_source": cat["subcategories"][0]["data_source"] if cat["subcategories"] else "seeded",
+            "subcategories": [
+                {
+                    "key": r.subcategory_key,
+                    "name": r.subcategory_name,
+                    "score": round(r.score, 1),
+                    "psi_module": r.psi_module,
+                    "data_source": r.data_source,
+                    "rationale": r.rationale,
+                    "last_event": r.last_event,
+                }
+                for r in rows
+            ],
+        }
+        _set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("get_taxonomy_category failed: %s", e)
+        return {"error": str(e)}
     finally:
         session.close()
 
