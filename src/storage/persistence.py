@@ -19,6 +19,7 @@ from src.storage.models import (
     SupplyChainRoute, SupplyChainAlert,
     DefenceSupplier, SupplierContract, SupplierRiskScore,
     SupplierSector, OwnershipType, ContractStatus, RiskDimension,
+    RiskTaxonomyScore,
 )
 from src.ingestion.sipri_transfers import SIPRITransferRecord
 from src.ingestion.sipri_companies import DefenseCompanyRecord
@@ -617,6 +618,22 @@ class PersistenceService:
                 supplier_id=supplier_id, dimension=dimension,
                 score=score, rationale=rationale,
             )
+            self.session.add(existing)
+        self.session.commit()
+        return existing
+
+    def upsert_taxonomy_score(self, subcategory_key: str, **kwargs) -> RiskTaxonomyScore:
+        """Create or update a taxonomy risk score by subcategory_key."""
+        existing = self.session.query(RiskTaxonomyScore).filter_by(
+            subcategory_key=subcategory_key,
+        ).first()
+        if existing:
+            for key, val in kwargs.items():
+                if val is not None and hasattr(existing, key):
+                    setattr(existing, key, val)
+            existing.scored_at = datetime.utcnow()
+        else:
+            existing = RiskTaxonomyScore(subcategory_key=subcategory_key, **kwargs)
             self.session.add(existing)
         self.session.commit()
         return existing
