@@ -72,3 +72,55 @@ def test_seed_definitions_complete():
             assert "baseline_score" in sub
             assert "data_source" in sub
             assert "psi_module" in sub
+
+
+from src.analysis.risk_taxonomy import RiskTaxonomyScorer, TAXONOMY_DEFINITIONS
+
+
+def test_scorer_seeds_all_subcategories():
+    init_db()
+    session = SessionLocal()
+    try:
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+        count = session.query(RiskTaxonomyScore).count()
+        assert count == 121
+    finally:
+        session.close()
+
+
+def test_scorer_drift_changes_seeded_scores():
+    init_db()
+    session = SessionLocal()
+    try:
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+        row = session.query(RiskTaxonomyScore).filter_by(subcategory_key="4a").first()
+        baseline = row.baseline_score
+        drifted = False
+        for _ in range(20):
+            scorer.apply_drift_to_seeded()
+            session.refresh(row)
+            if abs(row.score - baseline) > 0.01:
+                drifted = True
+                break
+        assert drifted, "Drift should change seeded scores"
+        assert 0 <= row.score <= 100
+    finally:
+        session.close()
+
+
+def test_scorer_compute_category_composites():
+    init_db()
+    session = SessionLocal()
+    try:
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+        composites = scorer.compute_category_composites()
+        assert len(composites) == 13
+        for cat_id, data in composites.items():
+            assert 0 <= data["composite_score"] <= 100
+            assert data["risk_level"] in ("green", "amber", "red")
+            assert data["trend"] in ("rising", "falling", "stable")
+    finally:
+        session.close()
