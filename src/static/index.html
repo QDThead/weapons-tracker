@@ -2927,6 +2927,17 @@ async function generateCOAs() {
   }
 }
 
+function getInlineCOA(entity, source) {
+  if (!_mitigationCache || !_mitigationCache.actions) return '';
+  const match = _mitigationCache.actions.find(a => a.risk_entity === entity && a.risk_source === source);
+  if (!match) return '';
+  const color = {critical:'var(--accent2)',high:'var(--accent4)',medium:'#eab308',low:'var(--accent3)'}[match.coa_priority] || 'var(--text-dim)';
+  return `<div style="margin-top:6px;padding:6px 10px;background:rgba(0,212,255,0.04);border-radius:4px;font-size:11px;border-left:2px solid ${color};">
+    <span style="color:${color};font-weight:600;">Recommended:</span> ${esc(match.coa_action)}
+    ${match.coa_timeline ? ' <span style="color:var(--text-dim);">· ' + esc(match.coa_timeline) + '</span>' : ''}
+  </div>`;
+}
+
 // ═══════ RISK TAXONOMY STRIP (Insights landing page) ═══════
 
 async function loadTaxonomyStrip() {
@@ -5162,9 +5173,10 @@ function renderPsiAlerts(alerts) {
     const color = sevColors[a.severity] || '#64748b';
     return `<div style="display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border);">
       <div style="min-width:32px; height:32px; background:${color}22; color:${color}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">${a.severity}</div>
-      <div>
+      <div style="flex:1;">
         <div style="font-weight:600;">${esc(a.title)}</div>
         <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">${esc(a.type.replace(/_/g, ' '))} — ${esc(a.description || '').slice(0, 120)}</div>
+        ${getInlineCOA(a.title || a.type, 'psi')}
       </div>
     </div>`;
   }).join('');
@@ -5564,6 +5576,7 @@ function renderSupplierAlerts(data) {
     <div class="insight-alert ${a.severity === 'critical' ? 'threat' : 'warning'}">
       <div class="alert-title">${esc(a.supplier)} — ${a.dimension.replace(/_/g, ' ')}</div>
       <div class="alert-detail">${esc(a.rationale)} (score: ${a.score})</div>
+      ${getInlineCOA(a.supplier, 'supplier')}
     </div>
   `).join('');
 }
