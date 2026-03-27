@@ -1764,6 +1764,23 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         </div>
         <div class="chart-container tall" style="height:400px;"><canvas id="taxonomy-bar-chart"></canvas></div>
       </div>
+
+      <!-- Risk Weight Customization Panel -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3>Risk Weight Configuration</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-primary" style="padding:4px 12px;font-size:11px;" onclick="resetWeights()">Reset to Equal</button>
+            <button class="btn-primary" style="padding:4px 12px;font-size:11px;" onclick="applyWeights()">Apply Weights</button>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Adjust category importance weights to customize the global composite score. Higher weight = more influence on the overall risk assessment.</p>
+        <div id="weight-sliders" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;"></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-dim);">
+          Weighted Global Composite: <span class="stat-num" style="font-size:16px;" id="weighted-global">--</span>
+        </div>
+      </div>
+
       <div id="taxonomy-accordion"></div>
     </div>
 
@@ -5430,9 +5447,69 @@ async function loadTaxonomyTab() {
 
     renderTaxonomyBarChart(data.categories);
     renderTaxonomyAccordion(data.categories);
+    renderWeightSliders(data.categories);
   } catch (e) {
     console.error('Failed to load taxonomy tab:', e);
   }
+}
+
+// ── Risk Weight Customization ──
+let _taxonomyCats = null;
+let _categoryWeights = {};
+
+function renderWeightSliders(categories) {
+  _taxonomyCats = categories;
+  const el = document.getElementById('weight-sliders');
+  if (!el) return;
+  // Initialize equal weights
+  categories.forEach(c => { if (!_categoryWeights[c.category_id]) _categoryWeights[c.category_id] = 1.0; });
+  el.innerHTML = categories.map(c => {
+    const w = _categoryWeights[c.category_id] || 1.0;
+    return '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<span style="font-size:11px;min-width:100px;color:var(--text);">' + esc(c.short_name) + '</span>' +
+      '<input type="range" min="0" max="3" step="0.1" value="' + w + '" ' +
+        'oninput="updateWeight(' + c.category_id + ', this.value)" ' +
+        'style="flex:1;accent-color:var(--accent);">' +
+      '<span style="font-family:var(--font-mono);font-size:11px;min-width:30px;color:var(--accent);" id="weight-val-' + c.category_id + '">' + w.toFixed(1) + '</span>' +
+    '</div>';
+  }).join('');
+  recalcWeightedGlobal();
+}
+
+function updateWeight(catId, val) {
+  _categoryWeights[catId] = parseFloat(val);
+  var el = document.getElementById('weight-val-' + catId);
+  if (el) el.textContent = parseFloat(val).toFixed(1);
+  recalcWeightedGlobal();
+}
+
+function recalcWeightedGlobal() {
+  if (!_taxonomyCats) return;
+  var totalWeight = 0, weightedSum = 0;
+  _taxonomyCats.forEach(function(c) {
+    var w = _categoryWeights[c.category_id] || 1.0;
+    weightedSum += c.composite_score * w;
+    totalWeight += w;
+  });
+  var weighted = totalWeight > 0 ? weightedSum / totalWeight : 0;
+  var el = document.getElementById('weighted-global');
+  if (el) {
+    el.textContent = Math.round(weighted);
+    el.style.color = weighted >= 70 ? 'var(--accent2)' : weighted >= 40 ? 'var(--accent4)' : 'var(--accent3)';
+  }
+}
+
+function resetWeights() {
+  _taxonomyCats.forEach(function(c) { _categoryWeights[c.category_id] = 1.0; });
+  renderWeightSliders(_taxonomyCats);
+}
+
+function applyWeights() {
+  recalcWeightedGlobal();
+  // Visual feedback
+  var btn = event.target;
+  btn.textContent = 'Applied!';
+  setTimeout(function() { btn.textContent = 'Apply Weights'; }, 1500);
 }
 
 function renderTaxonomyBarChart(categories) {
