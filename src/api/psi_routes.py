@@ -523,6 +523,7 @@ async def get_taxonomy():
 
     from src.analysis.risk_taxonomy import RiskTaxonomyScorer
     from src.storage.models import RiskTaxonomyScore
+    from src.analysis.confidence import compute_confidence
     session = SessionLocal()
     try:
         scorer = RiskTaxonomyScorer(session)
@@ -531,6 +532,21 @@ async def get_taxonomy():
 
         cats = sorted(composites.values(), key=lambda c: c["composite_score"], reverse=True)
         global_score = sum(c["composite_score"] for c in cats) / len(cats) if cats else 0
+
+        for cat in cats:
+            cat_conf = compute_confidence(
+                data_source=cat["data_source"],
+                risk_source="taxonomy",
+                dimension=str(cat["category_id"]),
+                session=session,
+            )
+            cat["confidence"] = cat_conf
+
+        high_count = sum(1 for c in cats if c.get("confidence", {}).get("level") == "high")
+        med_count = sum(1 for c in cats if c.get("confidence", {}).get("level") == "medium")
+        low_count = sum(1 for c in cats if c.get("confidence", {}).get("level") == "low")
+        avg_conf = sum(c.get("confidence", {}).get("score", 0) for c in cats) / max(len(cats), 1)
+        tri_count = sum(1 for c in cats if c.get("confidence", {}).get("triangulated"))
 
         result = {
             "global_composite": round(global_score, 1),
@@ -541,6 +557,13 @@ async def get_taxonomy():
             "seeded_count": sum(1 for c in cats if c["data_source"] == "seeded"),
             "total_subcategories": 121,
             "last_scored": session.query(func.max(RiskTaxonomyScore.scored_at)).scalar().isoformat() if session.query(func.max(RiskTaxonomyScore.scored_at)).scalar() else None,
+            "confidence_summary": {
+                "high_count": high_count,
+                "medium_count": med_count,
+                "low_count": low_count,
+                "avg_confidence": round(avg_conf),
+                "triangulated_pct": round(tri_count / max(len(cats), 1) * 100),
+            },
         }
         _set_cache("taxonomy", result)
         return result
@@ -559,6 +582,7 @@ async def get_taxonomy_summary():
         return cached
 
     from src.analysis.risk_taxonomy import RiskTaxonomyScorer
+    from src.analysis.confidence import compute_confidence
     session = SessionLocal()
     try:
         scorer = RiskTaxonomyScorer(session)
@@ -568,20 +592,28 @@ async def get_taxonomy_summary():
         cats = sorted(composites.values(), key=lambda c: c["category_id"])
         global_score = sum(c["composite_score"] for c in cats) / len(cats) if cats else 0
 
+        category_cards = []
+        for c in cats:
+            cat_conf = compute_confidence(
+                data_source=c["data_source"],
+                risk_source="taxonomy",
+                dimension=str(c["category_id"]),
+                session=session,
+            )
+            category_cards.append({
+                "category_id": c["category_id"],
+                "short_name": c["short_name"],
+                "icon": c["icon"],
+                "score": c["composite_score"],
+                "risk_level": c["risk_level"],
+                "trend": c["trend"],
+                "data_source": c["data_source"],
+                "confidence": cat_conf,
+            })
+
         result = {
             "global_composite": round(global_score, 1),
-            "categories": [
-                {
-                    "category_id": c["category_id"],
-                    "short_name": c["short_name"],
-                    "icon": c["icon"],
-                    "score": c["composite_score"],
-                    "risk_level": c["risk_level"],
-                    "trend": c["trend"],
-                    "data_source": c["data_source"],
-                }
-                for c in cats
-            ],
+            "categories": category_cards,
         }
         _set_cache("taxonomy_summary", result)
         return result
@@ -597,6 +629,7 @@ async def get_taxonomy_category(category_id: int):
     """Single category with all sub-category details."""
     from src.analysis.risk_taxonomy import TAXONOMY_DEFINITIONS, RiskTaxonomyScorer
     from src.storage.models import RiskTaxonomyScore
+    from src.analysis.confidence import compute_confidence
 
     if category_id not in TAXONOMY_DEFINITIONS:
         return {"error": f"Category {category_id} not found (valid: 1-13)"}
@@ -622,24 +655,32 @@ async def get_taxonomy_category(category_id: int):
 
         avg_score = sum(r.score for r in rows) / len(rows) if rows else 0
 
+        subcategory_dicts = []
+        for r in rows:
+            sub_conf = compute_confidence(
+                data_source=r.data_source,
+                risk_source="taxonomy",
+                dimension=r.subcategory_key,
+                session=session,
+            )
+            subcategory_dicts.append({
+                "key": r.subcategory_key,
+                "name": r.subcategory_name,
+                "score": round(r.score, 1),
+                "psi_module": r.psi_module,
+                "data_source": r.data_source,
+                "rationale": r.rationale,
+                "last_event": r.last_event,
+                "confidence": sub_conf,
+            })
+
         result = {
             "category_id": category_id,
             "category_name": cat["name"],
             "short_name": cat["short_name"],
             "composite_score": round(avg_score, 1),
             "data_source": cat["subcategories"][0]["data_source"] if cat["subcategories"] else "seeded",
-            "subcategories": [
-                {
-                    "key": r.subcategory_key,
-                    "name": r.subcategory_name,
-                    "score": round(r.score, 1),
-                    "psi_module": r.psi_module,
-                    "data_source": r.data_source,
-                    "rationale": r.rationale,
-                    "last_event": r.last_event,
-                }
-                for r in rows
-            ],
+            "subcategories": subcategory_dicts,
         }
         _set_cache(cache_key, result)
         return result
