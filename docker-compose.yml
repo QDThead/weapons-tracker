@@ -1,0 +1,30 @@
+# PSI Control Tower — Docker Compose
+# For local development and Azure Container Instances deployment
+#
+# Data Sovereignty: All data stored locally in the 'psi-data' volume.
+# For Azure deployment, mount an Azure Managed Disk or Azure Files share.
+
+services:
+  psi-control-tower:
+    build: .
+    container_name: psi-control-tower
+    ports:
+      - "8000:8000"
+    volumes:
+      - psi-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///data/weapons_tracker.db
+      - PSI_ENVIRONMENT=production
+      - PSI_DATA_SOVEREIGNTY=canada
+      - PSI_AZURE_REGION=canadacentral
+      - PSI_LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  psi-data:
+    driver: local
