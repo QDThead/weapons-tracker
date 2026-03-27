@@ -514,6 +514,27 @@ async def get_disruption_propagation(
         session.close()
 
 
+@router.get("/forecasts")
+async def get_forecasts():
+    """Predictive analytics — 12-18 month supply chain risk forecasts."""
+    cached = _check_cache("forecasts", _PSI_GRAPH_TTL)
+    if cached:
+        return cached
+
+    from src.analysis.forecasting import SupplyChainForecaster
+    session = SessionLocal()
+    try:
+        forecaster = SupplyChainForecaster(session)
+        result = forecaster.generate_all_forecasts()
+        _set_cache("forecasts", result)
+        return result
+    except Exception as e:
+        logger.error("Forecasting failed: %s", e)
+        return {"error": str(e)}
+    finally:
+        session.close()
+
+
 @router.get("/taxonomy")
 async def get_taxonomy():
     """All 13 DND risk taxonomy categories with composite scores."""
