@@ -217,6 +217,11 @@ async def score_taxonomy():
             scorer = RiskTaxonomyScorer(session)
             scorer.score_all()
             logger.info("[scheduler] Taxonomy scoring complete")
+            # Generate COA recommendations from updated scores
+            from src.analysis.mitigation_playbook import MitigationPlaybook
+            playbook = MitigationPlaybook(session)
+            coa_result = playbook.generate_all_coas()
+            logger.info("[scheduler] COA generation: %s", coa_result)
         finally:
             session.close()
     except Exception as e:
