@@ -137,3 +137,63 @@ def test_generate_coas_from_taxonomy():
         assert total > 5  # Should generate multiple COAs from taxonomy
     finally:
         session.close()
+
+
+from fastapi.testclient import TestClient
+from src.api.routes import app
+from src.api.mitigation_routes import router as mitigation_router
+
+if not any(getattr(r, 'path', '').startswith("/mitigation") for r in app.routes):
+    app.include_router(mitigation_router)
+
+client = TestClient(app)
+
+
+def _seed_and_generate():
+    init_db()
+    session = SessionLocal()
+    try:
+        from src.storage.models import DefenceSupplier, SupplierSector, OwnershipType, RiskDimension
+        svc = PersistenceService(session)
+        sup = svc.upsert_supplier(name="TestCorp", sector=SupplierSector.AEROSPACE, ownership_type=OwnershipType.FOREIGN_SUBSIDIARY, parent_country="United States")
+        svc.upsert_risk_score(sup.id, RiskDimension.SINGLE_SOURCE, 90.0, "Sole source")
+        svc.upsert_risk_score(sup.id, RiskDimension.FOREIGN_OWNERSHIP, 50.0, "US subsidiary")
+        from src.analysis.mitigation_playbook import MitigationPlaybook
+        pb = MitigationPlaybook(session)
+        pb.generate_all_coas()
+    finally:
+        session.close()
+
+
+def test_get_actions():
+    _seed_and_generate()
+    resp = client.get("/mitigation/actions")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] >= 1
+    assert "by_priority" in data
+    assert "by_status" in data
+    # by_status should count ALL statuses
+    assert "resolved" in data["by_status"]
+
+
+def test_patch_action_status():
+    _seed_and_generate()
+    # Get an action
+    resp = client.get("/mitigation/actions")
+    actions = resp.json()["actions"]
+    assert len(actions) >= 1
+    action_id = actions[0]["id"]
+
+    # Update status
+    resp = client.patch(f"/mitigation/actions/{action_id}", json={"status": "in_progress", "notes": "Under review"})
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "in_progress"
+    assert resp.json()["notes"] == "Under review"
+
+
+def test_post_generate():
+    _seed_and_generate()
+    resp = client.post("/mitigation/generate")
+    assert resp.status_code == 200
+    assert "generated" in resp.json()
