@@ -99,6 +99,109 @@ async def get_exchange_rates():
         return {"error": str(e)}
 
 
+@router.get("/milex")
+async def get_milex(countries: str = ""):
+    """SIPRI Military Expenditure data (1949-2024) — summary for key countries, latest 5 years."""
+    cache_key = f"milex:{countries}"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+
+    from src.ingestion.sipri_milex import SIPRIMilexClient
+
+    # SIPRI labels some countries differently from common names
+    KEY_COUNTRIES = {
+        "Canada", "United States", "United States of America", "China", "Russia",
+        "Germany", "United Kingdom", "France", "India", "Turkey", "Türkiye",
+        "Australia", "Japan", "South Korea", "Korea, South", "Israel", "Iran",
+        "Saudi Arabia", "Norway", "Sweden", "Finland", "Poland", "Ukraine",
+    }
+
+    filter_set = set(c.strip() for c in countries.split(",") if c.strip()) if countries else KEY_COUNTRIES
+
+    try:
+        client = SIPRIMilexClient()
+        all_records = await client.fetch_milex_data()
+
+        # Find latest 5 years across all data
+        all_years = sorted({r.year for r in all_records}, reverse=True)
+        recent_years = all_years[:5]
+
+        summary: dict[str, dict] = {}
+        for r in all_records:
+            if r.country_name not in filter_set:
+                continue
+            if r.year not in recent_years:
+                continue
+            if r.country_name not in summary:
+                summary[r.country_name] = {
+                    "country": r.country_name,
+                    "iso3": r.country_iso3,
+                    "spending_usd_millions": {},
+                    "spending_pct_gdp": {},
+                }
+            summary[r.country_name]["spending_usd_millions"][r.year] = round(r.spending_usd, 1)
+            if r.spending_pct_gdp is not None:
+                summary[r.country_name]["spending_pct_gdp"][r.year] = round(r.spending_pct_gdp, 2)
+
+        result = {
+            "source": "SIPRI Military Expenditure Database",
+            "coverage": "1949-2024",
+            "years_shown": sorted(recent_years),
+            "unit": "Current USD millions",
+            "countries": list(summary.values()),
+            "total_countries": len(summary),
+            "total_records_parsed": len(all_records),
+        }
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.exception("SIPRI MILEX fetch failed")
+        return {"error": str(e)}
+
+
+@router.get("/factbook")
+async def get_factbook_military():
+    """CIA World Factbook military data for 20 key nations."""
+    cached = _check("factbook")
+    if cached:
+        return cached
+
+    from src.ingestion.cia_factbook import CIAFactbookClient
+
+    try:
+        client = CIAFactbookClient()
+        records = await client.fetch_military_data()
+
+        countries = []
+        for r in records:
+            countries.append({
+                "country": r.country_name,
+                "iso3": r.country_iso3,
+                "fips_code": r.fips_code,
+                "military_branches": r.military_branches[:500] if r.military_branches else None,
+                "military_personnel": r.military_personnel,
+                "military_expenditure_pct_gdp": r.military_expenditure_pct_gdp,
+                "expenditure_history": {
+                    str(y): v for y, v in sorted(r.military_expenditure_history.items(), reverse=True)
+                },
+                "military_note": r.military_note[:300] if r.military_note else None,
+                "deployments": r.military_deployments[:300] if r.military_deployments else None,
+            })
+
+        result = {
+            "source": "CIA World Factbook (factbook.json mirror)",
+            "url": "https://github.com/factbook/factbook.json",
+            "total_countries": len(countries),
+            "countries": countries,
+        }
+        _cache["factbook"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.exception("CIA Factbook fetch failed")
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -130,9 +233,17 @@ async def list_enrichment_sources():
             },
             {
                 "name": "SIPRI Military Expenditure (MILEX)",
-                "endpoint": "Integrated via SIPRI Excel download",
-                "indicators": 1,
+                "endpoint": "/enrichment/milex",
+                "indicators": 2,
                 "freshness": "Annual (1949-2024)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "CIA World Factbook — Military Data",
+                "endpoint": "/enrichment/factbook",
+                "indicators": 4,
+                "freshness": "Weekly",
                 "auth": "None required",
                 "status": "active",
             },
@@ -250,6 +361,6 @@ async def list_enrichment_sources():
                 "status": "active",
             },
         ],
-        "total_sources": 18,
-        "total_active": 18,
+        "total_sources": 20,
+        "total_active": 20,
     }
