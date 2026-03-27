@@ -410,16 +410,49 @@ async def get_live_defense_news():
 
         client = DefenseNewsRSSClient()
         articles = await client.fetch_all_feeds(filter_arms=True)
-        result = [
+        rss_articles = [
             {
                 "title": a.title,
                 "url": a.url,
                 "source": a.source,
                 "published_at": a.published_at.isoformat() if a.published_at else None,
                 "summary": a.summary[:200],
+                "language": "English",
             }
-            for a in articles[:50]
+            for a in articles[:30]
         ]
+
+        # Also include GDELT multilingual news from DB
+        from src.storage.models import ArmsTradeNews
+        session = SessionLocal()
+        try:
+            db_news = session.query(ArmsTradeNews).order_by(
+                ArmsTradeNews.published_at.desc()
+            ).limit(30).all()
+            db_articles = [
+                {
+                    "title": n.title,
+                    "url": n.url,
+                    "source": n.source_name or "GDELT",
+                    "published_at": n.published_at.isoformat() if n.published_at else None,
+                    "summary": "",
+                    "language": n.language or "English",
+                }
+                for n in db_news
+            ]
+        finally:
+            session.close()
+
+        # Merge and deduplicate by URL, sort by date
+        seen_urls = set()
+        merged = []
+        for a in rss_articles + db_articles:
+            if a["url"] not in seen_urls:
+                seen_urls.add(a["url"])
+                merged.append(a)
+        merged.sort(key=lambda x: x.get("published_at") or "", reverse=True)
+        result = merged[:50]
+
         _news_cache[cache_key] = (time.time(), result)
         return result
     except Exception as e:

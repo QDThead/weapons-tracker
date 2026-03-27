@@ -2867,17 +2867,30 @@ async function loadLiveNews() {
     const articles = resp.ok ? await resp.json() : [];
     const feed = document.getElementById('live-news-feed');
     const countEl = document.getElementById('news-count');
-    countEl.textContent = `(${articles.length} articles)`;
+    // Count languages
+    const langCounts = {};
+    articles.forEach(a => { const l = a.language || 'English'; langCounts[l] = (langCounts[l] || 0) + 1; });
+    const langCount = Object.keys(langCounts).length;
+    const nonEnglish = articles.filter(a => a.language && a.language !== 'English').length;
+    countEl.textContent = `(${articles.length} articles · ${langCount} languages · ${nonEnglish} non-English)`;
 
     if (!articles.length) {
       feed.innerHTML = '<p style="color:var(--text-dim);padding:20px;">No recent defense news available.</p>';
       return;
     }
 
+    // Language badge helper
+    const langBadge = (lang) => {
+      if (!lang || lang === 'English') return '';
+      const flags = {Russian:'\u{1F1F7}\u{1F1FA}',Chinese:'\u{1F1E8}\u{1F1F3}',Turkish:'\u{1F1F9}\u{1F1F7}',German:'\u{1F1E9}\u{1F1EA}',French:'\u{1F1EB}\u{1F1F7}',Spanish:'\u{1F1EA}\u{1F1F8}',Arabic:'\u{1F1F8}\u{1F1E6}',Ukrainian:'\u{1F1FA}\u{1F1E6}',Korean:'\u{1F1F0}\u{1F1F7}',Japanese:'\u{1F1EF}\u{1F1F5}',Italian:'\u{1F1EE}\u{1F1F9}',Dutch:'\u{1F1F3}\u{1F1F1}',Hebrew:'\u{1F1EE}\u{1F1F1}',Portuguese:'\u{1F1F5}\u{1F1F9}'};
+      const flag = flags[lang] || '\u{1F310}';
+      return ' <span style="font-size:9px;background:rgba(0,212,255,0.1);color:var(--accent);padding:1px 6px;border-radius:3px;" title="Translated from ' + esc(lang) + ' via GenAI">' + flag + ' ' + esc(lang) + '</span>';
+    };
+
     feed.innerHTML = articles.map(a => {
       const ago = a.published_at ? timeAgo(new Date(a.published_at)) : '';
       return '<div class="news-item">' +
-        '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.title) + '</a>' +
+        '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.title) + '</a>' + langBadge(a.language) +
         '<div class="news-meta"><span class="news-source">' + esc(a.source) + '</span> &middot; ' + esc(ago) + '</div>' +
         (a.summary ? '<div class="news-summary">' + esc(a.summary.substring(0, 150)) + '</div>' : '') +
         '</div>';
