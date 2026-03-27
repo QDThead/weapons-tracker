@@ -202,6 +202,118 @@ async def get_factbook_military():
         return {"error": str(e)}
 
 
+@router.get("/commodities")
+async def get_commodity_prices():
+    """FRED commodity prices for defence-critical materials (nickel, aluminum, copper, oil, uranium, iron ore, tin)."""
+    cached = _check("commodities")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import FREDCommodityClient
+    try:
+        client = FREDCommodityClient()
+        result = await client.fetch_commodity_prices()
+        _cache["commodities"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("FRED commodity fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/cyber-threats")
+async def get_cyber_threats():
+    """CISA Known Exploited Vulnerabilities relevant to defence (Cisco, Microsoft, Fortinet, Palo Alto, etc.)."""
+    cached = _check("cisa_kev")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import CISAKevClient
+    try:
+        client = CISAKevClient()
+        vulns = await client.fetch_kev_catalog()
+        result = {
+            "source": "CISA Known Exploited Vulnerabilities Catalog",
+            "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "defence_relevant_vendors": ["Cisco", "Microsoft", "Fortinet", "Palo Alto", "F5", "VMware", "Citrix", "Adobe", "Apple", "SAP"],
+            "total": len(vulns),
+            "vulnerabilities": vulns,
+        }
+        _cache["cisa_kev"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("CISA KEV fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/disasters")
+async def get_active_disasters():
+    """GDACS active disaster alerts (Orange/Red level) — earthquakes, tropical cyclones, floods, volcanoes."""
+    cached = _check("gdacs_disasters")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import GDACSDisasterClient
+    try:
+        client = GDACSDisasterClient()
+        events = await client.fetch_active_disasters()
+        result = {
+            "source": "GDACS Global Disaster Alert and Coordination System",
+            "url": "https://www.gdacs.org",
+            "alert_levels": ["Orange", "Red"],
+            "event_types": ["EQ (Earthquake)", "TC (Tropical Cyclone)", "FL (Flood)", "VO (Volcano)"],
+            "window_days": 30,
+            "total": len(events),
+            "events": events,
+        }
+        _cache["gdacs_disasters"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("GDACS disasters fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/satellites")
+async def get_military_satellites():
+    """Celestrak military satellite tracking data — orbital elements for all tracked military satellites."""
+    cached = _check("celestrak_sats")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import CelestrakSatelliteClient
+    try:
+        client = CelestrakSatelliteClient()
+        sats = await client.fetch_military_satellites()
+        result = {
+            "source": "Celestrak (celestrak.org) — NORAD military group",
+            "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=military",
+            "total": len(sats),
+            "satellites": sats,
+        }
+        _cache["celestrak_sats"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("Celestrak satellites fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/missiles")
+async def get_missile_data():
+    """CSIS missile threat and defense system database — missiles and counter-systems by country."""
+    cached = _check("csis_missiles")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import CSISMissileClient
+    try:
+        client = CSISMissileClient()
+        result = await client.fetch_missile_data()
+        _cache["csis_missiles"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("CSIS missiles fetch failed: %s", e)
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -360,7 +472,47 @@ async def list_enrichment_sources():
                 "auth": "None required",
                 "status": "active",
             },
+            {
+                "name": "FRED Commodity Prices",
+                "endpoint": "/enrichment/commodities",
+                "indicators": 7,
+                "freshness": "Monthly/Daily",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "CISA Known Exploited Vulnerabilities",
+                "endpoint": "/enrichment/cyber-threats",
+                "indicators": 7,
+                "freshness": "Ongoing (CISA updates)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "GDACS Disaster Alerts",
+                "endpoint": "/enrichment/disasters",
+                "indicators": 8,
+                "freshness": "Near real-time",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "Celestrak Military Satellites",
+                "endpoint": "/enrichment/satellites",
+                "indicators": 5,
+                "freshness": "Daily (TLE updates)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "CSIS Missile Threat Database",
+                "endpoint": "/enrichment/missiles",
+                "indicators": 5,
+                "freshness": "Weekly",
+                "auth": "None required",
+                "status": "active",
+            },
         ],
-        "total_sources": 20,
-        "total_active": 20,
+        "total_sources": 24,
+        "total_active": 24,
     }
