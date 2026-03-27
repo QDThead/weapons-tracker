@@ -1799,6 +1799,49 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
       <button class="feeds-refresh-btn" id="feeds-refresh-btn" onclick="refreshDataFeeds()">Refresh All</button>
     </div>
+
+    <!-- Architecture capability banner -->
+    <div class="card" style="margin-bottom:20px;border-left:3px solid var(--accent);">
+      <h2 style="margin-bottom:8px;">Data Fusion Architecture</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">PSI Control Tower operates as a Data Fusion Engine — ingesting DND internal data alongside 30,000+ external intelligence sources via the Quantum Data Lake. This demo operates on OSINT feeds only; production deployment adds DND ERP/SAP/DRMIS integration.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+        <div class="stat-box" style="padding:10px;">
+          <div class="stat-label">Active OSINT Feeds</div>
+          <div class="stat-num" style="font-size:22px;color:var(--accent);">13</div>
+          <div style="font-size:9px;color:var(--text-dim);">Live in this demo</div>
+        </div>
+        <div class="stat-box" style="padding:10px;">
+          <div class="stat-label">PSI Platform Sources</div>
+          <div class="stat-num" style="font-size:22px;color:var(--accent4);">30,000+</div>
+          <div style="font-size:9px;color:var(--text-dim);">Available at production deployment</div>
+        </div>
+        <div class="stat-box" style="padding:10px;">
+          <div class="stat-label">Languages Supported</div>
+          <div class="stat-num" style="font-size:22px;color:var(--accent3);">100+</div>
+          <div style="font-size:9px;color:var(--text-dim);">Via GenAI translation agents</div>
+        </div>
+        <div class="stat-box" style="padding:10px;">
+          <div class="stat-label">Integration Methods</div>
+          <div class="stat-num" style="font-size:22px;color:var(--accent5);">4</div>
+          <div style="font-size:9px;color:var(--text-dim);">REST API · SFTP · EDI · SQL</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;">
+        <div>
+          <div style="color:var(--text);font-weight:600;margin-bottom:4px;">DND Internal Feeds (Production)</div>
+          <div style="color:var(--text-dim);line-height:1.6;">
+            Vendor Master (DRMIS/SAP) · Purchase Orders · Material Master (NSN) · Bill of Materials · Contract Data
+          </div>
+        </div>
+        <div>
+          <div style="color:var(--text);font-weight:600;margin-bottom:4px;">External Intelligence Categories</div>
+          <div style="color:var(--text-dim);line-height:1.6;">
+            Corporate Registry (FOCI) · Maritime &amp; Trade · Financial Health · News &amp; OSINT · Weather &amp; Hazards · Cyber Threat · Sanctions · Commodities
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="feeds-content"></div>
   </div>
 
