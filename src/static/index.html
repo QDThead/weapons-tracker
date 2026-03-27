@@ -1829,6 +1829,16 @@ function esc(s) {
   d.textContent = String(s);
   return d.innerHTML;
 }
+function renderConfidenceBadge(conf) {
+  if (!conf) return '';
+  var colors = {high:'var(--accent3)',medium:'var(--accent4)',low:'var(--text-dim)'};
+  var color = colors[conf.level] || 'var(--text-dim)';
+  var srcs = (conf.sources || []).join(', ');
+  return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-family:var(--font-mono);color:' + color + ';" title="Sources: ' + esc(srcs) + '">' +
+    '<span style="width:5px;height:5px;border-radius:50%;background:' + color + ';"></span>' +
+    conf.level.toUpperCase() + ' (' + conf.source_count + ')' +
+    '</span>';
+}
 function fmt(n) {
   if (n == null || isNaN(n)) return '-';
   if (n >= 1000) return (n/1000).toFixed(1) + 'B';
@@ -2879,6 +2889,7 @@ async function loadActionCentre() {
           <div style="flex:1;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
               <span style="background:${color};color:#fff;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;">${a.coa_priority}</span>
+              ${renderConfidenceBadge(a.confidence)}
               <span style="font-weight:600;font-size:13px;">${esc(a.risk_entity)}</span>
               <span style="font-size:11px;color:var(--text-dim);">${a.risk_dimension.replace(/_/g,' ')}</span>
             </div>
@@ -2964,6 +2975,7 @@ async function loadTaxonomyStrip() {
           <span style="color:${color};">${trend}</span>
           <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${srcDot};margin-left:4px;vertical-align:middle;"></span>
         </div>
+        <div style="margin-top:2px;">${renderConfidenceBadge(c.confidence)}</div>
       </div>`;
     }).join('');
   } catch (e) {
@@ -5517,6 +5529,7 @@ async function loadTaxonomyCategoryDetail(catId, container) {
       '<th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">Score</th>' +
       '<th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">PSI Module</th>' +
       '<th style="padding:6px 4px;border-bottom:1px solid var(--border);"></th>' +
+      '<th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">Conf.</th>' +
       '<th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">Last Event</th>' +
       '</tr></thead><tbody>' +
       data.subcategories.map(s => {
@@ -5527,6 +5540,7 @@ async function loadTaxonomyCategoryDetail(catId, container) {
           '<td style="padding:6px 8px;text-align:center;"><span class="stat-num" style="font-size:14px;color:' + color + ';">' + Math.round(s.score) + '</span></td>' +
           '<td style="padding:6px 8px;font-size:11px;color:var(--text-dim);">' + esc(s.psi_module) + '</td>' +
           '<td style="padding:6px 4px;">' + srcBadge(s.data_source) + '</td>' +
+          '<td style="padding:6px 4px;">' + renderConfidenceBadge(s.confidence) + '</td>' +
           '<td style="padding:6px 8px;font-size:11px;color:var(--text-dim);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(s.last_event || '') + '">' + esc(s.last_event || '-') + '</td>' +
           '</tr>';
       }).join('') +
