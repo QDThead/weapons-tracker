@@ -82,20 +82,26 @@ class SIPRICompaniesClient:
                 df.columns = df.iloc[header_row]
                 df = df.iloc[header_row + 1:].reset_index(drop=True)
 
-                # Normalize column names
+                # Normalize column names — take FIRST match for each to avoid overwrites
                 col_map = {}
+                mapped = set()
                 for col in df.columns:
                     col_lower = str(col).lower().strip()
-                    if "rank" in col_lower:
+                    if "rank" in col_lower and "rank" not in mapped:
                         col_map[col] = "rank"
-                    elif "company" in col_lower or "name" in col_lower:
+                        mapped.add("rank")
+                    elif ("company" in col_lower or "name" in col_lower) and "name" not in mapped:
                         col_map[col] = "name"
-                    elif "country" in col_lower:
+                        mapped.add("name")
+                    elif "country" in col_lower and "country" not in mapped:
                         col_map[col] = "country"
-                    elif "arms" in col_lower and "rev" in col_lower:
+                        mapped.add("country")
+                    elif "arms" in col_lower and "rev" in col_lower and "%" not in col_lower and "constant" not in col_lower and "arms_revenue" not in mapped:
                         col_map[col] = "arms_revenue"
-                    elif "total" in col_lower and "rev" in col_lower:
+                        mapped.add("arms_revenue")
+                    elif "total" in col_lower and "rev" in col_lower and "total_revenue" not in mapped:
                         col_map[col] = "total_revenue"
+                        mapped.add("total_revenue")
 
                 df = df.rename(columns=col_map)
 

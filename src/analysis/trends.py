@@ -377,7 +377,7 @@ class TrendAnalyzer:
             )
             .join(Country, Country.id == DefenseCompany.country_id, isouter=True)
             .filter(
-                DefenseCompany.name == company_name,
+                DefenseCompany.name.ilike(f"%{company_name}%"),
                 DefenseCompany.year >= start_year,
                 DefenseCompany.year <= end_year,
             )

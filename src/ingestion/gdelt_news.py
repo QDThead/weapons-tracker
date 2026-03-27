@@ -179,7 +179,7 @@ class GDELTArmsNewsClient:
             country_name: Country to search for (e.g., "Canada").
             timespan_minutes: How far back (default 72 hours).
         """
-        query = f'("{country_name}" AND ("arms" OR "weapons" OR "defense" OR "military")) AND ("sale" OR "deal" OR "delivery" OR "contract" OR "export" OR "import")'
+        query = f'"{country_name}" ("arms" OR "weapons" OR "defense" OR "military")'
         return await self.search_articles(
             query=query,
             timespan=str(timespan_minutes),
