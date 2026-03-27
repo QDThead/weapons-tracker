@@ -42,6 +42,28 @@ def _set_cache(key: str, data: dict | list) -> None:
     _cache[key] = (time.time(), data)
 
 
+def _build_risk_scores_with_confidence(risk_scores, session) -> list[dict]:
+    """Serialize risk scores and attach a confidence dict to each entry."""
+    from src.analysis.confidence import compute_confidence
+    result = []
+    for rs in risk_scores:
+        dimension = rs.dimension.value if rs.dimension else "unknown"
+        conf = compute_confidence(
+            data_source="live",
+            risk_source="supplier",
+            dimension=dimension,
+            session=session,
+        )
+        result.append({
+            "dimension": rs.dimension.value if rs.dimension else None,
+            "score": rs.score,
+            "rationale": rs.rationale,
+            "scored_at": rs.scored_at.isoformat() if rs.scored_at else None,
+            "confidence": conf,
+        })
+    return result
+
+
 # ------------------------------------------------------------------
 # 1. GET /dashboard/suppliers — all suppliers sorted by risk desc
 # ------------------------------------------------------------------
@@ -70,6 +92,7 @@ async def get_suppliers():
             if score >= 40: return "amber"
             return "green"
 
+        from src.analysis.confidence import compute_confidence
         supplier_data = []
         total_score = 0
         scored_count = 0
@@ -89,6 +112,12 @@ async def get_suppliers():
                 .where(SupplierContract.supplier_id == s.id)
             ).scalar() or 0
 
+            conf = compute_confidence(
+                data_source="live",
+                risk_source="supplier",
+                dimension=top_risk.dimension.value if top_risk else "unknown",
+                session=session,
+            )
             supplier_data.append({
                 "name": s.name,
                 "sector": s.sector.value if s.sector else "other",
@@ -100,6 +129,7 @@ async def get_suppliers():
                 "risk_score_composite": s.risk_score_composite,
                 "risk_level": _risk_level(s.risk_score_composite),
                 "top_risk_dimension": top_risk.dimension.value if top_risk else None,
+                "confidence": conf,
             })
             if s.risk_score_composite is not None:
                 total_score += s.risk_score_composite
@@ -380,15 +410,7 @@ async def get_supplier_profile(name: str):
                 }
                 for c in contracts
             ],
-            "risk_scores": [
-                {
-                    "dimension": rs.dimension.value if rs.dimension else None,
-                    "score": rs.score,
-                    "rationale": rs.rationale,
-                    "scored_at": rs.scored_at.isoformat() if rs.scored_at else None,
-                }
-                for rs in risk_scores
-            ],
+            "risk_scores": _build_risk_scores_with_confidence(risk_scores, session),
         }
         _set_cache(cache_key, result)
         return result

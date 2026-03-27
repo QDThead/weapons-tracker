@@ -82,6 +82,7 @@ async def get_actions(
         # Sort by priority in Python
         actions.sort(key=lambda a: PRIORITY_ORDER.get(a.coa_priority, 9))
 
+        from src.analysis.confidence import compute_confidence
         result = {
             "actions": [
                 {
@@ -98,6 +99,12 @@ async def get_actions(
                     "notes": a.notes,
                     "created_at": a.created_at.isoformat() if a.created_at else None,
                     "updated_at": a.updated_at.isoformat() if a.updated_at else None,
+                    "confidence": compute_confidence(
+                        data_source=None,
+                        risk_source=a.risk_source,
+                        dimension=a.risk_dimension,
+                        session=session,
+                    ),
                 }
                 for a in actions
             ],
