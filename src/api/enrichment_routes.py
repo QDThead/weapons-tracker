@@ -588,6 +588,162 @@ async def get_internet_infrastructure():
         return {"error": str(e)}
 
 
+@router.get("/dod-contracts")
+async def get_dod_contracts():
+    """US DoD procurement contracts from USASpending.gov — top 20 by award amount."""
+    cached = _check("dod_contracts")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import USASpendingClient
+    try:
+        client = USASpendingClient()
+        contracts = await client.fetch_dod_contracts()
+        result = {
+            "source": "USASpending.gov — US Federal Spending",
+            "url": "https://api.usaspending.gov/api/v2/search/spending_by_award/",
+            "filter": "DoD awards, 2025-2026, keywords: defense/military/weapons",
+            "note": "Top 20 DoD contracts by award amount. Key indicator of defence industrial base activity.",
+            "total": len(contracts),
+            "contracts": contracts,
+        }
+        _cache["dod_contracts"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("USASpending DoD contracts fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/mineral-deposits")
+async def get_mineral_deposits():
+    """USGS critical mineral deposit locations — lithium, cobalt, titanium, rare earth, tungsten."""
+    cached = _check("usgs_mineral_deposits")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import USGSMineralClient
+    try:
+        client = USGSMineralClient()
+        result = await client.fetch_mineral_deposits()
+        result["source"] = "USGS Mineral Resources Data System (MRDS)"
+        result["url"] = "https://mrdata.usgs.gov/services/mrds"
+        result["note"] = (
+            "Georeferenced critical mineral deposit locations. "
+            "These minerals are essential inputs for advanced weapons platforms, "
+            "electronics, and propulsion systems."
+        )
+        _cache["usgs_mineral_deposits"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("USGS Mineral deposits fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/conflict-deaths")
+async def get_conflict_deaths():
+    """World Bank battle-related deaths indicator (VC.BTL.DETH) — 2020–2023."""
+    cached = _check("wb_conflict_deaths")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import WorldBankConflictClient
+    try:
+        client = WorldBankConflictClient()
+        records = await client.fetch_conflict_deaths()
+        result = {
+            "source": "World Bank — Battle-Related Deaths (UCDP/PRIO Armed Conflict dataset)",
+            "url": "https://api.worldbank.org/v2/country/all/indicator/VC.BTL.DETH",
+            "indicator": "VC.BTL.DETH",
+            "coverage": "2020–2023",
+            "note": "Countries with non-null values only. Tracks battle-related deaths including civilians.",
+            "total": len(records),
+            "records": records,
+        }
+        _cache["wb_conflict_deaths"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("World Bank Conflict Deaths fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/us-fiscal")
+async def get_us_fiscal():
+    """US Treasury daily debt-to-the-penny and 30-day trend."""
+    cached = _check("treasury_fiscal")
+    # TreasuryFiscalClient uses 1-hour TTL internally; use same here
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import TreasuryFiscalClient
+    try:
+        client = TreasuryFiscalClient()
+        result = await client.fetch_us_fiscal_data()
+        result.setdefault("source", "US Treasury Fiscal Data API")
+        result.setdefault("url", "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny")
+        result.setdefault("note", (
+            "US national debt level and trajectory are macro indicators of defence budget "
+            "sustainability and dollar-denominated arms financing capacity. Updated daily."
+        ))
+        _cache["treasury_fiscal"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("Treasury Fiscal fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/defence-research")
+async def get_defence_research():
+    """OpenAlex academic research trends on defence supply chains and military procurement."""
+    cached = _check("openalex_research")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import OpenAlexResearchClient
+    try:
+        client = OpenAlexResearchClient()
+        works = await client.fetch_defence_research()
+        result = {
+            "source": "OpenAlex Open Academic Research Database",
+            "url": "https://api.openalex.org/works",
+            "query": "defence supply chain military procurement",
+            "note": (
+                "10 most recent academic publications. Emerging research themes often "
+                "precede policy and market movements in the defence sector."
+            ),
+            "total": len(works),
+            "works": works,
+        }
+        _cache["openalex_research"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("OpenAlex research fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/connectivity")
+async def get_connectivity():
+    """RIPE Atlas internet connectivity probe status by country — active probe counts."""
+    cached = _check("ripe_atlas_connectivity")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import RIPEAtlasClient
+    try:
+        client = RIPEAtlasClient()
+        result = await client.fetch_connectivity_status()
+        result.setdefault("source", "RIPE Atlas (atlas.ripe.net)")
+        result.setdefault("url", "https://atlas.ripe.net/api/v2/probes/")
+        result.setdefault("note", (
+            "Active RIPE Atlas probe counts per country. Sudden drops indicate internet "
+            "shutdowns or major infrastructure disruptions — a grey-zone warfare indicator."
+        ))
+        _cache["ripe_atlas_connectivity"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("RIPE Atlas connectivity fetch failed: %s", e)
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -875,7 +1031,62 @@ async def list_enrichment_sources():
                 "status": "active",
                 "countries": ["RU", "CN", "US", "IR", "KP", "UA", "CA", "GB"],
             },
+            {
+                "name": "USASpending.gov — DoD Procurement Contracts",
+                "endpoint": "/enrichment/dod-contracts",
+                "indicators": 6,
+                "freshness": "Daily (contract award updates)",
+                "auth": "None required",
+                "status": "active",
+                "filter": "DoD awards 2025-2026, keywords: defense/military/weapons",
+            },
+            {
+                "name": "USGS Mineral Resources Data System (MRDS)",
+                "endpoint": "/enrichment/mineral-deposits",
+                "indicators": 5,
+                "freshness": "Annual (deposit registry updates)",
+                "auth": "None required",
+                "status": "active",
+                "minerals": ["Lithium", "Cobalt", "Titanium", "Rare Earth", "Tungsten"],
+            },
+            {
+                "name": "World Bank — Battle-Related Deaths (VC.BTL.DETH)",
+                "endpoint": "/enrichment/conflict-deaths",
+                "indicators": 4,
+                "freshness": "Annual (2020-2023)",
+                "auth": "None required",
+                "status": "active",
+                "source_dataset": "UCDP/PRIO Armed Conflict dataset",
+            },
+            {
+                "name": "US Treasury Fiscal Data — Debt to the Penny",
+                "endpoint": "/enrichment/us-fiscal",
+                "indicators": 3,
+                "freshness": "Daily (business days)",
+                "auth": "None required",
+                "status": "active",
+                "cache_ttl": "1 hour",
+            },
+            {
+                "name": "OpenAlex — Defence Research Trends",
+                "endpoint": "/enrichment/defence-research",
+                "indicators": 6,
+                "freshness": "Near real-time (academic publication index)",
+                "auth": "None required",
+                "status": "active",
+                "query": "defence supply chain military procurement",
+            },
+            {
+                "name": "RIPE Atlas — Internet Connectivity Probe Status",
+                "endpoint": "/enrichment/connectivity",
+                "indicators": 2,
+                "freshness": "Near real-time (24h cache)",
+                "auth": "None required",
+                "status": "active",
+                "countries": ["US", "RU", "UA", "CN", "IR", "KP", "CA", "GB", "DE", "IL"],
+                "classification": ">500=healthy, 100-500=moderate, <100=limited, 0=isolated",
+            },
         ],
-        "total_sources": 35,
-        "total_active": 35,
+        "total_sources": 41,
+        "total_active": 41,
     }

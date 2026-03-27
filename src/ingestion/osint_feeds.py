@@ -1,4 +1,4 @@
-"""OSINT Feed Connectors — 16 lightweight data sources.
+"""OSINT Feed Connectors — 22 lightweight data sources.
 
 Provides:
   - FREDCommodityClient      — FRED commodity prices (no API key)
@@ -17,6 +17,12 @@ Provides:
   - SpaceLaunchClient        — Space launch tracking (The Space Devs)
   - SubmarineCableClient     — TeleGeography submarine cable infrastructure
   - RIPEInternetClient       — RIPE Stat internet infrastructure monitoring
+  - USASpendingClient        — US DoD procurement contracts (USASpending.gov)
+  - USGSMineralClient        — USGS critical mineral deposit locations
+  - WorldBankConflictClient  — World Bank battle-related deaths indicator
+  - TreasuryFiscalClient     — US Treasury daily debt and fiscal data
+  - OpenAlexResearchClient   — OpenAlex defence research trends
+  - RIPEAtlasClient          — RIPE Atlas internet connectivity probe status
 """
 from __future__ import annotations
 
@@ -1608,4 +1614,564 @@ class RIPEInternetClient:
             "monitored_countries": _RIPE_COUNTRIES,
         }
         _cache_set(self._cache, "ripe_internet", result)
+        return result
+
+
+# ---------------------------------------------------------------------------
+# 17. USASpendingClient — US DoD Procurement Contracts
+# ---------------------------------------------------------------------------
+
+USA_SPENDING_URL = "https://api.usaspending.gov/api/v2/search/spending_by_award/"
+
+_USA_SPENDING_BODY: dict = {
+    "filters": {
+        "keywords": ["defense", "military", "weapons"],
+        "agencies": [
+            {
+                "type": "awarding",
+                "tier": "toptier",
+                "name": "Department of Defense",
+            }
+        ],
+        "time_period": [
+            {"start_date": "2025-01-01", "end_date": "2026-12-31"}
+        ],
+    },
+    "fields": [
+        "Award ID",
+        "Recipient Name",
+        "Award Amount",
+        "Description",
+        "Start Date",
+        "Award Type",
+    ],
+    "limit": 20,
+    "order": "desc",
+    "sort": "Award Amount",
+}
+
+
+class USASpendingClient:
+    """Fetches US DoD procurement contracts from USASpending.gov.
+
+    Provides real-time visibility into Department of Defense contract awards,
+    including recipient names, amounts, and contract descriptions. Key
+    indicator of defence industrial base activity and procurement priorities.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_dod_contracts(self) -> list[dict]:
+        """Return recent DoD contract awards ordered by amount (descending).
+
+        Returns
+        -------
+        list of {award_id, recipient, amount, description, date, type}
+        """
+        cached = _cache_get(self._cache, "dod_contracts")
+        if cached is not None:
+            return cached
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.post(
+                    USA_SPENDING_URL,
+                    json=_USA_SPENDING_BODY,
+                    headers={"Content-Type": "application/json"},
+                )
+                if resp.status_code != 200:
+                    logger.warning("USASpending returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            results_raw = data.get("results", [])
+            results: list[dict] = []
+
+            for item in results_raw:
+                amount_raw = item.get("Award Amount")
+                try:
+                    amount = float(amount_raw) if amount_raw is not None else None
+                except (TypeError, ValueError):
+                    amount = None
+
+                results.append({
+                    "award_id": item.get("Award ID") or "",
+                    "recipient": item.get("Recipient Name") or "",
+                    "amount": amount,
+                    "description": (item.get("Description") or "")[:300],
+                    "date": item.get("Start Date") or "",
+                    "type": item.get("Award Type") or "",
+                })
+
+            _cache_set(self._cache, "dod_contracts", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("USASpending DoD contracts fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 18. USGSMineralClient — Critical Mineral Deposit Locations
+# ---------------------------------------------------------------------------
+
+USGS_MRDS_URL = "https://mrdata.usgs.gov/services/mrds"
+
+_MINERAL_QUERIES: list[str] = [
+    "Lithium",
+    "Cobalt",
+    "Titanium",
+    "Rare Earth",
+    "Tungsten",
+]
+
+
+class USGSMineralClient:
+    """Fetches critical mineral deposit locations from USGS Mineral Resources Data System.
+
+    MRDS provides georeferenced data on mineral deposits worldwide.
+    Critical minerals are essential inputs for advanced weapons platforms,
+    electronics, and propulsion systems — a key supply chain risk indicator.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_mineral_deposits(self) -> dict:
+        """Return critical mineral deposit locations for defence-relevant minerals.
+
+        Returns
+        -------
+        dict {minerals: [{name, deposits: [{location, country, lat, lon, deposit_type}]}]}
+        """
+        cached = _cache_get(self._cache, "usgs_mineral_deposits")
+        if cached is not None:
+            return cached
+
+        minerals_result: list[dict] = []
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            for mineral in _MINERAL_QUERIES:
+                deposits: list[dict] = []
+                try:
+                    params = {
+                        "service": "WFS",
+                        "version": "1.1.0",
+                        "request": "GetFeature",
+                        "typeName": "mrds-high",
+                        "maxFeatures": "20",
+                        "CQL_FILTER": f"commod_desc LIKE '%{mineral}%'",
+                        "outputFormat": "application/json",
+                    }
+                    resp = await client.get(USGS_MRDS_URL, params=params)
+                    if resp.status_code != 200:
+                        logger.warning(
+                            "USGS MRDS returned HTTP %s for %s", resp.status_code, mineral
+                        )
+                        minerals_result.append({"name": mineral, "deposits": deposits})
+                        continue
+
+                    data = resp.json()
+                    features = data.get("features", [])
+
+                    for feat in features:
+                        props = feat.get("properties", {}) or {}
+                        geom = feat.get("geometry", {}) or {}
+                        coords = geom.get("coordinates") or []
+
+                        lat = lon = None
+                        if coords and len(coords) >= 2:
+                            lon = coords[0]
+                            lat = coords[1]
+
+                        deposits.append({
+                            "location": props.get("site_name") or props.get("dep_id") or "",
+                            "country": props.get("country") or "",
+                            "lat": round(lat, 4) if lat is not None else None,
+                            "lon": round(lon, 4) if lon is not None else None,
+                            "deposit_type": props.get("dep_type") or props.get("commod_desc") or mineral,
+                        })
+
+                except Exception as exc:
+                    logger.warning("USGS MRDS fetch failed for %s: %s", mineral, exc)
+
+                minerals_result.append({"name": mineral, "deposits": deposits})
+
+        result = {"minerals": minerals_result}
+        _cache_set(self._cache, "usgs_mineral_deposits", result)
+        return result
+
+
+# ---------------------------------------------------------------------------
+# 19. WorldBankConflictClient — Battle-Related Deaths Indicator
+# ---------------------------------------------------------------------------
+
+WORLDBANK_CONFLICT_URL = (
+    "https://api.worldbank.org/v2/country/all/indicator/VC.BTL.DETH"
+    "?format=json&per_page=100&date=2020:2023"
+)
+
+
+class WorldBankConflictClient:
+    """Fetches battle-related deaths indicator from the World Bank.
+
+    VC.BTL.DETH tracks battle-related deaths (including civilians killed
+    in war) from the UCDP/PRIO Armed Conflict dataset. A key indicator
+    of active conflict intensity by country.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_conflict_deaths(self) -> list[dict]:
+        """Return countries with non-null battle-related death counts (2020–2023).
+
+        Returns
+        -------
+        list of {country, iso3, year, deaths}
+        """
+        cached = _cache_get(self._cache, "wb_conflict_deaths")
+        if cached is not None:
+            return cached
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(WORLDBANK_CONFLICT_URL)
+                if resp.status_code != 200:
+                    logger.warning(
+                        "World Bank Conflict API returned HTTP %s", resp.status_code
+                    )
+                    return []
+
+                payload = resp.json()
+
+            # World Bank JSON wraps data in a 2-element list: [meta, data]
+            if not isinstance(payload, list) or len(payload) < 2:
+                logger.warning("World Bank Conflict: unexpected response structure")
+                return []
+
+            records = payload[1] or []
+            results: list[dict] = []
+
+            for rec in records:
+                if rec.get("value") is None:
+                    continue
+                try:
+                    deaths = int(float(rec["value"]))
+                except (TypeError, ValueError):
+                    continue
+
+                country_info = rec.get("country", {})
+                results.append({
+                    "country": country_info.get("value") or rec.get("countryiso3code") or "",
+                    "iso3": rec.get("countryiso3code") or "",
+                    "year": rec.get("date") or "",
+                    "deaths": deaths,
+                })
+
+            # Sort by deaths descending for relevance
+            results.sort(key=lambda x: x["deaths"], reverse=True)
+
+            _cache_set(self._cache, "wb_conflict_deaths", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("World Bank Conflict Deaths fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 20. TreasuryFiscalClient — US Treasury Daily Debt & Fiscal Data
+# ---------------------------------------------------------------------------
+
+TREASURY_DEBT_URL = (
+    "https://api.fiscaldata.treasury.gov/services/api/fiscal_service"
+    "/v2/accounting/od/debt_to_penny"
+    "?sort=-record_date&page[size]=10"
+)
+
+_TREASURY_FISCAL_TTL = 3600.0  # 1-hour cache (daily updates from Treasury)
+
+
+class TreasuryFiscalClient:
+    """Fetches US Treasury daily debt-to-the-penny and fiscal data.
+
+    The US national debt level and its trajectory are macro indicators
+    for defence budget sustainability and dollar-denominated arms financing
+    capacity. Treasury updates this data daily on business days.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    def _cache_get_fiscal(self, key: str) -> object | None:
+        """Override cache get with 1-hour TTL for Treasury data."""
+        entry = self._cache.get(key)
+        if entry and time.time() - entry[0] < _TREASURY_FISCAL_TTL:
+            return entry[1]
+        return None
+
+    async def fetch_us_fiscal_data(self) -> dict:
+        """Return US total public debt outstanding with 30-day trend.
+
+        Returns
+        -------
+        dict {total_debt_usd, date, trend_30d}
+        """
+        cached = self._cache_get_fiscal("treasury_fiscal")
+        if cached is not None:
+            return cached
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(TREASURY_DEBT_URL)
+                if resp.status_code != 200:
+                    logger.warning(
+                        "Treasury Fiscal API returned HTTP %s", resp.status_code
+                    )
+                    return {"error": f"HTTP {resp.status_code}"}
+
+                data = resp.json()
+
+            records = data.get("data", [])
+            if not records:
+                return {"error": "No data returned"}
+
+            def _parse_debt(row: dict) -> float | None:
+                for field in ("tot_pub_debt_out_amt", "debt_outstanding_amt", "amt"):
+                    val = row.get(field)
+                    if val is not None:
+                        try:
+                            return float(val)
+                        except (TypeError, ValueError):
+                            pass
+                return None
+
+            latest = records[0]
+            latest_debt = _parse_debt(latest)
+            latest_date = latest.get("record_date") or ""
+
+            # 30-day trend: compare first vs last record in the 10-record window
+            trend_30d: float | None = None
+            if len(records) >= 2:
+                oldest_debt = _parse_debt(records[-1])
+                if latest_debt is not None and oldest_debt is not None and oldest_debt > 0:
+                    trend_30d = round(latest_debt - oldest_debt, 2)
+
+            result = {
+                "total_debt_usd": latest_debt,
+                "date": latest_date,
+                "trend_30d": trend_30d,
+                "source": "US Treasury Fiscal Data API",
+                "unit": "USD",
+                "recent_records": [
+                    {
+                        "date": r.get("record_date", ""),
+                        "total_debt_usd": _parse_debt(r),
+                    }
+                    for r in records
+                ],
+            }
+
+            _cache_set(self._cache, "treasury_fiscal", result)
+            return result
+
+        except Exception as exc:
+            logger.warning("Treasury Fiscal fetch failed: %s", exc)
+            return {"error": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# 21. OpenAlexResearchClient — Defence Research Trends
+# ---------------------------------------------------------------------------
+
+OPENALEX_WORKS_URL = "https://api.openalex.org/works"
+
+_OPENALEX_PARAMS: dict = {
+    "search": "defence supply chain military procurement",
+    "per-page": "10",
+    "sort": "publication_date:desc",
+}
+
+
+class OpenAlexResearchClient:
+    """Fetches defence research trends from the OpenAlex academic database.
+
+    OpenAlex is a fully open catalogue of academic research. Tracking
+    recent publications on defence supply chains and military procurement
+    reveals emerging risk themes ahead of policy and market movements.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_defence_research(self) -> list[dict]:
+        """Return recent academic works on defence supply chain and procurement.
+
+        Returns
+        -------
+        list of {title, authors, publication_date, journal, cited_by_count, topics}
+        """
+        cached = _cache_get(self._cache, "openalex_research")
+        if cached is not None:
+            return cached
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(
+                    OPENALEX_WORKS_URL,
+                    params=_OPENALEX_PARAMS,
+                    headers={"User-Agent": "WeaponsTracker/1.0 (mailto:info@example.com)"},
+                )
+                if resp.status_code != 200:
+                    logger.warning("OpenAlex returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            works = data.get("results", [])
+            results: list[dict] = []
+
+            for work in works:
+                # Extract authors (up to 5)
+                authorships = work.get("authorships", [])
+                authors = [
+                    a.get("author", {}).get("display_name", "")
+                    for a in authorships[:5]
+                    if a.get("author")
+                ]
+
+                # Extract journal / source name
+                primary_location = work.get("primary_location") or {}
+                source = primary_location.get("source") or {}
+                journal = source.get("display_name") or ""
+
+                # Extract topics
+                topics = [
+                    t.get("display_name", "")
+                    for t in (work.get("topics") or [])[:5]
+                ]
+
+                results.append({
+                    "title": work.get("display_name") or work.get("title") or "",
+                    "authors": authors,
+                    "publication_date": work.get("publication_date") or "",
+                    "journal": journal,
+                    "cited_by_count": work.get("cited_by_count") or 0,
+                    "topics": topics,
+                    "doi": work.get("doi") or "",
+                    "open_access": (work.get("open_access") or {}).get("is_oa") or False,
+                })
+
+            _cache_set(self._cache, "openalex_research", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("OpenAlex research fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 22. RIPEAtlasClient — Internet Connectivity Monitoring via Probe Status
+# ---------------------------------------------------------------------------
+
+RIPE_ATLAS_PROBES_URL = "https://atlas.ripe.net/api/v2/probes/"
+
+# Countries to monitor for internet connectivity resilience
+_ATLAS_COUNTRIES: list[str] = ["US", "RU", "UA", "CN", "IR", "KP", "CA", "GB", "DE", "IL"]
+
+
+class RIPEAtlasClient:
+    """Fetches internet connectivity probe status from RIPE Atlas by country.
+
+    RIPE Atlas probes are a globally distributed measurement network.
+    Active probe counts per country are an indicator of internet
+    infrastructure health. Sudden drops in probe count can indicate
+    internet shutdowns or major infrastructure disruptions during conflicts.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    @staticmethod
+    def _classify_connectivity(count: int) -> str:
+        if count > 500:
+            return "healthy"
+        elif count >= 100:
+            return "moderate"
+        elif count > 0:
+            return "limited"
+        return "isolated"
+
+    async def fetch_connectivity_status(self) -> dict:
+        """Return active RIPE Atlas probe counts and connectivity status by country.
+
+        Returns
+        -------
+        dict {countries: {code: {active_probes, status}}}
+        """
+        cached = _cache_get(self._cache, "ripe_atlas_connectivity")
+        if cached is not None:
+            return cached
+
+        countries_data: dict[str, dict] = {}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            for cc in _ATLAS_COUNTRIES:
+                try:
+                    params = {
+                        "country_code": cc,
+                        "status": "1",    # 1 = Connected/active
+                        "page_size": "1", # We only need the count field
+                    }
+                    resp = await client.get(RIPE_ATLAS_PROBES_URL, params=params)
+                    if resp.status_code != 200:
+                        logger.warning(
+                            "RIPE Atlas returned HTTP %s for %s", resp.status_code, cc
+                        )
+                        countries_data[cc] = {"active_probes": 0, "status": "unknown"}
+                        continue
+
+                    data = resp.json()
+                    active_probes = data.get("count", 0)
+                    try:
+                        active_probes = int(active_probes)
+                    except (TypeError, ValueError):
+                        active_probes = 0
+
+                    countries_data[cc] = {
+                        "active_probes": active_probes,
+                        "status": self._classify_connectivity(active_probes),
+                    }
+
+                except Exception as exc:
+                    logger.warning("RIPE Atlas fetch failed for %s: %s", cc, exc)
+                    countries_data[cc] = {"active_probes": 0, "status": "unknown"}
+
+        result = {
+            "countries": countries_data,
+            "monitored_countries": _ATLAS_COUNTRIES,
+            "classification": {
+                "healthy": ">500 active probes",
+                "moderate": "100–500 active probes",
+                "limited": "<100 active probes",
+                "isolated": "0 active probes",
+            },
+            "source": "RIPE Atlas (atlas.ripe.net)",
+        }
+        _cache_set(self._cache, "ripe_atlas_connectivity", result)
         return result
