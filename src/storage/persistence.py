@@ -20,6 +20,7 @@ from src.storage.models import (
     DefenceSupplier, SupplierContract, SupplierRiskScore,
     SupplierSector, OwnershipType, ContractStatus, RiskDimension,
     RiskTaxonomyScore,
+    MitigationAction,
 )
 from src.ingestion.sipri_transfers import SIPRITransferRecord
 from src.ingestion.sipri_companies import DefenseCompanyRecord
@@ -634,6 +635,30 @@ class PersistenceService:
             existing.scored_at = datetime.utcnow()
         else:
             existing = RiskTaxonomyScore(subcategory_key=subcategory_key, **kwargs)
+            self.session.add(existing)
+        self.session.commit()
+        return existing
+
+    def upsert_mitigation_action(self, risk_source: str, risk_entity: str, risk_dimension: str, **kwargs) -> MitigationAction:
+        """Create or update a mitigation action. Skips resolved actions (creates new instead)."""
+        existing = self.session.query(MitigationAction).filter_by(
+            risk_source=risk_source,
+            risk_entity=risk_entity,
+            risk_dimension=risk_dimension,
+        ).filter(MitigationAction.status != "resolved").first()
+
+        if existing:
+            for key, val in kwargs.items():
+                if val is not None and hasattr(existing, key):
+                    setattr(existing, key, val)
+            existing.updated_at = datetime.utcnow()
+        else:
+            existing = MitigationAction(
+                risk_source=risk_source,
+                risk_entity=risk_entity,
+                risk_dimension=risk_dimension,
+                **kwargs,
+            )
             self.session.add(existing)
         self.session.commit()
         return existing

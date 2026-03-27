@@ -575,3 +575,29 @@ class RiskTaxonomyScore(Base):
 
     def __repr__(self):
         return f"<RiskTaxonomyScore(key='{self.subcategory_key}', score={self.score})>"
+
+
+class MitigationAction(Base):
+    """A Course of Action recommendation for a detected risk."""
+    __tablename__ = "mitigation_actions"
+
+    id = Column(Integer, primary_key=True)
+    risk_source = Column(String(50), nullable=False)
+    risk_entity = Column(String(500), nullable=False)
+    risk_dimension = Column(String(100), nullable=False)
+    risk_score = Column(Float, nullable=False)
+    coa_action = Column(Text, nullable=False)
+    coa_priority = Column(String(10), nullable=False)
+    coa_timeline = Column(String(50))
+    coa_responsible = Column(String(100))
+    status = Column(String(15), nullable=False, default="open")
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("ix_mitigation_status", "status"),
+    )
+
+    def __repr__(self):
+        return f"<MitigationAction(entity='{self.risk_entity}', priority='{self.coa_priority}', status='{self.status}')>"
