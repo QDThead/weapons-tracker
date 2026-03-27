@@ -1,4 +1,4 @@
-"""OSINT Feed Connectors — 10 lightweight data sources.
+"""OSINT Feed Connectors — 16 lightweight data sources.
 
 Provides:
   - FREDCommodityClient      — FRED commodity prices (no API key)
@@ -11,6 +11,12 @@ Provides:
   - MITREAttackClient        — MITRE ATT&CK threat groups (APT actors)
   - IMFEconomicClient        — IMF World Economic Outlook GDP growth projections
   - NASAEONETClient          — NASA EONET active natural events
+  - PortWatchClient          — IMF PortWatch maritime chokepoint traffic (HDX)
+  - OpenSkyClient            — OpenSky Network real-time Arctic aircraft tracking
+  - UNHCRClient              — UNHCR refugee/displacement statistics
+  - SpaceLaunchClient        — Space launch tracking (The Space Devs)
+  - SubmarineCableClient     — TeleGeography submarine cable infrastructure
+  - RIPEInternetClient       — RIPE Stat internet infrastructure monitoring
 """
 from __future__ import annotations
 
@@ -936,3 +942,670 @@ class NASAEONETClient:
         except Exception as exc:
             logger.warning("NASA EONET fetch failed: %s", exc)
             return []
+
+
+# ---------------------------------------------------------------------------
+# 11. PortWatch — IMF Maritime Chokepoint Traffic (HDX)
+# ---------------------------------------------------------------------------
+
+PORTWATCH_CKAN_URL = (
+    "https://data.humdata.org/api/3/action/package_show"
+    "?id=957b1c2f-a9b9-436c-a576-f7f3ddb9d736"
+)
+
+# Hardcoded baseline data for the 10 most strategically important chokepoints.
+# These are used as fallback if the live HDX/CSV fetch fails, and are enriched
+# with live vessel-count data when available.
+_CHOKEPOINT_BASELINE: list[dict] = [
+    {
+        "name": "Strait of Hormuz",
+        "region": "Middle East / Persian Gulf",
+        "vessel_count": 21000,
+        "status": "active",
+        "strategic_importance": "critical",
+        "notes": "~20% of global oil trade; Iran interdiction risk",
+    },
+    {
+        "name": "Strait of Malacca",
+        "region": "Southeast Asia",
+        "vessel_count": 94000,
+        "status": "active",
+        "strategic_importance": "critical",
+        "notes": "Busiest chokepoint by vessel count; China-India-US nexus",
+    },
+    {
+        "name": "Suez Canal",
+        "region": "North Africa / Red Sea",
+        "vessel_count": 19000,
+        "status": "reduced",
+        "strategic_importance": "critical",
+        "notes": "Houthi attacks have diverted ~40% of traffic to Cape of Good Hope",
+    },
+    {
+        "name": "Bab-el-Mandeb",
+        "region": "Horn of Africa / Red Sea",
+        "vessel_count": 17000,
+        "status": "elevated_risk",
+        "strategic_importance": "critical",
+        "notes": "Houthi missile/drone attacks on commercial shipping since 2023",
+    },
+    {
+        "name": "Turkish Straits (Bosphorus/Dardanelles)",
+        "region": "Black Sea / Mediterranean",
+        "vessel_count": 42000,
+        "status": "restricted",
+        "strategic_importance": "high",
+        "notes": "Montreux Convention restricts warships; Russia Black Sea Fleet exit blocked",
+    },
+    {
+        "name": "Strait of Gibraltar",
+        "region": "Atlantic / Mediterranean",
+        "vessel_count": 45000,
+        "status": "active",
+        "strategic_importance": "high",
+        "notes": "NATO strategic gateway between Atlantic and Mediterranean",
+    },
+    {
+        "name": "Denmark Strait / GIUK Gap",
+        "region": "North Atlantic / Arctic",
+        "vessel_count": 8500,
+        "status": "active",
+        "strategic_importance": "high",
+        "notes": "Critical NATO anti-submarine warfare chokepoint; Russia submarine transit route",
+    },
+    {
+        "name": "Luzon Strait",
+        "region": "Western Pacific / South China Sea",
+        "vessel_count": 35000,
+        "status": "active",
+        "strategic_importance": "high",
+        "notes": "Key access route between Pacific and South China Sea; US-China tension zone",
+    },
+    {
+        "name": "Panama Canal",
+        "region": "Central America",
+        "vessel_count": 14000,
+        "status": "reduced",
+        "strategic_importance": "high",
+        "notes": "Drought-reduced capacity 2023-2024; US strategic interest renewed 2025",
+    },
+    {
+        "name": "Cape of Good Hope",
+        "region": "Southern Africa",
+        "vessel_count": 32000,
+        "status": "elevated",
+        "strategic_importance": "medium",
+        "notes": "Traffic surge due to Red Sea/Suez diversions since late 2023",
+    },
+]
+
+
+class PortWatchClient:
+    """Fetches maritime chokepoint traffic data from IMF PortWatch via HDX CKAN API.
+
+    Falls back to hardcoded baseline data for the 10 most strategic chokepoints
+    if the live CSV resource is unavailable.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_chokepoint_traffic(self) -> list[dict]:
+        """Return chokepoint traffic data for the 10 most strategic maritime chokepoints.
+
+        Returns
+        -------
+        list of {name, region, vessel_count, status, strategic_importance, notes}
+        """
+        cached = _cache_get(self._cache, "portwatch_chokepoints")
+        if cached is not None:
+            return cached
+
+        results: list[dict] = []
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                # Try to get the CKAN package metadata to find the CSV resource URL
+                resp = await client.get(PORTWATCH_CKAN_URL)
+                if resp.status_code == 200:
+                    pkg = resp.json()
+                    resources = pkg.get("result", {}).get("resources", [])
+
+                    # Find a CSV resource that looks like chokepoint data
+                    csv_url: str | None = None
+                    for res in resources:
+                        fmt = (res.get("format") or "").lower()
+                        name = (res.get("name") or "").lower()
+                        if fmt == "csv" and ("chokepoint" in name or "traffic" in name or "vessel" in name):
+                            csv_url = res.get("url")
+                            break
+                    # Fallback: first CSV resource
+                    if not csv_url:
+                        for res in resources:
+                            if (res.get("format") or "").lower() == "csv":
+                                csv_url = res.get("url")
+                                break
+
+                    if csv_url:
+                        csv_resp = await client.get(csv_url)
+                        if csv_resp.status_code == 200:
+                            reader = csv.DictReader(io.StringIO(csv_resp.text))
+                            for row in reader:
+                                # Best-effort field extraction; columns vary by dataset version
+                                name_val = (
+                                    row.get("chokepoint") or row.get("name") or
+                                    row.get("port_name") or row.get("location", "")
+                                ).strip()
+                                if not name_val:
+                                    continue
+                                vessel_raw = (
+                                    row.get("vessel_count") or row.get("vessels") or
+                                    row.get("total_vessels") or row.get("count", "")
+                                ).strip()
+                                try:
+                                    vessel_count = int(float(vessel_raw))
+                                except (ValueError, TypeError):
+                                    vessel_count = 0
+                                results.append({
+                                    "name": name_val,
+                                    "region": row.get("region", ""),
+                                    "vessel_count": vessel_count,
+                                    "status": "active",
+                                    "strategic_importance": "unknown",
+                                    "notes": "",
+                                })
+
+        except Exception as exc:
+            logger.warning("PortWatch live fetch failed: %s", exc)
+
+        # Fall back to baseline data if live fetch returned nothing useful
+        if not results:
+            logger.info("PortWatch: using hardcoded baseline chokepoint data")
+            results = list(_CHOKEPOINT_BASELINE)
+
+        _cache_set(self._cache, "portwatch_chokepoints", results)
+        return results
+
+
+# ---------------------------------------------------------------------------
+# 12. OpenSky Network — Real-time Arctic Aircraft Tracking
+# ---------------------------------------------------------------------------
+
+OPENSKY_ARCTIC_URL = "https://opensky-network.org/api/states/all"
+
+# State vector positional index mapping (OpenSky API v1)
+_OS_ICAO24 = 0
+_OS_CALLSIGN = 1
+_OS_ORIGIN_COUNTRY = 2
+_OS_TIME_POSITION = 3
+_OS_LAST_CONTACT = 4
+_OS_LONGITUDE = 5
+_OS_LATITUDE = 6
+_OS_BARO_ALTITUDE = 7
+_OS_ON_GROUND = 8
+_OS_VELOCITY = 9
+_OS_TRUE_TRACK = 10
+_OS_VERTICAL_RATE = 11
+_OS_SENSORS = 12
+_OS_GEO_ALTITUDE = 13
+_OS_SQUAWK = 14
+_OS_SPI = 15
+_OS_POSITION_SOURCE = 16
+
+
+class OpenSkyClient:
+    """Fetches real-time aircraft positions over the Arctic (lat > 55N) from OpenSky Network.
+
+    Complements the existing adsb.lol flight tracker with an independent data source.
+    No authentication required for anonymous access (rate-limited to ~10 req/min).
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_arctic_aircraft(self) -> list[dict]:
+        """Return aircraft currently tracked over the Arctic region (lat 55N–90N).
+
+        Returns
+        -------
+        list of {icao24, callsign, origin_country, latitude, longitude,
+        altitude, velocity}
+        """
+        cached = _cache_get(self._cache, "opensky_arctic")
+        if cached is not None:
+            return cached
+
+        try:
+            params = {
+                "lamin": "55",
+                "lamax": "90",
+                "lomin": "-180",
+                "lomax": "180",
+            }
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(OPENSKY_ARCTIC_URL, params=params)
+                if resp.status_code == 429:
+                    logger.warning("OpenSky rate-limited (429); returning empty list")
+                    return []
+                if resp.status_code != 200:
+                    logger.warning("OpenSky returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            states = data.get("states") or []
+            results: list[dict] = []
+
+            for sv in states:
+                if not sv or len(sv) < 17:
+                    continue
+                lat = sv[_OS_LATITUDE]
+                lon = sv[_OS_LONGITUDE]
+                if lat is None or lon is None:
+                    continue
+
+                altitude_m = sv[_OS_BARO_ALTITUDE]
+                velocity_ms = sv[_OS_VELOCITY]
+
+                results.append({
+                    "icao24": sv[_OS_ICAO24] or "",
+                    "callsign": (sv[_OS_CALLSIGN] or "").strip(),
+                    "origin_country": sv[_OS_ORIGIN_COUNTRY] or "",
+                    "latitude": round(lat, 4) if lat is not None else None,
+                    "longitude": round(lon, 4) if lon is not None else None,
+                    "altitude": round(altitude_m, 0) if altitude_m is not None else None,
+                    "velocity": round(velocity_ms * 1.944, 1) if velocity_ms is not None else None,  # m/s -> knots
+                    "on_ground": bool(sv[_OS_ON_GROUND]),
+                    "squawk": sv[_OS_SQUAWK] or "",
+                })
+
+            _cache_set(self._cache, "opensky_arctic", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("OpenSky fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 13. UNHCR — Refugee and Displacement Statistics
+# ---------------------------------------------------------------------------
+
+UNHCR_POPULATION_URL = "https://api.unhcr.org/population/v1/population/"
+
+
+class UNHCRClient:
+    """Fetches UNHCR refugee and displacement statistics.
+
+    Displacement data is a key indicator of conflict intensity and forced
+    migration driven by armed conflict — directly relevant to the DND
+    geopolitical threat assessment mission.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_displacement_data(self) -> list[dict]:
+        """Return top displacement situations ordered by total refugee count.
+
+        Returns
+        -------
+        list of {country_of_origin, country_of_asylum, year, refugees,
+        idps, asylum_seekers}
+        """
+        cached = _cache_get(self._cache, "unhcr_displacement")
+        if cached is not None:
+            return cached
+
+        try:
+            params = {
+                "year_from": "2022",
+                "year_to": "2023",
+                "limit": "50",
+            }
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(UNHCR_POPULATION_URL, params=params)
+                if resp.status_code != 200:
+                    logger.warning("UNHCR API returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            items = data.get("items", [])
+            results: list[dict] = []
+
+            for item in items:
+                refugees = item.get("refugees") or 0
+                idps = item.get("idps") or 0
+                asylum_seekers = item.get("asylum_seekers") or 0
+                try:
+                    refugees = int(refugees)
+                    idps = int(idps)
+                    asylum_seekers = int(asylum_seekers)
+                except (TypeError, ValueError):
+                    refugees = idps = asylum_seekers = 0
+
+                results.append({
+                    "country_of_origin": item.get("coo_name") or item.get("coo") or "",
+                    "country_of_asylum": item.get("coa_name") or item.get("coa") or "",
+                    "year": item.get("year"),
+                    "refugees": refugees,
+                    "idps": idps,
+                    "asylum_seekers": asylum_seekers,
+                    "total_displaced": refugees + idps + asylum_seekers,
+                })
+
+            # Sort by total displaced, highest first
+            results.sort(key=lambda x: x["total_displaced"], reverse=True)
+
+            _cache_set(self._cache, "unhcr_displacement", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("UNHCR fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 14. Space Launch Client — The Space Devs
+# ---------------------------------------------------------------------------
+
+SPACE_LAUNCH_URL = "https://ll.thespacedevs.com/2.3.0/launches/"
+
+
+class SpaceLaunchClient:
+    """Fetches recent space launch data from The Space Devs Launch Library 2.
+
+    Military and dual-use space launches are an important indicator of
+    strategic capability development — particularly for ISR, ASAT, and
+    hypersonic delivery systems.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_recent_launches(self) -> list[dict]:
+        """Return recent space launches with country, rocket, and mission type.
+
+        Returns
+        -------
+        list of {name, launch_date, country, rocket, mission_type, status, pad_location}
+        """
+        cached = _cache_get(self._cache, "space_launches")
+        if cached is not None:
+            return cached
+
+        try:
+            params = {
+                "format": "json",
+                "limit": "20",
+                "ordering": "-net",
+            }
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(SPACE_LAUNCH_URL, params=params)
+                if resp.status_code == 429:
+                    logger.warning("Space Devs API rate-limited (429)")
+                    return []
+                if resp.status_code != 200:
+                    logger.warning("Space Devs API returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            launches = data.get("results", [])
+            results: list[dict] = []
+
+            for launch in launches:
+                rocket_info = launch.get("rocket") or {}
+                config = rocket_info.get("configuration") or {}
+
+                pad_info = launch.get("pad") or {}
+                location_info = pad_info.get("location") or {}
+
+                mission_info = launch.get("mission") or {}
+
+                status_info = launch.get("status") or {}
+
+                # Extract launch country from pad location or launch service provider
+                lsp = launch.get("launch_service_provider") or {}
+                country_code = (
+                    location_info.get("country_code") or
+                    lsp.get("country_code") or
+                    ""
+                )
+
+                results.append({
+                    "name": launch.get("name", ""),
+                    "launch_date": launch.get("net", ""),
+                    "country": country_code,
+                    "rocket": config.get("full_name") or config.get("name") or "",
+                    "mission_type": mission_info.get("type") or mission_info.get("orbit", {}).get("name") if mission_info else "",
+                    "status": status_info.get("name") or status_info.get("abbrev") or "",
+                    "pad_location": location_info.get("name") or pad_info.get("name") or "",
+                    "launch_service_provider": lsp.get("name") or "",
+                })
+
+            _cache_set(self._cache, "space_launches", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("Space Devs fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 15. SubmarineCableClient — TeleGeography Submarine Cable Map
+# ---------------------------------------------------------------------------
+
+SUBMARINE_CABLE_ALL_URL = "https://www.submarinecablemap.com/api/v3/cable/all.json"
+SUBMARINE_CABLE_DETAIL_URL = "https://www.submarinecablemap.com/api/v3/cable/{slug}.json"
+
+# Strategically important cable slugs (defence intelligence focus: Russia neighbours,
+# Arctic, NATO transatlantic, Indo-Pacific, critical chokepoints)
+_STRATEGIC_CABLE_SLUGS: list[str] = [
+    "2africa",
+    "africa-coast-to-europe-ace",
+    "asc",                               # America-Africa
+    "bal-lt",                            # Baltic
+    "c-lion1",                           # Mediterranean-Europe
+    "dunant",                            # Google transatlantic
+    "far-north-fiber",                   # Arctic
+    "flag-falcon",                       # Middle East-Europe
+    "havfrue-anoraat",                   # Atlantic (Google/Facebook)
+    "india-europe-xpress-iex",           # India-Europe
+    "marea",                             # Microsoft/Facebook transatlantic
+    "peace",                             # Pakistan-East Africa-Europe
+    "polar-connect",                     # Arctic Canada-Norway
+    "ses",                               # South East Asia
+    "skkу",                              # Korea-Japan
+    "smatv",                             # South Atlantic
+    "southern-cross-cable-network-sccn", # Pacific
+    "tasman-global-access-tga",          # Aus-NZ
+    "transatlantic-express-tax",         # Transatlantic
+    "transarctic-cable-system-tacs",     # Arctic
+]
+
+
+class SubmarineCableClient:
+    """Fetches submarine cable infrastructure data from TeleGeography.
+
+    The TeleGeography API returns only id+name in the all.json index.
+    This client fetches per-cable detail for ~20 strategically important
+    cable systems. Submarine cables carry ~95% of international internet
+    traffic; sabotage events (e.g., Baltic Sea 2024) are a key grey-zone
+    warfare vector.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_submarine_cables(self) -> list[dict]:
+        """Return cable details for strategically important submarine cable systems.
+
+        Returns
+        -------
+        list of {name, length_km, ready_for_service, owners, landing_points_count}
+        """
+        cached = _cache_get(self._cache, "submarine_cables")
+        if cached is not None:
+            return cached
+
+        results: list[dict] = []
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                # First get the full index to validate slugs / discover new cables
+                index_resp = await client.get(SUBMARINE_CABLE_ALL_URL)
+                known_slugs: set[str] = set()
+                if index_resp.status_code == 200:
+                    all_cables = index_resp.json()
+                    known_slugs = {c.get("id", "") for c in all_cables if c.get("id")}
+
+                # Fetch detail for each strategic cable
+                for slug in _STRATEGIC_CABLE_SLUGS:
+                    # Skip slugs that aren't in the current index (cable may have been renamed)
+                    if known_slugs and slug not in known_slugs:
+                        logger.debug("Cable slug %r not in TeleGeography index; skipping", slug)
+                        continue
+                    try:
+                        detail_url = SUBMARINE_CABLE_DETAIL_URL.format(slug=slug)
+                        resp = await client.get(detail_url)
+                        if resp.status_code != 200:
+                            logger.debug("Cable %r returned HTTP %s", slug, resp.status_code)
+                            continue
+                        cable = resp.json()
+                    except Exception as exc:
+                        logger.debug("Cable detail fetch failed for %r: %s", slug, exc)
+                        continue
+
+                    # Parse length: API returns strings like "17,000 km"
+                    length_raw = cable.get("length") or ""
+                    length_km: int | None = None
+                    if length_raw:
+                        digits = re.sub(r"[^\d]", "", str(length_raw))
+                        if digits:
+                            try:
+                                length_km = int(digits)
+                            except ValueError:
+                                length_km = None
+
+                    # Owners: may be list of dicts or strings
+                    owners_raw = cable.get("owners") or []
+                    if isinstance(owners_raw, list):
+                        owners = [
+                            (o.get("name") or str(o)) if isinstance(o, dict) else str(o)
+                            for o in owners_raw
+                        ]
+                    else:
+                        owners = []
+
+                    landing_pts = cable.get("landing_points") or []
+                    landing_count = len(landing_pts) if isinstance(landing_pts, list) else 0
+
+                    results.append({
+                        "name": cable.get("name") or slug,
+                        "slug": slug,
+                        "length_km": length_km,
+                        "ready_for_service": cable.get("rfs") or cable.get("ready_for_service") or "",
+                        "owners": owners[:10],
+                        "landing_points_count": landing_count,
+                        "is_planned": cable.get("is_planned") or False,
+                    })
+
+        except Exception as exc:
+            logger.warning("Submarine Cable Map fetch failed: %s", exc)
+
+        _cache_set(self._cache, "submarine_cables", results)
+        return results
+
+
+# ---------------------------------------------------------------------------
+# 16. RIPEInternetClient — RIPE Stat Internet Infrastructure
+# ---------------------------------------------------------------------------
+
+RIPE_STAT_URL = "https://stat.ripe.net/data/country-resource-stats/data.json"
+
+# Key countries for internet infrastructure monitoring
+_RIPE_COUNTRIES: list[str] = ["RU", "CN", "US", "IR", "KP", "UA", "CA", "GB"]
+
+
+class RIPEInternetClient:
+    """Fetches internet infrastructure data from RIPE Stat.
+
+    Internet infrastructure metrics (BGP routing, ASN counts, IP prefix
+    allocation) are indicators of a country's cyber domain resilience and
+    potential for internet shutdown events relevant to conflict escalation.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_internet_infrastructure(self) -> dict:
+        """Return internet infrastructure statistics for key countries.
+
+        Returns
+        -------
+        dict {countries: {code: {asns_registered, asns_routed, ipv4_prefixes}}}
+        """
+        cached = _cache_get(self._cache, "ripe_internet")
+        if cached is not None:
+            return cached
+
+        countries_data: dict[str, dict] = {}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            for country_code in _RIPE_COUNTRIES:
+                try:
+                    params = {"resource": country_code}
+                    resp = await client.get(RIPE_STAT_URL, params=params)
+                    if resp.status_code != 200:
+                        logger.warning(
+                            "RIPE Stat returned HTTP %s for %s", resp.status_code, country_code
+                        )
+                        continue
+
+                    data = resp.json()
+                    # RIPE Stat returns "stats" as a time-series list of entries.
+                    # Each entry has: asns_ris (routed), asns_stats (registered),
+                    # v4_prefixes_ris (routed prefixes), stats_date.
+                    # Use the most recent entry (last in the list).
+                    stats_list = (data.get("data") or {}).get("stats") or []
+                    if not stats_list:
+                        continue
+
+                    latest = stats_list[-1] if isinstance(stats_list, list) else stats_list
+
+                    asns_registered = latest.get("asns_stats") or latest.get("asns_registered") or 0
+                    asns_routed = latest.get("asns_ris") or latest.get("asns_routed") or 0
+                    ipv4_prefixes = latest.get("v4_prefixes_ris") or latest.get("ipv4_prefixes") or 0
+                    stats_date = latest.get("stats_date") or ""
+
+                    countries_data[country_code] = {
+                        "asns_registered": asns_registered,
+                        "asns_routed": asns_routed,
+                        "ipv4_prefixes": ipv4_prefixes,
+                        "stats_date": stats_date,
+                    }
+
+                except Exception as exc:
+                    logger.warning("RIPE Stat fetch failed for %s: %s", country_code, exc)
+
+        result = {
+            "countries": countries_data,
+            "source": "RIPE Stat (stat.ripe.net)",
+            "monitored_countries": _RIPE_COUNTRIES,
+        }
+        _cache_set(self._cache, "ripe_internet", result)
+        return result

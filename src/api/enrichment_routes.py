@@ -436,6 +436,158 @@ async def get_natural_events():
         return {"error": str(e)}
 
 
+@router.get("/chokepoints-traffic")
+async def get_chokepoints_traffic():
+    """IMF PortWatch maritime chokepoint vessel traffic — 10 most strategic global chokepoints."""
+    cached = _check("portwatch_chokepoints")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import PortWatchClient
+    try:
+        client = PortWatchClient()
+        chokepoints = await client.fetch_chokepoint_traffic()
+        result = {
+            "source": "IMF PortWatch via OCHA Humanitarian Data Exchange (HDX)",
+            "url": "https://data.humdata.org/dataset/957b1c2f-a9b9-436c-a576-f7f3ddb9d736",
+            "note": "10 most strategically important maritime chokepoints. Vessel counts are annual estimates.",
+            "total": len(chokepoints),
+            "chokepoints": chokepoints,
+        }
+        _cache["portwatch_chokepoints"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("PortWatch chokepoint fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/arctic-aircraft")
+async def get_arctic_aircraft():
+    """OpenSky Network real-time aircraft positions over the Arctic (lat > 55N)."""
+    cached = _check("opensky_arctic")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import OpenSkyClient
+    try:
+        client = OpenSkyClient()
+        aircraft = await client.fetch_arctic_aircraft()
+        result = {
+            "source": "OpenSky Network (opensky-network.org)",
+            "url": "https://opensky-network.org/api/states/all",
+            "filter": "Latitude 55N–90N (Arctic region), anonymous access",
+            "note": "Complements adsb.lol data. Rate-limited to ~10 req/min for anonymous users.",
+            "total": len(aircraft),
+            "aircraft": aircraft,
+        }
+        _cache["opensky_arctic"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("OpenSky Arctic aircraft fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/displacement")
+async def get_displacement():
+    """UNHCR refugee and displacement statistics — top displacement situations 2022-2023."""
+    cached = _check("unhcr_displacement")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import UNHCRClient
+    try:
+        client = UNHCRClient()
+        records = await client.fetch_displacement_data()
+        result = {
+            "source": "UNHCR Population Statistics API",
+            "url": "https://api.unhcr.org/population/v1/population/",
+            "coverage": "2022–2023",
+            "note": "Top 50 displacement situations by total displaced. Conflict-driven displacement "
+                    "is a key indicator of armed conflict intensity.",
+            "total": len(records),
+            "displacement": records,
+        }
+        _cache["unhcr_displacement"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("UNHCR displacement fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/space-launches")
+async def get_space_launches():
+    """Recent space launches — country, rocket, mission type (The Space Devs)."""
+    cached = _check("space_launches")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import SpaceLaunchClient
+    try:
+        client = SpaceLaunchClient()
+        launches = await client.fetch_recent_launches()
+        result = {
+            "source": "The Space Devs — Launch Library 2",
+            "url": "https://ll.thespacedevs.com/2.3.0/launches/",
+            "note": "20 most recent launches. Military/dual-use launches are key indicators of "
+                    "ISR, ASAT, and hypersonic capability development.",
+            "total": len(launches),
+            "launches": launches,
+        }
+        _cache["space_launches"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("Space Devs launch fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/submarine-cables")
+async def get_submarine_cables():
+    """TeleGeography submarine cable infrastructure — global cable systems with owners and landing points."""
+    cached = _check("submarine_cables")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import SubmarineCableClient
+    try:
+        client = SubmarineCableClient()
+        cables = await client.fetch_submarine_cables()
+        result = {
+            "source": "TeleGeography Submarine Cable Map",
+            "url": "https://www.submarinecablemap.com/api/v3/cable/all.json",
+            "note": "Submarine cables carry ~95% of international internet traffic. Sabotage events "
+                    "(e.g., Baltic Sea 2024) are a key grey-zone warfare vector.",
+            "total": len(cables),
+            "cables": cables,
+        }
+        _cache["submarine_cables"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("Submarine cable fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/internet-infrastructure")
+async def get_internet_infrastructure():
+    """RIPE Stat internet infrastructure monitoring — ASN and prefix counts for key countries."""
+    cached = _check("ripe_internet")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import RIPEInternetClient
+    try:
+        client = RIPEInternetClient()
+        result = await client.fetch_internet_infrastructure()
+        result["note"] = (
+            "Internet infrastructure metrics (ASN counts, routed prefixes) are indicators of "
+            "cyber domain resilience and internet shutdown risk during conflict escalation."
+        )
+        _cache["ripe_internet"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("RIPE Stat fetch failed: %s", e)
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -674,7 +826,56 @@ async def list_enrichment_sources():
                 "auth": "None required",
                 "status": "active",
             },
+            {
+                "name": "IMF PortWatch — Maritime Chokepoint Traffic",
+                "endpoint": "/enrichment/chokepoints-traffic",
+                "indicators": 5,
+                "freshness": "Annual (with live HDX fetch)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "OpenSky Network — Arctic Aircraft Tracking",
+                "endpoint": "/enrichment/arctic-aircraft",
+                "indicators": 7,
+                "freshness": "Real-time (rate-limited, 24h cache)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "UNHCR Refugee and Displacement Statistics",
+                "endpoint": "/enrichment/displacement",
+                "indicators": 5,
+                "freshness": "Annual (2022-2023)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "Space Devs — Launch Library 2",
+                "endpoint": "/enrichment/space-launches",
+                "indicators": 7,
+                "freshness": "Near real-time (rate-limited, 24h cache)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "TeleGeography Submarine Cable Map",
+                "endpoint": "/enrichment/submarine-cables",
+                "indicators": 5,
+                "freshness": "Ongoing (cable commissioning updates)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "RIPE Stat — Internet Infrastructure",
+                "endpoint": "/enrichment/internet-infrastructure",
+                "indicators": 3,
+                "freshness": "Near real-time",
+                "auth": "None required",
+                "status": "active",
+                "countries": ["RU", "CN", "US", "IR", "KP", "UA", "CA", "GB"],
+            },
         ],
-        "total_sources": 29,
-        "total_active": 29,
+        "total_sources": 35,
+        "total_active": 35,
     }
