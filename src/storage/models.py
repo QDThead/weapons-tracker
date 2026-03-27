@@ -601,3 +601,24 @@ class MitigationAction(Base):
 
     def __repr__(self):
         return f"<MitigationAction(entity='{self.risk_entity}', priority='{self.coa_priority}', status='{self.status}')>"
+
+
+class AuditLog(Base):
+    """Audit trail for security compliance — logs all user actions."""
+    __tablename__ = "audit_log"
+
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    user = Column(String(100), nullable=False)
+    action = Column(String(50), nullable=False)
+    resource = Column(String(200), nullable=False)
+    detail = Column(Text)
+    ip_address = Column(String(50))
+
+    __table_args__ = (
+        Index("ix_audit_timestamp", "timestamp"),
+        Index("ix_audit_user", "user"),
+    )
+
+    def __repr__(self):
+        return f"<AuditLog(user='{self.user}', action='{self.action}', resource='{self.resource}')>"
