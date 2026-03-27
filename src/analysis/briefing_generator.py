@@ -20,6 +20,7 @@ from src.storage.models import (
     RiskTaxonomyScore, MitigationAction, SupplyChainAlert,
     SupplierSector, ContractStatus,
 )
+from src.analysis.confidence import compute_confidence
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +191,9 @@ class BriefingGenerator:
             avg = round(sum(r.score for r in rows) / len(rows), 1)
             worst = max(rows, key=lambda r: r.score)
             level = "RED" if avg >= 70 else "AMBER" if avg >= 40 else "GREEN"
-            tax_rows.append([cat["short_name"], str(avg), level, cat.get("data_source", "seeded"), worst.subcategory_name[:35], str(round(worst.score, 1))])
+            conf = compute_confidence(cat.get("data_source"), "taxonomy", cat_id, self.session)
+            conf_letter = _safe_text({"high": "H", "medium": "M", "low": "L"}.get(conf["level"], "L"))
+            tax_rows.append([cat["short_name"], str(avg), level, cat.get("data_source", "seeded"), worst.subcategory_name[:35], str(round(worst.score, 1)), conf_letter])
 
         tax_rows.sort(key=lambda r: float(r[1]), reverse=True)
         global_score = round(sum(float(r[1]) for r in tax_rows) / len(tax_rows), 1) if tax_rows else 0
@@ -200,9 +203,9 @@ class BriefingGenerator:
         pdf.cell(0, 4, f"13 categories, 121 sub-categories. Global composite: {global_score}", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(3)
         pdf.data_table(
-            ["Category", "Score", "Level", "Source", "Worst Sub-Category", "Score"],
+            ["Category", "Score", "Level", "Source", "Worst Sub-Category", "Score", "Conf."],
             tax_rows,
-            [28, 14, 14, 16, 70, 14],
+            [28, 14, 10, 14, 16, 60, 14],
         )
 
         # ── 3. PRIORITY ACTIONS ──
@@ -224,6 +227,8 @@ class BriefingGenerator:
 
         coa_rows = []
         for a in coa_actions[:20]:
+            conf = compute_confidence(None, "supplier", a.risk_dimension or "", self.session)
+            conf_letter = _safe_text({"high": "H", "medium": "M", "low": "L"}.get(conf["level"], "L"))
             coa_rows.append([
                 a.coa_priority.upper(),
                 a.risk_entity[:25],
@@ -231,11 +236,12 @@ class BriefingGenerator:
                 a.coa_action[:55],
                 a.coa_timeline or "-",
                 a.coa_responsible or "-",
+                conf_letter,
             ])
         pdf.data_table(
-            ["Priority", "Risk Entity", "Dimension", "Recommended Action", "Timeline", "Owner"],
+            ["Priority", "Risk Entity", "Dimension", "Recommended Action", "Timeline", "Owner", "Conf."],
             coa_rows,
-            [16, 32, 22, 60, 16, 20],
+            [14, 28, 20, 50, 10, 14, 18],
         )
 
         # ── 4. SUPPLIER EXPOSURE ──
@@ -268,18 +274,22 @@ class BriefingGenerator:
             total_val = self.session.query(func.sum(SupplierContract.contract_value_cad)).filter_by(supplier_id=s.id).scalar() or 0
             score = s.risk_score_composite or 0
             val_str = f"${total_val / 1e9:.1f}B" if total_val >= 1e9 else f"${total_val / 1e6:.0f}M"
+            top_dim = top_risk.dimension.value if top_risk else ""
+            conf = compute_confidence(None, "supplier", top_dim, self.session)
+            conf_letter = _safe_text({"high": "H", "medium": "M", "low": "L"}.get(conf["level"], "L"))
             sup_rows.append([
                 s.name[:25],
                 s.sector.value if s.sector else "-",
                 s.ownership_type.value.replace("_", " ")[:18] if s.ownership_type else "-",
                 str(round(score)),
+                conf_letter,
                 top_risk.dimension.value.replace("_", " ")[:18] if top_risk else "-",
                 val_str,
             ])
         pdf.data_table(
-            ["Supplier", "Sector", "Ownership", "Risk", "Top Risk", "Value"],
+            ["Supplier", "Sector", "Ownership", "Risk", "Conf.", "Top Risk", "Value"],
             sup_rows,
-            [34, 22, 26, 12, 28, 22],
+            [28, 20, 24, 12, 10, 26, 22],
         )
 
         # ── 5. ARCTIC ASSESSMENT ──
