@@ -4,6 +4,7 @@ from __future__ import annotations
 from src.storage.models import MitigationAction
 from src.storage.database import init_db, SessionLocal
 from src.storage.persistence import PersistenceService
+from src.analysis.mitigation_playbook import MitigationPlaybook, PLAYBOOK
 
 
 def test_mitigation_model_has_columns():
@@ -88,5 +89,51 @@ def test_resolved_action_not_reopened():
         assert len(all_rows) == 2
         assert sum(1 for r in all_rows if r.status == "resolved") == 1
         assert sum(1 for r in all_rows if r.status == "open") == 1
+    finally:
+        session.close()
+
+
+def test_playbook_has_entries():
+    assert len(PLAYBOOK) >= 30
+
+
+def test_generate_coas_from_supplier_risks():
+    init_db()
+    session = SessionLocal()
+    try:
+        # Seed a supplier with risk scores
+        from src.storage.models import DefenceSupplier, SupplierRiskScore, SupplierSector, OwnershipType, RiskDimension
+        svc = PersistenceService(session)
+        sup = svc.upsert_supplier(name="TestSupplier", sector=SupplierSector.SHIPBUILDING, ownership_type=OwnershipType.CANADIAN_PRIVATE)
+        svc.upsert_risk_score(sup.id, RiskDimension.SINGLE_SOURCE, 90.0, "Sole shipbuilder")
+
+        playbook = MitigationPlaybook(session)
+        result = playbook.generate_all_coas()
+        assert result["generated"] > 0
+
+        # Check COA was created
+        actions = session.query(MitigationAction).filter_by(risk_entity="TestSupplier").all()
+        assert len(actions) >= 1
+        assert actions[0].coa_priority in ("critical", "high", "medium", "low")
+        assert actions[0].status == "open"
+    finally:
+        session.close()
+
+
+def test_generate_coas_from_taxonomy():
+    init_db()
+    session = SessionLocal()
+    try:
+        # Seed taxonomy scores (some above threshold)
+        from src.analysis.risk_taxonomy import RiskTaxonomyScorer
+        scorer = RiskTaxonomyScorer(session)
+        scorer.seed_initial_scores()
+
+        playbook = MitigationPlaybook(session)
+        result = playbook.generate_all_coas()
+        assert result["generated"] > 0
+
+        total = session.query(MitigationAction).count()
+        assert total > 5  # Should generate multiple COAs from taxonomy
     finally:
         session.close()
