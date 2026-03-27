@@ -65,27 +65,27 @@ def test_resolved_action_not_reopened():
         svc = PersistenceService(session)
         svc.upsert_mitigation_action(
             risk_source="supplier",
-            risk_entity="TestCo",
-            risk_dimension="contract_activity",
+            risk_entity="ResolvedTestCo",
+            risk_dimension="contract_activity_test",
             risk_score=75.0,
             coa_action="Review",
             coa_priority="high",
         )
         # Mark it resolved
-        row = session.query(MitigationAction).filter_by(risk_entity="TestCo").first()
+        row = session.query(MitigationAction).filter_by(risk_entity="ResolvedTestCo").first()
         row.status = "resolved"
         session.commit()
 
         # Upsert should create a NEW open action, not touch the resolved one
         svc.upsert_mitigation_action(
             risk_source="supplier",
-            risk_entity="TestCo",
-            risk_dimension="contract_activity",
+            risk_entity="ResolvedTestCo",
+            risk_dimension="contract_activity_test",
             risk_score=80.0,
             coa_action="New review",
             coa_priority="critical",
         )
-        all_rows = session.query(MitigationAction).filter_by(risk_entity="TestCo").all()
+        all_rows = session.query(MitigationAction).filter_by(risk_entity="ResolvedTestCo").all()
         assert len(all_rows) == 2
         assert sum(1 for r in all_rows if r.status == "resolved") == 1
         assert sum(1 for r in all_rows if r.status == "open") == 1
