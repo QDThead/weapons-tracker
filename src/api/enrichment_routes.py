@@ -314,6 +314,128 @@ async def get_missile_data():
         return {"error": str(e)}
 
 
+@router.get("/un-sanctions")
+async def get_un_sanctions():
+    """UN Security Council Consolidated Sanctions List — individuals and entities."""
+    cached = _check("un_sanctions")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import UNSanctionsClient
+    try:
+        client = UNSanctionsClient()
+        entries = await client.fetch_un_sanctions()
+        result = {
+            "source": "UN Security Council Consolidated Sanctions List",
+            "url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+            "note": "200 most recently listed entries. Full list available at the UN source URL.",
+            "total": len(entries),
+            "entries": entries,
+        }
+        _cache["un_sanctions"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("UN Sanctions fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/earthquakes")
+async def get_earthquakes():
+    """USGS significant earthquakes (M5+, last 30 days)."""
+    cached = _check("usgs_earthquakes")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import USGSEarthquakeClient
+    try:
+        client = USGSEarthquakeClient()
+        quakes = await client.fetch_recent_earthquakes()
+        result = {
+            "source": "USGS Earthquake Hazards Program",
+            "url": "https://earthquake.usgs.gov/fdsnws/event/1/",
+            "filter": "Magnitude >= 5.0, last 30 days",
+            "total": len(quakes),
+            "earthquakes": quakes,
+        }
+        _cache["usgs_earthquakes"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("USGS Earthquake fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/threat-groups")
+async def get_threat_groups():
+    """MITRE ATT&CK threat groups (APT actors) — top 50 intrusion sets with attribution."""
+    cached = _check("mitre_attack")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import MITREAttackClient
+    try:
+        client = MITREAttackClient()
+        groups = await client.fetch_threat_groups()
+        result = {
+            "source": "MITRE ATT&CK Enterprise (STIX 2.1)",
+            "url": "https://attack.mitre.org/groups/",
+            "note": "Top 50 intrusion sets; attribution is heuristic based on description text.",
+            "total": len(groups),
+            "threat_groups": groups,
+        }
+        _cache["mitre_attack"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("MITRE ATT&CK fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/economic-outlook")
+async def get_economic_outlook():
+    """IMF World Economic Outlook GDP growth projections for 30 defence-relevant countries."""
+    cached = _check("imf_weo")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import IMFEconomicClient
+    try:
+        client = IMFEconomicClient()
+        result = await client.fetch_gdp_forecasts()
+        result["source"] = "IMF World Economic Outlook Datamapper"
+        result["url"] = "https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH"
+        result["indicator_name"] = "Real GDP Growth (annual % change)"
+        result["periods"] = ["2024", "2025", "2026"]
+        _cache["imf_weo"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("IMF WEO fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/natural-events")
+async def get_natural_events():
+    """NASA EONET active natural events (wildfires, storms, volcanoes, sea/lake ice)."""
+    cached = _check("nasa_eonet")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import NASAEONETClient
+    try:
+        client = NASAEONETClient()
+        events = await client.fetch_active_events()
+        result = {
+            "source": "NASA Earth Observatory Natural Event Tracker (EONET)",
+            "url": "https://eonet.gsfc.nasa.gov/api/v3/events",
+            "filter": "Status: open, limit 20",
+            "total": len(events),
+            "events": events,
+        }
+        _cache["nasa_eonet"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("NASA EONET fetch failed: %s", e)
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -512,7 +634,47 @@ async def list_enrichment_sources():
                 "auth": "None required",
                 "status": "active",
             },
+            {
+                "name": "UN Security Council Consolidated Sanctions List",
+                "endpoint": "/enrichment/un-sanctions",
+                "indicators": 6,
+                "freshness": "Near real-time (UN updates)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "USGS Significant Earthquakes (M5+)",
+                "endpoint": "/enrichment/earthquakes",
+                "indicators": 8,
+                "freshness": "Near real-time",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "MITRE ATT&CK Threat Groups",
+                "endpoint": "/enrichment/threat-groups",
+                "indicators": 6,
+                "freshness": "Monthly (CTI repo updates)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "IMF World Economic Outlook (GDP Projections)",
+                "endpoint": "/enrichment/economic-outlook",
+                "indicators": 3,
+                "freshness": "Biannual (IMF WEO releases)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "NASA EONET Active Natural Events",
+                "endpoint": "/enrichment/natural-events",
+                "indicators": 6,
+                "freshness": "Near real-time",
+                "auth": "None required",
+                "status": "active",
+            },
         ],
-        "total_sources": 24,
-        "total_active": 24,
+        "total_sources": 29,
+        "total_active": 29,
     }
