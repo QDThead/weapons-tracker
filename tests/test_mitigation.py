@@ -25,8 +25,8 @@ def test_upsert_mitigation_action():
         svc = PersistenceService(session)
         svc.upsert_mitigation_action(
             risk_source="supplier",
-            risk_entity="Irving Shipbuilding",
-            risk_dimension="single_source",
+            risk_entity="UpsertTestCorp",
+            risk_dimension="single_source_upsert_test",
             risk_score=90.0,
             coa_action="Qualify alternate supplier; estimated qualification time: 90 days",
             coa_priority="critical",
@@ -34,7 +34,7 @@ def test_upsert_mitigation_action():
             coa_responsible="Procurement",
         )
         row = session.query(MitigationAction).filter_by(
-            risk_entity="Irving Shipbuilding", risk_dimension="single_source"
+            risk_entity="UpsertTestCorp", risk_dimension="single_source_upsert_test"
         ).first()
         assert row is not None
         assert row.status == "open"
@@ -43,14 +43,14 @@ def test_upsert_mitigation_action():
         # Upsert should update existing open action, not duplicate
         svc.upsert_mitigation_action(
             risk_source="supplier",
-            risk_entity="Irving Shipbuilding",
-            risk_dimension="single_source",
+            risk_entity="UpsertTestCorp",
+            risk_dimension="single_source_upsert_test",
             risk_score=85.0,
             coa_action="Updated action",
             coa_priority="high",
         )
         rows = session.query(MitigationAction).filter_by(
-            risk_entity="Irving Shipbuilding", risk_dimension="single_source", status="open"
+            risk_entity="UpsertTestCorp", risk_dimension="single_source_upsert_test", status="open"
         ).all()
         assert len(rows) == 1
         assert rows[0].coa_action == "Updated action"

@@ -191,7 +191,7 @@ class BriefingGenerator:
             avg = round(sum(r.score for r in rows) / len(rows), 1)
             worst = max(rows, key=lambda r: r.score)
             level = "RED" if avg >= 70 else "AMBER" if avg >= 40 else "GREEN"
-            conf = compute_confidence(cat.get("data_source"), "taxonomy", cat_id, self.session)
+            conf = compute_confidence(cat.get("data_source"), "taxonomy", str(cat_id), self.session)
             conf_letter = _safe_text({"high": "H", "medium": "M", "low": "L"}.get(conf["level"], "L"))
             tax_rows.append([cat["short_name"], str(avg), level, cat.get("data_source", "seeded"), worst.subcategory_name[:35], str(round(worst.score, 1)), conf_letter])
 
