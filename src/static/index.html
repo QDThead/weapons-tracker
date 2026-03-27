@@ -914,6 +914,29 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div id="taxonomy-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div>
     </div>
 
+    <!-- Action Centre -->
+    <div id="action-centre" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <h2 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin:0;">Action Centre</h2>
+          <span class="stat-box" style="padding:2px 10px;background:rgba(239,68,68,0.15);border-color:var(--accent2);">
+            <span class="stat-num" style="font-size:14px;color:var(--accent2);" id="ac-open-count">0</span>
+            <span style="font-size:9px;color:var(--accent2);margin-left:4px;">OPEN</span>
+          </span>
+          <span class="stat-box" style="padding:2px 10px;background:rgba(245,158,11,0.15);border-color:var(--accent4);">
+            <span class="stat-num" style="font-size:14px;color:var(--accent4);" id="ac-progress-count">0</span>
+            <span style="font-size:9px;color:var(--accent4);margin-left:4px;">IN PROGRESS</span>
+          </span>
+          <span class="stat-box" style="padding:2px 10px;background:rgba(16,185,129,0.15);border-color:var(--accent3);">
+            <span class="stat-num" style="font-size:14px;color:var(--accent3);" id="ac-resolved-count">0</span>
+            <span style="font-size:9px;color:var(--accent3);margin-left:4px;">RESOLVED</span>
+          </span>
+        </div>
+        <button class="btn-primary" style="padding:5px 14px;font-size:12px;" onclick="generateCOAs()">Generate COAs</button>
+      </div>
+      <div id="action-centre-list"></div>
+    </div>
+
     <!-- Section 1: SITUATION REPORT -->
     <div class="briefing-section">
       <div class="briefing-header">
@@ -2827,6 +2850,83 @@ function timeAgo(date) {
   return Math.floor(diff / 86400) + 'd ago';
 }
 
+// ═══════ ACTION CENTRE (Insights page) ═══════
+
+let _mitigationCache = null;
+
+async function loadActionCentre() {
+  try {
+    const data = await fetch('/mitigation/actions').then(r => r.json());
+    _mitigationCache = data;
+
+    document.getElementById('ac-open-count').textContent = data.by_status.open || 0;
+    document.getElementById('ac-progress-count').textContent = data.by_status.in_progress || 0;
+    document.getElementById('ac-resolved-count').textContent = data.by_status.resolved || 0;
+
+    const priorityColors = {critical:'var(--accent2)',high:'var(--accent4)',medium:'#eab308',low:'var(--accent3)'};
+    const el = document.getElementById('action-centre-list');
+
+    if (!data.actions || data.actions.length === 0) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:12px;">No active actions. Click "Generate COAs" to analyze current risks.</div>';
+      return;
+    }
+
+    el.innerHTML = data.actions.slice(0, 10).map(a => {
+      const color = priorityColors[a.coa_priority] || 'var(--text-dim)';
+      return `<div class="insight-alert" style="border-left-color:${color};padding:12px 16px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="background:${color};color:#fff;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;">${a.coa_priority}</span>
+              <span style="font-weight:600;font-size:13px;">${esc(a.risk_entity)}</span>
+              <span style="font-size:11px;color:var(--text-dim);">${a.risk_dimension.replace(/_/g,' ')}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text);line-height:1.4;">${esc(a.coa_action)}</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">
+              ${a.coa_responsible ? '<span style="background:rgba(0,212,255,0.1);color:var(--accent);padding:1px 6px;border-radius:3px;font-size:10px;">' + esc(a.coa_responsible) + '</span>' : ''}
+              ${a.coa_timeline ? ' · ' + esc(a.coa_timeline) : ''}
+            </div>
+          </div>
+          <select onchange="updateActionStatus(${a.id}, this.value)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:4px;font-size:11px;font-family:var(--font-body);">
+            <option value="open" ${a.status==='open'?'selected':''}>Open</option>
+            <option value="in_progress" ${a.status==='in_progress'?'selected':''}>In Progress</option>
+            <option value="resolved" ${a.status==='resolved'?'selected':''}>Resolved</option>
+          </select>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load Action Centre:', e);
+  }
+}
+
+async function updateActionStatus(id, newStatus) {
+  try {
+    await fetch('/mitigation/actions/' + id, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status: newStatus}),
+    });
+    loadActionCentre();
+  } catch (e) {
+    console.error('Failed to update action:', e);
+  }
+}
+
+async function generateCOAs() {
+  try {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    const result = await fetch('/mitigation/generate', {method: 'POST'}).then(r => r.json());
+    btn.textContent = 'Generate COAs';
+    btn.disabled = false;
+    loadActionCentre();
+  } catch (e) {
+    console.error('Failed to generate COAs:', e);
+  }
+}
+
 // ═══════ RISK TAXONOMY STRIP (Insights landing page) ═══════
 
 async function loadTaxonomyStrip() {
@@ -2910,6 +3010,7 @@ async function loadInsights() {
     insightsLoaded = false;
   }
   loadTaxonomyStrip();
+  loadActionCentre();
 }
 
 function insCountryLink(name) {
