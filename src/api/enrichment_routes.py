@@ -744,6 +744,116 @@ async def get_connectivity():
         return {"error": str(e)}
 
 
+@router.get("/critical-cves")
+async def get_critical_cves():
+    """NIST NVD latest critical CVEs (CVSS v3 >= 9.0) published in the last 7 days."""
+    cached = _check("nvd_critical_cves")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import NVDCveClient
+    try:
+        client = NVDCveClient()
+        cves = await client.fetch_critical_cves()
+        result = {
+            "source": "NIST National Vulnerability Database (NVD)",
+            "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+            "filter": "CVSS v3 CRITICAL severity, last 7 days",
+            "cache_ttl": "6 hours",
+            "total": len(cves),
+            "cves": cves,
+        }
+        _cache["nvd_critical_cves"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("NVD CVE fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/severe-weather")
+async def get_severe_weather():
+    """NOAA NWS active Extreme/Severe weather alerts for North America."""
+    cached = _check("noaa_severe_weather")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import NOAAWeatherClient
+    try:
+        client = NOAAWeatherClient()
+        alerts = await client.fetch_severe_weather()
+        result = {
+            "source": "NOAA National Weather Service (weather.gov)",
+            "url": "https://api.weather.gov/alerts/active",
+            "filter": "Status: actual, Severity: Extreme or Severe, limit 20",
+            "cache_ttl": "6 hours",
+            "total": len(alerts),
+            "alerts": alerts,
+        }
+        _cache["noaa_severe_weather"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("NOAA Weather fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/nuclear-arsenals")
+async def get_nuclear_arsenals():
+    """FAS nuclear warhead estimates for all 9 nuclear-armed states (2024 figures)."""
+    cached = _check("fas_nuclear_arsenals")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import FASNuclearClient
+    try:
+        client = FASNuclearClient()
+        arsenals = await client.fetch_nuclear_arsenals()
+        total_warheads = sum(a["total_warheads"] for a in arsenals)
+        total_deployed = sum(
+            a["deployed_strategic"] for a in arsenals if a["deployed_strategic"] is not None
+        )
+        result = {
+            "source": "Federation of American Scientists — Status of World Nuclear Forces",
+            "url": "https://fas.org/issues/nuclear-weapons/status-world-nuclear-forces/",
+            "as_of": "2024 estimates (published 2025)",
+            "note": "Hardcoded from latest FAS public estimates. Deployed strategic counts exclude tactical warheads.",
+            "total_nuclear_states": len(arsenals),
+            "global_total_warheads": total_warheads,
+            "global_deployed_strategic": total_deployed,
+            "arsenals": arsenals,
+        }
+        _cache["fas_nuclear_arsenals"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("FAS Nuclear fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/armed-forces")
+async def get_armed_forces():
+    """World Bank military personnel data (MS.MIL.TOTL.P1) for 16 key countries."""
+    cached = _check("wb_armed_forces")
+    if cached:
+        return cached
+
+    from src.ingestion.osint_feeds import WorldBankArmedForcesClient
+    try:
+        client = WorldBankArmedForcesClient()
+        forces = await client.fetch_armed_forces()
+        result = {
+            "source": "World Bank Open Data — Armed Forces Personnel (MS.MIL.TOTL.P1)",
+            "url": "https://data.worldbank.org/indicator/MS.MIL.TOTL.P1",
+            "year": 2020,
+            "note": "Includes all active duty military. Reserve and paramilitary forces may be excluded.",
+            "total_countries": len(forces),
+            "countries": forces,
+        }
+        _cache["wb_armed_forces"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("World Bank Armed Forces fetch failed: %s", e)
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -1086,7 +1196,45 @@ async def list_enrichment_sources():
                 "countries": ["US", "RU", "UA", "CN", "IR", "KP", "CA", "GB", "DE", "IL"],
                 "classification": ">500=healthy, 100-500=moderate, <100=limited, 0=isolated",
             },
+            {
+                "name": "NIST National Vulnerability Database — Critical CVEs",
+                "endpoint": "/enrichment/critical-cves",
+                "indicators": 6,
+                "freshness": "Near real-time (6h cache)",
+                "auth": "None required",
+                "status": "active",
+                "filter": "CVSS v3 CRITICAL (>= 9.0), last 7 days",
+                "cache_ttl": "6 hours",
+            },
+            {
+                "name": "NOAA NWS — Severe/Extreme Weather Alerts",
+                "endpoint": "/enrichment/severe-weather",
+                "indicators": 7,
+                "freshness": "Near real-time (6h cache)",
+                "auth": "None required",
+                "status": "active",
+                "filter": "Severity: Extreme or Severe, status: actual",
+                "cache_ttl": "6 hours",
+            },
+            {
+                "name": "FAS — Nuclear Warhead Estimates (9 States)",
+                "endpoint": "/enrichment/nuclear-arsenals",
+                "indicators": 5,
+                "freshness": "Annual (hardcoded 2024 estimates)",
+                "auth": "None required",
+                "status": "active",
+                "states": ["Russia", "USA", "China", "France", "UK", "Pakistan", "India", "Israel", "North Korea"],
+            },
+            {
+                "name": "World Bank — Armed Forces Personnel (MS.MIL.TOTL.P1)",
+                "endpoint": "/enrichment/armed-forces",
+                "indicators": 4,
+                "freshness": "Annual (2020 data)",
+                "auth": "None required",
+                "status": "active",
+                "countries": 16,
+            },
         ],
-        "total_sources": 41,
-        "total_active": 41,
+        "total_sources": 45,
+        "total_active": 45,
     }

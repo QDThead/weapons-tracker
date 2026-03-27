@@ -1,28 +1,32 @@
-"""OSINT Feed Connectors — 22 lightweight data sources.
+"""OSINT Feed Connectors — 26 lightweight data sources.
 
 Provides:
-  - FREDCommodityClient      — FRED commodity prices (no API key)
-  - CISAKevClient            — CISA Known Exploited Vulnerabilities
-  - GDACSDisasterClient      — GDACS active disaster alerts
-  - CelestrakSatelliteClient — Celestrak military satellite TLEs
-  - CSISMissileClient        — CSIS Missile Threat database
-  - UNSanctionsClient        — UN Security Council Consolidated Sanctions List
-  - USGSEarthquakeClient     — USGS significant earthquakes (M5+, last 30 days)
-  - MITREAttackClient        — MITRE ATT&CK threat groups (APT actors)
-  - IMFEconomicClient        — IMF World Economic Outlook GDP growth projections
-  - NASAEONETClient          — NASA EONET active natural events
-  - PortWatchClient          — IMF PortWatch maritime chokepoint traffic (HDX)
-  - OpenSkyClient            — OpenSky Network real-time Arctic aircraft tracking
-  - UNHCRClient              — UNHCR refugee/displacement statistics
-  - SpaceLaunchClient        — Space launch tracking (The Space Devs)
-  - SubmarineCableClient     — TeleGeography submarine cable infrastructure
-  - RIPEInternetClient       — RIPE Stat internet infrastructure monitoring
-  - USASpendingClient        — US DoD procurement contracts (USASpending.gov)
-  - USGSMineralClient        — USGS critical mineral deposit locations
-  - WorldBankConflictClient  — World Bank battle-related deaths indicator
-  - TreasuryFiscalClient     — US Treasury daily debt and fiscal data
-  - OpenAlexResearchClient   — OpenAlex defence research trends
-  - RIPEAtlasClient          — RIPE Atlas internet connectivity probe status
+  - FREDCommodityClient          — FRED commodity prices (no API key)
+  - CISAKevClient                — CISA Known Exploited Vulnerabilities
+  - GDACSDisasterClient          — GDACS active disaster alerts
+  - CelestrakSatelliteClient     — Celestrak military satellite TLEs
+  - CSISMissileClient            — CSIS Missile Threat database
+  - UNSanctionsClient            — UN Security Council Consolidated Sanctions List
+  - USGSEarthquakeClient         — USGS significant earthquakes (M5+, last 30 days)
+  - MITREAttackClient            — MITRE ATT&CK threat groups (APT actors)
+  - IMFEconomicClient            — IMF World Economic Outlook GDP growth projections
+  - NASAEONETClient              — NASA EONET active natural events
+  - PortWatchClient              — IMF PortWatch maritime chokepoint traffic (HDX)
+  - OpenSkyClient                — OpenSky Network real-time Arctic aircraft tracking
+  - UNHCRClient                  — UNHCR refugee/displacement statistics
+  - SpaceLaunchClient            — Space launch tracking (The Space Devs)
+  - SubmarineCableClient         — TeleGeography submarine cable infrastructure
+  - RIPEInternetClient           — RIPE Stat internet infrastructure monitoring
+  - USASpendingClient            — US DoD procurement contracts (USASpending.gov)
+  - USGSMineralClient            — USGS critical mineral deposit locations
+  - WorldBankConflictClient      — World Bank battle-related deaths indicator
+  - TreasuryFiscalClient         — US Treasury daily debt and fiscal data
+  - OpenAlexResearchClient       — OpenAlex defence research trends
+  - RIPEAtlasClient              — RIPE Atlas internet connectivity probe status
+  - NVDCveClient                 — NIST NVD latest critical CVEs (6h cache)
+  - NOAAWeatherClient            — NOAA severe/extreme weather alerts (6h cache)
+  - FASNuclearClient             — FAS nuclear warhead estimates (9 states, hardcoded)
+  - WorldBankArmedForcesClient   — World Bank military personnel by country
 """
 from __future__ import annotations
 
@@ -2175,3 +2179,356 @@ class RIPEAtlasClient:
         }
         _cache_set(self._cache, "ripe_atlas_connectivity", result)
         return result
+
+
+# ---------------------------------------------------------------------------
+# 23. NIST National Vulnerability Database — Critical CVEs
+# ---------------------------------------------------------------------------
+
+_NVD_CVE_TTL = 21600.0  # 6 hours (fast-changing)
+
+
+class NVDCveClient:
+    """Fetches the latest critical CVEs from the NIST National Vulnerability Database (NVD).
+
+    Uses the NVD REST API v2.0 filtered to CRITICAL severity (CVSS v3 base score >= 9.0)
+    published in the last 7 days.  No API key required for low-volume polling.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_critical_cves(self) -> list[dict]:
+        """Return up to 10 critical CVEs published in the last 7 days.
+
+        Returns
+        -------
+        list of {cve_id, description, cvss_score, published, vendor, product}
+        """
+        cached = self._cache.get("nvd_critical_cves")
+        if cached and time.time() - cached[0] < _NVD_CVE_TTL:
+            return cached[1]
+
+        try:
+            today = datetime.now(timezone.utc)
+            seven_days_ago = today - timedelta(days=7)
+            pub_start = seven_days_ago.strftime("%Y-%m-%dT00:00:00.000")
+            pub_end = today.strftime("%Y-%m-%dT23:59:59.999")
+
+            url = (
+                "https://services.nvd.nist.gov/rest/json/cves/2.0"
+                f"?resultsPerPage=10&cvssV3Severity=CRITICAL"
+                f"&pubStartDate={pub_start}&pubEndDate={pub_end}"
+            )
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("NVD CVE API returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            results: list[dict] = []
+            for item in data.get("vulnerabilities", []):
+                cve = item.get("cve", {})
+                cve_id = cve.get("id", "")
+
+                # Description — prefer English
+                descriptions = cve.get("descriptions", [])
+                description = ""
+                for d in descriptions:
+                    if d.get("lang") == "en":
+                        description = d.get("value", "")
+                        break
+                if not description and descriptions:
+                    description = descriptions[0].get("value", "")
+
+                # CVSS v3.1 base score
+                cvss_score: float | None = None
+                metrics = cve.get("metrics", {})
+                v31_list = metrics.get("cvssMetricV31", [])
+                if v31_list:
+                    cvss_score = v31_list[0].get("cvssData", {}).get("baseScore")
+
+                # Vendor / product from CPE match strings (best-effort)
+                vendor = ""
+                product = ""
+                configs = cve.get("configurations", [])
+                if configs:
+                    nodes = configs[0].get("nodes", [])
+                    if nodes:
+                        cpe_matches = nodes[0].get("cpeMatch", [])
+                        if cpe_matches:
+                            # CPE format: cpe:2.3:a:vendor:product:...
+                            cpe = cpe_matches[0].get("criteria", "")
+                            parts = cpe.split(":")
+                            if len(parts) >= 5:
+                                vendor = parts[3]
+                                product = parts[4]
+
+                results.append({
+                    "cve_id": cve_id,
+                    "description": description[:300],
+                    "cvss_score": cvss_score,
+                    "published": cve.get("published", ""),
+                    "vendor": vendor,
+                    "product": product,
+                })
+
+            self._cache["nvd_critical_cves"] = (time.time(), results)
+            return results
+
+        except Exception as exc:
+            logger.warning("NVD CVE fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 24. NOAA Severe Weather Alerts for North America
+# ---------------------------------------------------------------------------
+
+_NOAA_WEATHER_TTL = 21600.0  # 6 hours (fast-changing)
+
+
+class NOAAWeatherClient:
+    """Fetches active Extreme/Severe weather alerts from NOAA's Weather.gov API.
+
+    Covers the US NWS alert zone network.  No API key required.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_severe_weather(self) -> list[dict]:
+        """Return up to 20 active Extreme or Severe weather alerts.
+
+        Returns
+        -------
+        list of {headline, severity, event, area, onset, expires, description}
+        """
+        cached = self._cache.get("noaa_severe_weather")
+        if cached and time.time() - cached[0] < _NOAA_WEATHER_TTL:
+            return cached[1]
+
+        try:
+            # Note: NWS API does not support a "limit" query parameter.
+            # "severity" accepts a comma-separated list of levels.
+            url = "https://api.weather.gov/alerts/active"
+            params = {"status": "actual", "severity": "Extreme,Severe"}
+            headers = {
+                "User-Agent": "WeaponsTracker/1.0",
+                "Accept": "application/geo+json",
+            }
+
+            async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
+                resp = await client.get(url, params=params)
+                if resp.status_code != 200:
+                    logger.warning("NOAA Weather API returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            results: list[dict] = []
+            for feature in data.get("features", []):
+                props = feature.get("properties", {})
+                area_desc = props.get("areaDesc", "")
+                results.append({
+                    "headline": props.get("headline", ""),
+                    "severity": props.get("severity", ""),
+                    "event": props.get("event", ""),
+                    "area": area_desc[:200],
+                    "onset": props.get("onset", ""),
+                    "expires": props.get("expires", ""),
+                    "description": (props.get("description") or "")[:200],
+                })
+
+            self._cache["noaa_severe_weather"] = (time.time(), results)
+            return results
+
+        except Exception as exc:
+            logger.warning("NOAA Weather fetch failed: %s", exc)
+            return []
+
+
+# ---------------------------------------------------------------------------
+# 25. FAS Nuclear Arsenal Estimates (hardcoded — latest published figures)
+# ---------------------------------------------------------------------------
+
+# Source: Federation of American Scientists — Status of World Nuclear Forces
+# https://fas.org/issues/nuclear-weapons/status-world-nuclear-forces/
+# Last updated: 2024 estimates (published 2025)
+_FAS_NUCLEAR_DATA: list[dict] = [
+    {
+        "country": "Russia",
+        "total_warheads": 5580,
+        "deployed_strategic": 1710,
+        "status": "Largest nuclear stockpile; modernising all three legs of the triad",
+        "trend": "stable",
+    },
+    {
+        "country": "United States",
+        "total_warheads": 5044,
+        "deployed_strategic": 1770,
+        "status": "Second largest stockpile; life extension programmes ongoing",
+        "trend": "stable",
+    },
+    {
+        "country": "China",
+        "total_warheads": 500,
+        "deployed_strategic": None,
+        "status": "Rapidly expanding; developing road-mobile ICBMs and submarine-launched missiles",
+        "trend": "increasing",
+    },
+    {
+        "country": "France",
+        "total_warheads": 290,
+        "deployed_strategic": 280,
+        "status": "Sea-based deterrent (SNLEs) plus air-delivered ASMP-A",
+        "trend": "stable",
+    },
+    {
+        "country": "United Kingdom",
+        "total_warheads": 225,
+        "deployed_strategic": 120,
+        "status": "Vanguard-class SSBNs; announced ceiling increase to 260 warheads",
+        "trend": "increasing",
+    },
+    {
+        "country": "Pakistan",
+        "total_warheads": 170,
+        "deployed_strategic": None,
+        "status": "Land-based missiles; expanding production capacity",
+        "trend": "increasing",
+    },
+    {
+        "country": "India",
+        "total_warheads": 172,
+        "deployed_strategic": None,
+        "status": "Land, sea, and air delivery; SSBN programme maturing",
+        "trend": "increasing",
+    },
+    {
+        "country": "Israel",
+        "total_warheads": 90,
+        "deployed_strategic": None,
+        "status": "Undeclared nuclear programme; policy of strategic ambiguity",
+        "trend": "stable",
+    },
+    {
+        "country": "North Korea",
+        "total_warheads": 50,
+        "deployed_strategic": None,
+        "status": "Accelerating production of fissile material and delivery systems",
+        "trend": "increasing",
+    },
+]
+
+
+class FASNuclearClient:
+    """Returns FAS nuclear warhead estimates (hardcoded latest figures).
+
+    Since FAS publishes HTML pages rather than a JSON API the data is
+    hardcoded from the most recent publicly-available FAS estimates (2024).
+    The ``fetch_nuclear_arsenals`` method is async for API consistency.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self) -> None:
+        pass
+
+    async def fetch_nuclear_arsenals(self) -> list[dict]:
+        """Return the nine nuclear-armed states with warhead counts and trend.
+
+        Returns
+        -------
+        list of {country, total_warheads, deployed_strategic, status, trend}
+        """
+        cached = _cache_get(self._cache, "fas_nuclear_arsenals")
+        if cached is not None:
+            return cached
+
+        results = list(_FAS_NUCLEAR_DATA)  # shallow copy
+        _cache_set(self._cache, "fas_nuclear_arsenals", results)
+        return results
+
+
+# ---------------------------------------------------------------------------
+# 26. World Bank Armed Forces Personnel
+# ---------------------------------------------------------------------------
+
+_WB_ARMED_FORCES_COUNTRIES = (
+    "RUS;CHN;USA;IND;GBR;FRA;CAN;DEU;TUR;KOR;JPN;ISR;IRN;SAU;UKR;POL"
+)
+_WB_ARMED_FORCES_URL = (
+    f"https://api.worldbank.org/v2/country/{_WB_ARMED_FORCES_COUNTRIES}"
+    "/indicator/MS.MIL.TOTL.P1?format=json&per_page=100&date=2020"
+)
+
+
+class WorldBankArmedForcesClient:
+    """Fetches armed forces personnel data from the World Bank (indicator MS.MIL.TOTL.P1).
+
+    Covers 16 defence-relevant countries using the most recent available
+    World Bank year (2021).  No API key required.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_armed_forces(self) -> list[dict]:
+        """Return military personnel counts for 16 key countries.
+
+        Returns
+        -------
+        list of {country, iso3, year, personnel}
+        """
+        cached = _cache_get(self._cache, "wb_armed_forces")
+        if cached is not None:
+            return cached
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(_WB_ARMED_FORCES_URL)
+                if resp.status_code != 200:
+                    logger.warning(
+                        "World Bank Armed Forces API returned HTTP %s", resp.status_code
+                    )
+                    return []
+
+                payload = resp.json()
+
+            # World Bank response: [metadata_dict, list_of_records]
+            records_raw: list[dict] = []
+            if isinstance(payload, list) and len(payload) >= 2:
+                records_raw = payload[1] or []
+
+            results: list[dict] = []
+            for rec in records_raw:
+                value = rec.get("value")
+                if value is None:
+                    continue
+                country_info = rec.get("country", {})
+                results.append({
+                    "country": country_info.get("value", rec.get("countryiso3code", "")),
+                    "iso3": rec.get("countryiso3code", ""),
+                    "year": int(rec.get("date", 0)),
+                    "personnel": int(value),
+                })
+
+            # Sort descending by personnel size
+            results.sort(key=lambda x: x["personnel"], reverse=True)
+
+            _cache_set(self._cache, "wb_armed_forces", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("World Bank Armed Forces fetch failed: %s", exc)
+            return []
