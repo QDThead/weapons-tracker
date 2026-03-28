@@ -189,9 +189,23 @@ class SupplierRiskScorer:
         ) or 0.0
 
         if recent_value == 0 and prior_value == 0:
+            # Check if supplier has any active contracts (regardless of award date)
+            active_count = self.session.query(SupplierContract).filter(
+                SupplierContract.supplier_id == supplier.id,
+                SupplierContract.status == ContractStatus.ACTIVE,
+            ).count()
+            if active_count > 0:
+                return 30.0, f"{active_count} active contract(s) in progress — awarded before lookback window but still delivering"
             return 90.0, "No contract activity in 4 years — supplier may be dormant"
 
         if recent_value == 0:
+            # Check if supplier has active contracts still delivering
+            active_count = self.session.query(SupplierContract).filter(
+                SupplierContract.supplier_id == supplier.id,
+                SupplierContract.status == ContractStatus.ACTIVE,
+            ).count()
+            if active_count > 0:
+                return 30.0, f"No new awards in 2yr but {active_count} active contract(s) still delivering (CAD {prior_value/1e6:.0f}M awarded previously)"
             return 90.0, f"No recent contracts (prior 2yr: CAD {prior_value/1e6:.1f}M) — activity has ceased"
 
         if prior_value == 0:

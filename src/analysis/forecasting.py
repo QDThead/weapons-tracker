@@ -63,8 +63,8 @@ class SupplyChainForecaster:
         mean_y = sum(tivs) / n
         slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(years, tivs)) / max(sum((x - mean_x) ** 2 for x in years), 1)
 
-        forecast_2026 = mean_y + slope * (2026 - mean_x)
-        forecast_2027 = mean_y + slope * (2027 - mean_x)
+        forecast_2026 = max(0, mean_y + slope * (2026 - mean_x))
+        forecast_2027 = max(0, mean_y + slope * (2027 - mean_x))
         trend = "increasing" if slope > 0 else "decreasing" if slope < 0 else "stable"
 
         return {
