@@ -26,6 +26,7 @@ from src.api.briefing_routes import router as briefing_router
 from src.api.security_routes import router as security_router
 from src.api.ml_routes import router as ml_router
 from src.api.enrichment_routes import router as enrichment_router
+from src.api.cyber_routes import router as cyber_router
 from src.ingestion.scheduler import create_scheduler
 
 logging.basicConfig(
@@ -47,6 +48,7 @@ app.include_router(briefing_router)
 app.include_router(security_router)
 app.include_router(ml_router)
 app.include_router(enrichment_router)
+app.include_router(cyber_router)
 
 # Serve dashboard UI
 _static_dir = Path(__file__).parent / "static"
