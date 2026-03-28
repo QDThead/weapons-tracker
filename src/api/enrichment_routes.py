@@ -854,6 +854,85 @@ async def get_armed_forces():
         return {"error": str(e)}
 
 
+@router.get("/unroca")
+async def get_unroca_transfers():
+    """UN Register of Conventional Arms — unit-level weapons transfer data.
+
+    Returns aggregate data for 15 key countries: total heavy-weapon import
+    units and SALW export units, top partners, and category breakdowns.
+    Data covers 1992–present as reported by UN member states.
+    Cached for 24 hours.
+    """
+    cached = _check("unroca_key")
+    if cached:
+        return cached
+
+    from src.ingestion.unroca import UNROCAClient
+    try:
+        client = UNROCAClient()
+        result = await client.fetch_key_countries()
+        _cache["unroca_key"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("UNROCA key-countries fetch failed: %s", e)
+        return {"error": str(e)}
+
+
+@router.get("/unroca/{country}")
+async def get_unroca_country(country: str):
+    """UNROCA data for a specific country (use slug, e.g. 'canada', 'russian-federation').
+
+    Returns:
+      - hw_imports: heavy-weapon transfers received (by partner country & category)
+      - salw_exports: small arms / light weapons exported (by destination & category)
+      - sa_time_series: yearly small-arms import totals by weapon type (1992–present)
+      - lw_time_series: yearly light-weapons import totals by weapon type (1992–present)
+
+    Slugs follow the UNROCA convention — use hyphens for multi-word names,
+    e.g. 'united-states-of-america', 'russian-federation', 'republic-of-korea'.
+    Cached for 24 hours per country.
+    """
+    cache_key = f"unroca:{country}"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+
+    from src.ingestion.unroca import UNROCAClient
+    try:
+        client = UNROCAClient()
+        result = await client.fetch_country_transfers(country)
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("UNROCA country fetch failed (%s): %s", country, e)
+        return {"error": str(e), "slug_tried": country,
+                "hint": "Use /enrichment/unroca/countries for valid slugs"}
+
+
+@router.get("/unroca-countries")
+async def get_unroca_country_list():
+    """Full list of UNROCA reporting countries with name, slug, and ISO-2 code."""
+    cached = _check("unroca_countries")
+    if cached:
+        return cached
+
+    from src.ingestion.unroca import UNROCAClient
+    try:
+        client = UNROCAClient()
+        countries = await client.fetch_country_list()
+        result = {
+            "source": "UN Register of Conventional Arms (UNROCA)",
+            "url": "https://www.unroca.org/api/country-list/",
+            "total": len(countries),
+            "countries": countries,
+        }
+        _cache["unroca_countries"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.warning("UNROCA country list fetch failed: %s", e)
+        return {"error": str(e)}
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
@@ -1234,7 +1313,19 @@ async def list_enrichment_sources():
                 "status": "active",
                 "countries": 16,
             },
+            {
+                "name": "UN Register of Conventional Arms (UNROCA)",
+                "endpoint": "/enrichment/unroca",
+                "indicators": 6,
+                "freshness": "Annual (member-state submissions, 1992–present)",
+                "auth": "None required",
+                "status": "active",
+                "note": "Unit-level transfers: battle tanks, combat aircraft, armoured vehicles, artillery, MLRS, helicopters, warships, UAVs, MANPADS, SALW",
+                "countries": 15,
+                "per_country_endpoint": "/enrichment/unroca/{slug}",
+                "country_list_endpoint": "/enrichment/unroca-countries",
+            },
         ],
-        "total_sources": 45,
-        "total_active": 45,
+        "total_sources": 46,
+        "total_active": 46,
     }
