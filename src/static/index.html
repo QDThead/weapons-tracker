@@ -956,6 +956,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div class="grid grid-3">
         <div class="card" style="border-top:3px solid var(--accent3);">
           <h2>Live Defense News <span id="news-count" style="font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Real-time defence news from 31 languages via GDELT and RSS feeds.</p>
           <div id="live-news-feed" style="max-height:400px;overflow-y:auto;"></div>
         </div>
         <div class="card" style="border-top:3px solid var(--accent4);">
@@ -965,6 +966,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         </div>
         <div class="card" style="border-top:3px solid var(--accent2);">
           <h2>Breaking Alerts for Canada</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Automated alerts flagging risks to Canadian defence supply chain and Arctic sovereignty.</p>
           <div id="insights-alerts"></div>
         </div>
       </div>
@@ -1113,6 +1115,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         </div>
         <div class="card">
           <h2>Top Exporters vs Importers</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Ranked by SIPRI Trend Indicator Values (TIV) — a measure of arms transfer volume.</p>
           <div class="tabs" id="bar-tabs">
             <button class="tab active" data-chart="exporters">Top Exporters</button>
             <button class="tab" data-chart="importers">Top Importers</button>
@@ -1125,10 +1128,12 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div class="grid grid-2">
         <div class="card">
           <h2>Weapon Types by TIV</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Distribution of global arms transfers by weapon category (SIPRI classification).</p>
           <div class="chart-container"><canvas id="weapon-chart"></canvas></div>
         </div>
         <div class="card">
           <h2>Trade Volume by Year</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Annual global arms trade volume with deal counts. Source: SIPRI Arms Transfers Database.</p>
           <div class="chart-container"><canvas id="timeline-chart"></canvas></div>
         </div>
       </div>
@@ -1175,6 +1180,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     <div class="grid grid-2" style="margin-top:20px;">
       <div class="card">
         <h2>Top Trade Routes by TIV</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Highest-volume bilateral arms trade relationships by SIPRI TIV.</p>
         <div class="table-wrap" style="max-height:350px;">
           <table id="routes-table">
             <thead><tr><th>Seller</th><th>&rarr;</th><th>Buyer</th><th>TIV (M)</th><th>Deals</th></tr></thead>
@@ -1184,6 +1190,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
       <div class="card">
         <h2>Regional Breakdown</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Arms trade distribution across world regions.</p>
         <div class="chart-container"><canvas id="regional-chart"></canvas></div>
       </div>
     </div>
@@ -1511,11 +1518,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     <div class="bloc-columns">
       <div class="bloc-card allied">
         <h2>Allied Bloc Exports</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Where NATO and Five Eyes nations are sending arms — allied arms flow patterns.</p>
         <div class="bloc-sub">NATO / FVEY nations — where allied weapons are going</div>
         <div class="chart-container tall"><canvas id="ca-allied-chart"></canvas></div>
       </div>
       <div class="bloc-card adversary">
         <h2>Adversary Bloc Exports</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Where Russia, China, and Iran are sending arms — adversary influence networks.</p>
         <div class="bloc-sub">Russia + China + Iran — where adversary weapons are going</div>
         <div class="chart-container tall"><canvas id="ca-adversary-chart"></canvas></div>
       </div>
@@ -1524,6 +1533,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     <!-- Section 3: Threat Watchlist -->
     <div class="card" style="margin-bottom:20px;">
       <h2>Threat Watchlist</h2>
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Countries of concern ranked by arms trade activity, threat level, and trend direction.</p>
       <div class="table-wrap">
         <table class="threat-table" id="ca-threat-table">
           <thead>
@@ -1537,6 +1547,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     <!-- Section 4: Arctic Monitor -->
     <div class="card" style="margin-bottom:20px;">
       <h2>Arctic & North Atlantic Monitor</h2>
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Live military aircraft and adversary presence in Canada's northern approaches.</p>
       <div class="arctic-stats">
         <div class="arctic-stat">
           <div class="num warn" id="ca-arctic-russian">-</div>
@@ -1555,6 +1566,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <!-- Section 5: Supply Chain -->
       <div class="card">
         <h2>Canada's Supply Chain</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Canada's arms import dependencies — top suppliers and concentration risk.</p>
         <div id="ca-concentration" style="margin-bottom:16px;"></div>
         <div class="chart-container tall"><canvas id="ca-supply-chart"></canvas></div>
         <h2 style="margin-top:20px;">Weapon Types Imported</h2>
@@ -1603,6 +1615,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <!-- Risk overview chart -->
       <div class="card" style="margin-bottom:20px;">
         <h2>Supplier Risk Ranking</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">All Canadian defence suppliers ranked by composite risk score (0-100). Green &lt;40, Amber 40-70, Red &gt;70.</p>
         <div class="chart-container tall" style="height:400px;"><canvas id="ca-supplier-risk-chart"></canvas></div>
       </div>
 
@@ -1610,11 +1623,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div class="grid grid-2">
         <div class="card">
           <h2>Sector Concentration</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Number of qualified suppliers per defence sector. Red bars indicate sole-source dependency.</p>
           <div class="chart-container tall"><canvas id="ca-sector-chart"></canvas></div>
           <div id="ca-sole-source-list" style="margin-top:12px;"></div>
         </div>
         <div class="card">
           <h2>Ownership Exposure</h2>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Breakdown of Canadian defence suppliers by ownership type — foreign vs domestic control.</p>
           <div class="chart-container" style="height:250px;"><canvas id="ca-ownership-chart"></canvas></div>
           <div id="ca-foreign-list" style="margin-top:12px;max-height:200px;overflow-y:auto;"></div>
         </div>
