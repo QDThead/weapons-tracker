@@ -7,23 +7,23 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (68 API endpoints)
+- **API Framework:** FastAPI + Uvicorn (113 API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,500 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,850 lines)
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 45 Python files, ~15,800 total lines
-- **Tests:** 37 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities
+- **Codebase:** 60 Python files, ~22,400 total lines
+- **Tests:** 50 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities
 
 ## Project Structure
 ```
 weapons-tracker/
 ├── src/
-│   ├── ingestion/              # 16 data source connectors
+│   ├── ingestion/              # 45 active data source connectors
 │   │   ├── sipri_transfers.py        # SIPRI Arms Transfers (atbackend.sipri.org API)
 │   │   ├── comtrade.py               # UN Comtrade USD values + buyer-side mirror
 │   │   ├── census_trade.py           # US Census monthly trade (HS 93)
@@ -44,6 +44,10 @@ weapons-tracker/
 │   │   ├── wikipedia_weapons.py     # PSI: Wikipedia weapon infobox parser
 │   │   ├── corporate_graph.py       # PSI: Company ownership graph + per-company lookup
 │   │   ├── procurement_scraper.py   # Open Canada DND procurement contracts
+│   │   ├── osint_feeds.py           # 26 OSINT connector classes (news, forums, treaties)
+│   │   ├── worldbank_enrichment.py  # Governance + economic indicators (WGI, fragility)
+│   │   ├── sipri_milex.py           # SIPRI Military Expenditure Database
+│   │   ├── cia_factbook.py          # CIA World Factbook military data
 │   │   └── scheduler.py              # APScheduler ingestion pipeline
 │   ├── storage/
 │   │   ├── models.py                 # SQLAlchemy models (16 tables)
@@ -56,30 +60,45 @@ weapons-tracker/
 │   │   ├── supply_chain_graph.py    # PSI: NetworkX knowledge graph engine
 │   │   ├── supply_chain_seed.py     # PSI: BOM seed data for 20 platforms
 │   │   ├── supplier_risk.py         # Canadian supplier 6-dimension exposure scoring
-│   │   └── risk_taxonomy.py         # DND Annex B 13-category risk taxonomy (121 sub-cats)
+│   │   ├── risk_taxonomy.py         # DND Annex B 13-category risk taxonomy (121 sub-cats)
+│   │   ├── confidence.py            # Glass Box confidence scoring utility (source triangulation)
+│   │   ├── mitigation_playbook.py   # COA playbook (41 entries) + generation engine
+│   │   ├── forecasting.py           # Predictive analytics (6 forecast types, 12-18 month horizon)
+│   │   ├── ml_engine.py             # Anomaly detection + RLHF feedback loop
+│   │   └── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
 │   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
 │   │   ├── dashboard_routes.py       # Dashboard endpoints (DB-backed + cached)
 │   │   ├── insights_routes.py        # Intelligence insights + situation report
 │   │   ├── arctic_routes.py          # Arctic security assessment + bases
-│   │   ├── psi_routes.py            # Predictive Supplier Insights (10 endpoints)
-│   │   └── supplier_routes.py       # Canadian supplier exposure (6 endpoints)
+│   │   ├── psi_routes.py            # Predictive Supplier Insights (13 endpoints)
+│   │   ├── supplier_routes.py       # Canadian supplier exposure (6 endpoints)
+│   │   ├── mitigation_routes.py     # COA endpoints (GET/PATCH/POST /mitigation/*)
+│   │   ├── briefing_routes.py       # PDF briefing endpoint (GET /briefing/pdf)
+│   │   ├── security_routes.py       # Auth, RBAC, audit log (/security/*)
+│   │   ├── ml_routes.py             # Anomaly detection + feedback (/ml/*)
+│   │   └── enrichment_routes.py     # 15+ data enrichment endpoints (/enrichment/*)
 │   ├── static/
-│   │   └── index.html                # Dashboard UI (9 tabs, 5,522 lines)
+│   │   └── index.html                # Dashboard UI (9 tabs, ~5,850 lines)
 │   ├── alerts/                       # (placeholder — not yet implemented)
 │   └── main.py                       # App entry point
 ├── scripts/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 37 tests (models, persistence, risk scoring, taxonomy, routes, scraper)
+├── tests/                            # 50 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation)
 ├── docs/superpowers/                 # Design specs and implementation plans
+├── Dockerfile                        # Container image definition
+├── docker-compose.yml                # Multi-service local orchestration
+├── deploy/
+│   └── azure/
+│       └── deploy.sh                 # Azure Container Apps deployment script
 ├── requirements.txt
 └── README.md
 ```
 
-## Data Sources (13 active + 2 inactive)
+## Data Sources (45 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -97,6 +116,10 @@ weapons-tracker/
 | 12 | UN Comtrade | `comtrade.py` | Annual (2023) | None | Working |
 | 13 | Sanctions/Embargoes | `sanctions.py` | On-demand | None | Working |
 | 14 | DND Procurement | `procurement_scraper.py` | Weekly (Sun 02:00) | None | Working |
+| 15 | SIPRI Military Expenditure | `sipri_milex.py` | Annual | None | Working |
+| 16 | CIA World Factbook | `cia_factbook.py` | Annual | None | Working |
+| 17 | World Bank Governance | `worldbank_enrichment.py` | Annual | None | Working |
+| 18–43 | 26 OSINT Feeds | `osint_feeds.py` | 15min–Daily | None | Working |
 | - | Maritime (AIS) | `maritime_tracker.py` | Live | API key | Needs key |
 | - | SIPRI Companies | `sipri_companies.py` | Annual | None | Needs URL |
 
@@ -121,6 +144,13 @@ weapons-tracker/
 | **Procurement Intel** | procurement_scraper.py | DND contracts from Open Canada disclosure portal, vendor normalization, sector classification |
 | **Ownership Enrichment** | corporate_graph.py | Wikidata SPARQL lookup for company parent chains and country of origin |
 | **DND Risk Taxonomy** | risk_taxonomy.py | Full 13-category, 121 sub-category Annex B compliance. Live OSINT scoring for 4 categories, hybrid for 3, seeded with drift for 6. Displayed on Insights landing page (13-card strip) and Supply Chain tab (accordion drill-down) |
+| **COA/Mitigation Engine** | mitigation_playbook.py, mitigation_routes.py | 41-entry courses-of-action playbook; auto-generates mitigations from risk scores; Action Centre with status tracking (open/in-progress/closed) |
+| **Confidence Scoring** | confidence.py | Glass Box per-indicator confidence levels; source triangulation (number of independent sources agreeing); displayed alongside every risk score |
+| **Predictive Analytics** | forecasting.py | 6 forecast types (spending trajectories, supplier shift probability, material scarcity, threat escalation, alliance drift, procurement lead times); 12–18 month horizon |
+| **ML Anomaly Detection** | ml_engine.py | Statistical anomaly detection across all data streams; RLHF feedback loop — analysts mark false positives to retrain thresholds |
+| **PDF Intelligence Briefing** | briefing_generator.py, briefing_routes.py | One-click 7-page PDF export (fpdf2): executive summary, threat matrix, Arctic assessment, supplier risks, recommendations |
+| **Security / RBAC** | security_routes.py | API key authentication; 3 roles (viewer, analyst, admin); full audit log of all data access and exports |
+| **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
 ## Dashboard UI (9 tabs)
 
@@ -136,7 +166,7 @@ weapons-tracker/
 | **Supply Chain** | PSI: Risk overview, Knowledge Graph, Risk Matrix, Scenario Sandbox, **Risk Taxonomy (13 categories, 121 sub-categories, accordion drill-down)** |
 | **Data Feeds** | Operations view: 16 feed status cards with freshness, sample data, health indicators |
 
-## API Endpoints (68 total)
+## API Endpoints (113 total)
 
 ### Core (src/api/routes.py) — live external APIs
 - `GET /transfers/exports/{country}`, `/imports/{country}`, `/bilateral/{seller}/{buyer}`
@@ -193,8 +223,39 @@ weapons-tracker/
 - `GET /dashboard/suppliers/ownership` — Ownership type breakdown, foreign subsidiary list
 - `GET /dashboard/suppliers/alerts` — Suppliers with any risk dimension >70
 
+### Mitigation / COA (src/api/mitigation_routes.py)
+- `GET /mitigation/actions` — All active COA entries with status and owner
+- `GET /mitigation/actions/{id}` — Single COA detail with playbook entry and evidence
+- `PATCH /mitigation/actions/{id}` — Update COA status (open → in-progress → closed)
+- `POST /mitigation/generate` — Auto-generate COAs from a risk score payload
+- `GET /mitigation/playbook` — Full 41-entry playbook reference
+
+### Briefing (src/api/briefing_routes.py)
+- `GET /briefing/pdf` — Generate and download 7-page PDF intelligence briefing
+
+### Security (src/api/security_routes.py)
+- `GET /security/whoami` — Current API key identity and role
+- `GET /security/roles` — RBAC role definitions (viewer, analyst, admin)
+- `GET /security/audit` — Audit log of recent data access and exports
+- `GET /security/posture` — Platform security posture summary
+
+### ML / Anomaly Detection (src/api/ml_routes.py)
+- `GET /ml/anomalies` — Current detected anomalies across all data streams
+- `POST /ml/feedback` — Submit analyst feedback (true/false positive) for RLHF retraining
+- `GET /ml/capabilities` — Available ML model descriptions and thresholds
+
+### Enrichment (src/api/enrichment_routes.py)
+- `GET /enrichment/sources` — All 45 active source status and metadata
+- `GET /enrichment/country/{iso3}` — Full enriched country profile (governance, fragility, military)
+- `GET /enrichment/governance/{iso3}` — World Bank WGI governance indicators
+- `GET /enrichment/fragility/{iso3}` — State fragility and instability scores
+- `GET /enrichment/milex/{iso3}` — SIPRI military expenditure time series
+- `GET /enrichment/factbook/{iso3}` — CIA World Factbook military data
+- `GET /enrichment/confidence/{entity}` — Glass Box confidence breakdown for any entity
+- And 8+ additional enrichment endpoints
+
 ## Database
-- **16 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, defence_suppliers, supplier_contracts, supplier_risk_scores, **risk_taxonomy_scores**
+- **18 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, defence_suppliers, supplier_contracts, supplier_risk_scores, risk_taxonomy_scores, **mitigation_actions**, **audit_log**
 - **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles, 30 materials, 90 supply chain nodes, 97 edges, 20 routes, 8 alerts
 - **Coverage:** 26 seller countries, 174 buyer countries, 256 countries total
 
@@ -237,9 +298,9 @@ python -m src.main
 - **Responsive:** Breakpoints at 1200px and 768px
 
 ## Next Steps (Priority Order)
-1. Build PDF briefing export for decision-makers
-2. Build automated alerting system (unusual pattern detection)
-3. Activate maritime tracker (needs aisstream.io API key)
-4. Migrate to async SQLAlchemy sessions for production
-5. Add satellite imagery integration for base monitoring
-6. Add user authentication for multi-tenant deployment
+1. Activate maritime tracker (needs aisstream.io API key)
+2. Migrate to async SQLAlchemy sessions for production
+3. Add satellite imagery integration for base monitoring
+4. Expand ML anomaly detection with time-series models (LSTM/Prophet)
+5. Add multi-tenant user authentication for SaaS deployment
+6. Integrate real-time treaty monitoring and UN Security Council feeds

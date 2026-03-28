@@ -4,12 +4,15 @@ Geopolitical intelligence platform tracking global weapons sales, military spend
 
 ## What It Does
 
-- **13 live data sources** from hours-old defense news to annual SIPRI transfers
+- **45 live data sources** from hours-old defense news to annual SIPRI transfers
 - **9-tab interactive dashboard** with maps, charts, and intelligence briefings
 - **Arctic security assessment** with 25 mapped military bases and 3 shipping routes
 - **Russia/China tracking** via buyer-side import mirrors, flight pattern analysis, and sanctions overlay
 - **Canadian supplier exposure scoring** — 6-dimension risk analysis of DND's defence supply base
-- **68 API endpoints** serving pre-computed intelligence and live data
+- **COA/Mitigation engine** — 41-entry playbook, auto-generated courses of action, Action Centre with status tracking
+- **Confidence scoring** — Glass Box source triangulation displayed alongside every risk score
+- **PDF intelligence briefing** — one-click 7-page export for decision-makers (fpdf2)
+- **113 API endpoints** serving pre-computed intelligence and live data
 - **DND Annex B risk taxonomy** — all 13 categories, 121 sub-categories scored and displayed
 - **4,623 arms transfers** across 26 seller countries and 174 buyers
 
@@ -67,17 +70,19 @@ Plus: **Sanctions/embargo overlay** (17 countries, OFAC SDN, EU sanctions), **bu
 ## Architecture
 
 ```
-                OSINT DATA SOURCES (13 active)
+                OSINT DATA SOURCES (45 active)
  ┌─────────────────────────────────────────────────────┐
  │  SIPRI ── Comtrade ── Census ── HMRC ── Eurostat    │
  │  StatCan ── NATO ── World Bank ── DSCA ── GDELT     │
  │  adsb.lol (flights) ── Defense News RSS             │
- │  + Sanctions ── Open Canada Procurement (DND)       │
+ │  Sanctions ── Open Canada Procurement (DND)         │
+ │  SIPRI MILEX ── CIA Factbook ── WB Governance       │
+ │  + 26 OSINT feeds (osint_feeds.py)                  │
  └──────────────────────┬──────────────────────────────┘
                         │
                         ▼
  ┌─────────────────────────────────────────────────────┐
- │              WEAPONS TRACKER DB                      │
+ │              WEAPONS TRACKER DB (18 tables)          │
  │  4,623 transfers ── 5,110 indicators                │
  │  2,217 flight positions ── 157 news articles        │
  │  1,329 weapon systems ── 256 countries              │
@@ -86,14 +91,15 @@ Plus: **Sanctions/embargo overlay** (17 countries, OFAC SDN, EU sanctions), **bu
             ┌───────────┴───────────┐
             ▼                       ▼
  ┌────────────────────┐  ┌─────────────────────────────┐
- │    REST API (68)    │  │      DASHBOARD (9 tabs)      │
- │  /insights/*        │  │  Insights ── Overview         │
- │  /arctic/*          │  │  World Map ── Arctic          │
- │  /dashboard/*       │  │  Live Flights ── Deals        │
- │  /trends/*          │  │  Canada Intel ── Supply Chain │
- │  Data Feeds                   │
- │  /transfers/*       │  │                               │
- │  /tracking/*        │  │  Chart.js + D3.js + Leaflet   │
+ │   REST API (113)   │  │      DASHBOARD (9 tabs)      │
+ │  /insights/*       │  │  Insights ── Overview        │
+ │  /arctic/*         │  │  World Map ── Arctic         │
+ │  /dashboard/*      │  │  Live Flights ── Deals       │
+ │  /trends/*         │  │  Canada Intel ── Supply Chain│
+ │  /mitigation/*     │  │  Data Feeds                  │
+ │  /briefing/*       │  │                              │
+ │  /security/*       │  │  Chart.js + D3.js + Leaflet  │
+ │  /ml/* /enrichment/*│  │                              │
  └────────────────────┘  └─────────────────────────────┘
 ```
 
@@ -156,19 +162,35 @@ curl http://localhost:8000/dashboard/suppliers/alerts
 curl http://localhost:8000/psi/taxonomy
 curl http://localhost:8000/psi/taxonomy/summary
 curl http://localhost:8000/psi/taxonomy/3
+
+# Courses of action — view and update mitigation status
+curl http://localhost:8000/mitigation/actions
+curl -X PATCH http://localhost:8000/mitigation/actions/7 -d '{"status":"in-progress"}'
+
+# One-click PDF intelligence briefing (7-page export)
+curl http://localhost:8000/briefing/pdf -o briefing.pdf
+
+# All enriched data sources with status
+curl http://localhost:8000/enrichment/sources
+
+# ML anomaly detection — current alerts
+curl http://localhost:8000/ml/anomalies
+
+# PSI forecasts (6 forecast types, 12-18 month horizon)
+curl http://localhost:8000/psi/forecasts
 ```
 
 ## Project Stats
 
-- **45 Python files**, ~15,800 lines
-- **1 HTML dashboard**, ~5,500 lines
-- **68 API endpoints**
-- **16 data connectors** (13 active, 2 inactive, 1 scheduler)
-- **13 data sources** spanning live to annual
+- **60 Python files**, ~22,400 lines
+- **1 HTML dashboard**, ~5,850 lines
+- **113 API endpoints**
+- **45 active data sources** spanning live to annual
 - **9 dashboard tabs**
-- **16 database tables**
-- **37 automated tests**
+- **18 database tables**
+- **50 automated tests**
 - **13 risk categories**, 121 sub-categories (DND Annex B compliant)
+- **41 COA playbook entries** with automated generation
 - **25 Arctic bases** mapped with threat assessments
 - **17 embargoed countries** tracked
 - **4,623 arms transfers** in database
