@@ -50,7 +50,7 @@ weapons-tracker/
 │   │   ├── cia_factbook.py          # CIA World Factbook military data
 │   │   └── scheduler.py              # APScheduler ingestion pipeline
 │   ├── storage/
-│   │   ├── models.py                 # SQLAlchemy models (16 tables)
+│   │   ├── models.py                 # SQLAlchemy models (18 tables)
 │   │   ├── database.py               # DB connection + session management
 │   │   └── persistence.py            # Upsert/dedup logic for all entity types
 │   ├── analysis/
