@@ -189,6 +189,12 @@ MINERALS: list[dict] = [
             "Ukraine conflict",
             "Japan single-source",
         ],
+        "canada": {
+            "platforms": ["CF-188 Hornet", "F-35 Lightning II (on order)", "CH-148 Cyclone", "Victoria-class SSK", "CSC Type 26"],
+            "import_pct": 95,
+            "domestic": "5% ilmenite mining at Havre-Saint-Pierre QC (Rio Tinto), no sponge processing",
+            "strategic_note": "Canada mines ilmenite but ships it abroad for processing. F-35 acquisition will increase titanium dependency — F-35 is 41% titanium by weight.",
+        },
         "source": "USGS MCS 2025",
     },
     # 2. Lithium
@@ -229,6 +235,12 @@ MINERALS: list[dict] = [
             "Price volatility",
             "Chile/Argentina water",
         ],
+        "canada": {
+            "platforms": ["CF-188 avionics batteries", "soldier portable electronics", "tactical UAV batteries", "Carl Gustaf thermal battery"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "100% import-dependent. Growing demand from military electrification (hybrid vehicles, UAV fleet expansion) will increase exposure.",
+        },
         "source": "USGS MCS 2025",
     },
     # 3. Cobalt
@@ -268,6 +280,12 @@ MINERALS: list[dict] = [
             "China 80% refining",
             "Conflict minerals",
         ],
+        "canada": {
+            "platforms": ["CF-188 F404 engine turbine blades", "CH-148 Cyclone T700 engine", "CH-149 Cormorant engines", "F-35 F135 engine (on order)"],
+            "import_pct": 85,
+            "domestic": "~1.4% global mining as nickel byproduct (Sudbury, Voisey's Bay)",
+            "strategic_note": "Canadian cobalt production is a nickel byproduct — inelastic to demand. Every CAF jet engine depends on cobalt superalloys.",
+        },
         "source": "USGS MCS 2025",
     },
     # 4. Rare Earth Elements
@@ -310,6 +328,12 @@ MINERALS: list[dict] = [
             "78% US weapons use REE",
             "China 2025 ban",
         ],
+        "canada": {
+            "platforms": ["CF-188 guided munitions", "F-35 (on order, 920 lbs REE)", "Halifax-class radar/sonar", "Victoria-class sonar", "AIM-9/AIM-120 missiles"],
+            "import_pct": 100,
+            "domestic": "Vital Metals Nechalacho mine (NWT) in early production, not yet significant",
+            "strategic_note": "F-35 program requires 920 lbs of REE per aircraft. Canada has no separation/magnet capacity. China's 2025 export ban directly threatens CAF modernization.",
+        },
         "source": "USGS MCS 2025",
     },
     # 5. Tungsten
@@ -351,6 +375,12 @@ MINERALS: list[dict] = [
             "Russia sanctions",
             "Austria only Western processor",
         ],
+        "canada": {
+            "platforms": ["Leopard 2A6M 120mm APFSDS rounds", "C7/C8 rifle 5.56mm AP", "M777 155mm shells", "LAV 6.0 ammunition", ".50 cal AP"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Canada has zero tungsten production. All AP ammunition for CAF tanks, rifles, and artillery depends on Chinese-controlled supply. No substitutes exist.",
+        },
         "source": "USGS MCS 2025",
     },
     # 6. Gallium
@@ -391,6 +421,12 @@ MINERALS: list[dict] = [
             "All radar/EW depends on it",
             "Single failure point",
         ],
+        "canada": {
+            "platforms": ["CF-188 AN/APG-73 radar", "F-35 AN/APG-81 AESA radar (on order)", "Halifax-class radar systems", "electronic warfare suites"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "China's 2023 export controls directly threaten Canada's F-35 acquisition and Halifax-class radar upgrades. No non-Chinese supply exists.",
+        },
         "source": "USGS MCS 2025",
     },
     # 7. Germanium
@@ -433,6 +469,12 @@ MINERALS: list[dict] = [
             "No substitute for IR windows",
             "Umicore main Western refiner",
         ],
+        "canada": {
+            "platforms": ["Leopard 2A6M thermal sights", "LAV 6.0 thermal imaging", "CF-188 targeting pods", "sniper optics", "Victoria-class periscopes"],
+            "import_pct": 96,
+            "domestic": "~4% from Teck Resources zinc refining at Trail BC",
+            "strategic_note": "Teck's Trail smelter provides partial hedge, but insufficient for military-grade IR optics. All CAF thermal imaging depends on germanium.",
+        },
         "source": "USGS MCS 2025",
     },
     # 8. Antimony
@@ -472,6 +514,12 @@ MINERALS: list[dict] = [
             "Critical for all ammo",
             "US 85% import-reliant",
         ],
+        "canada": {
+            "platforms": ["All CAF small arms ammunition (5.56mm, 7.62mm, .50 cal)", "155mm artillery shells", "LAV 6.0 fire suppression", "body armor flame resistance"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "China's December 2024 export ban is existential — antimony hardens every bullet the CAF fires. No domestic source, no substitute.",
+        },
         "source": "USGS MCS 2025",
     },
     # 9. Beryllium
@@ -511,6 +559,12 @@ MINERALS: list[dict] = [
             "Toxicity limits expansion",
             "Nuclear weapons critical",
         ],
+        "canada": {
+            "platforms": ["F-35 structural connectors (on order)", "satellite components (CSA RADARSAT)", "precision instrumentation"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Low volume but critical. US controls 65% of supply — allied source is favorable for Canada.",
+        },
         "source": "USGS MCS 2025",
     },
     # 10. Chromium
@@ -551,6 +605,12 @@ MINERALS: list[dict] = [
             "No NA mining",
             "100% US import",
         ],
+        "canada": {
+            "platforms": ["Leopard 2A6M armor plate", "LAV 6.0 armor", "Halifax-class hull steel", "C7/C8 barrel chrome lining", "CSC Type 26 structural steel"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Every CAF armored vehicle and naval vessel requires chromium steel. 100% import-reliant with South Africa as primary source.",
+        },
         "source": "USGS MCS 2025",
     },
     # 11. Manganese
@@ -590,6 +650,12 @@ MINERALS: list[dict] = [
             "Essential for military steel",
             "US 100% import-reliant",
         ],
+        "canada": {
+            "platforms": ["LAV 6.0 hull steel", "Leopard 2A6M steel", "Halifax-class structural steel", "Victoria-class HY-80 hull", "M777 barrel steel", "CSC Type 26"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Essential for all military-grade steel. Canada has zero domestic production. China processes 90% despite mining only 7%.",
+        },
         "source": "USGS MCS 2025",
     },
     # 12. Niobium
@@ -625,6 +691,12 @@ MINERALS: list[dict] = [
             "No substitutes in superalloys",
             "CBMM disruption halts global supply",
         ],
+        "canada": {
+            "platforms": ["CF-188 F404 engine Inconel 718", "F-35 F135 engine (on order)", "CH-148 engine components", "Victoria-class reactor-grade steel"],
+            "import_pct": 0,
+            "domestic": "7% of global production — Niobec mine, Saguenay QC (Magris Resources)",
+            "strategic_note": "Rare strategic advantage — Canada is world's #2 niobium producer. Domestic supply secures jet engine superalloy chain.",
+        },
         "source": "USGS MCS 2025",
     },
     # 13. Tantalum
@@ -665,6 +737,12 @@ MINERALS: list[dict] = [
             "Dodd-Frank",
             "China 40% processing",
         ],
+        "canada": {
+            "platforms": ["CF-188 avionics capacitors", "Halifax-class electronic warfare suite", "CP-140 Aurora electronics", "F-35 avionics (on order)"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "All CAF avionics depend on tantalum capacitors. Conflict mineral sourcing (DRC/Rwanda) creates ethical and supply risks.",
+        },
         "source": "USGS MCS 2025",
     },
     # 14. Vanadium
@@ -703,6 +781,12 @@ MINERALS: list[dict] = [
             "Ti-6Al-4V most important military aerospace alloy",
             "S.Africa only Western source",
         ],
+        "canada": {
+            "platforms": ["CF-188 Ti-6Al-4V structural alloy", "F-35 primary structural alloy (on order)", "LAV 6.0 armor steel", "Victoria-class hull steel"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Ti-6Al-4V is the most critical alloy in military aerospace. China+Russia control 91%. F-35 program is extremely exposed.",
+        },
         "source": "USGS MCS 2025",
     },
     # 15. Molybdenum
@@ -742,6 +826,12 @@ MINERALS: list[dict] = [
             "Copper byproduct (inelastic)",
             "US 11% hedge",
         ],
+        "canada": {
+            "platforms": ["CF-188 F404 engine hot section", "Leopard 2A6M armor steel", "Halifax-class structural steel", "Victoria-class hull"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Required for all high-temperature engine components and armor-grade steel in CAF inventory.",
+        },
         "source": "USGS MCS 2025",
     },
     # 16. Nickel
@@ -783,6 +873,12 @@ MINERALS: list[dict] = [
             "New Caledonia collapse",
             "Jet engines+submarine hulls",
         ],
+        "canada": {
+            "platforms": ["CF-188 F404 engine Inconel", "Victoria-class HY-80 hull steel", "Halifax-class gas turbine engines", "CSC Type 26 hull", "F-35 F135 engine (on order)"],
+            "import_pct": 50,
+            "domestic": "4% of global mining — Sudbury ON, Thompson MB, Voisey's Bay NL (Vale, Glencore)",
+            "strategic_note": "Canada is a significant nickel miner — strategic advantage. But Indonesian supply (55%) is under Chinese refining control, threatening global pricing.",
+        },
         "source": "USGS MCS 2025",
     },
     # 17. Copper
@@ -825,6 +921,12 @@ MINERALS: list[dict] = [
             "Most used defense metal by weight",
             "Electrification demand",
         ],
+        "canada": {
+            "platforms": ["All CAF ammunition brass casings", "Halifax-class/CSC wiring and plumbing", "all platform electrical systems", "LAV 6.0 wiring"],
+            "import_pct": 70,
+            "domestic": "Minor mining (Highland Valley BC, Sudbury ON byproduct)",
+            "strategic_note": "Copper is in every CAF platform and every round of ammunition. Growing electrification demand will compete with defence needs.",
+        },
         "source": "USGS MCS 2025",
     },
     # 18. Aluminum
@@ -873,6 +975,12 @@ MINERALS: list[dict] = [
             "Indonesia bauxite ban",
             "Military aircraft+armor",
         ],
+        "canada": {
+            "platforms": ["CF-188 structural skins", "CC-177 Globemaster fuselage", "LAV 6.0 hull", "Halifax-class superstructure", "TAPV hull", "CSC Type 26 superstructure"],
+            "import_pct": 40,
+            "domestic": "5% of global smelting — Rio Tinto Alcan (Kitimat BC, Jonquière QC, others)",
+            "strategic_note": "Canada has significant aluminum smelting — one of the few minerals with domestic processing capacity. Strategic advantage for vehicle and aircraft production.",
+        },
         "source": "USGS MCS 2025",
     },
     # 19. Zinc
@@ -913,6 +1021,12 @@ MINERALS: list[dict] = [
             "Essential for brass ammo (no substitute)",
             "Declining grades",
         ],
+        "canada": {
+            "platforms": ["All CAF small arms brass casings (5.56mm, 7.62mm)", "artillery shell casings", "Halifax-class sacrificial anodes", "galvanized vehicle chassis"],
+            "import_pct": 60,
+            "domestic": "~4% global refining — Teck Trail BC, Hudbay Flin Flon MB",
+            "strategic_note": "Canada has zinc refining capacity at Trail BC. But all brass ammunition requires zinc — no substitute exists for cartridge cases.",
+        },
         "source": "USGS MCS 2025",
     },
     # 20. Tin
@@ -953,6 +1067,12 @@ MINERALS: list[dict] = [
             "DRC conflict",
             "Tin-lead solder military standard",
         ],
+        "canada": {
+            "platforms": ["All CAF electronic systems circuit board solder", "CF-188 radar solder joints", "Halifax-class sonar electronics", "Victoria-class combat systems"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Every military electronic system uses tin-lead solder. RoHS exemption keeps military on leaded solder — China+Indonesia control 68% of refining.",
+        },
         "source": "USGS MCS 2025",
     },
     # 21. Platinum Group Metals
@@ -992,6 +1112,12 @@ MINERALS: list[dict] = [
             "Russia sanctions (Pd#1)",
             "Deeply concentrated no alternatives",
         ],
+        "canada": {
+            "platforms": ["All CAF ground vehicles (catalytic converters)", "Leopard 2A6M", "LAV 6.0", "TAPV", "future hydrogen fuel cell programs"],
+            "import_pct": 70,
+            "domestic": "3% of global mining — Sudbury ON (Vale, Glencore) as nickel byproduct",
+            "strategic_note": "Canada has modest PGM production as nickel byproduct. South Africa+Russia control 84% of global supply. Critical for future hydrogen military applications.",
+        },
         "source": "USGS MCS 2025",
     },
     # 22. Graphite
@@ -1031,6 +1157,12 @@ MINERALS: list[dict] = [
             "Mozambique insurgency",
             "Nuclear moderators+battery anodes",
         ],
+        "canada": {
+            "platforms": ["Victoria-class submarine batteries", "future Li-ion battery programs", "stealth coatings research", "nuclear-related programs"],
+            "import_pct": 100,
+            "domestic": "Emerging — Nouveau Monde Graphite (QC), Northern Graphite (ON) in development",
+            "strategic_note": "Canada has graphite deposits under development in Quebec and Ontario. If brought online, could reduce dependency on China's 90% processing monopoly.",
+        },
         "source": "USGS MCS 2025",
     },
     # 23. Fluorspar
@@ -1069,6 +1201,12 @@ MINERALS: list[dict] = [
             "Mexico 63% of US imports (single corridor)",
             "Nuclear deterrent vulnerability",
         ],
+        "canada": {
+            "platforms": ["Nuclear submarine programs (if pursued)", "F-35 fluoropolymer coatings (on order)", "military optics"],
+            "import_pct": 100,
+            "domestic": "Canada Fluorspar Inc. (NL) — small scale, restarting production",
+            "strategic_note": "Essential for uranium enrichment. Canada is a major uranium producer (Cameco) but depends on imported fluorspar for UF6 conversion.",
+        },
         "source": "USGS MCS 2025",
     },
     # 24. Magnesium
@@ -1109,6 +1247,12 @@ MINERALS: list[dict] = [
             "Lightest structural metal (no substitute)",
             "Essential for flares",
         ],
+        "canada": {
+            "platforms": ["CH-148 Cyclone transmission housing", "LAV III/6.0 alloy components", "all CAF countermeasure flares", "illumination rounds"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "China's 85% monopoly is an acute risk. 2021 curtailment caused 600% price spike. All CAF aircraft countermeasure flares require magnesium.",
+        },
         "source": "USGS MCS 2025",
     },
     # 25. Silicon
@@ -1148,6 +1292,12 @@ MINERALS: list[dict] = [
             "Export controls could paralyze defense",
             "Norway/Brazil only Western sources",
         ],
+        "canada": {
+            "platforms": ["All CAF electronics (every platform)", "CF-188 avionics", "F-35 avionics (on order)", "RADARSAT satellites", "all guided munitions"],
+            "import_pct": 95,
+            "domestic": "Minor ferrosilicon production (QC)",
+            "strategic_note": "Foundation of all semiconductor electronics. Every CAF platform depends on silicon chips. China controls 78% of metallurgical-grade production.",
+        },
         "source": "USGS MCS 2025",
     },
     # 26. Strontium
@@ -1186,6 +1336,12 @@ MINERALS: list[dict] = [
             "No US production since 2006",
             "No substitute for red flares",
         ],
+        "canada": {
+            "platforms": ["All CAF aircraft countermeasure flares (IR)", "tracer ammunition (5.56mm, 7.62mm)", "mortar illumination rounds", "sonobuoys"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "No domestic production since forever. Strontium nitrate is the only compound that produces red military flares — no substitute.",
+        },
         "source": "USGS MCS 2025",
     },
     # 27. Zirconium
@@ -1223,6 +1379,12 @@ MINERALS: list[dict] = [
             "Diversified mining but concentrated processing",
             "Critical for nuclear submarine fleet",
         ],
+        "canada": {
+            "platforms": ["Victoria-class submarine (potential nuclear upgrade)", "CSC Type 26 nuclear considerations", "ceramic body armor inserts"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Critical if Canada pursues nuclear-powered submarines (AUKUS-adjacent). China processes 88% of unwrought zirconium.",
+        },
         "source": "USGS MCS 2025",
     },
     # 28. Hafnium
@@ -1259,6 +1421,12 @@ MINERALS: list[dict] = [
             "65% used in nuclear control rods",
             "US maintains strategic reserves",
         ],
+        "canada": {
+            "platforms": ["Victoria-class (nuclear control rods if upgraded)", "F-35 F135 engine superalloy blades (on order)"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Only 90 tonnes produced globally per year. France controls 49%. Critical for any Canadian nuclear submarine ambitions.",
+        },
         "source": "USGS MCS 2025",
     },
     # 29. Rhenium
@@ -1300,6 +1468,12 @@ MINERALS: list[dict] = [
             "No substitute in single-crystal superalloys",
             "Every modern fighter depends on it",
         ],
+        "canada": {
+            "platforms": ["CF-188 F404 engine single-crystal turbine blades", "F-35 F135 engine (on order)", "CH-148 T700 engine"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "Every CAF fighter jet engine depends on rhenium in turbine blades. Global production only 62,000 kg/year — tiny market with no substitutes.",
+        },
         "source": "USGS MCS 2025",
     },
     # 30. Indium
@@ -1341,6 +1515,12 @@ MINERALS: list[dict] = [
             "InSb critical for IR seekers",
             "Only ~990t/yr globally",
         ],
+        "canada": {
+            "platforms": ["CF-188 cockpit displays", "F-35 stealth canopy coating (on order)", "LAV 6.0 displays", "targeting system IR detectors"],
+            "import_pct": 100,
+            "domestic": None,
+            "strategic_note": "F-35 stealth canopy requires ITO coating — indium has no proven substitute. China controls 66% as zinc byproduct.",
+        },
         "source": "USGS MCS 2025",
     },
 ]
