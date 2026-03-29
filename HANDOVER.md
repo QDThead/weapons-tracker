@@ -189,11 +189,73 @@ Fully operational in Supply Chain tab → "3D Supply Map" sub-tab. Features:
 | `docs/superpowers/specs/2026-03-29-cesium-globe-design.md` | 120 | Design spec |
 | `docs/superpowers/plans/2026-03-29-cesium-globe.md` | ~600 | Implementation plan |
 
+## Cobalt Demand vs Supply Analysis (Research Complete — Not Yet Built Into UI)
+
+Analysis completed 2026-03-29. Data below is ready to be implemented as a supply sufficiency feature on the 3D globe detail panel.
+
+### Canada's Annual Military Cobalt Demand (~0.3 tonnes steady-state, ~0.74 tonnes during F-35 acquisition)
+
+| Platform | Engine | Overhauls/yr | Co per overhaul | Annual Co (kg) |
+|----------|--------|-------------|----------------|----------------|
+| CF-188 Hornet (76 aircraft) | 2x GE F404 | ~8 | 7 kg | 56 |
+| F-35A (88 on order, full fleet) | P&W F135 | ~2.4 | 12 kg | 29 |
+| CH-148 Cyclone (28 helos) | 2x GE CT7 | ~3 | 4 kg | 12 |
+| CH-149 Cormorant (14 helos) | 3x GE CT7 | ~3 | 4 kg | 12 |
+| CH-147F Chinook (15 helos) | 2x Honeywell T55 | ~2 | 5 kg | 10 |
+| CC-177 Globemaster (5 aircraft) | 4x P&W F117 | ~1 | 15 kg | 15 |
+| Halifax-class frigates (12 ships) | 2x GE LM2500 | ~0.5/yr | 30 kg | 15 |
+| Leopard 2A6M (80 tanks) | MTU MB 873 | ~7 | 0.5 kg | 3.5 |
+| LAV 6.0 (550 vehicles) | Caterpillar C7 | ~18 | 0.3 kg | 5.4 |
+| Victoria-class SSK (4 boats) | Diesel-electric | minimal | — | 2 |
+| Guided munitions (SmCo magnets) | AIM-9/AIM-120 | — | — | 15 |
+| BB-2590 soldier batteries | Li-ion NMC/LCO | ~800/yr | 0.06 kg | 50 |
+| WC-Co cutting tools | Depot maintenance | — | — | 20 |
+| Magnetic components | Sensors, generators | — | — | 10 |
+| Stellite wear parts (non-engine) | Valves, pumps | — | — | 5 |
+| **Spare parts buffer (15%)** | | | | **38** |
+| **TOTAL STEADY-STATE** | | | | **~298 kg/yr** |
+| **F-35 acquisition (88 engines over 7 years)** | 35 kg Co/engine | | | **+440 kg/yr** |
+| **TOTAL DURING F-35 RAMP (2026-2032)** | | | | **~740 kg/yr** |
+
+### Supply Sufficiency Scenarios
+
+| Scenario | Secure Supply | Western Demand | Ratio | Verdict |
+|----------|--------------|----------------|-------|---------|
+| Normal operations | 237,000 t/yr global | 237,000 | 1.0x | Balanced |
+| China export ban | 31,500 t/yr (NATO-allied refiners) | 54,000 (all Western) | **0.73x** | **27% deficit** |
+| China + DRC collapse | 12,500 t/yr | 54,000 | **0.23x** | **77% deficit — CRITICAL** |
+| Defence superalloys only (priority alloc) | 31,500 | 8,000 | **4.9x** | Sufficient IF govts intervene |
+| Canada sovereign only | 2,500 t/yr (Vale Long Harbour) | 0.74 t/yr (CAF) | **3,400x** | Volume not the problem |
+
+### Key Finding
+**Canada's military cobalt demand is 0.0003% of global production. The vulnerability is not volume — it is supply chain architecture.** Canada does not manufacture jet engines or cast superalloy components. These come from US OEMs (P&W, GE, Honeywell) who depend on a global supply chain where China controls 80% of refining.
+
+### Recommended Courses of Action
+
+| COA | Action | Cost | Impact |
+|-----|--------|------|--------|
+| **COA-1** | Sovereign cobalt stockpile (500t refined metal) | ~$15M | 60 years CAF demand; bridges any disruption |
+| **COA-2** | Increase engine overhaul parts buffer to 24 months | ~$100M | Eliminates grounding risk regardless of cause |
+| **COA-3** | Restart Sherritt Fort Saskatchewan with non-Cuban feedstock | $50-150M | Gives Canada 6,300 t/yr sovereign refining |
+| **COA-4** | Formalize allied cobalt allocation under DPSA with US DoD | $0 | Guaranteed access to US superalloy components |
+| **COA-5** | Superalloy scrap recycling at Canadian MRO depots | $5-10M | Captures cobalt from engine overhauls (~200 kg/yr) |
+| **COA-6** | Engine health monitoring to extend overhaul intervals 15-25% | ~$20M | Reduces parts consumption + improves availability |
+
+### Implementation Target
+Build into the Cobalt detail panel on the 3D globe:
+- Demand breakdown bar chart by platform
+- Supply sufficiency gauge under each scenario
+- Interactive "What if China cuts off cobalt?" scenario slider
+- COA recommendations with cost/impact matrix
+- Exportable to PDF briefing
+
+---
+
 ## What's In Progress
 
-1. **Deep-dive remaining 29 minerals** — same depth as Cobalt (mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity). Cobalt is the template.
-
-2. **UX Clarity Fixes** — 8 improvements for newcomer clarity: TIV glossary tooltips, flight context banner, dimension labels, radar legend, graph legend, deals context, alliance explainer.
+1. **Cobalt demand-vs-supply sufficiency UI** — build the analysis above into the 3D globe detail panel (demand chart, supply gauge, scenario simulator, COA matrix)
+2. **Deep-dive remaining 29 minerals** — same depth as Cobalt (mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity). Cobalt is the template.
+3. **UX Clarity Fixes** — 8 improvements for newcomer clarity: TIV glossary tooltips, flight context banner, dimension labels, radar legend, graph legend, deals context, alliance explainer.
 
 ---
 
