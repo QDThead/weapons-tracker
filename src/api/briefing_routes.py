@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from src.storage.database import SessionLocal
@@ -34,6 +34,6 @@ async def generate_briefing_pdf():
         )
     except Exception as e:
         logger.error("Briefing generation failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()

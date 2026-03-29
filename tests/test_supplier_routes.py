@@ -75,9 +75,7 @@ def test_get_supplier_profile():
 def test_get_supplier_profile_not_found():
     _seed()
     resp = client.get("/dashboard/suppliers/NonexistentCorp/profile")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "error" in data
+    assert resp.status_code == 404
 
 
 def test_get_concentration():

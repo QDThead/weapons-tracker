@@ -305,6 +305,7 @@ class SupplyChainNode(Base):
     id = Column(Integer, primary_key=True)
     node_type = Column(SQLEnum(SupplyChainNodeType), nullable=False)
     name = Column(String(255), nullable=False)
+    nsn = Column(String(13), nullable=True, index=True)  # NATO Stock Number (13-digit)
     description = Column(Text)
 
     country_id = Column(Integer, ForeignKey("countries.id"))

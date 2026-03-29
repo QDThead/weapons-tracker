@@ -70,6 +70,11 @@ async def seed_sipri_transfers(svc: PersistenceService):
 
         except Exception as e:
             logger.warning("  Failed to fetch %s: %s", country_name, e)
+            # Ensure session is clean for the next country
+            try:
+                svc.session.rollback()
+            except Exception:
+                pass
 
     logger.info("SIPRI total: %d new transfers stored", total_inserted)
     return total_inserted
@@ -157,7 +162,7 @@ async def main():
         from src.analysis.risk_taxonomy import RiskTaxonomyScorer
         scorer = RiskTaxonomyScorer(session)
         taxonomy_count = scorer.seed_initial_scores()
-        print(f"  Taxonomy: seeded {taxonomy_count} risk scores across 13 categories")
+        logger.info("  Taxonomy: seeded %d risk scores across 13 categories", taxonomy_count)
 
         elapsed = time.time() - start_time
 

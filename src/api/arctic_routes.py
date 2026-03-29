@@ -19,7 +19,7 @@ import math
 import time
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 
 from src.storage.database import SessionLocal
@@ -641,10 +641,12 @@ async def get_arctic_flights():
                 nation = "russian"
             elif any(cs.startswith(p) for p in chinese_prefixes) or "china" in origin:
                 nation = "chinese"
-            elif any(cs.startswith(p) for p in nato_prefixes) or origin in (
-                "canada", "united states", "norway", "finland",
-                "sweden", "denmark", "poland", "united kingdom",
-                "germany", "france", "iceland",
+            elif any(cs.startswith(p) for p in nato_prefixes) or any(
+                c in origin for c in (
+                    "canada", "united states", "norway", "finland",
+                    "sweden", "denmark", "poland", "united kingdom",
+                    "germany", "france", "iceland",
+                )
             ):
                 nation = "nato"
             else:
@@ -674,13 +676,7 @@ async def get_arctic_flights():
         return result
     except Exception as e:
         logger.error("Arctic flights fetch failed: %s", e)
-        return {
-            "total_arctic": 0,
-            "counts": {"russian": 0, "chinese": 0, "nato": 0, "unknown": 0},
-            "flights": [],
-            "timestamp": time.time(),
-            "error": str(e),
-        }
+        raise HTTPException(status_code=502, detail="Failed to fetch Arctic flight data")
 
 
 def _compute_force_balance(session) -> list[dict]:
@@ -1334,7 +1330,7 @@ async def _fetch_monthly_trade_arctic() -> dict:
         }
     except Exception as e:
         logger.warning("Census Arctic trade fetch failed: %s", e)
-        result["us_exports_to_arctic"] = {"source": "US Census Bureau", "error": str(e)}
+        result["us_exports_to_arctic"] = {"source": "US Census Bureau", "error": "Data source unavailable"}
 
     # 2. Eurostat: Nordic/Arctic EU nations' arms imports
     try:
@@ -1362,7 +1358,7 @@ async def _fetch_monthly_trade_arctic() -> dict:
         }
     except Exception as e:
         logger.warning("Eurostat Arctic trade fetch failed: %s", e)
-        result["eu_arctic_imports"] = {"source": "Eurostat Comext", "error": str(e)}
+        result["eu_arctic_imports"] = {"source": "Eurostat Comext", "error": "Data source unavailable"}
 
     # 3. StatCan: Canada's arms trade
     try:
@@ -1382,7 +1378,7 @@ async def _fetch_monthly_trade_arctic() -> dict:
         }
     except Exception as e:
         logger.warning("StatCan Arctic trade fetch failed: %s", e)
-        result["canada_trade"] = {"source": "Statistics Canada", "error": str(e)}
+        result["canada_trade"] = {"source": "Statistics Canada", "error": "Data source unavailable"}
 
     return result
 

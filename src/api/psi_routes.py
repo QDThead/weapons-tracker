@@ -530,7 +530,7 @@ async def get_forecasts():
         return result
     except Exception as e:
         logger.error("Forecasting failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -590,7 +590,7 @@ async def get_taxonomy():
         return result
     except Exception as e:
         logger.error("get_taxonomy failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -640,7 +640,7 @@ async def get_taxonomy_summary():
         return result
     except Exception as e:
         logger.error("get_taxonomy_summary failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -653,7 +653,7 @@ async def get_taxonomy_category(category_id: int):
     from src.analysis.confidence import compute_confidence
 
     if category_id not in TAXONOMY_DEFINITIONS:
-        return {"error": f"Category {category_id} not found (valid: 1-13)"}
+        raise HTTPException(status_code=404, detail="Resource not found")
 
     cache_key = f"taxonomy_cat_{category_id}"
     cached = _check_cache(cache_key, _PSI_TAXONOMY_TTL)
@@ -707,7 +707,7 @@ async def get_taxonomy_category(category_id: int):
         return result
     except Exception as e:
         logger.error("get_taxonomy_category failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 

@@ -24,8 +24,39 @@ logger = logging.getLogger(__name__)
 class AnomalyDetector:
     """Detects anomalous supplier behavior using statistical methods."""
 
+    BASE_THRESHOLD = 1.5
+
     def __init__(self, session: Session):
         self.session = session
+
+    def get_adjusted_threshold(self) -> float:
+        """Return z-score threshold adjusted by analyst feedback.
+
+        Rules:
+        - < 5 feedback entries  → default 1.5 (insufficient data)
+        - false_positive_rate > 0.5 → 2.5  (too much noise)
+        - false_positive_rate > 0.3 → 2.0
+        - false_positive_rate < 0.1 and total > 10 → 1.25  (catch more)
+        - otherwise → 1.5
+        """
+        feedback = FeedbackEngine(self.session)
+        stats = feedback.get_feedback_stats()
+
+        total = stats["total_feedback"]
+        if total < 5:
+            return self.BASE_THRESHOLD
+
+        fp = stats["false_positives"]
+        fp_rate = fp / total
+
+        if fp_rate > 0.5:
+            return self.BASE_THRESHOLD + 1.0  # 2.5
+        if fp_rate > 0.3:
+            return self.BASE_THRESHOLD + 0.5  # 2.0
+        if fp_rate < 0.1 and total > 10:
+            return self.BASE_THRESHOLD - 0.25  # 1.25
+
+        return self.BASE_THRESHOLD
 
     def detect_all(self) -> list[dict]:
         """Run anomaly detection across all supplier risk scores."""
@@ -44,11 +75,14 @@ class AnomalyDetector:
         mean = statistics.mean(scores)
         stdev = statistics.stdev(scores) if len(scores) > 1 else 0
 
+        threshold = self.get_adjusted_threshold()
+        logger.info("Anomaly detection using z-score threshold %.2f", threshold)
+
         for s in suppliers:
             z_score = (s.risk_score_composite - mean) / stdev if stdev > 0 else 0
 
-            # Flag if more than 1.5 standard deviations above mean
-            if z_score > 1.5:
+            # Flag if more than threshold standard deviations above mean
+            if z_score > threshold:
                 anomalies.append({
                     "entity": s.name,
                     "type": "high_risk_outlier",
@@ -158,7 +192,7 @@ class MLCapability:
                 "status": "active",
                 "description": "Anomaly detection for novel risk patterns",
                 "method": "Statistical z-score analysis on supplier behavior baselines",
-                "threshold": "Flags deviations > 1.5 standard deviations",
+                "threshold": "Adaptive z-score threshold (default 1.5σ), adjusted by analyst RLHF feedback",
             },
             "natural_language_processing": {
                 "status": "active",

@@ -10,7 +10,7 @@ import logging
 import time
 from collections import defaultdict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select, func
 
 from src.storage.database import SessionLocal
@@ -144,7 +144,7 @@ async def get_suppliers():
         return result
     except Exception as e:
         logger.error("get_suppliers failed: %s", e)
-        return {"total_suppliers": 0, "suppliers": [], "error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -202,7 +202,7 @@ async def get_concentration():
         return result
     except Exception as e:
         logger.error("get_concentration failed: %s", e)
-        return {"sectors": [], "total_sectors": 0, "error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -248,7 +248,7 @@ async def get_risk_matrix():
         return result
     except Exception as e:
         logger.error("get_risk_matrix failed: %s", e)
-        return {"points": [], "error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -301,7 +301,7 @@ async def get_ownership():
         return result
     except Exception as e:
         logger.error("get_ownership failed: %s", e)
-        return {"breakdown": {}, "foreign_suppliers": [], "error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -347,7 +347,7 @@ async def get_supplier_alerts():
         return result
     except Exception as e:
         logger.error("get_supplier_alerts failed: %s", e)
-        return {"alerts": [], "total_alerts": 0, "error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -371,7 +371,7 @@ async def get_supplier_profile(name: str):
         ).scalar_one_or_none()
 
         if not supplier:
-            return {"error": f"Supplier not found: {name}"}
+            raise HTTPException(status_code=404, detail="Resource not found")
 
         contracts = session.execute(
             select(SupplierContract).where(SupplierContract.supplier_id == supplier.id)
@@ -414,8 +414,10 @@ async def get_supplier_profile(name: str):
         }
         _set_cache(cache_key, result)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("get_supplier_profile %s failed: %s", name, e)
-        return {"error": f"Failed to load profile for {name}"}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()

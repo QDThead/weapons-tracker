@@ -34,7 +34,7 @@ async def get_threat_report():
         return await _cti.generate_threat_report()
     except Exception as exc:
         logger.exception("Cyber threat report failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/threat-actors")
@@ -58,7 +58,7 @@ async def get_threat_actors():
         }
     except Exception as exc:
         logger.exception("Threat actors endpoint failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/tor-nodes")
@@ -86,7 +86,7 @@ async def get_tor_exit_nodes():
         }
     except Exception as exc:
         logger.exception("Tor nodes endpoint failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/breaches")
@@ -120,7 +120,7 @@ async def get_defence_breaches():
         }
     except Exception as exc:
         logger.exception("Defence breaches endpoint failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/ioc-summary")
@@ -136,7 +136,7 @@ async def get_ioc_summary():
         return await _cti.fetch_ioc_summary()
     except Exception as exc:
         logger.exception("IOC summary endpoint failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @router.get("/supplier-risk")
@@ -170,4 +170,4 @@ async def get_supplier_cyber_risk():
         }
     except Exception as exc:
         logger.exception("Supplier cyber risk endpoint failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error") from exc

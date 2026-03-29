@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,8 @@ async def get_governance_indicators(countries: str = "CAN,USA,RUS,CHN,GBR,DEU,FR
         _cache[cache_key] = (time.time(), result)
         return result
     except Exception as e:
-        return {"error": str(e)}
+        logger.error("Governance indicators fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/economic")
@@ -77,7 +78,8 @@ async def get_economic_indicators(countries: str = "CAN,USA,RUS,CHN"):
         _cache[cache_key] = (time.time(), result)
         return result
     except Exception as e:
-        return {"error": str(e)}
+        logger.error("Economic indicators fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/exchange-rates")
@@ -96,7 +98,8 @@ async def get_exchange_rates():
         _cache["fx"] = (time.time(), result)
         return result
     except Exception as e:
-        return {"error": str(e)}
+        logger.error("Exchange rates fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/milex")
@@ -157,7 +160,7 @@ async def get_milex(countries: str = ""):
         return result
     except Exception as e:
         logger.exception("SIPRI MILEX fetch failed")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/factbook")
@@ -199,7 +202,7 @@ async def get_factbook_military():
         return result
     except Exception as e:
         logger.exception("CIA Factbook fetch failed")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/commodities")
@@ -216,8 +219,8 @@ async def get_commodity_prices():
         _cache["commodities"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("FRED commodity fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("FRED commodity fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/cyber-threats")
@@ -241,8 +244,8 @@ async def get_cyber_threats():
         _cache["cisa_kev"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("CISA KEV fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("CISA KEV fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/disasters")
@@ -268,8 +271,8 @@ async def get_active_disasters():
         _cache["gdacs_disasters"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("GDACS disasters fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("GDACS disasters fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/satellites")
@@ -292,8 +295,8 @@ async def get_military_satellites():
         _cache["celestrak_sats"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("Celestrak satellites fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("Celestrak satellites fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/missiles")
@@ -310,8 +313,8 @@ async def get_missile_data():
         _cache["csis_missiles"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("CSIS missiles fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("CSIS missiles fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/un-sanctions")
@@ -335,8 +338,8 @@ async def get_un_sanctions():
         _cache["un_sanctions"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("UN Sanctions fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("UN Sanctions fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/earthquakes")
@@ -360,8 +363,8 @@ async def get_earthquakes():
         _cache["usgs_earthquakes"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("USGS Earthquake fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("USGS Earthquake fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/threat-groups")
@@ -385,8 +388,8 @@ async def get_threat_groups():
         _cache["mitre_attack"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("MITRE ATT&CK fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("MITRE ATT&CK fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/economic-outlook")
@@ -407,8 +410,8 @@ async def get_economic_outlook():
         _cache["imf_weo"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("IMF WEO fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("IMF WEO fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/natural-events")
@@ -432,8 +435,8 @@ async def get_natural_events():
         _cache["nasa_eonet"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("NASA EONET fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("NASA EONET fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/chokepoints-traffic")
@@ -457,8 +460,8 @@ async def get_chokepoints_traffic():
         _cache["portwatch_chokepoints"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("PortWatch chokepoint fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("PortWatch chokepoint fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/arctic-aircraft")
@@ -483,8 +486,8 @@ async def get_arctic_aircraft():
         _cache["opensky_arctic"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("OpenSky Arctic aircraft fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("OpenSky Arctic aircraft fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/displacement")
@@ -510,8 +513,8 @@ async def get_displacement():
         _cache["unhcr_displacement"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("UNHCR displacement fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("UNHCR displacement fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/space-launches")
@@ -536,8 +539,8 @@ async def get_space_launches():
         _cache["space_launches"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("Space Devs launch fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("Space Devs launch fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/submarine-cables")
@@ -562,8 +565,8 @@ async def get_submarine_cables():
         _cache["submarine_cables"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("Submarine cable fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("Submarine cable fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/internet-infrastructure")
@@ -584,8 +587,8 @@ async def get_internet_infrastructure():
         _cache["ripe_internet"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("RIPE Stat fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("RIPE Stat fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/dod-contracts")
@@ -610,8 +613,8 @@ async def get_dod_contracts():
         _cache["dod_contracts"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("USASpending DoD contracts fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("USASpending DoD contracts fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/mineral-deposits")
@@ -635,8 +638,8 @@ async def get_mineral_deposits():
         _cache["usgs_mineral_deposits"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("USGS Mineral deposits fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("USGS Mineral deposits fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/conflict-deaths")
@@ -662,8 +665,8 @@ async def get_conflict_deaths():
         _cache["wb_conflict_deaths"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("World Bank Conflict Deaths fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("World Bank Conflict Deaths fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/us-fiscal")
@@ -687,8 +690,8 @@ async def get_us_fiscal():
         _cache["treasury_fiscal"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("Treasury Fiscal fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("Treasury Fiscal fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/defence-research")
@@ -716,8 +719,8 @@ async def get_defence_research():
         _cache["openalex_research"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("OpenAlex research fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("OpenAlex research fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/connectivity")
@@ -740,8 +743,8 @@ async def get_connectivity():
         _cache["ripe_atlas_connectivity"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("RIPE Atlas connectivity fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("RIPE Atlas connectivity fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/critical-cves")
@@ -766,8 +769,8 @@ async def get_critical_cves():
         _cache["nvd_critical_cves"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("NVD CVE fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("NVD CVE fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/severe-weather")
@@ -792,8 +795,8 @@ async def get_severe_weather():
         _cache["noaa_severe_weather"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("NOAA Weather fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("NOAA Weather fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/nuclear-arsenals")
@@ -824,8 +827,8 @@ async def get_nuclear_arsenals():
         _cache["fas_nuclear_arsenals"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("FAS Nuclear fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("FAS Nuclear fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/armed-forces")
@@ -850,8 +853,8 @@ async def get_armed_forces():
         _cache["wb_armed_forces"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("World Bank Armed Forces fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("World Bank Armed Forces fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/unroca")
@@ -874,8 +877,8 @@ async def get_unroca_transfers():
         _cache["unroca_key"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("UNROCA key-countries fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("UNROCA key-countries fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/unroca/{country}")
@@ -904,9 +907,8 @@ async def get_unroca_country(country: str):
         _cache[cache_key] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("UNROCA country fetch failed (%s): %s", country, e)
-        return {"error": str(e), "slug_tried": country,
-                "hint": "Use /enrichment/unroca/countries for valid slugs"}
+        logger.error("UNROCA country fetch failed (%s): %s", country, e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/unroca-countries")
@@ -929,8 +931,8 @@ async def get_unroca_country_list():
         _cache["unroca_countries"] = (time.time(), result)
         return result
     except Exception as e:
-        logger.warning("UNROCA country list fetch failed: %s", e)
-        return {"error": str(e)}
+        logger.error("UNROCA country list fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/sources")

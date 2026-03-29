@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import time
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from src.storage.database import SessionLocal
@@ -116,7 +116,7 @@ async def get_actions(
         return result
     except Exception as e:
         logger.error("get_actions failed: %s", e)
-        return {"actions": [], "total": 0, "by_priority": {}, "by_status": {}, "error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -128,7 +128,7 @@ async def update_action(action_id: int, update: StatusUpdate):
     try:
         action = session.get(MitigationAction, action_id)
         if not action:
-            return {"error": f"Action {action_id} not found"}
+            raise HTTPException(status_code=404, detail="Resource not found")
         if update.status:
             action.status = update.status
         if update.notes is not None:
@@ -142,11 +142,37 @@ async def update_action(action_id: int, update: StatusUpdate):
             "notes": action.notes,
             "updated_at": action.updated_at.isoformat(),
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("update_action failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
+
+
+@router.get("/playbook")
+async def get_playbook():
+    """Return the full COA playbook reference (41 entries)."""
+    from src.analysis.mitigation_playbook import PLAYBOOK
+
+    entries = []
+    category_counts: dict[str, int] = {}
+    for (risk_category, risk_dimension), entry in PLAYBOOK.items():
+        entries.append({
+            "risk_category": risk_category,
+            "risk_dimension": risk_dimension,
+            "coa_action": entry.get("action", ""),
+            "coa_timeline": entry.get("timeline", ""),
+            "coa_responsible": entry.get("responsible", ""),
+        })
+        category_counts[risk_category] = category_counts.get(risk_category, 0) + 1
+
+    return {
+        "total_entries": len(entries),
+        "categories": category_counts,
+        "playbook": entries,
+    }
 
 
 @router.post("/generate")
@@ -161,6 +187,6 @@ async def generate_coas():
         return result
     except Exception as e:
         logger.error("generate_coas failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()

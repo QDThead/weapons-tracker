@@ -184,7 +184,11 @@ class PersistenceService:
             self.session.add(transfer)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new SIPRI transfers (%d total processed)", inserted, len(records))
         return inserted
 
@@ -258,7 +262,11 @@ class PersistenceService:
             self.session.add(company)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new defense companies (%d total processed)", inserted, len(records))
         return inserted
 
@@ -297,7 +305,11 @@ class PersistenceService:
             self.session.add(indicator)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new trade indicators (%d total processed)", inserted, len(records))
         return inserted
 
@@ -329,7 +341,11 @@ class PersistenceService:
             self.session.add(news)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new news articles (%d total processed)", inserted, len(articles))
         return inserted
 
@@ -354,7 +370,11 @@ class PersistenceService:
             self.session.add(tracking)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d flight position records", inserted)
         return inserted
 
@@ -380,7 +400,11 @@ class PersistenceService:
             self.session.add(tracking)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d vessel position records", inserted)
         return inserted
 
@@ -421,7 +445,11 @@ class PersistenceService:
             self.session.add(material)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new materials (%d total processed)", inserted, len(records))
         return inserted
 
@@ -444,7 +472,7 @@ class PersistenceService:
 
             if existing:
                 for key in ("description", "country_id", "company_name",
-                            "material_id", "weapon_system_id"):
+                            "material_id", "weapon_system_id", "nsn"):
                     if key in rec and rec[key] is not None:
                         setattr(existing, key, rec[key])
                 continue
@@ -452,6 +480,7 @@ class PersistenceService:
             node = SupplyChainNode(
                 node_type=rec["node_type"],
                 name=rec["name"],
+                nsn=rec.get("nsn"),
                 description=rec.get("description"),
                 country_id=rec.get("country_id"),
                 company_name=rec.get("company_name"),
@@ -461,7 +490,11 @@ class PersistenceService:
             self.session.add(node)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new supply-chain nodes (%d total processed)", inserted, len(records))
         return inserted
 
@@ -503,7 +536,11 @@ class PersistenceService:
             self.session.add(edge)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new supply-chain edges (%d total processed)", inserted, len(records))
         return inserted
 
@@ -539,7 +576,11 @@ class PersistenceService:
             self.session.add(route)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new supply-chain routes (%d total processed)", inserted, len(records))
         return inserted
 
@@ -570,7 +611,11 @@ class PersistenceService:
             self.session.add(alert)
             inserted += 1
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         logger.info("Stored %d new supply-chain alerts (%d total processed)", inserted, len(records))
         return inserted
 
@@ -589,7 +634,11 @@ class PersistenceService:
         else:
             existing = DefenceSupplier(name=name, sector=sector, **kwargs)
             self.session.add(existing)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         return existing
 
     def upsert_contract(self, supplier_id: int, contract_number: str, **kwargs) -> SupplierContract:
@@ -602,7 +651,11 @@ class PersistenceService:
         else:
             existing = SupplierContract(supplier_id=supplier_id, contract_number=contract_number, **kwargs)
             self.session.add(existing)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         return existing
 
     def upsert_risk_score(self, supplier_id: int, dimension: RiskDimension, score: float, rationale: str) -> SupplierRiskScore:
@@ -620,7 +673,11 @@ class PersistenceService:
                 score=score, rationale=rationale,
             )
             self.session.add(existing)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         return existing
 
     def upsert_taxonomy_score(self, subcategory_key: str, **kwargs) -> RiskTaxonomyScore:
@@ -636,7 +693,11 @@ class PersistenceService:
         else:
             existing = RiskTaxonomyScore(subcategory_key=subcategory_key, **kwargs)
             self.session.add(existing)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         return existing
 
     def upsert_mitigation_action(self, risk_source: str, risk_entity: str, risk_dimension: str, **kwargs) -> MitigationAction:
@@ -660,5 +721,9 @@ class PersistenceService:
                 **kwargs,
             )
             self.session.add(existing)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         return existing

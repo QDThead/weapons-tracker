@@ -270,8 +270,8 @@ async def get_comtrade_country(
         }
         _comtrade_cache[cache_key] = (time.time(), result)
         return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid request parameters")
     except Exception as e:
         logger.error("Comtrade country fetch failed for %s: %s", country_name, e)
         raise HTTPException(status_code=502, detail="Failed to fetch Comtrade data")
@@ -384,8 +384,8 @@ async def get_buyer_side_mirror(
 
     except HTTPException:
         raise
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid request parameters")
     except Exception as e:
         logger.error("Buyer-side mirror fetch failed for %s: %s", seller, e)
         raise HTTPException(status_code=502, detail="Failed to fetch buyer-side mirror data")

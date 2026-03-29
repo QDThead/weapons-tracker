@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from datetime import datetime
+from urllib.parse import urlparse
 
 import httpx
 
@@ -42,6 +44,67 @@ class ArmsNewsArticle:
     published_at: datetime | None
     tone: float | None
     image_url: str | None
+    disinfo_flag: bool = False
+    disinfo_reason: str = ""
+
+
+# Domains commonly flagged as state-controlled disinformation outlets
+DISINFO_DOMAINS: set[str] = {
+    "rt.com",
+    "sputniknews.com",
+    "presstv.ir",
+    "globalresearch.ca",
+    "tass.com",
+}
+
+# Sensationalist title patterns
+_EXCESSIVE_CAPS_RE = re.compile(r"^[A-Z\s\d\W]{20,}$")
+_EXCESSIVE_EXCLAMATION_RE = re.compile(r"!{2,}")
+_BREAKING_NON_WIRE_RE = re.compile(r"\bBREAKING\b", re.IGNORECASE)
+
+# Major wire services where "BREAKING" is legitimate
+_WIRE_SERVICES: set[str] = {"apnews.com", "reuters.com", "afp.com"}
+
+
+def _check_disinformation(article: ArmsNewsArticle) -> None:
+    """Flag an article as potential disinformation based on heuristics.
+
+    Checks three categories:
+      1. Known disinformation source domains
+      2. Extreme GDELT tone scores (outside the typical -10 to +10 range)
+      3. Sensationalist title patterns (ALL CAPS, excessive punctuation, clickbait)
+
+    Mutates the article in place, setting ``disinfo_flag`` and ``disinfo_reason``.
+    """
+    reasons: list[str] = []
+
+    # --- 1. Known disinformation source domains ---
+    try:
+        domain = urlparse(article.url).hostname or article.source
+    except Exception:
+        domain = article.source
+    # Normalise: strip leading "www."
+    domain_clean = (domain or "").lower().lstrip("www.")
+    if domain_clean in DISINFO_DOMAINS:
+        reasons.append(f"known state-media disinformation source ({domain_clean})")
+
+    # --- 2. Extreme tone scores ---
+    if article.tone is not None and (article.tone > 8.0 or article.tone < -8.0):
+        direction = "positive" if article.tone > 0 else "negative"
+        reasons.append(f"extreme {direction} tone ({article.tone:.1f})")
+
+    # --- 3. Sensationalist title patterns ---
+    title = article.title or ""
+    if _EXCESSIVE_CAPS_RE.match(title):
+        reasons.append("title is mostly ALL CAPS")
+    if _EXCESSIVE_EXCLAMATION_RE.search(title):
+        reasons.append("excessive exclamation marks in title")
+    if _BREAKING_NON_WIRE_RE.search(title) and domain_clean not in _WIRE_SERVICES:
+        reasons.append("'BREAKING' used by non-wire-service source")
+
+    if reasons:
+        article.disinfo_flag = True
+        article.disinfo_reason = "; ".join(reasons)
 
 
 class GDELTArmsNewsClient:
@@ -110,7 +173,7 @@ class GDELTArmsNewsClient:
                 except ValueError:
                     pass
 
-            results.append(ArmsNewsArticle(
+            parsed = ArmsNewsArticle(
                 title=article.get("title", ""),
                 url=article.get("url", ""),
                 source=article.get("domain", ""),
@@ -119,7 +182,9 @@ class GDELTArmsNewsClient:
                 published_at=published,
                 tone=self._safe_float(article.get("tone")),
                 image_url=article.get("socialimage"),
-            ))
+            )
+            _check_disinformation(parsed)
+            results.append(parsed)
 
         logger.info("Found %d articles for query: %s", len(results), query[:50])
         return results
