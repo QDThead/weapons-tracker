@@ -4,6 +4,15 @@ from __future__ import annotations
 import pytest
 
 from src.analysis.mineral_supply_chains import get_all_minerals, get_mineral_by_name
+from fastapi.testclient import TestClient
+from src.api.routes import app
+from src.api.globe_routes import router as globe_router
+
+# Ensure globe router is included for tests
+if not any(r.path.startswith("/globe") for r in app.routes):
+    app.include_router(globe_router)
+
+client = TestClient(app)
 
 
 VALID_RISK_LEVELS = {"critical", "high", "medium", "low"}
@@ -102,3 +111,36 @@ class TestMineralData:
                 assert isinstance(factor, str), (
                     f"{mineral['name']} risk_factor should be str, got {type(factor)}"
                 )
+
+
+class TestGlobeAPI:
+    """Test the /globe/* API endpoints."""
+
+    def test_get_all_minerals(self):
+        resp = client.get("/globe/minerals")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 30
+        assert data[0]["name"] == "Titanium"
+
+    def test_get_mineral_by_name(self):
+        resp = client.get("/globe/minerals/Gallium")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["name"] == "Gallium"
+        assert data["hhi"] == 9800
+
+    def test_get_mineral_by_name_case_insensitive(self):
+        resp = client.get("/globe/minerals/gallium")
+        assert resp.status_code == 200
+        assert resp.json()["name"] == "Gallium"
+
+    def test_get_mineral_not_found(self):
+        resp = client.get("/globe/minerals/Unobtanium")
+        assert resp.status_code == 404
+
+    def test_mineral_response_has_coordinates(self):
+        resp = client.get("/globe/minerals/Cobalt")
+        data = resp.json()
+        assert data["mining"][0]["lat"] == -4.0  # DRC
+        assert data["mining"][0]["lon"] == 21.8

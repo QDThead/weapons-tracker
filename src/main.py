@@ -7,11 +7,19 @@ for the global weapons trade tracking platform.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from src.storage.database import init_db
 from src.api.routes import app
@@ -27,6 +35,8 @@ from src.api.security_routes import router as security_router
 from src.api.ml_routes import router as ml_router
 from src.api.enrichment_routes import router as enrichment_router
 from src.api.cyber_routes import router as cyber_router
+from src.api.export_routes import router as export_router
+from src.api.globe_routes import router as globe_router
 from src.ingestion.scheduler import create_scheduler
 
 logging.basicConfig(
@@ -35,6 +45,27 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# Security middleware (skipped in development so localhost:8000 works)
+_environment = os.getenv("ENVIRONMENT", "development")
+_allowed_hosts = os.getenv("ALLOWED_HOSTS", "*").split(",")
+
+if _environment != "development":
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=_allowed_hosts)
+
+# CORS middleware
+_cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+_cors_allow_credentials = "*" not in _cors_origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=_cors_allow_credentials,
+)
 
 # Register routes
 app.include_router(trend_router)
@@ -49,6 +80,8 @@ app.include_router(security_router)
 app.include_router(ml_router)
 app.include_router(enrichment_router)
 app.include_router(cyber_router)
+app.include_router(export_router)
+app.include_router(globe_router)
 
 # Serve dashboard UI
 _static_dir = Path(__file__).parent / "static"
@@ -87,7 +120,7 @@ async def shutdown():
 
 def main():
     uvicorn.run(
-        "src.api.routes:app",
+        "src.main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,
