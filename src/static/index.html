@@ -1811,9 +1811,9 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
     <!-- PSI 3D Supply Map (CesiumJS Globe) -->
     <div id="psi-globe" class="psi-sub" style="display:none;">
-      <div style="display:flex; gap:0; height:650px;">
+      <div style="display:flex; gap:0; height:550px;">
         <!-- Layer toggle panel -->
-        <div id="globe-layer-panel" class="card" style="width:280px; padding:14px; overflow-y:auto; border-radius:10px 0 0 10px; flex-shrink:0;">
+        <div id="globe-layer-panel" class="card" style="width:260px; padding:14px; overflow-y:auto; border-radius:10px 0 0 10px; flex-shrink:0;">
           <h3 style="margin-bottom:10px; font-size:14px;">Mineral Layers</h3>
           <input id="globe-mineral-search" type="text" placeholder="Search minerals..." style="width:100%; padding:6px 10px; margin-bottom:12px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; font-family:var(--font-body); font-size:12px;">
           <div id="globe-mineral-list"></div>
@@ -1821,6 +1821,27 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <!-- Cesium globe container -->
         <div style="flex:1; position:relative; border-radius:0 10px 10px 0; overflow:hidden;">
           <div id="cesium-globe" style="width:100%; height:100%;"></div>
+          <!-- Floating legend overlay -->
+          <div style="position:absolute; bottom:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; line-height:1.8;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Supply Chain Nodes</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; vertical-align:middle; margin-right:6px;"></span><span style="color:#10b981;">Tier 1</span> — Mining / Extraction</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#8b5cf6; vertical-align:middle; margin-right:6px;"></span><span style="color:#8b5cf6;">Tier 2</span> — Processing / Refining</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b; vertical-align:middle; margin-right:6px;"></span><span style="color:#f59e0b;">Tier 3</span> — Components / Alloys</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00d4ff; vertical-align:middle; margin-right:6px;"></span><span style="color:#00d4ff;">Tier 4</span> — Weapon Platforms</div>
+            <div><span style="display:inline-block; width:10px; height:10px; background:#ef4444; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#ef4444;">Chokepoint</span></div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; vertical-align:middle; margin-right:6px;"></span> Chinese-owned (mine/refinery)</div>
+            <div style="border-top:1px solid var(--border); margin:4px 0; padding-top:4px; font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Shipping Route Risk</div>
+            <div><span style="color:#ef4444;">━ ━ ━</span> Critical — conflict zone, export controls, chokepoint</div>
+            <div><span style="color:#f59e0b;">━ ━ ━</span> High — sanctions, single-source, political instability</div>
+            <div><span style="color:#eab308;">━ ━ ━</span> Medium — emerging route, partial risk</div>
+            <div><span style="color:#10b981;">━ ━ ━</span> Low — NATO-allied, open ocean, reliable supplier</div>
+          </div>
+          <!-- Shipping route list (shows when mineral has routes) -->
+          <div id="globe-route-menu" style="display:none; position:absolute; top:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; max-width:320px;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Shipping Routes</div>
+            <div id="globe-route-list"></div>
+          </div>
           <!-- Node detail popup -->
           <div id="globe-popup" style="display:none; position:absolute; top:20px; right:20px; width:300px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:10px; padding:16px; z-index:10;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1831,20 +1852,69 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           </div>
         </div>
       </div>
-      <!-- Legend bar -->
-      <div class="card" style="margin-top:8px; padding:10px 18px; display:flex; flex-wrap:wrap; gap:6px 24px; font-size:11px; color:var(--text-dim);">
-        <span style="font-weight:600; color:var(--text);">Tiers:</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; margin-right:4px; vertical-align:middle;"></span> Mining</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:#8b5cf6; margin-right:4px; vertical-align:middle; transform:rotate(45deg);"></span> Processing</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:#f59e0b; margin-right:4px; vertical-align:middle;"></span> Components</span>
-        <span><span style="display:inline-block; width:10px; height:10px; background:#00d4ff; margin-right:4px; vertical-align:middle; clip-path:polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></span> Platforms</span>
-        <span style="margin-left:16px; font-weight:600; color:var(--text);">Risk:</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; margin-right:4px; vertical-align:middle;"></span> Critical</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b; margin-right:4px; vertical-align:middle;"></span> High</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#eab308; margin-right:4px; vertical-align:middle;"></span> Medium</span>
-        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; margin-right:4px; vertical-align:middle;"></span> Low</span>
-        <span style="margin-left:16px; font-weight:600; color:var(--text);">Arcs:</span>
-        <span>Green = low risk | Amber = moderate | Red = high risk / sanctioned</span>
+
+      <!-- Supply Chain Detail Panel — appears when a mineral is selected -->
+      <div id="globe-detail-panel" style="display:none; margin-top:10px;">
+        <!-- Header row: mineral name, risk badge, HHI, source -->
+        <div id="globe-detail-header" class="card" style="padding:14px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;"></div>
+
+        <!-- 4-column supply chain flow -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-top:10px;">
+          <div class="card" style="padding:14px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:#10b981;"></span>
+              <h4 style="font-size:13px; margin:0; color:#10b981;">1. Mining</h4>
+            </div>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Where is it extracted?</div>
+            <div id="globe-detail-mining"></div>
+          </div>
+          <div class="card" style="padding:14px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:#8b5cf6;"></span>
+              <h4 style="font-size:13px; margin:0; color:#8b5cf6;">2. Processing</h4>
+            </div>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Where is it refined?</div>
+            <div id="globe-detail-processing"></div>
+          </div>
+          <div class="card" style="padding:14px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
+              <h4 style="font-size:13px; margin:0; color:#f59e0b;">3. Components</h4>
+            </div>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">What is it built into?</div>
+            <div id="globe-detail-components"></div>
+          </div>
+          <div class="card" style="padding:14px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:#00d4ff;"></span>
+              <h4 style="font-size:13px; margin:0; color:#00d4ff;">4. Platforms</h4>
+            </div>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Which weapons depend on it?</div>
+            <div id="globe-detail-platforms"></div>
+          </div>
+        </div>
+
+        <!-- Bottom row: Route to Canada, Risk Assessment, Canada Impact -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:10px;">
+          <!-- Route to Canada -->
+          <div class="card" style="padding:14px;">
+            <h4 style="font-size:13px; margin:0 0 10px; color:var(--accent);">Route to Canada</h4>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Maritime chokepoints &amp; transit vulnerabilities</div>
+            <div id="globe-detail-route"></div>
+          </div>
+          <!-- Risk Assessment -->
+          <div class="card" style="padding:14px;">
+            <h4 style="font-size:13px; margin:0 0 10px; color:var(--accent2);">Risk Assessment</h4>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Key vulnerabilities in this supply chain</div>
+            <div id="globe-detail-risks"></div>
+          </div>
+          <!-- Canada Impact -->
+          <div class="card" style="padding:14px;">
+            <h4 style="font-size:13px; margin:0 0 10px; color:var(--maple);">Canada Impact</h4>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">How disruption affects Canadian defence</div>
+            <div id="globe-detail-canada"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -5582,59 +5652,65 @@ function switchPsiTab(btn) {
 async function initCesiumGlobe() {
   globeInitialized = true;
 
-  // Initialize CesiumJS — no Ion token needed, using basic dark globe
-  cesiumViewer = new Cesium.Viewer('cesium-globe', {
-    baseLayer: false,
-    geocoder: false,
-    homeButton: false,
-    sceneModePicker: false,
-    navigationHelpButton: false,
-    animation: false,
-    timeline: false,
-    fullscreenButton: false,
-    selectionIndicator: false,
-    infoBox: false,
-    baseLayerPicker: false,
-    creditContainer: document.createElement('div'),
-  });
-
-  // Dark globe styling
-  cesiumViewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e1a');
-  cesiumViewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#111827');
-  cesiumViewer.scene.globe.showGroundAtmosphere = false;
-  cesiumViewer.scene.globe.enableLighting = false;
-  cesiumViewer.scene.skyBox.show = false;
-  cesiumViewer.scene.sun.show = false;
-  cesiumViewer.scene.moon.show = false;
-  cesiumViewer.scene.skyAtmosphere.show = false;
-
-  // Country borders via GeoJSON (Natural Earth low-res)
   try {
-    const geoResp = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson');
-    if (geoResp.ok) {
-      const geoData = await geoResp.json();
-      const ds = await Cesium.GeoJsonDataSource.load(geoData, {
-        stroke: Cesium.Color.fromCssColorString('#00d4ff').withAlpha(0.15),
-        fill: Cesium.Color.fromCssColorString('#111827').withAlpha(0.01),
-        strokeWidth: 1,
-      });
-      cesiumViewer.dataSources.add(ds);
-    }
-  } catch (e) { /* borders are optional enhancement */ }
+    // Initialize CesiumJS — no Ion token needed, using basic dark globe
+    cesiumViewer = new Cesium.Viewer('cesium-globe', {
+      baseLayer: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      selectionIndicator: false,
+      infoBox: false,
+      baseLayerPicker: false,
+      requestRenderMode: true,
+      maximumRenderTimeChange: Infinity,
+      creditContainer: document.createElement('div'),
+    });
+
+    // Dark base imagery — OpenStreetMap with dark styling
+    cesiumViewer.scene.imageryLayers.addImageryProvider(
+      new Cesium.UrlTemplateImageryProvider({
+        url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 6,
+        credit: 'CartoDB Dark Matter',
+      })
+    );
+
+    // Dark globe styling
+    var scene = cesiumViewer.scene;
+    scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e1a');
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#111827');
+    scene.globe.showGroundAtmosphere = false;
+    scene.globe.enableLighting = false;
+    if (scene.skyBox) scene.skyBox.show = false;
+    if (scene.sun) scene.sun.show = false;
+    if (scene.moon) scene.moon.show = false;
+    if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
+  } catch (e) {
+    document.getElementById('cesium-globe').innerHTML =
+      '<div style="color:var(--accent2); text-align:center; padding:60px;">Failed to initialize 3D globe: ' + esc(e.message) + '</div>';
+    return;
+  }
 
   // Fetch mineral data from API
   try {
     const resp = await fetch(API + '/globe/minerals');
-    if (!resp.ok) throw new Error('Failed to load minerals');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     globeMinerals = await resp.json();
   } catch (e) {
     document.getElementById('globe-mineral-list').innerHTML =
-      '<div style="color:var(--accent2); padding:20px;">Failed to load mineral data</div>';
+      '<div style="color:var(--accent2); padding:20px;">Failed to load mineral data: ' + esc(e.message) + '</div>';
     return;
   }
 
   renderMineralLayerPanel();
   setupGlobeClickHandler();
+  loadShippingLanes();
 
   // Auto-enable top 3 critical minerals
   const criticals = globeMinerals.filter(m => m.risk_level === 'critical').slice(0, 3);
@@ -5656,8 +5732,8 @@ function renderMineralLayerPanel() {
       html += '<div style="font-size:10px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.1em; color:' + riskColors[currentRisk] + '; margin:12px 0 6px; font-weight:600;">\u2500\u2500 ' + esc(currentRisk) + ' risk \u2500\u2500</div>';
     }
     html += '<label style="display:flex; align-items:center; gap:8px; padding:5px 0; cursor:pointer; font-size:12px;" data-mineral-name="' + esc(m.name) + '">'
-      + '<input type="checkbox" onchange="toggleMineralLayer(\'' + esc(m.name).replace(/'/g, "\\'") + '\', this.checked)" style="accent-color:' + riskColors[m.risk_level] + ';">'
-      + '<span style="flex:1;">' + esc(m.name) + '</span>'
+      + '<input type="checkbox" onchange="event.stopPropagation(); toggleMineralLayer(\'' + esc(m.name).replace(/'/g, "\\'") + '\', this.checked)" style="accent-color:' + riskColors[m.risk_level] + ';">'
+      + '<span onclick="event.preventDefault(); selectMineralDetail(\'' + esc(m.name).replace(/'/g, "\\'") + '\')" style="flex:1; cursor:pointer;">' + esc(m.name) + '</span>'
       + '<span style="width:8px; height:8px; border-radius:50%; background:' + riskColors[m.risk_level] + '; flex-shrink:0;"></span>'
       + '</label>';
   });
@@ -5701,6 +5777,322 @@ function toggleMineralLayer(name, enabled) {
   }
 }
 
+// Canadian ports — where defence materials actually arrive
+var CANADA_PORTS = [
+  { name: 'Port of Vancouver', lat: 49.29, lon: -123.11, region: 'pacific', desc: 'Pacific gateway — receives materials from China, Australia, Indonesia, Chile, Peru, Japan, S. Korea' },
+  { name: 'Port of Montreal', lat: 45.50, lon: -73.55, region: 'atlantic', desc: 'St. Lawrence gateway — receives European, African, South American materials' },
+  { name: 'Port of Halifax', lat: 44.65, lon: -63.57, region: 'atlantic', desc: 'Atlantic naval base — Halifax-class home port, receives European/African imports' },
+  { name: 'Port of Hamilton', lat: 43.27, lon: -79.87, region: 'lakes', desc: 'Great Lakes steel hub — receives bulk metals for Ontario manufacturing' },
+  { name: 'Port of Sept-Iles', lat: 50.22, lon: -66.38, region: 'atlantic', desc: 'Mineral port — near Havre-Saint-Pierre titanium operations, iron ore exports' },
+];
+
+// ── Pre-computed realistic maritime routes (waypoints along actual shipping lanes) ──
+// Based on Eurostat/searoute maritime network and IMO shipping lane data.
+// Each route is an array of [lon, lat] waypoints following real sea lanes.
+var SEA_ROUTES = {
+  // === PACIFIC routes → Vancouver ===
+  'China→Vancouver': [
+    [121.5, 31.2],   // Shanghai
+    [122.0, 33.0],   // East China Sea
+    [130.0, 33.5],   // Tsushima Strait
+    [140.0, 37.0],   // Off Honshu
+    [152.0, 40.0],   // North Pacific
+    [170.0, 45.0],   // Mid Pacific (Great Circle)
+    [-180.0, 48.0],  // Date Line
+    [-170.0, 49.0],  // Mid Pacific
+    [-155.0, 50.0],  // Eastern Pacific
+    [-140.0, 50.5],  // Approaching NA
+    [-130.0, 50.0],  // Off BC coast
+    [-125.5, 49.5],  // Juan de Fuca approach
+    [-123.11, 49.29] // Vancouver
+  ],
+  'Japan→Vancouver': [
+    [139.7, 35.7],   // Tokyo Bay
+    [142.0, 37.0],   // Off Honshu
+    [152.0, 42.0],   // North Pacific
+    [170.0, 46.0],   // Mid Pacific
+    [-180.0, 48.5],  // Date Line
+    [-165.0, 49.5],
+    [-145.0, 50.5],
+    [-130.0, 50.0],
+    [-123.11, 49.29] // Vancouver
+  ],
+  'South Korea→Vancouver': [
+    [129.0, 35.1],   // Busan
+    [132.0, 35.5],   // Korea Strait
+    [140.0, 37.0],
+    [152.0, 41.0],
+    [170.0, 46.0],
+    [-180.0, 48.5],
+    [-155.0, 50.0],
+    [-130.0, 50.0],
+    [-123.11, 49.29]
+  ],
+  'Australia→Vancouver': [
+    [151.2, -33.9],  // Sydney
+    [155.0, -28.0],  // Off Queensland
+    [160.0, -15.0],  // Coral Sea
+    [165.0, 0.0],    // Equator crossing
+    [170.0, 15.0],   // Central Pacific
+    [180.0, 30.0],
+    [-170.0, 40.0],
+    [-155.0, 47.0],
+    [-135.0, 49.5],
+    [-123.11, 49.29]
+  ],
+  'Indonesia→Vancouver': [
+    [106.8, -6.1],   // Jakarta
+    [104.0, 1.3],    // Singapore Strait
+    [114.0, 5.0],    // South China Sea
+    [120.0, 18.0],   // Philippine Sea
+    [135.0, 30.0],   // Off Japan
+    [152.0, 40.0],
+    [170.0, 46.0],
+    [-180.0, 48.5],
+    [-155.0, 50.0],
+    [-130.0, 50.0],
+    [-123.11, 49.29]
+  ],
+  'India→Vancouver': [
+    [72.9, 19.1],    // Mumbai
+    [77.0, 8.0],     // Off Sri Lanka
+    [85.0, 5.0],     // Bay of Bengal
+    [95.0, 3.0],     // Andaman Sea
+    [101.0, 2.5],    // Strait of Malacca
+    [114.0, 5.0],    // South China Sea
+    [135.0, 30.0],
+    [152.0, 40.0],
+    [170.0, 46.0],
+    [-180.0, 48.5],
+    [-155.0, 50.0],
+    [-123.11, 49.29]
+  ],
+  'Chile→Vancouver': [
+    [-71.6, -33.0],  // Valparaiso
+    [-75.0, -25.0],  // Off Peru
+    [-82.0, -5.0],   // Off Ecuador
+    [-85.0, 5.0],    // Central America
+    [-95.0, 15.0],   // Off Mexico
+    [-110.0, 25.0],  // Baja California
+    [-120.0, 35.0],  // Off California
+    [-125.0, 45.0],  // Off Oregon
+    [-123.11, 49.29]
+  ],
+  'Peru→Vancouver': [
+    [-77.1, -12.0],  // Callao
+    [-82.0, -2.0],
+    [-90.0, 10.0],
+    [-105.0, 22.0],
+    [-118.0, 33.0],
+    [-124.0, 44.0],
+    [-123.11, 49.29]
+  ],
+
+  // === ATLANTIC routes → Halifax / Montreal ===
+  'South Africa→Halifax': [
+    [18.4, -33.9],   // Cape Town
+    [15.0, -30.0],   // Off Namibia
+    [5.0, -20.0],    // Mid South Atlantic
+    [-10.0, -5.0],   // Equatorial Atlantic
+    [-25.0, 10.0],   // Central Atlantic
+    [-40.0, 25.0],   // Mid Atlantic
+    [-55.0, 35.0],   // Western Atlantic
+    [-62.0, 40.0],   // Off Nova Scotia
+    [-63.57, 44.65]  // Halifax
+  ],
+  'Brazil→Montreal': [
+    [-46.3, -23.9],  // Santos
+    [-40.0, -15.0],  // Off NE Brazil
+    [-35.0, 0.0],    // Equator
+    [-45.0, 15.0],   // Caribbean approach
+    [-60.0, 30.0],   // Western Atlantic
+    [-65.0, 40.0],   // Off New England
+    [-62.0, 44.0],   // Off Nova Scotia
+    [-59.0, 47.0],   // Cabot Strait
+    [-55.0, 48.5],   // Gulf of St. Lawrence
+    [-65.0, 48.0],   // St. Lawrence River
+    [-73.55, 45.50]  // Montreal
+  ],
+  'DRC→Halifax': [
+    [12.3, -5.9],    // Matadi/Boma port
+    [10.0, -8.0],    // Off Angola
+    [5.0, -15.0],    // SE Atlantic
+    [0.0, -25.0],    // South Atlantic
+    [-5.0, -15.0],   // Mid Atlantic
+    [-20.0, 0.0],    // Equator
+    [-35.0, 15.0],   // Central Atlantic
+    [-50.0, 30.0],
+    [-60.0, 38.0],
+    [-63.57, 44.65]  // Halifax
+  ],
+
+  // === EUROPEAN routes → Montreal ===
+  'Finland→Montreal': [
+    [24.9, 60.2],    // Helsinki
+    [22.0, 58.0],    // Baltic Sea
+    [12.0, 56.0],    // Danish Straits
+    [4.0, 54.0],     // North Sea
+    [-2.0, 51.0],    // English Channel
+    [-10.0, 50.0],   // Celtic Sea
+    [-20.0, 50.0],   // Eastern Atlantic
+    [-35.0, 50.0],   // Mid Atlantic
+    [-50.0, 48.0],   // Grand Banks
+    [-55.0, 48.5],   // Gulf of St. Lawrence
+    [-65.0, 48.0],
+    [-73.55, 45.50]  // Montreal
+  ],
+  'Belgium→Montreal': [
+    [4.4, 51.2],     // Antwerp
+    [2.0, 51.0],     // English Channel
+    [-5.0, 50.0],    // Celtic Sea
+    [-15.0, 50.0],
+    [-30.0, 49.0],   // Mid Atlantic
+    [-45.0, 48.0],
+    [-55.0, 48.5],   // Gulf of St. Lawrence
+    [-65.0, 48.0],
+    [-73.55, 45.50]
+  ],
+  'Germany→Montreal': [
+    [9.9, 53.5],     // Hamburg
+    [7.0, 54.0],     // North Sea
+    [2.0, 51.5],     // Dover Strait
+    [-5.0, 50.0],
+    [-15.0, 50.0],
+    [-30.0, 49.0],
+    [-45.0, 48.0],
+    [-55.0, 48.5],
+    [-65.0, 48.0],
+    [-73.55, 45.50]
+  ],
+  'France→Montreal': [
+    [-0.1, 49.5],    // Le Havre
+    [-5.0, 49.0],    // Brest approach
+    [-12.0, 49.0],   // Celtic Sea
+    [-25.0, 48.5],
+    [-40.0, 48.0],
+    [-52.0, 48.0],   // Grand Banks
+    [-55.0, 48.5],
+    [-65.0, 48.0],
+    [-73.55, 45.50]
+  ],
+  'UK→Montreal': [
+    [-1.0, 50.8],    // Southampton
+    [-5.0, 50.0],
+    [-12.0, 50.0],
+    [-25.0, 49.0],
+    [-40.0, 48.5],
+    [-52.0, 48.0],
+    [-55.0, 48.5],
+    [-65.0, 48.0],
+    [-73.55, 45.50]
+  ],
+  'Spain→Montreal': [
+    [-3.8, 36.7],    // Gibraltar
+    [-10.0, 38.0],   // Off Portugal
+    [-15.0, 42.0],   // Bay of Biscay
+    [-20.0, 47.0],   // Eastern Atlantic
+    [-35.0, 48.5],
+    [-50.0, 48.0],
+    [-55.0, 48.5],
+    [-65.0, 48.0],
+    [-73.55, 45.50]
+  ],
+  'Turkey→Montreal': [
+    [29.0, 41.0],    // Istanbul
+    [26.0, 38.0],    // Aegean Sea
+    [18.0, 36.0],    // Mediterranean
+    [5.0, 37.0],     // Western Med
+    [-5.5, 36.0],    // Strait of Gibraltar
+    [-12.0, 40.0],   // Off Portugal
+    [-20.0, 45.0],
+    [-35.0, 48.0],
+    [-52.0, 48.0],
+    [-55.0, 48.5],
+    [-65.0, 48.0],
+    [-73.55, 45.50]
+  ],
+
+  // === AFRICA → Halifax ===
+  'Mozambique→Halifax': [
+    [32.6, -26.0],   // Maputo
+    [35.0, -20.0],   // Mozambique Channel
+    [30.0, -35.0],   // Off South Africa
+    [18.0, -34.0],   // Cape of Good Hope
+    [5.0, -20.0],
+    [-15.0, 0.0],
+    [-30.0, 15.0],
+    [-45.0, 28.0],
+    [-58.0, 38.0],
+    [-63.57, 44.65]
+  ],
+  'Guinea→Halifax': [
+    [-13.7, 9.5],    // Conakry
+    [-18.0, 12.0],   // Off West Africa
+    [-25.0, 18.0],
+    [-40.0, 28.0],
+    [-55.0, 37.0],
+    [-63.57, 44.65]
+  ],
+};
+
+// Shipping lanes GeoJSON background layer
+var shippingLanesLoaded = false;
+
+function loadShippingLanes() {
+  if (shippingLanesLoaded || !cesiumViewer) return;
+  shippingLanesLoaded = true;
+  // Load global shipping lanes from newzealandpaul/Shipping-Lanes (LineStrings, no polygons)
+  fetch('https://raw.githubusercontent.com/newzealandpaul/Shipping-Lanes/main/Shipping_Lanes_v1.geojson')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (!data) return;
+      Cesium.GeoJsonDataSource.load(data, {
+        stroke: Cesium.Color.fromCssColorString('#00d4ff').withAlpha(0.07),
+        strokeWidth: 1,
+        clampToGround: true,
+      }).then(function(ds) {
+        // Make all entities polylines only (no polygons, no fills)
+        ds.entities.values.forEach(function(entity) {
+          if (entity.polygon) entity.polygon.show = false;
+          if (entity.billboard) entity.billboard.show = false;
+          if (entity.label) entity.label.show = false;
+        });
+        cesiumViewer.dataSources.add(ds);
+      });
+    })
+    .catch(function() { /* shipping lanes are optional */ });
+}
+
+// Find the best matching sea route for a source country → Canadian port
+function getSeaRoute(sourceCountry, port) {
+  // Try exact match
+  var key = sourceCountry + '→' + port.name.replace('Port of ', '');
+  if (SEA_ROUTES[key]) return SEA_ROUTES[key];
+
+  // Try region-based fallback
+  var pacific = ['China', 'Japan', 'South Korea', 'Australia', 'Indonesia', 'India', 'Philippines', 'Myanmar', 'Thailand', 'Vietnam', 'New Caledonia', 'Malaysia'];
+  var southAm = ['Chile', 'Peru', 'Argentina', 'Brazil'];
+  var africa = ['South Africa', 'DRC', 'Mozambique', 'Madagascar', 'Gabon', 'Ghana', 'Guinea', 'Nigeria', 'Rwanda', 'Senegal', 'Zimbabwe'];
+  var europe = ['Finland', 'Belgium', 'Germany', 'France', 'UK', 'Spain', 'Turkey', 'Austria', 'Netherlands', 'Norway', 'Poland', 'Estonia', 'Iran'];
+
+  if (pacific.indexOf(sourceCountry) >= 0) return SEA_ROUTES['China→Vancouver'];
+  if (sourceCountry === 'Chile' || sourceCountry === 'Peru') return SEA_ROUTES[sourceCountry + '→Vancouver'];
+  if (southAm.indexOf(sourceCountry) >= 0) return SEA_ROUTES['Brazil→Montreal'];
+  if (africa.indexOf(sourceCountry) >= 0) return SEA_ROUTES['South Africa→Halifax'];
+  if (europe.indexOf(sourceCountry) >= 0) return SEA_ROUTES['Belgium→Montreal'];
+  return null; // No route found
+}
+
+// Determine which Canadian port a mineral likely arrives at based on source region
+function getCanadaPort(sourceCountry) {
+  var pacific = ['China', 'Australia', 'Indonesia', 'Japan', 'South Korea', 'Chile', 'Peru', 'Philippines', 'India', 'Myanmar', 'Thailand', 'Vietnam', 'New Caledonia', 'Mongolia', 'Kazakhstan', 'Tajikistan'];
+  if (pacific.indexOf(sourceCountry) >= 0) return CANADA_PORTS[0]; // Vancouver
+  var atlantic = ['South Africa', 'DRC', 'Brazil', 'Gabon', 'Ghana', 'Guinea', 'Mozambique', 'Madagascar', 'Rwanda', 'Nigeria', 'Senegal', 'Zimbabwe'];
+  if (atlantic.indexOf(sourceCountry) >= 0) return CANADA_PORTS[2]; // Halifax
+  // European sources go to Montreal
+  return CANADA_PORTS[1]; // Montreal
+}
+
 function renderGlobeEntities() {
   cesiumViewer.entities.removeAll();
 
@@ -5723,39 +6115,82 @@ function renderGlobeEntities() {
 
     var arcColor = riskArcColors[m.risk_level] || riskArcColors.medium;
 
-    // Mining sites — spheres sized by production %
-    m.mining.forEach(function(site) {
-      var size = Math.max(6, Math.min(20, site.pct * 0.5)) * 1.5;
-      cesiumViewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(site.lon, site.lat),
-        point: { pixelSize: size, color: tierColors.mining, outlineColor: tierColors.mining.withAlpha(0.4), outlineWidth: 3 },
-        label: {
-          text: site.country + '\n' + site.pct + '%',
-          font: '11px JetBrains Mono', fillColor: Cesium.Color.WHITE,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-          verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
-        },
-        properties: { type: 'mining', mineral: m.name, country: site.country, pct: site.pct },
+    // Deep-dive: render individual mines if available, otherwise country-level
+    if (m.mines && m.mines.length > 0) {
+      m.mines.forEach(function(mine) {
+        var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
+        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#ef4444') : tierColors.mining;
+        var size = Math.max(8, Math.min(18, (mine.production_t || 1000) / 1500));
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat),
+          point: { pixelSize: size, color: markerColor, outlineColor: markerColor.withAlpha(0.4), outlineWidth: 3 },
+          label: {
+            text: mine.name + '\n' + (mine.production_t ? mine.production_t.toLocaleString() + 't' : ''),
+            font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 14),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
+          },
+          properties: { type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []) },
+        });
       });
-    });
+    } else {
+      // Country-level mining markers (standard)
+      m.mining.forEach(function(site) {
+        var size = Math.max(6, Math.min(20, site.pct * 0.5)) * 1.5;
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(site.lon, site.lat),
+          point: { pixelSize: size, color: tierColors.mining, outlineColor: tierColors.mining.withAlpha(0.4), outlineWidth: 3 },
+          label: {
+            text: site.country + '\n' + site.pct + '%',
+            font: '11px JetBrains Mono', fillColor: Cesium.Color.WHITE,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+          },
+          properties: { type: 'mining', mineral: m.name, country: site.country, pct: site.pct },
+        });
+      });
+    }
 
-    // Processing plants — markers
-    m.processing.forEach(function(site) {
-      var size = Math.max(8, Math.min(18, site.pct * 0.4));
-      cesiumViewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(site.lon, site.lat, 50000),
-        point: { pixelSize: size, color: tierColors.processing, outlineColor: tierColors.processing.withAlpha(0.4), outlineWidth: 2 },
-        label: {
-          text: site.country + ' ' + site.pct + '%',
-          font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-          verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 10),
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
-        },
-        properties: { type: 'processing', mineral: m.name, country: site.country, pct: site.pct, processType: site.type },
+    // Deep-dive: render individual refineries if available, otherwise country-level
+    if (m.refineries && m.refineries.length > 0) {
+      m.refineries.forEach(function(ref) {
+        var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
+        var isRussian = /nornickel|russia/i.test(ref.owner);
+        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#ef4444') : isRussian ? Cesium.Color.fromCssColorString('#f97316') : tierColors.processing;
+        var size = Math.max(8, Math.min(16, (ref.capacity_t || 3000) / 2000));
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 60000),
+          point: { pixelSize: size, color: markerColor, outlineColor: markerColor.withAlpha(0.4), outlineWidth: 2 },
+          label: {
+            text: ref.name + '\n' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't cap' : ''),
+            font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
+          },
+          properties: { type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []) },
+        });
       });
-    });
+    } else {
+      // Country-level processing markers (standard)
+      m.processing.forEach(function(site) {
+        var size = Math.max(8, Math.min(18, site.pct * 0.4));
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(site.lon, site.lat, 50000),
+          point: { pixelSize: size, color: tierColors.processing, outlineColor: tierColors.processing.withAlpha(0.4), outlineWidth: 2 },
+          label: {
+            text: site.country + ' ' + site.pct + '%',
+            font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 10),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
+          },
+          properties: { type: 'processing', mineral: m.name, country: site.country, pct: site.pct, processType: site.type },
+        });
+      });
+    }
 
     // Component factories
     m.components.forEach(function(comp) {
@@ -5821,16 +6256,127 @@ function renderGlobeEntities() {
         addFlowArc(topProc.lon, topProc.lat, comp.lon, comp.lat, arcColor.withAlpha(0.6), m.name + ': ' + topProc.country + ' \u2192 ' + comp.manufacturer_country);
       });
     }
+
+    // ── Shipping routes to Canada ──
+    var canadaRouteColor = Cesium.Color.fromCssColorString('#ff2d2d');
+    var routeColors = ['#ff2d2d', '#ff6b35', '#ffa500', '#ffcc00', '#ff69b4', '#00ffcc'];
+    var portsRendered = {};
+
+    // Deep-dive: render mineral-specific shipping routes if available
+    if (m.shipping_routes && m.shipping_routes.length > 0) {
+      m.shipping_routes.forEach(function(sr, idx) {
+        if (!sr.waypoints || sr.waypoints.length < 2) return;
+        // Color by risk level
+        var riskRouteColors = { critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+        var lineColor = Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#64748b');
+        var lineWidth = sr.risk === 'critical' ? 4 : sr.risk === 'high' ? 3 : 2;
+        var routeCoords = [];
+        sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
+        cesiumViewer.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
+            width: lineWidth,
+            material: new Cesium.PolylineDashMaterialProperty({
+              color: lineColor.withAlpha(0.85),
+              dashLength: sr.risk === 'critical' ? 8 : 14,
+            }),
+          },
+          properties: {
+            type: 'searoute', mineral: m.name, risk: sr.risk || 'unknown',
+            description: sr.name + ' (' + sr.transit_days + ' days) — ' + (sr.form || '') + (sr.risk_reason ? ' | RISK: ' + sr.risk_reason : '') + (sr.note ? ' | ' + sr.note : ''),
+          },
+        });
+        // Mark endpoint port
+        var lastWp = sr.waypoints[sr.waypoints.length - 1];
+        var portKey = lastWp[0].toFixed(1) + ',' + lastWp[1].toFixed(1);
+        if (!portsRendered[portKey]) {
+          portsRendered[portKey] = true;
+          cesiumViewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(lastWp[0], lastWp[1], 30000),
+            point: { pixelSize: 14, color: canadaRouteColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
+            label: {
+              text: sr.name.split('\u2192').pop().trim() + ' \u{1F341}',
+              font: 'bold 11px JetBrains Mono',
+              fillColor: canadaRouteColor,
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+              verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
+            },
+            properties: { type: 'port', mineral: m.name, name: sr.name, desc: sr.description + (sr.onward ? ' | Onward: ' + sr.onward : '') },
+          });
+        }
+      });
+    } else if (m.processing.length > 0) {
+      // Fallback: single route from top processor to Canada
+      var source = m.processing[0];
+      var port = getCanadaPort(source.country);
+      if (source.country !== 'Canada') {
+        var route = getSeaRoute(source.country, port);
+        if (route && route.length >= 2) {
+          var routeCoords = [];
+          route.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
+          cesiumViewer.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
+              width: 3,
+              material: new Cesium.PolylineDashMaterialProperty({ color: canadaRouteColor.withAlpha(0.7), dashLength: 16 }),
+            },
+            properties: { type: 'searoute', mineral: m.name, description: m.name + ': ' + source.country + ' \u2192 ' + port.name },
+          });
+        } else {
+          addFlowArc(source.lon, source.lat, port.lon, port.lat, canadaRouteColor.withAlpha(0.5), m.name + ': ' + source.country + ' \u2192 ' + port.name);
+        }
+      }
+      cesiumViewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(port.lon, port.lat, 30000),
+        point: { pixelSize: 14, color: canadaRouteColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
+        label: {
+          text: port.name + ' \u{1F341}', font: 'bold 12px JetBrains Mono', fillColor: canadaRouteColor,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+          verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
+        },
+        properties: { type: 'port', mineral: m.name, name: port.name, desc: port.desc },
+      });
+    }
+  });
+
+  // Always show all 5 Canadian ports as faint markers for context
+  CANADA_PORTS.forEach(function(port) {
+    cesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(port.lon, port.lat, 20000),
+      point: { pixelSize: 7, color: Cesium.Color.fromCssColorString('#ff2d2d').withAlpha(0.35), outlineColor: Cesium.Color.WHITE.withAlpha(0.2), outlineWidth: 1 },
+      label: {
+        text: port.name,
+        font: '9px JetBrains Mono',
+        fillColor: Cesium.Color.fromCssColorString('#ff2d2d').withAlpha(0.4),
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 1, outlineColor: Cesium.Color.BLACK,
+        verticalOrigin: Cesium.VerticalOrigin.TOP,
+        pixelOffset: new Cesium.Cartesian2(0, 8),
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
+      },
+      properties: { type: 'port', name: port.name, desc: port.desc },
+    });
   });
 }
 
 function addFlowArc(lon1, lat1, lon2, lat2, color, description) {
+  // Skip arcs with invalid or identical coordinates
+  if (isNaN(lon1) || isNaN(lat1) || isNaN(lon2) || isNaN(lat2)) return;
+  if (Math.abs(lon1 - lon2) < 0.5 && Math.abs(lat1 - lat2) < 0.5) return;
+
+  // Build arc with elevated midpoint
+  var midLon = (lon1 + lon2) / 2;
+  var midLat = (lat1 + lat2) / 2;
+  var dist = Math.sqrt(Math.pow(lon2 - lon1, 2) + Math.pow(lat2 - lat1, 2));
+  var alt = Math.max(200000, Math.min(2000000, dist * 30000));
+
   cesiumViewer.entities.add({
     polyline: {
       positions: Cesium.Cartesian3.fromDegreesArrayHeights([
-        lon1, lat1, 0,
-        (lon1 + lon2) / 2, (lat1 + lat2) / 2, 800000,
-        lon2, lat2, 0,
+        lon1, lat1, 50000,
+        midLon, midLat, alt,
+        lon2, lat2, 50000,
       ]),
       width: 2,
       material: new Cesium.PolylineGlowMaterialProperty({
@@ -5856,6 +6402,427 @@ function buildTriangleCanvas() {
   return c;
 }
 
+// ── Mineral Detail Panel ──
+
+let selectedMineral = null;
+
+function selectMineralDetail(name) {
+  var m = globeMinerals.find(function(x) { return x.name === name; });
+  if (!m) return;
+  selectedMineral = name;
+
+  // Disable all other layers — show only selected mineral on globe
+  activeGlobeLayers.clear();
+  activeGlobeLayers.add(name);
+  // Update all checkboxes
+  document.querySelectorAll('#globe-mineral-list label').forEach(function(el) {
+    var cb = el.querySelector('input');
+    if (cb) cb.checked = (el.dataset.mineralName === name);
+    el.style.background = el.dataset.mineralName === name ? 'rgba(0,212,255,0.08)' : '';
+    el.style.borderRadius = '6px';
+  });
+  renderGlobeEntities();
+
+  // Fly to mineral's primary source
+  var flyTarget = (m.mines && m.mines.length > 0) ? m.mines[0] : (m.mining.length > 0 ? m.mining[0] : null);
+  if (flyTarget) {
+    cesiumViewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(flyTarget.lon, flyTarget.lat, 15000000),
+      duration: 1.5,
+    });
+  }
+
+  renderMineralDetail(m);
+  document.getElementById('globe-detail-panel').style.display = '';
+
+  // Populate shipping route menu if routes exist
+  var routeMenu = document.getElementById('globe-route-menu');
+  var routeList = document.getElementById('globe-route-list');
+  if (m.shipping_routes && m.shipping_routes.length > 0) {
+    var riskRouteColors = { critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+    var riskLabels = { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM', low: 'LOW' };
+    var rhtml = '';
+    m.shipping_routes.forEach(function(sr) {
+      var rc = riskRouteColors[sr.risk] || '#64748b';
+      rhtml += '<div style="margin-bottom:8px; padding:6px 8px; border-left:3px solid ' + rc + '; background:' + rc + '0a; border-radius:0 6px 6px 0;">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+        + '<span style="font-size:11px; font-weight:600; color:var(--text);">' + esc(sr.name) + '</span>'
+        + '<span style="font-size:9px; font-family:var(--font-mono); padding:1px 6px; border-radius:8px; background:' + rc + '22; color:' + rc + ';">' + (riskLabels[sr.risk] || '?') + '</span>'
+        + '</div>'
+        + '<div style="font-size:10px; color:var(--text-dim); margin-top:2px;">' + sr.transit_days + ' days — ' + esc(sr.form || '') + '</div>'
+        + (sr.risk_reason ? '<div style="font-size:9px; color:' + rc + '; margin-top:3px;">' + esc(sr.risk_reason) + '</div>' : '')
+        + (sr.onward ? '<div style="font-size:9px; color:var(--accent); margin-top:3px;">' + esc(sr.onward) + '</div>' : '')
+        + '</div>';
+    });
+    routeList.innerHTML = rhtml;
+    routeMenu.style.display = '';
+  } else {
+    routeMenu.style.display = 'none';
+  }
+}
+
+// ── Taxonomy scorecard helpers ──
+
+var TAXONOMY_LABELS = {
+  foci: {name: '1. FOCI', desc: 'Foreign Ownership, Control & Influence'},
+  political_regulatory: {name: '2. Political & Regulatory', desc: 'Geopolitical stability, governance'},
+  manufacturing_supply: {name: '3. Manufacturing & Supply', desc: 'Concentration, capacity, dependency'},
+  technology_cyber: {name: '4. Technology & Cyber', desc: 'IP risk, cyber espionage, data security'},
+  infrastructure: {name: '5. Infrastructure', desc: 'Power, utilities, facility resilience'},
+  planning: {name: '6. Planning', desc: 'Demand-supply alignment, predictability'},
+  transportation: {name: '7. Transportation', desc: 'Logistics, port access, route security'},
+  human_capital: {name: '8. Human Capital', desc: 'Labor risk, skills, strikes, ESG labor'},
+  environmental: {name: '9. Environmental', desc: 'Geo-hazards, pollution, climate risk'},
+  compliance: {name: '10. Compliance', desc: 'ESG, ethics, regulatory adherence'},
+  economic: {name: '11. Economic', desc: 'Macro risk, commodity prices, currency'},
+  financial: {name: '12. Financial', desc: 'Credit, liquidity, solvency'},
+  product_quality: {name: '13. Product Quality', desc: 'QA, recalls, grade consistency'},
+};
+
+function calcComposite(scores) {
+  if (!scores) return 0;
+  var keys = Object.keys(scores);
+  if (keys.length === 0) return 0;
+  var sum = 0;
+  keys.forEach(function(k) { sum += (scores[k].score || 0); });
+  return Math.round(sum / keys.length);
+}
+
+function toggleEntityDetail(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function renderTaxonomyScorecard(scores, kpis) {
+  if (!scores) return '<div style="font-size:10px; color:var(--text-dim);">No taxonomy data</div>';
+  var html = '';
+  var lvlColors = {critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#10b981'};
+
+  // Composite score header
+  var composite = calcComposite(scores);
+  var compColor = composite >= 76 ? '#ef4444' : composite >= 51 ? '#f59e0b' : composite >= 26 ? '#eab308' : '#10b981';
+  var compLabel = composite >= 76 ? 'CRITICAL' : composite >= 51 ? 'HIGH' : composite >= 26 ? 'MEDIUM' : 'LOW';
+  html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">'
+    + '<span style="font-family:var(--font-mono); font-size:18px; font-weight:700; color:' + compColor + ';">' + composite + '</span>'
+    + '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + compColor + '22; color:' + compColor + ';">' + compLabel + ' RISK</span>'
+    + '<span style="font-size:9px; color:var(--text-muted);">Composite (13 categories)</span>'
+    + '</div>';
+
+  // 13-category bars
+  Object.keys(TAXONOMY_LABELS).forEach(function(key) {
+    var cat = TAXONOMY_LABELS[key];
+    var s = scores[key];
+    if (!s) return;
+    var c = lvlColors[s.level] || '#64748b';
+    html += '<div style="margin-bottom:3px;">'
+      + '<div style="display:flex; justify-content:space-between; align-items:center; font-size:9px;">'
+      + '<span style="color:var(--text-dim);" title="' + esc(cat.desc) + '">' + esc(cat.name) + '</span>'
+      + '<span style="font-family:var(--font-mono); color:' + c + '; font-weight:600;">' + s.score + '</span>'
+      + '</div>'
+      + '<div style="background:rgba(255,255,255,0.04); border-radius:2px; height:4px; margin:1px 0;">'
+      + '<div style="width:' + s.score + '%; height:100%; background:' + c + '; border-radius:2px;"></div>'
+      + '</div>'
+      + '<div style="font-size:8px; color:var(--text-muted); margin-bottom:2px;">' + esc(s.rationale) + '</div>'
+      + '</div>';
+  });
+
+  // KPIs
+  if (kpis) {
+    html += '<div style="margin-top:6px; border-top:1px solid var(--border); padding-top:4px;">'
+      + '<div style="font-size:8px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">Key Indicators</div>'
+      + '<div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; font-size:9px;">';
+    if (kpis.owner_country) html += '<div><span style="color:var(--text-muted);">Owner:</span> ' + esc(kpis.owner_country) + '</div>';
+    if (kpis.owner_type) html += '<div><span style="color:var(--text-muted);">Type:</span> ' + esc(kpis.owner_type) + '</div>';
+    if (kpis.years_operating) html += '<div><span style="color:var(--text-muted);">Operating:</span> ' + kpis.years_operating + ' yrs</div>';
+    if (kpis.employees_est) html += '<div><span style="color:var(--text-muted);">Employees:</span> ~' + kpis.employees_est.toLocaleString() + '</div>';
+    if (kpis.cpi_score != null) {
+      var cpiColor = kpis.cpi_score < 30 ? '#ef4444' : kpis.cpi_score < 50 ? '#f59e0b' : '#10b981';
+      html += '<div><span style="color:var(--text-muted);">CPI:</span> <span style="color:' + cpiColor + ';">' + kpis.cpi_score + '/100</span></div>';
+    }
+    if (kpis.distance_to_port_km) html += '<div><span style="color:var(--text-muted);">To port:</span> ' + kpis.distance_to_port_km.toLocaleString() + ' km</div>';
+    if (kpis.port_used) html += '<div><span style="color:var(--text-muted);">Port:</span> ' + esc(kpis.port_used) + '</div>';
+    html += '<div><span style="color:var(--text-muted);">Sanctioned:</span> ' + (kpis.sanctioned ? '<span style="color:#ef4444;">YES</span>' : '<span style="color:#10b981;">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">Five Eyes:</span> ' + (kpis.five_eyes_allied ? '<span style="color:#10b981;">Yes</span>' : '<span style="color:var(--text-dim);">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">NATO:</span> ' + (kpis.nato_allied ? '<span style="color:#10b981;">Yes</span>' : '<span style="color:var(--text-dim);">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">Conflict zone:</span> ' + (kpis.conflict_zone ? '<span style="color:#ef4444;">YES</span>' : '<span style="color:#10b981;">No</span>') + '</div>';
+    html += '</div></div>';
+  }
+
+  return html;
+}
+
+function renderMineralDetail(m) {
+  var riskColors = { critical: '#ef4444', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+  var riskColor = riskColors[m.risk_level] || '#64748b';
+
+  // ── Header ──
+  var chinaShare = 0;
+  m.processing.forEach(function(p) { if (p.country === 'China') chinaShare = p.pct; });
+  var topMiner = m.mining.length > 0 ? m.mining[0] : null;
+  var headerHtml = '<div style="flex:1;">'
+    + '<div style="display:flex; align-items:center; gap:10px;">'
+    + '<h3 style="margin:0; font-size:18px;">' + esc(m.name) + '</h3>'
+    + '<span style="background:' + riskColor + '22; color:' + riskColor + '; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600; text-transform:uppercase;">' + esc(m.risk_level) + ' risk</span>'
+    + '<span style="font-family:var(--font-mono); font-size:12px; color:var(--text-dim);">' + esc(m.category) + '</span>'
+    + '</div>'
+    + '<div style="font-size:12px; color:var(--text-dim); margin-top:4px;">'
+    + 'HHI: <strong style="color:var(--text);">' + m.hhi.toLocaleString() + '</strong>'
+    + (chinaShare > 0 ? ' &nbsp;|&nbsp; China processing share: <strong style="color:' + (chinaShare >= 60 ? '#ef4444' : chinaShare >= 30 ? '#f59e0b' : '#10b981') + ';">' + chinaShare + '%</strong>' : '')
+    + (topMiner ? ' &nbsp;|&nbsp; Top miner: <strong style="color:var(--text);">' + esc(topMiner.country) + ' (' + topMiner.pct + '%)</strong>' : '')
+    + ' &nbsp;|&nbsp; Source: ' + esc(m.source)
+    + '</div>'
+    + '</div>'
+    + '<button onclick="document.getElementById(\'globe-detail-panel\').style.display=\'none\'; selectedMineral=null;" style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; padding:4px 8px;">&times;</button>';
+  document.getElementById('globe-detail-header').innerHTML = headerHtml;
+
+  // ── Mining column (mine-level if available) ──
+  var miningHtml = '';
+  if (m.mines && m.mines.length > 0) {
+    m.mines.forEach(function(mine, idx) {
+      var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
+      var isCanadian = mine.country === 'Canada';
+      var borderColor = isCanadian ? '#ff2d2d' : isChineseOwned ? '#ef4444' : '#10b981';
+      var mineFlags = mine.flags || [];
+      var hasFlags = mineFlags.length > 0;
+      var compositeScore = calcComposite(mine.taxonomy_scores);
+      var compColor = compositeScore >= 76 ? '#ef4444' : compositeScore >= 51 ? '#f59e0b' : compositeScore >= 26 ? '#eab308' : '#10b981';
+      var mineId = 'mine-detail-' + idx;
+      miningHtml += '<div style="margin-bottom:6px; padding:5px 8px; border-left:3px solid ' + borderColor + '; background:' + borderColor + '08; border-radius:0 6px 6px 0; cursor:pointer;" onclick="toggleEntityDetail(\'' + mineId + '\')">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+        + '<span style="font-size:11px; font-weight:600;">' + esc(mine.name) + (isCanadian ? ' 🍁' : '') + '</span>'
+        + '<span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:' + compColor + ';">' + compositeScore + '</span>'
+        + '</div>'
+        + '<div style="font-size:10px; color:var(--text-muted);">' + esc(mine.owner) + '</div>'
+        + '<div style="font-size:10px; color:var(--text-dim);">' + esc(mine.country) + ' — ' + (mine.production_t ? mine.production_t.toLocaleString() + 't/yr' : 'N/A') + '</div>';
+      if (hasFlags) {
+        miningHtml += '<div style="margin-top:3px; display:flex; flex-wrap:wrap; gap:2px;">';
+        mineFlags.forEach(function(f) {
+          var fc = /ADVERSARY|CONFLICT|PAUSED/.test(f) ? '#ef4444' : /SANCTION|RUSSIAN/.test(f) ? '#f97316' : /EXPORT|OPERATIONAL|RISK/.test(f) ? '#f59e0b' : /STRATEGIC|NATO|ALLIED/.test(f) ? '#10b981' : '#64748b';
+          miningHtml += '<span style="font-size:8px; font-family:var(--font-mono); padding:1px 4px; border-radius:3px; background:' + fc + '22; color:' + fc + ';">' + esc(f) + '</span>';
+        });
+        miningHtml += '</div>';
+      }
+      // Expandable taxonomy scorecard
+      miningHtml += '<div id="' + mineId + '" style="display:none; margin-top:6px; border-top:1px solid var(--border); padding-top:6px;">';
+      miningHtml += renderTaxonomyScorecard(mine.taxonomy_scores, mine.kpis);
+      miningHtml += '</div>';
+      miningHtml += '</div>';
+    });
+  } else {
+    m.mining.forEach(function(site) {
+      var barW = Math.max(4, Math.min(100, site.pct * 1.2));
+      var isSanctioned = ['Russia', 'China', 'DRC', 'Myanmar', 'Iran'].indexOf(site.country) >= 0;
+      miningHtml += '<div style="margin-bottom:8px;">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+        + '<span style="font-size:12px; font-weight:500;' + (isSanctioned ? ' color:#ef4444;' : '') + '">' + esc(site.country) + (isSanctioned ? ' ⚠' : '') + '</span>'
+        + '<span style="font-family:var(--font-mono); font-size:12px; font-weight:600;">' + site.pct + '%</span>'
+        + '</div>'
+        + '<div style="background:rgba(255,255,255,0.05); border-radius:3px; height:6px; margin-top:3px;">'
+        + '<div style="width:' + barW + '%; height:100%; background:#10b981; border-radius:3px;"></div>'
+        + '</div>'
+        + (site.production_tonnes ? '<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">' + site.production_tonnes.toLocaleString() + 't/yr</div>' : '')
+        + '</div>';
+    });
+  }
+  document.getElementById('globe-detail-mining').innerHTML = miningHtml;
+
+  // ── Processing column (refinery-level if available) ──
+  var procHtml = '';
+  if (m.refineries && m.refineries.length > 0) {
+    m.refineries.forEach(function(ref, idx) {
+      var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
+      var isCanadian = ref.country === 'Canada';
+      var isRussian = /nornickel|russia/i.test(ref.owner);
+      var borderColor = isCanadian ? '#ff2d2d' : isChineseOwned ? '#ef4444' : isRussian ? '#f97316' : '#8b5cf6';
+      var refFlags = ref.flags || [];
+      var refComposite = calcComposite(ref.taxonomy_scores);
+      var refCompColor = refComposite >= 76 ? '#ef4444' : refComposite >= 51 ? '#f59e0b' : refComposite >= 26 ? '#eab308' : '#10b981';
+      var refId = 'ref-detail-' + idx;
+      procHtml += '<div style="margin-bottom:6px; padding:5px 8px; border-left:3px solid ' + borderColor + '; background:' + borderColor + '08; border-radius:0 6px 6px 0; cursor:pointer;" onclick="toggleEntityDetail(\'' + refId + '\')">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+        + '<span style="font-size:11px; font-weight:600;">' + esc(ref.name) + (isCanadian ? ' 🍁' : '') + '</span>'
+        + '<span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:' + refCompColor + ';">' + refComposite + '</span>'
+        + '</div>'
+        + '<div style="font-size:10px; color:var(--text-muted);">' + esc(ref.owner) + '</div>'
+        + '<div style="font-size:10px; color:var(--text-dim);">' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't/yr cap' : '') + '</div>'
+        + '<div style="font-size:9px; color:var(--text-muted);">' + esc(ref.products || '') + '</div>';
+      if (refFlags.length > 0) {
+        procHtml += '<div style="margin-top:3px; display:flex; flex-wrap:wrap; gap:2px;">';
+        refFlags.forEach(function(f) {
+          var fc = /ADVERSARY|DISRUPTED|PAUSED|SUSPENDED/.test(f) ? '#ef4444' : /SANCTION|RUSSIAN|LME/.test(f) ? '#f97316' : /EXPORT|CHOKEPOINT|RISK/.test(f) ? '#f59e0b' : /STRATEGIC|NATO|ALLIED/.test(f) ? '#10b981' : '#64748b';
+          procHtml += '<span style="font-size:8px; font-family:var(--font-mono); padding:1px 4px; border-radius:3px; background:' + fc + '22; color:' + fc + ';">' + esc(f) + '</span>';
+        });
+        procHtml += '</div>';
+      }
+      // Expandable taxonomy scorecard
+      procHtml += '<div id="' + refId + '" style="display:none; margin-top:6px; border-top:1px solid var(--border); padding-top:6px;">';
+      procHtml += renderTaxonomyScorecard(ref.taxonomy_scores, ref.kpis);
+      procHtml += '</div>';
+      procHtml += '</div>';
+    });
+  } else {
+    m.processing.forEach(function(site) {
+      var barW = Math.max(4, Math.min(100, site.pct * 1.2));
+      var isDominant = site.pct >= 50;
+      procHtml += '<div style="margin-bottom:8px;">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+        + '<span style="font-size:12px; font-weight:500;' + (isDominant ? ' color:#ef4444;' : '') + '">' + esc(site.country) + (isDominant ? ' ⚠' : '') + '</span>'
+        + '<span style="font-family:var(--font-mono); font-size:12px; font-weight:600;">' + site.pct + '%</span>'
+        + '</div>'
+        + '<div style="background:rgba(255,255,255,0.05); border-radius:3px; height:6px; margin-top:3px;">'
+        + '<div style="width:' + barW + '%; height:100%; background:#8b5cf6; border-radius:3px;"></div>'
+        + '</div>'
+        + '<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">' + esc(site.type || 'refining') + '</div>'
+        + '</div>';
+    });
+  }
+  document.getElementById('globe-detail-processing').innerHTML = procHtml;
+
+  // ── Components column (show alloys if available, then generic components) ──
+  var compHtml = '';
+  if (m.alloys && m.alloys.length > 0) {
+    compHtml += '<div style="font-size:10px; color:var(--accent4); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Defence Alloys</div>';
+    m.alloys.forEach(function(alloy) {
+      var barW = Math.min(100, alloy.cobalt_pct * 1.6);
+      compHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(245,158,11,0.06); border-radius:6px; border-left:3px solid #f59e0b;">'
+        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+        + '<span style="font-size:11px; font-weight:600;">' + esc(alloy.name) + '</span>'
+        + '<span style="font-family:var(--font-mono); font-size:11px; color:#f59e0b;">' + alloy.cobalt_pct + '% Co</span>'
+        + '</div>'
+        + '<div style="background:rgba(255,255,255,0.05); border-radius:2px; height:4px; margin:3px 0;">'
+        + '<div style="width:' + barW + '%; height:100%; background:#f59e0b; border-radius:2px;"></div>'
+        + '</div>'
+        + '<div style="font-size:9px; color:var(--text-muted);">' + esc(alloy.use) + '</div>'
+        + '</div>';
+    });
+  }
+  m.components.forEach(function(comp) {
+    compHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(245,158,11,0.04); border-radius:6px; border-left:2px solid rgba(245,158,11,0.3);">'
+      + '<div style="font-size:11px; font-weight:500;">' + esc(comp.name) + '</div>'
+      + '<div style="font-size:10px; color:var(--text-muted);">' + esc(comp.manufacturer_country) + '</div>'
+      + '</div>';
+  });
+  document.getElementById('globe-detail-components').innerHTML = compHtml;
+
+  // ── Platforms column ──
+  var platHtml = '';
+  var canadianPlatforms = [];
+  m.platforms.forEach(function(plat) {
+    var isCanadian = plat.assembly_country === 'Canada' || /CH-148|CH-149|LAV|Halifax|Kingston|Cyclone|Cormorant/i.test(plat.name);
+    if (isCanadian) canadianPlatforms.push(plat.name);
+    platHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(0,212,255,0.06); border-radius:6px; border-left:3px solid ' + (isCanadian ? 'var(--maple)' : '#00d4ff') + ';">'
+      + '<div style="font-size:11px; font-weight:500;">' + esc(plat.name) + (isCanadian ? ' 🍁' : '') + '</div>'
+      + '<div style="font-size:10px; color:var(--text-muted);">' + esc(plat.assembly_country) + (plat.pct_by_weight ? ' — ' + plat.pct_by_weight + '% by weight' : '') + '</div>'
+      + '</div>';
+  });
+  document.getElementById('globe-detail-platforms').innerHTML = platHtml;
+
+  // ── Route to Canada ──
+  var routeHtml = '';
+  if (m.chokepoints && m.chokepoints.length > 0) {
+    routeHtml += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">Supply must transit through:</div>';
+    m.chokepoints.forEach(function(cp) {
+      routeHtml += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; padding:5px 8px; background:rgba(239,68,68,0.06); border-radius:6px;">'
+        + '<span style="color:#ef4444; font-size:14px;">⚠</span>'
+        + '<div>'
+        + '<div style="font-size:11px; font-weight:500;">' + esc(cp.name) + '</div>'
+        + '<div style="font-size:10px; color:var(--text-muted);">' + cp.lat.toFixed(1) + '°, ' + cp.lon.toFixed(1) + '°</div>'
+        + '</div>'
+        + '</div>';
+    });
+    // Show primary supply route narrative
+    if (topMiner) {
+      routeHtml += '<div style="margin-top:10px; padding:8px; background:rgba(0,212,255,0.04); border-radius:6px; font-size:11px; color:var(--text-dim); line-height:1.5;">'
+        + '<strong style="color:var(--text);">Primary route:</strong> '
+        + esc(topMiner.country) + ' (' + topMiner.pct + '% mined)';
+      if (m.processing.length > 0 && m.processing[0].country !== topMiner.country) {
+        routeHtml += ' → shipped to ' + esc(m.processing[0].country) + ' (' + m.processing[0].pct + '% processed)';
+      }
+      routeHtml += ' → through ' + m.chokepoints.length + ' chokepoint(s) → Canada'
+        + '</div>';
+    }
+  } else {
+    routeHtml = '<div style="font-size:11px; color:var(--text-dim);">Direct supply — no major chokepoints identified</div>';
+  }
+  document.getElementById('globe-detail-route').innerHTML = routeHtml;
+
+  // ── Risk Assessment ──
+  var riskHtml = '';
+  m.risk_factors.forEach(function(rf) {
+    var isChina = /china/i.test(rf);
+    var isRussia = /russia/i.test(rf);
+    var isSanction = /sanction|ban|export control|restrict/i.test(rf);
+    var isMonopoly = /monopol|dominan|control|single.source|single.point/i.test(rf);
+    var tagColor = isSanction ? '#ef4444' : isMonopoly ? '#f59e0b' : isChina ? '#ef4444' : isRussia ? '#f97316' : '#64748b';
+    var tag = isSanction ? 'SANCTIONS' : isMonopoly ? 'CONCENTRATION' : isChina ? 'CHINA RISK' : isRussia ? 'RUSSIA RISK' : 'RISK';
+    riskHtml += '<div style="margin-bottom:6px; padding:5px 8px; border-left:3px solid ' + tagColor + '; background:' + tagColor + '08; border-radius:0 6px 6px 0;">'
+      + '<div style="font-size:9px; font-family:var(--font-mono); color:' + tagColor + '; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">' + tag + '</div>'
+      + '<div style="font-size:11px; color:var(--text-dim); line-height:1.4;">' + esc(rf) + '</div>'
+      + '</div>';
+  });
+  document.getElementById('globe-detail-risks').innerHTML = riskHtml;
+
+  // ── Canada Impact (uses m.canada from backend data) ──
+  var canadaHtml = '';
+  var ca = m.canada || {};
+  var importPct = ca.import_pct != null ? ca.import_pct : 100;
+
+  // Import dependency gauge
+  var depColor = importPct >= 95 ? '#ef4444' : importPct >= 50 ? '#f59e0b' : '#10b981';
+  canadaHtml += '<div style="margin-bottom:10px;">'
+    + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">'
+    + '<span style="font-size:11px; color:var(--text-dim);">Import dependency</span>'
+    + '<span style="font-family:var(--font-mono); font-size:16px; font-weight:700; color:' + depColor + ';">' + importPct + '%</span>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,0.05); border-radius:4px; height:8px;">'
+    + '<div style="width:' + importPct + '%; height:100%; background:' + depColor + '; border-radius:4px; transition:width 0.5s;"></div>'
+    + '</div>'
+    + '</div>';
+
+  // Domestic production
+  if (ca.domestic) {
+    canadaHtml += '<div style="padding:6px 8px; background:rgba(16,185,129,0.08); border-radius:6px; margin-bottom:8px; font-size:11px; border-left:3px solid #10b981;">'
+      + '<strong style="color:#10b981;">Domestic source:</strong> ' + esc(ca.domestic)
+      + '</div>';
+  } else {
+    canadaHtml += '<div style="padding:6px 8px; background:rgba(239,68,68,0.08); border-radius:6px; margin-bottom:8px; font-size:11px; border-left:3px solid #ef4444;">'
+      + '<strong style="color:#ef4444;">No domestic production</strong> — fully dependent on imports'
+      + '</div>';
+  }
+
+  // Canadian platforms affected
+  if (ca.platforms && ca.platforms.length > 0) {
+    canadaHtml += '<div style="font-size:11px; font-weight:600; color:var(--maple); margin:8px 0 4px;">CAF platforms requiring ' + esc(m.name) + ':</div>';
+    ca.platforms.forEach(function(p) {
+      canadaHtml += '<div style="font-size:11px; margin:3px 0; padding:4px 8px; background:rgba(255,45,45,0.06); border-radius:4px; display:flex; align-items:center; gap:6px;">'
+        + '<span style="color:var(--maple);">🍁</span> ' + esc(p)
+        + '</div>';
+    });
+  }
+
+  // Strategic assessment
+  if (ca.strategic_note) {
+    canadaHtml += '<div style="margin-top:10px; padding:8px 10px; background:rgba(0,212,255,0.04); border:1px solid var(--border); border-radius:6px; font-size:11px; color:var(--text-dim); line-height:1.5;">'
+      + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">STRATEGIC ASSESSMENT</div>'
+      + esc(ca.strategic_note)
+      + '</div>';
+  }
+
+  // Concentration warning
+  if (m.hhi >= 5000) {
+    canadaHtml += '<div style="margin-top:8px; padding:6px 8px; background:rgba(239,68,68,0.08); border-radius:6px; font-size:11px; color:#ef4444;">'
+      + '<strong>EXTREME CONCENTRATION (HHI ' + m.hhi.toLocaleString() + ')</strong> — supply disruption has no viable alternative. Canada must stockpile or develop domestic capacity.'
+      + '</div>';
+  } else if (m.hhi >= 3000) {
+    canadaHtml += '<div style="margin-top:8px; padding:6px 8px; background:rgba(245,158,11,0.08); border-radius:6px; font-size:11px; color:#f59e0b;">'
+      + '<strong>HIGH CONCENTRATION (HHI ' + m.hhi.toLocaleString() + ')</strong> — limited alternatives. Supply chain diversification recommended.'
+      + '</div>';
+  }
+
+  document.getElementById('globe-detail-canada').innerHTML = canadaHtml;
+}
+
 function setupGlobeClickHandler() {
   var handler = new Cesium.ScreenSpaceEventHandler(cesiumViewer.scene.canvas);
   handler.setInputAction(function (click) {
@@ -5873,7 +6840,51 @@ function setupGlobeClickHandler() {
     var body = document.getElementById('globe-popup-body');
 
     var html = '';
-    if (type === 'mining') {
+    if (type === 'mine' || type === 'refinery') {
+      title.textContent = props.name.getValue();
+      html = '<div><strong>Owner:</strong> ' + esc(props.owner.getValue()) + '</div>'
+           + '<div><strong>Country:</strong> ' + esc(props.country.getValue()) + '</div>';
+      if (type === 'mine') {
+        html += '<div><strong>Production:</strong> ' + Number(props.production.getValue()).toLocaleString() + ' t/year</div>';
+      } else {
+        html += '<div><strong>Capacity:</strong> ' + Number(props.capacity.getValue()).toLocaleString() + ' t/year</div>'
+              + '<div><strong>Products:</strong> ' + esc(props.products.getValue()) + '</div>';
+      }
+      // Flags
+      var flagsStr = props.flags ? props.flags.getValue() : '';
+      if (flagsStr) {
+        var riskFlagColors = {'ADVERSARY':'#ef4444','CONFLICT':'#ef4444','PAUSED':'#ef4444','DISRUPTED':'#ef4444','SUSPENDED':'#ef4444','SANCTIONS':'#f97316','RUSSIAN':'#f97316','EXPORT':'#f59e0b','OPERATIONAL':'#f59e0b','STRATEGIC':'#00d4ff','NATO':'#10b981','ALLIED':'#10b981'};
+        html += '<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">';
+        flagsStr.split(', ').forEach(function(f) {
+          var fc = '#ef4444';
+          Object.keys(riskFlagColors).forEach(function(k) { if (f.toUpperCase().indexOf(k) >= 0) fc = riskFlagColors[k]; });
+          html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + fc + '22; color:' + fc + '; white-space:nowrap;">' + esc(f) + '</span>';
+        });
+        html += '</div>';
+      }
+      // Risk taxonomy
+      var risksJson = props.risks ? props.risks.getValue() : '[]';
+      try {
+        var risks = JSON.parse(risksJson);
+        if (risks.length > 0) {
+          var lvlColors = {critical:'#ef4444',high:'#f59e0b',medium:'#eab308',low:'#10b981'};
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
+          html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Risk Taxonomy</div>';
+          risks.forEach(function(r) {
+            var lc = lvlColors[r.level] || '#64748b';
+            html += '<div style="margin-bottom:4px; padding:3px 6px; border-left:2px solid ' + lc + '; font-size:10px;">'
+              + '<span style="color:' + lc + '; font-weight:600;">' + esc(r.category) + '</span> '
+              + '<span style="font-family:var(--font-mono); font-size:8px; padding:1px 4px; border-radius:3px; background:' + lc + '22; color:' + lc + ';">' + r.level.toUpperCase() + '</span>'
+              + '<div style="color:var(--text-dim); margin-top:1px;">' + esc(r.detail) + '</div>'
+              + '</div>';
+          });
+          html += '</div>';
+        }
+      } catch(e) {}
+      if (props.note.getValue()) {
+        html += '<div style="margin-top:6px; font-size:11px; color:var(--text-dim); border-top:1px solid var(--border); padding-top:6px;">' + esc(props.note.getValue()) + '</div>';
+      }
+    } else if (type === 'mining') {
       title.textContent = props.country.getValue() + ' \u2014 Mining';
       html = '<div><strong>Mineral:</strong> ' + esc(mineral) + '</div>'
            + '<div><strong>Share:</strong> ' + props.pct.getValue() + '% of global production</div>';
@@ -5895,6 +6906,16 @@ function setupGlobeClickHandler() {
       title.textContent = props.name.getValue();
       html = '<div><strong>Mineral:</strong> ' + esc(mineral) + '</div>'
            + '<div>Strategic maritime chokepoint</div>';
+    } else if (type === 'searoute') {
+      var riskVal = props.risk ? props.risk.getValue() : 'unknown';
+      var riskClr = {critical:'#ef4444',high:'#f59e0b',medium:'#eab308',low:'#10b981'}[riskVal] || '#64748b';
+      title.textContent = 'Shipping Route';
+      html = '<div>' + esc(props.description ? props.description.getValue() : '') + '</div>'
+           + '<div style="margin-top:6px;"><span style="font-family:var(--font-mono); padding:2px 8px; border-radius:8px; background:' + riskClr + '22; color:' + riskClr + '; font-size:10px; font-weight:600;">' + riskVal.toUpperCase() + ' RISK</span></div>';
+    } else if (type === 'port') {
+      title.textContent = '🍁 ' + props.name.getValue();
+      html = '<div>' + esc(props.desc ? props.desc.getValue() : 'Canadian import port') + '</div>';
+      if (mineral) html += '<div style="margin-top:4px;"><strong>Receiving:</strong> ' + esc(mineral) + ' shipments</div>';
     } else {
       popup.style.display = 'none';
       return;

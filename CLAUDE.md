@@ -7,17 +7,19 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (113 API endpoints)
+- **API Framework:** FastAPI + Uvicorn (118+ API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js — no build step, ~5,850 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~8,000 lines)
+- **3D Globe:** CesiumJS 1.119 (CDN) with CartoDB Dark Matter tiles, global shipping lanes overlay
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 60 Python files, ~22,400 total lines
-- **Tests:** 50 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities
+- **Codebase:** 64 Python files, ~26,000 total lines
+- **Tests:** 64 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API
+- **Compliance:** 95.3% DND DMPP 11 RFI compliance (137 sub-requirements across 22 questions)
 
 ## Project Structure
 ```
@@ -62,10 +64,12 @@ weapons-tracker/
 │   │   ├── supplier_risk.py         # Canadian supplier 6-dimension exposure scoring
 │   │   ├── risk_taxonomy.py         # DND Annex B 13-category risk taxonomy (121 sub-cats)
 │   │   ├── confidence.py            # Glass Box confidence scoring utility (source triangulation)
-│   │   ├── mitigation_playbook.py   # COA playbook (41 entries) + generation engine
+│   │   ├── mitigation_playbook.py   # COA playbook (191 entries) + generation engine
 │   │   ├── forecasting.py           # Predictive analytics (6 forecast types, 12-18 month horizon)
-│   │   ├── ml_engine.py             # Anomaly detection + RLHF feedback loop
-│   │   └── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
+│   │   ├── ml_engine.py             # Anomaly detection + adaptive RLHF threshold adjustment
+│   │   ├── cyber_threat_intel.py    # APT groups, breach registry, Tor nodes, IOC aggregation
+│   │   ├── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
+│   │   └── mineral_supply_chains.py # 30 mineral supply chains (USGS 2025, geo-coords, Canada deps, deep Cobalt data)
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
 │   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
@@ -77,17 +81,20 @@ weapons-tracker/
 │   │   ├── mitigation_routes.py     # COA endpoints (GET/PATCH/POST /mitigation/*)
 │   │   ├── briefing_routes.py       # PDF briefing endpoint (GET /briefing/pdf)
 │   │   ├── security_routes.py       # Auth, RBAC, audit log (/security/*)
-│   │   ├── ml_routes.py             # Anomaly detection + feedback (/ml/*)
-│   │   └── enrichment_routes.py     # 15+ data enrichment endpoints (/enrichment/*)
+│   │   ├── ml_routes.py             # Anomaly detection + feedback + thresholds (/ml/*)
+│   │   ├── enrichment_routes.py     # 40+ data enrichment endpoints (/enrichment/*)
+│   │   ├── export_routes.py         # CSV/Excel data export (/export/*)
+│   │   ├── cyber_routes.py          # Cyber threat intelligence (/cyber/*)
+│   │   └── globe_routes.py          # 3D supply chain globe data (/globe/*)
 │   ├── static/
-│   │   └── index.html                # Dashboard UI (9 tabs, ~5,850 lines)
+│   │   └── index.html                # Dashboard UI (10 tabs, ~8,000 lines, EN/FR bilingual, CesiumJS globe)
 │   ├── alerts/                       # (placeholder — not yet implemented)
 │   └── main.py                       # App entry point
 ├── scripts/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 50 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation)
+├── tests/                            # 64 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe)
 ├── docs/superpowers/                 # Design specs and implementation plans
 ├── Dockerfile                        # Container image definition
 ├── docker-compose.yml                # Multi-service local orchestration
@@ -139,20 +146,25 @@ weapons-tracker/
 | **PSI: BOM Explosion** | supply_chain_graph.py | Trace weapon platform -> subsystems -> components -> raw materials -> source countries |
 | **PSI: Scenario Modeling** | supply_chain.py | 5 what-if simulations: sanctions expansion, material shortage, route disruption, demand surge, supplier substitution |
 | **PSI: Critical Minerals** | critical_minerals.py | 30 defense-critical materials with USGS production data, HHI concentration indices |
+| **PSI: 3D Supply Globe** | mineral_supply_chains.py, globe_routes.py | CesiumJS 3D globe: 30 minerals with 4-tier flow (mine→process→component→platform), shipping routes to 5 Canadian ports, risk-colored sea lanes, entity-level 13-category DND risk taxonomy scorecards |
+| **PSI: Cobalt Deep Dive** | mineral_supply_chains.py | 9 named mines, 9 refineries, 8 defence alloys (Waspaloy/CMSX-4/Stellite), 6 shipping corridors with risk ratings, 13-cat taxonomy scores + KPIs per entity, Canada platform-engine dependencies |
 | **PSI: Material Trade** | comtrade.py | 27 expanded HS codes: ores, rare earths, specialty metals, semiconductors, propellants |
 | **Supplier Exposure** | supplier_risk.py | 6-dimension risk scoring for Canadian defence suppliers (foreign ownership, concentration, single-source, contract activity, sanctions, performance) |
 | **Procurement Intel** | procurement_scraper.py | DND contracts from Open Canada disclosure portal, vendor normalization, sector classification |
 | **Ownership Enrichment** | corporate_graph.py | Wikidata SPARQL lookup for company parent chains and country of origin |
 | **DND Risk Taxonomy** | risk_taxonomy.py | Full 13-category, 121 sub-category Annex B compliance. Live OSINT scoring for 4 categories, hybrid for 3, seeded with drift for 6. Displayed on Insights landing page (13-card strip) and Supply Chain tab (accordion drill-down) |
-| **COA/Mitigation Engine** | mitigation_playbook.py, mitigation_routes.py | 41-entry courses-of-action playbook; auto-generates mitigations from risk scores; Action Centre with status tracking (open/in-progress/closed) |
+| **COA/Mitigation Engine** | mitigation_playbook.py, mitigation_routes.py | 191-entry courses-of-action playbook across all 13 risk categories; auto-generates mitigations from risk scores; Action Centre with status tracking (open/in-progress/closed) |
 | **Confidence Scoring** | confidence.py | Glass Box per-indicator confidence levels; source triangulation (number of independent sources agreeing); displayed alongside every risk score |
 | **Predictive Analytics** | forecasting.py | 6 forecast types (spending trajectories, supplier shift probability, material scarcity, threat escalation, alliance drift, procurement lead times); 12–18 month horizon |
-| **ML Anomaly Detection** | ml_engine.py | Statistical anomaly detection across all data streams; RLHF feedback loop — analysts mark false positives to retrain thresholds |
+| **ML Anomaly Detection** | ml_engine.py | Statistical anomaly detection across all data streams; RLHF feedback loop with adaptive threshold adjustment (FP rate >30% raises threshold, <10% lowers it) |
+| **Disinformation Detection** | gdelt_news.py | 3-layer detection: known state-media domains (RT, TASS, PressTV), extreme tone scoring, sensationalist title patterns |
+| **Cyber Threat Intelligence** | cyber_threat_intel.py | 13 APT groups, Tor exit nodes, CISA KEV, NVD CVEs, DIB breach registry, supplier cyber risk, IOC aggregation |
+| **CSV/Excel Export** | export_routes.py | Transfers, suppliers, news, taxonomy as CSV or Excel download |
 | **PDF Intelligence Briefing** | briefing_generator.py, briefing_routes.py | One-click 7-page PDF export (fpdf2): executive summary, threat matrix, Arctic assessment, supplier risks, recommendations |
-| **Security / RBAC** | security_routes.py | API key authentication; 3 roles (viewer, analyst, admin); full audit log of all data access and exports |
+| **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
-## Dashboard UI (9 tabs)
+## Dashboard UI (10 tabs, EN/FR bilingual)
 
 | Tab | Purpose |
 |-----|---------|
@@ -160,13 +172,14 @@ weapons-tracker/
 | **Overview** | Trade flow network (D3), top exporters/importers, weapon types, timeline |
 | **World Map** | Leaflet map with trade arcs, country bubbles, Comtrade USD values, regional breakdown |
 | **Arctic** | Force balance map with 25 bases, 3 shipping routes, Northern Sea Route threats, weapon timeline, live airspace |
-| **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) |
-| **Deals** | Searchable/filterable table of all 4,623 transfers |
-| **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances, **defence supply base exposure** (risk ranking, sector concentration, ownership) |
-| **Supply Chain** | PSI: Risk overview, Knowledge Graph, Risk Matrix, Scenario Sandbox, **Risk Taxonomy (13 categories, 121 sub-categories, accordion drill-down)** |
-| **Data Feeds** | Operations view: 16 feed status cards with freshness, sample data, health indicators |
+| **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) with context banner |
+| **Deals** | Searchable/filterable table of all 9,311 transfers with TIV glossary tooltips |
+| **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances, **defence supply base exposure** (10 suppliers, risk ranking, sector concentration, ownership), **Action Centre** |
+| **Supply Chain** | PSI: Risk overview, 3D Supply Map (CesiumJS globe), Knowledge Graph, Risk Matrix, Scenario Sandbox, **Risk Taxonomy (13 categories, 121 sub-categories, accordion drill-down)** |
+| **Data Feeds** | Operations view: 57 feed status cards across 10 sections with freshness, sample data, health indicators |
+| **Compliance** | DMPP 11 compliance matrix: 22 RFI questions, 137 sub-requirements with traceability, evidence, and View buttons |
 
-## API Endpoints (113 total)
+## API Endpoints (118+ total)
 
 ### Core (src/api/routes.py) — live external APIs
 - `GET /transfers/exports/{country}`, `/imports/{country}`, `/bilateral/{seller}/{buyer}`
@@ -228,7 +241,7 @@ weapons-tracker/
 - `GET /mitigation/actions/{id}` — Single COA detail with playbook entry and evidence
 - `PATCH /mitigation/actions/{id}` — Update COA status (open → in-progress → closed)
 - `POST /mitigation/generate` — Auto-generate COAs from a risk score payload
-- `GET /mitigation/playbook` — Full 41-entry playbook reference
+- `GET /mitigation/playbook` — Full 191-entry playbook reference
 
 ### Briefing (src/api/briefing_routes.py)
 - `GET /briefing/pdf` — Generate and download 7-page PDF intelligence briefing
@@ -243,9 +256,22 @@ weapons-tracker/
 - `GET /ml/anomalies` — Current detected anomalies across all data streams
 - `POST /ml/feedback` — Submit analyst feedback (true/false positive) for RLHF retraining
 - `GET /ml/capabilities` — Available ML model descriptions and thresholds
+- `GET /ml/thresholds` — Current z-score threshold, RLHF-adjusted threshold, feedback stats
+- `POST /ml/thresholds` — Set custom z-score threshold override
+
+### Export (src/api/export_routes.py)
+- `GET /export/transfers/csv` — All arms transfers as CSV download
+- `GET /export/transfers/excel` — All arms transfers as Excel (.xlsx) download
+- `GET /export/suppliers/csv` — Defence suppliers as CSV
+- `GET /export/news/csv` — News articles as CSV
+- `GET /export/taxonomy/csv` — Risk taxonomy scores as CSV
+
+### Globe / 3D Supply Map (src/api/globe_routes.py)
+- `GET /globe/minerals` — All 30 mineral supply chains with geo-coordinates, Canada dependencies
+- `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, shipping routes, taxonomy scores)
 
 ### Enrichment (src/api/enrichment_routes.py)
-- `GET /enrichment/sources` — All 45 active source status and metadata
+- `GET /enrichment/sources` — All 52 active source status and metadata
 - `GET /enrichment/country/{iso3}` — Full enriched country profile (governance, fragility, military)
 - `GET /enrichment/governance/{iso3}` — World Bank WGI governance indicators
 - `GET /enrichment/fragility/{iso3}` — State fragility and instability scores
@@ -256,13 +282,14 @@ weapons-tracker/
 
 ## Database
 - **18 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, defence_suppliers, supplier_contracts, supplier_risk_scores, risk_taxonomy_scores, **mitigation_actions**, **audit_log**
-- **Current data:** 4,623 transfers, 5,110 indicators, 2,217 flight positions, 157 news articles, 30 materials, 90 supply chain nodes, 97 edges, 20 routes, 8 alerts
-- **Coverage:** 26 seller countries, 174 buyer countries, 256 countries total
+- **Current data:** 9,311 transfers, 5,110 indicators, flight positions (live), 167 news articles, 30 materials, 90 supply chain nodes, 96 edges, 20 routes, 8 alerts, 10 Canadian suppliers, 121 taxonomy scores, 191 COA playbook entries
+- **Coverage:** 26 seller countries, 186 buyer countries, 256 countries total
 
 ## How to Run
 ```bash
-cd /Users/billdennis/weapons-tracker
-source venv/bin/activate
+cd weapons-tracker
+source venv/Scripts/activate  # Windows
+# source venv/bin/activate    # macOS/Linux
 
 # Seed database (one-time)
 python -m scripts.seed_database
@@ -284,11 +311,23 @@ python -m src.main
 - Buyer-side Comtrade mirror circumvents Russia/China data opacity
 - Sanctions overlay flags embargoed trade partners automatically
 
+## Security Controls (Applied 2026-03-29)
+- RBAC enforcement with role hierarchy (viewer < analyst < admin)
+- API keys loaded from `API_KEYS_JSON` env var (no hardcoded secrets in production)
+- Error sanitization: 72 endpoints fixed, no `str(e)` leakage
+- XSS prevention: `esc()` applied to all dynamic HTML injection points
+- CORS middleware with configurable origins (`CORS_ORIGINS` env var)
+- HTTPS redirect in production (`ENVIRONMENT=production`)
+- Trusted host middleware (`ALLOWED_HOSTS` env var)
+- Disinformation detection on ingested news (3-layer: domain, tone, pattern)
+- WCAG 2.1 AA: ARIA roles on all tabs/panels, labels on maps/charts
+
 ## Known Code Quality Items
 - `routes.py` endpoints hit live external APIs per-request; dashboard routes serve from DB instead
 - Sync SQLAlchemy sessions in async endpoints — acceptable for SQLite, needs async for PostgreSQL
 - `main.py` uses deprecated `@app.on_event` instead of lifespan context manager
-- 5 large files (>500 lines): arctic_routes, dashboard_routes, insights_routes, sanctions, trends
+- `datetime.utcnow()` deprecated — ~20 occurrences should migrate to `datetime.now(timezone.utc)`
+- No Alembic migrations — using `create_all()` only
 
 ## UI Design System
 - **Fonts:** Outfit (display/headings), IBM Plex Sans (body), JetBrains Mono (numbers/stats)
@@ -298,9 +337,12 @@ python -m src.main
 - **Responsive:** Breakpoints at 1200px and 768px
 
 ## Next Steps (Priority Order)
-1. Activate maritime tracker (needs aisstream.io API key)
-2. Migrate to async SQLAlchemy sessions for production
-3. Add satellite imagery integration for base monitoring
-4. Expand ML anomaly detection with time-series models (LSTM/Prophet)
-5. Add multi-tenant user authentication for SaaS deployment
-6. Integrate real-time treaty monitoring and UN Security Council feeds
+1. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity)
+2. Activate maritime tracker (needs aisstream.io API key)
+3. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
+4. Migrate to async SQLAlchemy sessions for production
+5. Migrate `@app.on_event` to lifespan context manager
+6. Add Alembic migration framework for production schema evolution
+7. Expand ML anomaly detection with time-series models (LSTM/Prophet)
+8. Add SAML/OAuth SSO integration for DND Azure AD
+9. Formal PBMM / ITSG-33 security certification

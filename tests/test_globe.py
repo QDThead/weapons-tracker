@@ -19,7 +19,7 @@ VALID_RISK_LEVELS = {"critical", "high", "medium", "low"}
 
 REQUIRED_FIELDS = {
     "name", "category", "mining", "processing", "components",
-    "platforms", "hhi", "risk_level", "source",
+    "platforms", "hhi", "risk_level", "source", "canada",
 }
 
 
