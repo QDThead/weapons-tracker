@@ -1940,7 +1940,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           </div>
           <!-- Shipping route list (shows when mineral has routes) -->
           <div id="globe-route-menu" style="display:none; position:absolute; top:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; max-width:320px;">
-            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Shipping Routes</div>
+            <div onclick="toggleRouteMenu()" style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+              <span>Shipping Routes</span>
+              <span id="globe-route-toggle" style="font-size:12px; transition:transform 0.2s;">&#x25BC;</span>
+            </div>
             <div id="globe-route-list"></div>
           </div>
           <!-- Node detail popup -->
@@ -1958,6 +1961,42 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div id="globe-detail-panel" style="display:none; margin-top:10px;">
         <!-- Header row: mineral name, risk badge, HHI, source -->
         <div id="globe-detail-header" class="card" style="padding:14px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;"></div>
+
+        <!-- Sufficiency Analysis Row (front and center — only shown for minerals with sufficiency data) -->
+        <div id="globe-sufficiency-row" style="display:none; margin-top:10px;">
+          <div class="card" style="padding:14px;">
+            <h4 style="font-size:13px; margin:0 0 12px; color:var(--accent);">
+              Demand &amp; Supply Sufficiency
+              <span style="font-size:10px; color:var(--text-muted); font-weight:normal; margin-left:8px;">
+                Canada&rsquo;s dependency on foreign OEM supply chains
+              </span>
+            </h4>
+            <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:14px; align-items:start;">
+              <!-- Radial Gauge -->
+              <div id="sufficiency-gauge" style="text-align:center;"></div>
+              <!-- Platform Dependency Cards -->
+              <div id="sufficiency-platforms" style="max-height:340px; overflow-y:auto;"></div>
+              <!-- Scenario Slider -->
+              <div id="sufficiency-slider"></div>
+            </div>
+          </div>
+          <!-- COA Toggle -->
+          <div style="text-align:center; margin-top:8px;">
+            <button id="sufficiency-coa-toggle" onclick="toggleSufficiencyCOA()" style="
+              background:var(--surface-glass); border:1px solid var(--border); border-radius:8px;
+              color:var(--text-dim); padding:8px 20px; cursor:pointer; font-size:12px;
+              font-family:var(--font-body); backdrop-filter:blur(16px);
+              transition:border-color 0.3s, color 0.3s;
+            ">&#x1F4CB; View Recommended Actions</button>
+          </div>
+          <!-- COA Panel (hidden by default) -->
+          <div id="sufficiency-coa-panel" style="display:none; margin-top:8px;">
+            <div class="card" style="padding:14px;">
+              <h4 style="font-size:13px; margin:0 0 10px; color:var(--accent3);">Courses of Action</h4>
+              <div id="sufficiency-coa-cards" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;"></div>
+            </div>
+          </div>
+        </div>
 
         <!-- 4-column supply chain flow -->
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-top:10px;">
@@ -2017,41 +2056,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           </div>
         </div>
 
-        <!-- Sufficiency Analysis Row (only shown for minerals with sufficiency data) -->
-        <div id="globe-sufficiency-row" style="display:none; margin-top:10px;">
-          <div class="card" style="padding:14px;">
-            <h4 style="font-size:13px; margin:0 0 12px; color:var(--accent);">
-              Demand &amp; Supply Sufficiency
-              <span style="font-size:10px; color:var(--text-muted); font-weight:normal; margin-left:8px;">
-                Canada&rsquo;s dependency on foreign OEM supply chains
-              </span>
-            </h4>
-            <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:14px; align-items:start;">
-              <!-- Radial Gauge -->
-              <div id="sufficiency-gauge" style="text-align:center;"></div>
-              <!-- Platform Dependency Cards -->
-              <div id="sufficiency-platforms" style="max-height:340px; overflow-y:auto;"></div>
-              <!-- Scenario Slider -->
-              <div id="sufficiency-slider"></div>
-            </div>
-          </div>
-          <!-- COA Toggle -->
-          <div style="text-align:center; margin-top:8px;">
-            <button id="sufficiency-coa-toggle" onclick="toggleSufficiencyCOA()" style="
-              background:var(--surface-glass); border:1px solid var(--border); border-radius:8px;
-              color:var(--text-dim); padding:8px 20px; cursor:pointer; font-size:12px;
-              font-family:var(--font-body); backdrop-filter:blur(16px);
-              transition:border-color 0.3s, color 0.3s;
-            ">&#x1F4CB; View Recommended Actions</button>
-          </div>
-          <!-- COA Panel (hidden by default) -->
-          <div id="sufficiency-coa-panel" style="display:none; margin-top:8px;">
-            <div class="card" style="padding:14px;">
-              <h4 style="font-size:13px; margin:0 0 10px; color:var(--accent3);">Courses of Action</h4>
-              <div id="sufficiency-coa-cards" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;"></div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -6593,8 +6597,23 @@ function selectMineralDetail(name) {
     });
     routeList.innerHTML = rhtml;
     routeMenu.style.display = '';
+    // Start collapsed
+    routeList.style.display = 'none';
+    document.getElementById('globe-route-toggle').style.transform = 'rotate(-90deg)';
   } else {
     routeMenu.style.display = 'none';
+  }
+}
+
+function toggleRouteMenu() {
+  var list = document.getElementById('globe-route-list');
+  var toggle = document.getElementById('globe-route-toggle');
+  if (list.style.display === 'none') {
+    list.style.display = '';
+    toggle.style.transform = 'rotate(0deg)';
+  } else {
+    list.style.display = 'none';
+    toggle.style.transform = 'rotate(-90deg)';
   }
 }
 
