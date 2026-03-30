@@ -1701,3 +1701,72 @@ async def get_fx_rates():
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch exchange rates")
+
+
+# ── GEOPOLITICAL OSINT ───────────────────────────────────────────
+
+
+@router.get("/geopolitical/un-voting")
+async def get_un_voting():
+    """UN General Assembly voting alignment data (Harvard Dataverse)."""
+    cached = _check("un_voting")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import UNVotingClient
+        client = UNVotingClient()
+        data = await client.fetch_voting_summary()
+        _cache["un_voting"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch UN voting data")
+
+
+@router.get("/geopolitical/democracy-index")
+async def get_democracy_index():
+    """V-Dem democracy scores and regime classification for defence-relevant countries."""
+    cached = _check("vdem")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import VDemDemocracyClient
+        client = VDemDemocracyClient()
+        data = await client.fetch_democracy_scores()
+        _cache["vdem"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch V-Dem data")
+
+
+@router.get("/geopolitical/think-tank-analysis")
+async def get_think_tank_analysis():
+    """Latest defence/security analysis from 6 leading think tanks (RSS)."""
+    cached = _check("think_tanks")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import ThinkTankRSSClient
+        client = ThinkTankRSSClient()
+        data = await client.fetch_latest()
+        result = {"source": "Think Tank RSS (6 feeds)", "records": len(data), "data": data}
+        _cache["think_tanks"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch think tank analysis")
+
+
+@router.get("/geopolitical/gov-defence-news")
+async def get_gov_defence_news():
+    """Government defence press releases (US DoD, UK MoD, Arms Control Association)."""
+    cached = _check("gov_defence_news")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import GovDefenceNewsClient
+        client = GovDefenceNewsClient()
+        data = await client.fetch_latest()
+        result = {"source": "Government Defence News (4 feeds)", "records": len(data), "data": data}
+        _cache["gov_defence_news"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch government defence news")

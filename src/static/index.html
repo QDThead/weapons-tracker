@@ -4442,6 +4442,16 @@ const FEED_DEFINITIONS = [
       return genericSample(data);
     } },
 
+  // ── GEOPOLITICAL OSINT ──
+  { section: 'Geopolitical OSINT', sectionNote: 'diplomatic / policy / analysis', name: 'UN General Assembly Voting Data', key: 'UN Voting',
+    sampleEndpoint: '/enrichment/geopolitical/un-voting', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Geopolitical OSINT', name: 'V-Dem Democracy Index', key: 'V-Dem',
+    sampleEndpoint: '/enrichment/geopolitical/democracy-index', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Geopolitical OSINT', name: 'Think Tank Analysis (6 feeds)', key: 'Think Tanks',
+    sampleEndpoint: '/enrichment/geopolitical/think-tank-analysis', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Geopolitical OSINT', name: 'Gov Defence Press Releases (4 feeds)', key: 'Gov Defence',
+    sampleEndpoint: '/enrichment/geopolitical/gov-defence-news', rawResponse: true, renderSample: data => genericSample(data) },
+
   // ── INACTIVE ──
   { section: 'Inactive', sectionNote: 'pending configuration', name: 'Maritime Tracking (AIS)', key: 'Maritime',
     inactive: true, sampleEndpoint: null,
