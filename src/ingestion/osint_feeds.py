@@ -3985,7 +3985,7 @@ class GDELTConflictClient:
 
         url = "https://api.gdeltproject.org/api/v2/doc/doc"
         params = {
-            "query": 'theme:ARMEDCONFLICT OR theme:TERROR OR theme:MILITARY_ATTACK OR "military strike" OR "missile attack"',
+            "query": "conflict military",
             "mode": "artlist",
             "timespan": timespan,
             "format": "json",
@@ -4742,27 +4742,37 @@ class CanadaBuysTendersClient:
                     logger.warning("CanadaBuys returned HTTP %s", resp.status_code)
                     return []
 
-                lines = resp.text.strip().split("\n")
-                if len(lines) < 2:
-                    return []
-
-                headers_row = lines[0].split(",")
+                import csv
+                import io
+                reader = csv.DictReader(io.StringIO(resp.text))
                 results: list[dict] = []
-                for line in lines[1:51]:
-                    cols = line.split(",")
-                    if len(cols) < 4:
-                        continue
-                    entry: dict = {}
-                    for i, h in enumerate(headers_row):
-                        if i < len(cols):
-                            entry[h.strip().strip('"')] = cols[i].strip().strip('"')
-                    # Normalize to standard fields
+                for row in reader:
+                    if len(results) >= 50:
+                        break
+                    # Find fields by partial key match (bilingual headers)
+                    ref = ""
+                    title = ""
+                    pub_date = ""
+                    close_date = ""
+                    org = ""
+                    for k, v in row.items():
+                        kl = k.lower()
+                        if "referencenumber" in kl.replace("-", "").replace("_", ""):
+                            ref = v or ""
+                        elif "title" in kl and "eng" in kl and not title:
+                            title = v or ""
+                        elif "publicationdate" in kl.replace("-", "").replace("_", ""):
+                            pub_date = v or ""
+                        elif "closingdate" in kl.replace("-", "").replace("_", "").replace("tender", ""):
+                            close_date = v or ""
+                        elif "enduserentit" in kl.replace("-", "").replace("_", "") and "eng" in kl:
+                            org = v or ""
                     results.append({
-                        "reference_number": entry.get("reference_number", entry.get("numero_reference", "")),
-                        "title": entry.get("title_en", entry.get("titre_en", entry.get("title", ""))),
-                        "publication_date": entry.get("publication_date", entry.get("date_publication", "")),
-                        "closing_date": entry.get("closing_date", entry.get("date_fermeture", "")),
-                        "organization": entry.get("end_user_entity_en", entry.get("organization", "")),
+                        "reference_number": ref,
+                        "title": title,
+                        "publication_date": pub_date,
+                        "closing_date": close_date,
+                        "organization": org,
                         "source": "CanadaBuys",
                     })
 
@@ -5104,30 +5114,31 @@ class IDMCDisplacementClient:
         if cached is not None:
             return cached
 
-        url = "https://backend.idmcdb.org/data/idus_view_flat"
+        # HDX Google Sheets CSV mirror (no auth needed, unlike the direct IDMC API)
+        url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjAww1Xd-kHg5NKVZknWXJElWIrOSHnKC0tsSRFa3lKWCP5WE7s9MVs4lCFkvObWBdGXtE4MZnTn93/pub?output=csv"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
                 resp = await client.get(url)
                 if resp.status_code != 200:
-                    logger.warning("IDMC IDU returned HTTP %s", resp.status_code)
+                    logger.warning("IDMC HDX CSV returned HTTP %s", resp.status_code)
                     return []
 
-                data = resp.json()
-
-            if not isinstance(data, list):
-                data = data.get("results", []) if isinstance(data, dict) else []
-
-            results: list[dict] = []
-            for item in data[:100]:
-                results.append({
-                    "country": item.get("country", item.get("country_name", "")),
-                    "iso3": item.get("iso3", ""),
-                    "date": item.get("date", item.get("displacement_date", "")),
-                    "displacement_type": item.get("displacement_type", item.get("cause", "")),
-                    "figure": item.get("figure", item.get("displacement_figure", 0)),
-                    "event": item.get("event_name", item.get("event", "")),
-                    "source": "IDMC Internal Displacement Updates",
-                })
+                import csv
+                import io
+                reader = csv.DictReader(io.StringIO(resp.text))
+                results: list[dict] = []
+                for row in reader:
+                    if len(results) >= 100:
+                        break
+                    results.append({
+                        "country": row.get("country", row.get("Country", "")),
+                        "iso3": row.get("iso3", row.get("ISO3", "")),
+                        "date": row.get("date", row.get("Date", row.get("displacement_date", ""))),
+                        "displacement_type": row.get("displacement_type", row.get("Type", row.get("cause", ""))),
+                        "figure": row.get("figure", row.get("Figure", row.get("displacement_figure", 0))),
+                        "event": row.get("event_name", row.get("Event", "")),
+                        "source": "IDMC via HDX",
+                    })
 
             _cache_set(self._cache, "idmc", results)
             return results
