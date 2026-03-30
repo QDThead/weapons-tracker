@@ -4015,7 +4015,8 @@ class GDELTConflictClient:
                     "source": "GDELT DOC 2.0",
                 })
 
-            _cache_set(self._cache, f"gdelt_conflict_{timespan}", results)
+            if results:
+                _cache_set(self._cache, f"gdelt_conflict_{timespan}", results)
             return results
 
         except Exception as exc:
@@ -4735,8 +4736,9 @@ class CanadaBuysTendersClient:
             return cached
 
         url = "https://canadabuys.canada.ca/opendata/pub/newTenderNotice-nouvelAvisAppelOffres.csv"
+        headers = {"User-Agent": "Mozilla/5.0 (compatible; WeaponsTracker/1.0)"}
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
                 resp = await client.get(url)
                 if resp.status_code != 200:
                     logger.warning("CanadaBuys returned HTTP %s", resp.status_code)
