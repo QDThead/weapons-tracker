@@ -7736,16 +7736,16 @@ async function populateMineralDropdown() {
 }
 
 var mineralGraphData = null;
-var ADVERSARY_COUNTRIES = ['china', 'russia', 'drc', 'democratic republic of the congo', 'iran', 'north korea'];
-var NATO_COUNTRIES = ['united states', 'us', 'usa', 'canada', 'united kingdom', 'uk', 'finland', 'belgium', 'germany', 'australia', 'japan', 'france', 'norway', 'italy', 'netherlands', 'spain', 'poland', 'south korea', 'switzerland'];
+var MG_ADVERSARY = ['china', 'russia', 'drc', 'democratic republic of the congo', 'iran', 'north korea'];
+var MG_NATO = ['united states', 'us', 'usa', 'canada', 'united kingdom', 'uk', 'finland', 'belgium', 'germany', 'australia', 'japan', 'france', 'norway', 'italy', 'netherlands', 'spain', 'poland', 'south korea', 'switzerland'];
 
 function getCountryBorder(country) {
   var c = (country || '').toLowerCase();
-  for (var i = 0; i < ADVERSARY_COUNTRIES.length; i++) {
-    if (c.includes(ADVERSARY_COUNTRIES[i])) return { color: '#ef4444', width: 3 };
+  for (var i = 0; i < MG_ADVERSARY.length; i++) {
+    if (c.includes(MG_ADVERSARY[i])) return { color: '#ef4444', width: 3 };
   }
-  for (var j = 0; j < NATO_COUNTRIES.length; j++) {
-    if (c.includes(NATO_COUNTRIES[j])) return { color: '#3b82f6', width: 2 };
+  for (var j = 0; j < MG_NATO.length; j++) {
+    if (c.includes(MG_NATO[j])) return { color: '#3b82f6', width: 2 };
   }
   return { color: '#64748b', width: 1 };
 }
