@@ -4327,6 +4327,16 @@ const FEED_DEFINITIONS = [
   { section: 'Enrichment & Governance', name: 'USAspending DoD Contracts', key: 'USAspending DoD',
     sampleEndpoint: '/enrichment/dod-spending', rawResponse: true, renderSample: data => genericSample(data) },
 
+  // ── CONFLICT & WAR DATA ──
+  { section: 'Conflict & War Data', sectionNote: 'real-time / daily', name: 'WarSpotting Equipment Losses', key: 'WarSpotting',
+    sampleEndpoint: '/enrichment/conflict/equipment-losses', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Conflict & War Data', name: 'Russian Military Casualties', key: 'RU Casualties',
+    sampleEndpoint: '/enrichment/conflict/russian-casualties', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Conflict & War Data', name: 'NASA FIRMS Fire Detections', key: 'NASA FIRMS',
+    sampleEndpoint: '/enrichment/conflict/fire-detections', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Conflict & War Data', name: 'GDELT Conflict Events', key: 'GDELT Conflict',
+    sampleEndpoint: '/enrichment/conflict/gdelt-events', rawResponse: true, renderSample: data => genericSample(data) },
+
   // ── SUPPLY CHAIN & MINERALS ──
   { section: 'Supply Chain & Minerals', sectionNote: 'PSI data sources', name: 'USGS Mineral Deposits (MRDS)', key: 'USGS MRDS',
     sampleEndpoint: '/enrichment/mineral-deposits', rawResponse: true, renderSample: data => genericSample(data) },

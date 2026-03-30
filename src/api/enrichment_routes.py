@@ -984,6 +984,77 @@ async def get_dod_spending():
         raise HTTPException(status_code=500, detail="Failed to fetch DoD spending data")
 
 
+# ── CONFLICT & WAR DATA ──────────────────────────────────────────
+
+
+@router.get("/conflict/equipment-losses")
+async def get_equipment_losses():
+    """Russian equipment losses in Ukraine (WarSpotting — photo-verified, geolocated)."""
+    cached = _check("warspotting")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import WarSpottingClient
+        client = WarSpottingClient()
+        data = await client.fetch_recent_losses()
+        result = {"source": "WarSpotting.net", "records": len(data), "data": data}
+        _cache["warspotting"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch equipment losses")
+
+
+@router.get("/conflict/russian-casualties")
+async def get_russian_casualties():
+    """Daily Russian military losses (Ukrainian General Staff claims)."""
+    cached = _check("ru_casualties")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import RussianCasualtiesClient
+        client = RussianCasualtiesClient()
+        data = await client.fetch_daily_losses()
+        _cache["ru_casualties"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch Russian casualties")
+
+
+@router.get("/conflict/fire-detections")
+async def get_fire_detections(country: str = "UKR", days: int = 2):
+    """NASA FIRMS satellite fire detections for conflict zone monitoring."""
+    cache_key = f"firms_{country}_{days}"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import NASAFIRMSClient
+        client = NASAFIRMSClient()
+        data = await client.fetch_conflict_fires(country=country, days=days)
+        result = {"source": "NASA FIRMS VIIRS", "country": country, "records": len(data), "data": data[:200]}
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch fire detections")
+
+
+@router.get("/conflict/gdelt-events")
+async def get_gdelt_conflict_events(timespan: str = "24h"):
+    """GDELT conflict/military event news (updates every 15 min)."""
+    cached = _check(f"gdelt_conflict_{timespan}")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import GDELTConflictClient
+        client = GDELTConflictClient()
+        data = await client.fetch_conflict_events(timespan=timespan)
+        result = {"source": "GDELT DOC 2.0", "records": len(data), "data": data}
+        _cache[f"gdelt_conflict_{timespan}"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch GDELT conflict events")
+
+
 # ── COBALT SUPPLY CHAIN INTELLIGENCE ─────────────────────────────
 
 
