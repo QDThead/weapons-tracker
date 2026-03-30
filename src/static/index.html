@@ -4452,6 +4452,22 @@ const FEED_DEFINITIONS = [
   { section: 'Geopolitical OSINT', name: 'Gov Defence Press Releases (4 feeds)', key: 'Gov Defence',
     sampleEndpoint: '/enrichment/geopolitical/gov-defence-news', rawResponse: true, renderSample: data => genericSample(data) },
 
+  // ── ARCTIC & MARITIME ──
+  { section: 'Arctic & Maritime', sectionNote: 'ice / shipping / chokepoints', name: 'NSIDC Arctic Sea Ice (daily)', key: 'NSIDC Ice',
+    sampleEndpoint: '/enrichment/arctic/sea-ice', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'IMF PortWatch Chokepoints (28)', key: 'PortWatch Choke',
+    sampleEndpoint: '/enrichment/maritime/chokepoints', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'IMF PortWatch Ports (2,033)', key: 'PortWatch Ports',
+    sampleEndpoint: '/enrichment/maritime/ports', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'HDX Canal Transits (Suez/Panama)', key: 'HDX Canals',
+    sampleEndpoint: '/enrichment/maritime/canal-transits', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'Wikidata Icebreaker Fleet', key: 'Icebreakers',
+    sampleEndpoint: '/enrichment/arctic/icebreakers', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'Arctic Institute News (RSS)', key: 'Arctic Institute',
+    sampleEndpoint: '/enrichment/arctic/news', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'CanadaBuys Tenders (2-hourly)', key: 'CanadaBuys',
+    sampleEndpoint: '/enrichment/procurement/canadabuys', rawResponse: true, renderSample: data => genericSample(data) },
+
   // ── INACTIVE ──
   { section: 'Inactive', sectionNote: 'pending configuration', name: 'Maritime Tracking (AIS)', key: 'Maritime',
     inactive: true, sampleEndpoint: null,

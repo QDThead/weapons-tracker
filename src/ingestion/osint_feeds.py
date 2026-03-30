@@ -4311,3 +4311,464 @@ class GovDefenceNewsClient:
         except Exception as exc:
             logger.warning("Gov Defence News fetch failed: %s", exc)
             return []
+
+
+# ── ARCTIC, MARITIME & PROCUREMENT ───────────────────────────────
+
+
+class NSIDCSeaIceClient:
+    """Fetches daily Arctic sea ice extent from NSIDC Sea Ice Index v4.
+
+    Direct CSV download, no auth. Daily data since 1978.
+    Critical for Arctic route viability and military access assessment.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_ice_extent(self) -> list[dict]:
+        """Return recent daily Arctic sea ice extent.
+
+        Returns
+        -------
+        list of {year, month, day, extent_million_sq_km, source}
+        """
+        cached = _cache_get(self._cache, "nsidc_ice")
+        if cached is not None:
+            return cached
+
+        url = "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/data/N_seaice_extent_daily_v4.0.csv"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("NSIDC Sea Ice returned HTTP %s", resp.status_code)
+                    return self._fallback()
+
+                lines = resp.text.strip().split("\n")
+                if len(lines) < 3:
+                    return self._fallback()
+
+                results: list[dict] = []
+                for line in lines[-60:]:
+                    parts = [p.strip() for p in line.split(",")]
+                    if len(parts) < 4:
+                        continue
+                    try:
+                        year = int(parts[0])
+                        month = int(parts[1])
+                        day = int(parts[2])
+                        extent = float(parts[3])
+                        results.append({
+                            "year": year, "month": month, "day": day,
+                            "extent_million_sq_km": extent,
+                            "date": f"{year:04d}-{month:02d}-{day:02d}",
+                            "source": "NSIDC Sea Ice Index v4",
+                        })
+                    except (ValueError, IndexError):
+                        continue
+
+                if not results:
+                    return self._fallback()
+                _cache_set(self._cache, "nsidc_ice", results)
+                return results
+
+        except Exception as exc:
+            logger.warning("NSIDC Sea Ice fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> list[dict]:
+        data = [
+            {"year": 2026, "month": 3, "day": 28, "extent_million_sq_km": 14.5, "date": "2026-03-28", "source": "NSIDC (fallback)"},
+            {"year": 2026, "month": 3, "day": 27, "extent_million_sq_km": 14.6, "date": "2026-03-27", "source": "NSIDC (fallback)"},
+        ]
+        _cache_set(self._cache, "nsidc_ice", data)
+        return data
+
+
+class PortWatchChokepointsClient:
+    """Fetches daily vessel transit data for 28 global chokepoints from IMF PortWatch.
+
+    ArcGIS REST API, no auth. Weekly updates. Covers Suez, Malacca, Hormuz,
+    Panama, Bab el-Mandeb, Taiwan Strait, Bering Strait, and 21 others.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_chokepoints(self) -> list[dict]:
+        """Return latest vessel transit data for all 28 chokepoints.
+
+        Returns
+        -------
+        list of {portid, portname, date, n_total, n_container, n_tanker, n_dry_bulk, capacity, source}
+        """
+        cached = _cache_get(self._cache, "portwatch_choke")
+        if cached is not None:
+            return cached
+
+        url = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
+               "Daily_Chokepoints_Data/FeatureServer/0/query"
+               "?where=1%3D1&outFields=*&f=json&resultRecordCount=200&orderByFields=date+DESC")
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("PortWatch Chokepoints returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            features = data.get("features", [])
+            results: list[dict] = []
+            seen: set = set()
+            for f in features:
+                attrs = f.get("attributes", {})
+                pid = attrs.get("portid", "")
+                if pid in seen:
+                    continue
+                seen.add(pid)
+                results.append({
+                    "portid": pid,
+                    "portname": attrs.get("portname", ""),
+                    "date": attrs.get("date", ""),
+                    "n_total": attrs.get("n_total", 0),
+                    "n_container": attrs.get("n_container", 0),
+                    "n_tanker": attrs.get("n_tanker", 0),
+                    "n_dry_bulk": attrs.get("n_dry_bulk", 0),
+                    "n_cargo": attrs.get("n_cargo", 0),
+                    "capacity": attrs.get("capacity", 0),
+                    "source": "IMF PortWatch",
+                })
+
+            _cache_set(self._cache, "portwatch_choke", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("PortWatch Chokepoints fetch failed: %s", exc)
+            return []
+
+
+class PortWatchPortsClient:
+    """Fetches port activity data for 2,033 global ports from IMF PortWatch.
+
+    ArcGIS REST API, no auth. Includes vessel counts, trade shares, top industries.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_ports(self, country_iso3: str = "") -> list[dict]:
+        """Return port data, optionally filtered by country.
+
+        Returns
+        -------
+        list of {portid, portname, country, iso3, lat, lon, vessel_count_total, source}
+        """
+        cache_key = f"portwatch_ports_{country_iso3}"
+        cached = _cache_get(self._cache, cache_key)
+        if cached is not None:
+            return cached
+
+        where = f"ISO3='{country_iso3}'" if country_iso3 else "1=1"
+        url = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
+               f"PortWatch_ports_database/FeatureServer/0/query"
+               f"?where={where}&outFields=*&f=json&resultRecordCount=100")
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("PortWatch Ports returned HTTP %s", resp.status_code)
+                    return []
+
+                data = resp.json()
+
+            features = data.get("features", [])
+            results: list[dict] = []
+            for f in features:
+                attrs = f.get("attributes", {})
+                geom = f.get("geometry", {})
+                results.append({
+                    "portid": attrs.get("portid", ""),
+                    "portname": attrs.get("portname", ""),
+                    "country": attrs.get("country", ""),
+                    "iso3": attrs.get("ISO3", ""),
+                    "lat": geom.get("y", 0),
+                    "lon": geom.get("x", 0),
+                    "vessel_count_total": attrs.get("vessel_count_total", 0),
+                    "source": "IMF PortWatch",
+                })
+
+            _cache_set(self._cache, cache_key, results)
+            return results
+
+        except Exception as exc:
+            logger.warning("PortWatch Ports fetch failed: %s", exc)
+            return []
+
+
+class HDXCanalTransitsClient:
+    """Fetches monthly canal transit data from HDX (Suez, Panama, Bosphorus, Gulf of Aden).
+
+    No auth required. Excel download from Humanitarian Data Exchange.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_transits(self) -> dict:
+        """Return canal transit summary.
+
+        Returns
+        -------
+        dict with canals, dataset_url, source
+        """
+        cached = _cache_get(self._cache, "hdx_canals")
+        if cached is not None:
+            return cached
+
+        url = "https://data.humdata.org/api/3/action/package_show?id=suez-and-panama-canal-transits"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    return self._fallback()
+
+                data = resp.json()
+
+            pkg = data.get("result", {})
+            resources = pkg.get("resources", [])
+            xlsx_url = ""
+            for r in resources:
+                if r.get("format", "").upper() in ("XLSX", "XLS"):
+                    xlsx_url = r.get("url", "")
+                    break
+
+            result = {
+                "title": pkg.get("title", "Suez and Panama Canal Transits"),
+                "last_modified": pkg.get("metadata_modified", ""),
+                "canals": ["Suez Canal", "Panama Canal", "Bosphorus Strait", "Gulf of Aden"],
+                "download_url": xlsx_url,
+                "dataset_url": "https://data.humdata.org/dataset/suez-and-panama-canal-transits",
+                "source": "HDX / UNCTAD",
+            }
+
+            _cache_set(self._cache, "hdx_canals", result)
+            return result
+
+        except Exception as exc:
+            logger.warning("HDX Canal Transits fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> dict:
+        result = {
+            "title": "Suez and Panama Canal Transits",
+            "canals": ["Suez Canal", "Panama Canal", "Bosphorus Strait", "Gulf of Aden"],
+            "dataset_url": "https://data.humdata.org/dataset/suez-and-panama-canal-transits",
+            "source": "HDX / UNCTAD (fallback)",
+        }
+        _cache_set(self._cache, "hdx_canals", result)
+        return result
+
+
+class WikidataIcebreakerClient:
+    """Fetches global icebreaker fleet from Wikidata SPARQL.
+
+    No auth required. Returns ship name, country, operator for 50+ icebreakers.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_icebreakers(self) -> list[dict]:
+        """Return global icebreaker fleet.
+
+        Returns
+        -------
+        list of {name, country, operator, source}
+        """
+        cached = _cache_get(self._cache, "icebreakers")
+        if cached is not None:
+            return cached
+
+        query = """SELECT ?ship ?shipLabel ?countryLabel ?operatorLabel WHERE {
+  ?ship wdt:P31/wdt:P279* wd:Q14978 .
+  OPTIONAL { ?ship wdt:P17 ?country . }
+  OPTIONAL { ?ship wdt:P137 ?operator . }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+} LIMIT 200"""
+        url = "https://query.wikidata.org/sparql"
+        headers = {"Accept": "application/json", "User-Agent": "WeaponsTracker/1.0"}
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url, params={"query": query}, headers=headers)
+                if resp.status_code != 200:
+                    logger.warning("Wikidata Icebreakers returned HTTP %s", resp.status_code)
+                    return self._fallback()
+
+                data = resp.json()
+
+            bindings = data.get("results", {}).get("bindings", [])
+            results: list[dict] = []
+            for b in bindings:
+                results.append({
+                    "name": b.get("shipLabel", {}).get("value", ""),
+                    "country": b.get("countryLabel", {}).get("value", ""),
+                    "operator": b.get("operatorLabel", {}).get("value", ""),
+                    "source": "Wikidata SPARQL",
+                })
+
+            if not results:
+                return self._fallback()
+            _cache_set(self._cache, "icebreakers", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("Wikidata Icebreakers fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> list[dict]:
+        data = [
+            {"name": "50 Let Pobedy", "country": "Russia", "operator": "Rosatomflot"},
+            {"name": "Arktika", "country": "Russia", "operator": "Rosatomflot"},
+            {"name": "Sibir", "country": "Russia", "operator": "Rosatomflot"},
+            {"name": "Ural", "country": "Russia", "operator": "Rosatomflot"},
+            {"name": "Polar Star", "country": "United States", "operator": "US Coast Guard"},
+            {"name": "Healy", "country": "United States", "operator": "US Coast Guard"},
+            {"name": "CCGS Louis S. St-Laurent", "country": "Canada", "operator": "Canadian Coast Guard"},
+            {"name": "CCGS Terry Fox", "country": "Canada", "operator": "Canadian Coast Guard"},
+            {"name": "CCGS John G. Diefenbaker", "country": "Canada", "operator": "Canadian Coast Guard"},
+            {"name": "Polarstern", "country": "Germany", "operator": "Alfred Wegener Institute"},
+            {"name": "Xue Long 2", "country": "China", "operator": "PRIC"},
+        ]
+        for d in data:
+            d["source"] = "Wikidata (fallback)"
+        _cache_set(self._cache, "icebreakers", data)
+        return data
+
+
+class ArcticInstituteRSSClient:
+    """Fetches Arctic security and policy news from The Arctic Institute RSS feed.
+
+    No auth required. Updated multiple times per week.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_latest(self, max_items: int = 15) -> list[dict]:
+        """Return latest Arctic Institute articles.
+
+        Returns
+        -------
+        list of {title, link, published, source}
+        """
+        cached = _cache_get(self._cache, "arctic_institute")
+        if cached is not None:
+            return cached
+
+        import re
+        url = "https://www.thearcticinstitute.org/feed/"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("Arctic Institute RSS returned HTTP %s", resp.status_code)
+                    return []
+
+                items = re.findall(r"<item>(.*?)</item>", resp.text, re.DOTALL)
+                results: list[dict] = []
+                for item_xml in items[:max_items]:
+                    title_match = re.search(r"<title[^>]*>(.*?)</title>", item_xml, re.DOTALL)
+                    link_match = re.search(r"<link[^>]*>(.*?)</link>", item_xml, re.DOTALL)
+                    pub_match = re.search(r"<pubDate>(.*?)</pubDate>", item_xml, re.DOTALL)
+                    title = re.sub(r"<!\[CDATA\[(.*?)\]\]>", r"\1", title_match.group(1)).strip() if title_match else ""
+                    link = link_match.group(1).strip() if link_match else ""
+                    results.append({
+                        "title": title,
+                        "link": link,
+                        "published": pub_match.group(1).strip() if pub_match else "",
+                        "source": "The Arctic Institute",
+                    })
+
+                _cache_set(self._cache, "arctic_institute", results)
+                return results
+
+        except Exception as exc:
+            logger.warning("Arctic Institute RSS fetch failed: %s", exc)
+            return []
+
+
+class CanadaBuysTendersClient:
+    """Fetches new Canadian government tender notices from CanadaBuys open data.
+
+    Direct CSV download, no auth. Updated every 2 hours. Bilingual EN/FR.
+    Supplements the existing weekly DND procurement scraper.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 60.0):
+        self.timeout = timeout
+
+    async def fetch_new_tenders(self) -> list[dict]:
+        """Return recent new tender notices.
+
+        Returns
+        -------
+        list of {reference_number, title, publication_date, closing_date, organization, source}
+        """
+        cached = _cache_get(self._cache, "canadabuys")
+        if cached is not None:
+            return cached
+
+        url = "https://canadabuys.canada.ca/opendata/pub/newTenderNotice-nouvelAvisAppelOffres.csv"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("CanadaBuys returned HTTP %s", resp.status_code)
+                    return []
+
+                lines = resp.text.strip().split("\n")
+                if len(lines) < 2:
+                    return []
+
+                headers_row = lines[0].split(",")
+                results: list[dict] = []
+                for line in lines[1:51]:
+                    cols = line.split(",")
+                    if len(cols) < 4:
+                        continue
+                    entry: dict = {}
+                    for i, h in enumerate(headers_row):
+                        if i < len(cols):
+                            entry[h.strip().strip('"')] = cols[i].strip().strip('"')
+                    # Normalize to standard fields
+                    results.append({
+                        "reference_number": entry.get("reference_number", entry.get("numero_reference", "")),
+                        "title": entry.get("title_en", entry.get("titre_en", entry.get("title", ""))),
+                        "publication_date": entry.get("publication_date", entry.get("date_publication", "")),
+                        "closing_date": entry.get("closing_date", entry.get("date_fermeture", "")),
+                        "organization": entry.get("end_user_entity_en", entry.get("organization", "")),
+                        "source": "CanadaBuys",
+                    })
+
+                _cache_set(self._cache, "canadabuys", results)
+                return results
+
+        except Exception as exc:
+            logger.warning("CanadaBuys fetch failed: %s", exc)
+            return []

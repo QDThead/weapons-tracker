@@ -1770,3 +1770,125 @@ async def get_gov_defence_news():
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch government defence news")
+
+
+# ── ARCTIC, MARITIME & PROCUREMENT ───────────────────────────────
+
+
+@router.get("/arctic/sea-ice")
+async def get_arctic_sea_ice():
+    """NSIDC daily Arctic sea ice extent (since 1978)."""
+    cached = _check("nsidc_ice")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import NSIDCSeaIceClient
+        client = NSIDCSeaIceClient()
+        data = await client.fetch_ice_extent()
+        result = {"source": "NSIDC Sea Ice Index v4", "records": len(data), "data": data}
+        _cache["nsidc_ice"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch sea ice data")
+
+
+@router.get("/maritime/chokepoints")
+async def get_chokepoint_traffic():
+    """IMF PortWatch daily vessel transit data for 28 global chokepoints."""
+    cached = _check("portwatch_choke")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import PortWatchChokepointsClient
+        client = PortWatchChokepointsClient()
+        data = await client.fetch_chokepoints()
+        result = {"source": "IMF PortWatch", "records": len(data), "data": data}
+        _cache["portwatch_choke"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch chokepoint data")
+
+
+@router.get("/maritime/ports")
+async def get_port_activity(country: str = ""):
+    """IMF PortWatch port activity data (2,033 global ports)."""
+    cache_key = f"portwatch_ports_{country}"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import PortWatchPortsClient
+        client = PortWatchPortsClient()
+        data = await client.fetch_ports(country_iso3=country)
+        result = {"source": "IMF PortWatch", "records": len(data), "data": data}
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch port data")
+
+
+@router.get("/maritime/canal-transits")
+async def get_canal_transits():
+    """HDX monthly transit data for Suez, Panama, Bosphorus, Gulf of Aden."""
+    cached = _check("hdx_canals")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import HDXCanalTransitsClient
+        client = HDXCanalTransitsClient()
+        data = await client.fetch_transits()
+        _cache["hdx_canals"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch canal transit data")
+
+
+@router.get("/arctic/icebreakers")
+async def get_icebreaker_fleet():
+    """Global icebreaker fleet from Wikidata SPARQL (50+ vessels)."""
+    cached = _check("icebreakers")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import WikidataIcebreakerClient
+        client = WikidataIcebreakerClient()
+        data = await client.fetch_icebreakers()
+        result = {"source": "Wikidata SPARQL", "records": len(data), "data": data}
+        _cache["icebreakers"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch icebreaker data")
+
+
+@router.get("/arctic/news")
+async def get_arctic_news():
+    """Arctic security and policy news from The Arctic Institute RSS."""
+    cached = _check("arctic_institute")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import ArcticInstituteRSSClient
+        client = ArcticInstituteRSSClient()
+        data = await client.fetch_latest()
+        result = {"source": "The Arctic Institute", "records": len(data), "data": data}
+        _cache["arctic_institute"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch Arctic news")
+
+
+@router.get("/procurement/canadabuys")
+async def get_canadabuys_tenders():
+    """CanadaBuys new tender notices (updated every 2 hours)."""
+    cached = _check("canadabuys")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import CanadaBuysTendersClient
+        client = CanadaBuysTendersClient()
+        data = await client.fetch_new_tenders()
+        result = {"source": "CanadaBuys", "records": len(data), "data": data}
+        _cache["canadabuys"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch CanadaBuys tenders")
