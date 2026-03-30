@@ -144,3 +144,99 @@ class TestGlobeAPI:
         data = resp.json()
         assert data["mining"][0]["lat"] == -4.0  # DRC
         assert data["mining"][0]["lon"] == 21.8
+
+
+class TestCobaltSufficiency:
+    """Verify Cobalt sufficiency data structure integrity."""
+
+    def test_cobalt_has_sufficiency_key(self):
+        cobalt = get_mineral_by_name("Cobalt")
+        assert cobalt is not None
+        assert "sufficiency" in cobalt, "Cobalt missing 'sufficiency' key"
+
+    def test_sufficiency_has_required_sections(self):
+        suf = get_mineral_by_name("Cobalt")["sufficiency"]
+        assert "demand" in suf
+        assert "scenarios" in suf
+        assert "coa" in suf
+        assert "totals" in suf
+
+    def test_demand_entries_have_required_fields(self):
+        demand = get_mineral_by_name("Cobalt")["sufficiency"]["demand"]
+        assert len(demand) == 16, f"Expected 16 demand entries, got {len(demand)}"
+        for d in demand:
+            assert "platform" in d, f"Demand entry missing 'platform'"
+            assert "kg_yr" in d, f"{d.get('platform','?')} missing 'kg_yr'"
+            assert "type" in d, f"{d.get('platform','?')} missing 'type'"
+            assert d["type"] in ("direct", "indirect"), (
+                f"{d['platform']} type must be 'direct' or 'indirect', got '{d['type']}'"
+            )
+            assert "threshold_ratio" in d, f"{d['platform']} missing 'threshold_ratio'"
+            assert "fleet_note" in d, f"{d['platform']} missing 'fleet_note'"
+            assert "risk_note" in d, f"{d['platform']} missing 'risk_note'"
+            assert isinstance(d["kg_yr"], (int, float)), (
+                f"{d['platform']} kg_yr must be numeric"
+            )
+
+    def test_indirect_entries_have_oem_fields(self):
+        demand = get_mineral_by_name("Cobalt")["sufficiency"]["demand"]
+        indirect = [d for d in demand if d["type"] == "indirect"]
+        assert len(indirect) >= 9, f"Expected at least 9 indirect entries, got {len(indirect)}"
+        for d in indirect:
+            assert "oem" in d, f"{d['platform']} indirect entry missing 'oem'"
+            assert "oem_country" in d, f"{d['platform']} indirect entry missing 'oem_country'"
+            assert "engine" in d, f"{d['platform']} indirect entry missing 'engine'"
+
+    def test_scenarios_structure(self):
+        scenarios = get_mineral_by_name("Cobalt")["sufficiency"]["scenarios"]
+        assert len(scenarios) == 5, f"Expected 5 scenarios, got {len(scenarios)}"
+        for s in scenarios:
+            assert "name" in s
+            assert "position" in s
+            assert "supply_t" in s
+            assert "demand_t" in s
+            assert "ratio" in s
+            assert "verdict" in s
+            assert 0 <= s["position"] <= 100, (
+                f"Scenario '{s['name']}' position {s['position']} out of 0-100 range"
+            )
+
+    def test_scenarios_sorted_by_position(self):
+        scenarios = get_mineral_by_name("Cobalt")["sufficiency"]["scenarios"]
+        positions = [s["position"] for s in scenarios]
+        assert positions == sorted(positions), "Scenarios must be sorted by position"
+
+    def test_coa_entries_structure(self):
+        coas = get_mineral_by_name("Cobalt")["sufficiency"]["coa"]
+        assert len(coas) == 6, f"Expected 6 COA entries, got {len(coas)}"
+        for c in coas:
+            assert "id" in c
+            assert "action" in c
+            assert "cost" in c
+            assert "impact" in c
+            assert "relevant_scenarios" in c
+            assert isinstance(c["relevant_scenarios"], list)
+
+    def test_totals_structure(self):
+        totals = get_mineral_by_name("Cobalt")["sufficiency"]["totals"]
+        assert totals["steady_state_kg"] == 298
+        assert totals["f35_ramp_kg"] == 740
+        assert totals["direct_kg"] == 138
+        assert totals["indirect_kg"] == 160
+        assert totals["direct_kg"] + totals["indirect_kg"] == totals["steady_state_kg"]
+
+    def test_demand_kg_sums_match_totals(self):
+        suf = get_mineral_by_name("Cobalt")["sufficiency"]
+        demand = suf["demand"]
+        total_kg = sum(d["kg_yr"] for d in demand)
+        direct_kg = sum(d["kg_yr"] for d in demand if d["type"] == "direct")
+        indirect_kg = sum(d["kg_yr"] for d in demand if d["type"] == "indirect")
+        assert abs(total_kg - suf["totals"]["steady_state_kg"]) <= 1, (
+            f"Demand sum {total_kg} != steady_state_kg {suf['totals']['steady_state_kg']}"
+        )
+        assert abs(direct_kg - suf["totals"]["direct_kg"]) <= 1, (
+            f"Direct sum {direct_kg} != direct_kg {suf['totals']['direct_kg']}"
+        )
+        assert abs(indirect_kg - suf["totals"]["indirect_kg"]) <= 1, (
+            f"Indirect sum {indirect_kg} != indirect_kg {suf['totals']['indirect_kg']}"
+        )
