@@ -997,6 +997,16 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 }
 .suf-insight strong { color: #8b5cf6; }
 
+/* Per-Mineral Knowledge Graph */
+.mineral-graph-node { cursor: pointer; transition: opacity 0.3s; }
+.mineral-graph-node.dimmed { opacity: 0.15; }
+.mineral-graph-node.highlighted { opacity: 1; }
+.mineral-graph-edge { transition: opacity 0.3s, stroke 0.3s; }
+.mineral-graph-edge.dimmed { opacity: 0.05; }
+.mineral-graph-edge.highlighted-up { stroke: #00d4ff !important; stroke-width: 3px !important; stroke-dasharray: none !important; opacity: 1; }
+.mineral-graph-edge.highlighted-down { stroke: #f59e0b !important; stroke-width: 3px !important; stroke-dasharray: none !important; opacity: 1; }
+.mineral-graph-label { font-size: 9px; fill: #94a3b8; text-anchor: middle; pointer-events: none; }
+
 @media (max-width: 1200px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   #globe-sufficiency-row .card > div[style*="grid-template-columns"] { grid-template-columns: 1fr; }
@@ -2065,6 +2075,9 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <h3>Supply Chain Knowledge Graph</h3>
           <div class="psi-controls" style="display:flex; gap:8px; align-items:center;">
+            <select id="psi-graph-mineral-filter" onchange="loadPsiGraph()" style="max-width:160px;">
+              <option value="">All Minerals</option>
+            </select>
             <select id="psi-graph-type-filter">
               <option value="">All Types</option>
               <option value="material">Materials</option>
@@ -2080,6 +2093,24 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           </div>
         </div>
         <div id="psi-graph-container" style="width:100%; height:550px; position:relative;"></div>
+        <!-- Mineral graph info panel -->
+        <div id="psi-graph-info-panel" style="display:none; position:absolute; top:20px; right:20px; width:280px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:10px; padding:14px; z-index:10; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 id="psi-graph-info-title" style="margin:0; font-size:14px;"></h4>
+            <button onclick="document.getElementById('psi-graph-info-panel').style.display='none'; clearGraphHighlights();" style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:16px;">&times;</button>
+          </div>
+          <div id="psi-graph-info-body" style="color:var(--text-dim); line-height:1.6;"></div>
+        </div>
+        <div id="psi-graph-layered-legend" style="display:none; margin-top:10px; font-size:11px; color:var(--text-dim); flex-wrap:wrap; gap:6px 18px;">
+          <span><span class="graph-legend-dot circle" style="background:#10b981;"></span> Mine</span>
+          <span><span class="graph-legend-dot square" style="background:#f59e0b;"></span> Refinery</span>
+          <span><span class="graph-legend-dot diamond" style="background:#eab308;"></span> Alloy</span>
+          <span><span class="graph-legend-dot circle" style="background:#00d4ff;"></span> Engine</span>
+          <span><span class="graph-legend-dot circle" style="background:#ef4444;"></span> Platform</span>
+          <span style="margin-left:12px;"><span style="display:inline-block; width:10px; height:10px; border:3px solid #ef4444; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> Adversary</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border:2px solid #3b82f6; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> NATO</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border:1px solid #64748b; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> Neutral</span>
+        </div>
         <div style="margin-top:10px; font-size:11px; color:var(--text-dim); display:flex; flex-wrap:wrap; gap:6px 18px;">
           <span><span class="graph-legend-dot circle" style="background:var(--accent);"></span> Platform — Weapon systems</span>
           <span><span class="graph-legend-dot diamond" style="background:var(--accent5);"></span> Subsystem — Major assemblies</span>
@@ -5937,7 +5968,7 @@ function switchPsiTab(btn) {
   document.querySelectorAll('.psi-sub').forEach(d => d.style.display = 'none');
   btn.classList.add('active');
   document.getElementById(btn.dataset.psiTab).style.display = '';
-  if (btn.dataset.psiTab === 'psi-graph' && !psiGraphSim) loadPsiGraph();
+  if (btn.dataset.psiTab === 'psi-graph') { populateMineralDropdown(); if (!psiGraphSim) loadPsiGraph(); }
   if (btn.dataset.psiTab === 'psi-taxonomy') loadTaxonomyTab();
   if (btn.dataset.psiTab === 'psi-globe' && !globeInitialized) initCesiumGlobe();
 }
@@ -7594,20 +7625,29 @@ function renderPsiChokepoints(data) {
 }
 
 async function loadPsiGraph() {
-  const typeFilter = document.getElementById('psi-graph-type-filter').value;
-  const riskMin = parseInt(document.getElementById('psi-graph-risk-slider').value);
+  var mineralFilter = document.getElementById('psi-graph-mineral-filter').value;
+  var typeFilter = document.getElementById('psi-graph-type-filter').value;
+  var riskMin = parseInt(document.getElementById('psi-graph-risk-slider').value);
   document.getElementById('psi-graph-risk-val').textContent = riskMin;
 
-  let url = API + '/psi/graph?risk_min=' + riskMin;
+  var container = document.getElementById('psi-graph-container');
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading graph...</div>';
+  document.getElementById('psi-graph-info-panel').style.display = 'none';
+
+  if (mineralFilter) {
+    await loadMineralGraph(mineralFilter, container);
+    return;
+  }
+
+  // Default: full force-directed graph
+  document.getElementById('psi-graph-layered-legend').style.display = 'none';
+  var url = API + '/psi/graph?risk_min=' + riskMin;
   if (typeFilter) url += '&node_type=' + typeFilter;
 
-  const container = document.getElementById('psi-graph-container');
-  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading graph...</div>';
-
   try {
-    const resp = await fetch(url);
+    var resp = await fetch(url);
     if (!resp.ok) throw new Error('Failed');
-    const data = await resp.json();
+    var data = await resp.json();
     renderPsiForceGraph(data, container);
   } catch (e) {
     container.innerHTML = '<div style="color:var(--accent2); text-align:center; padding:40px;">Failed to load graph: ' + esc(e.message) + '</div>';
@@ -7675,6 +7715,368 @@ function renderPsiForceGraph(data, container) {
 document.getElementById('psi-graph-risk-slider').addEventListener('input', function() {
   document.getElementById('psi-graph-risk-val').textContent = this.value;
 });
+
+// ── PER-MINERAL KNOWLEDGE GRAPH ─────────────────────────────────
+
+async function populateMineralDropdown() {
+  var select = document.getElementById('psi-graph-mineral-filter');
+  if (select.options.length > 1) return;
+  try {
+    var resp = await fetch(API + '/globe/minerals');
+    if (!resp.ok) return;
+    var minerals = await resp.json();
+    minerals.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.name;
+      var hasDeep = m.mines && m.mines.length > 0;
+      opt.textContent = (hasDeep ? '\u2605 ' : '') + m.name;
+      select.appendChild(opt);
+    });
+  } catch (e) { /* dropdown stays with just "All Minerals" */ }
+}
+
+var mineralGraphData = null;
+var ADVERSARY_COUNTRIES = ['china', 'russia', 'drc', 'democratic republic of the congo', 'iran', 'north korea'];
+var NATO_COUNTRIES = ['united states', 'us', 'usa', 'canada', 'united kingdom', 'uk', 'finland', 'belgium', 'germany', 'australia', 'japan', 'france', 'norway', 'italy', 'netherlands', 'spain', 'poland', 'south korea', 'switzerland'];
+
+function getCountryBorder(country) {
+  var c = (country || '').toLowerCase();
+  for (var i = 0; i < ADVERSARY_COUNTRIES.length; i++) {
+    if (c.includes(ADVERSARY_COUNTRIES[i])) return { color: '#ef4444', width: 3 };
+  }
+  for (var j = 0; j < NATO_COUNTRIES.length; j++) {
+    if (c.includes(NATO_COUNTRIES[j])) return { color: '#3b82f6', width: 2 };
+  }
+  return { color: '#64748b', width: 1 };
+}
+
+function getRiskColor(level) {
+  if (level === 'critical') return '#ef4444';
+  if (level === 'high') return '#f59e0b';
+  if (level === 'medium') return '#eab308';
+  return '#10b981';
+}
+
+function getCompositeRiskLevel(taxonomyScores) {
+  if (!taxonomyScores) return 'medium';
+  var total = 0, count = 0;
+  for (var k in taxonomyScores) {
+    if (taxonomyScores[k] && typeof taxonomyScores[k].score === 'number') {
+      total += taxonomyScores[k].score; count++;
+    }
+  }
+  var avg = count > 0 ? total / count : 50;
+  if (avg >= 75) return 'critical';
+  if (avg >= 55) return 'high';
+  if (avg >= 35) return 'medium';
+  return 'low';
+}
+
+async function loadMineralGraph(mineralName, container) {
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineralName));
+    if (!resp.ok) throw new Error('Mineral not found');
+    var m = await resp.json();
+    if (!m.mines || !m.refineries || !m.sufficiency) {
+      container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:60px;">Deep supply chain data not yet available for ' + esc(mineralName) + '.<br>Select "All Minerals" for the full graph.</div>';
+      return;
+    }
+    var graphData = buildMineralGraphData(m);
+    mineralGraphData = graphData;
+    renderLayeredGraph(graphData, container, m.name);
+    document.getElementById('psi-graph-layered-legend').style.display = 'flex';
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--accent2); text-align:center; padding:40px;">Failed to load mineral graph: ' + esc(e.message) + '</div>';
+  }
+}
+
+function buildMineralGraphData(m) {
+  var nodes = [], edges = [], id = 0;
+
+  // Tier 1: Mines
+  var mineNodes = [];
+  m.mines.forEach(function(mine) {
+    var nid = 'mine-' + (id++);
+    var riskLevel = getCompositeRiskLevel(mine.taxonomy_scores);
+    var n = { id: nid, name: mine.name, tier: 0, type: 'mine', country: mine.country,
+      owner: mine.owner || '', production: mine.production_t, riskLevel: riskLevel,
+      border: getCountryBorder(mine.country), fill: getRiskColor(riskLevel), raw: mine };
+    mineNodes.push(n); nodes.push(n);
+  });
+
+  // Tier 2: Refineries
+  var refNodes = [];
+  m.refineries.forEach(function(ref) {
+    var nid = 'ref-' + (id++);
+    var riskLevel = getCompositeRiskLevel(ref.taxonomy_scores);
+    var n = { id: nid, name: ref.name, tier: 1, type: 'refinery', country: ref.country,
+      owner: ref.owner || '', capacity: ref.capacity_t, riskLevel: riskLevel,
+      border: getCountryBorder(ref.country), fill: getRiskColor(riskLevel), raw: ref };
+    refNodes.push(n); nodes.push(n);
+  });
+
+  // Tier 3: Alloys
+  var alloyNodes = [];
+  m.alloys.forEach(function(alloy) {
+    var nid = 'alloy-' + (id++);
+    var n = { id: nid, name: alloy.name, tier: 2, type: 'alloy',
+      cobalt_pct: alloy.cobalt_pct, use: alloy.use, riskLevel: 'medium',
+      border: { color: '#64748b', width: 1 }, fill: getRiskColor('medium'), raw: alloy };
+    alloyNodes.push(n); nodes.push(n);
+  });
+
+  // Tier 4: Engines
+  var engineMap = {}, engineNodes = [];
+  m.sufficiency.demand.forEach(function(d) {
+    if (d.type !== 'indirect' || !d.engine || engineMap[d.engine]) return;
+    var nid = 'eng-' + (id++);
+    var riskLevel = d.threshold_ratio >= 0.7 ? 'high' : d.threshold_ratio >= 0.5 ? 'medium' : 'low';
+    engineMap[d.engine] = nid;
+    var n = { id: nid, name: d.engine, tier: 3, type: 'engine',
+      oem: d.oem, oem_country: d.oem_country, riskLevel: riskLevel,
+      border: getCountryBorder(d.oem_country), fill: getRiskColor(riskLevel), raw: d };
+    engineNodes.push(n); nodes.push(n);
+  });
+
+  // Tier 5: Platforms
+  var platNodes = [];
+  m.sufficiency.demand.forEach(function(d) {
+    var nid = 'plat-' + (id++);
+    var riskLevel = d.type === 'indirect' ? 'high' : 'low';
+    var n = { id: nid, name: d.platform, tier: 4, type: 'platform',
+      depType: d.type, kg_yr: d.kg_yr, fleet_note: d.fleet_note, riskLevel: riskLevel,
+      border: getCountryBorder('Canada'), fill: getRiskColor(riskLevel), raw: d };
+    platNodes.push(n); nodes.push(n);
+  });
+
+  // Edges: Mine -> Refinery
+  mineNodes.forEach(function(mine) {
+    refNodes.forEach(function(ref) {
+      var mc = (mine.country || '').toLowerCase(), rc = (ref.country || '').toLowerCase();
+      var connect = false;
+      if ((mc === 'drc' || mc === 'indonesia') && rc === 'china') connect = true;
+      if (mc === 'canada' && rc === 'canada') connect = true;
+      if (mc === 'australia' && (rc === 'finland' || rc === 'belgium')) connect = true;
+      if (mc === 'drc' && (rc === 'finland' || rc === 'belgium')) connect = true;
+      if (mine.owner && ref.owner && mine.owner.toLowerCase().includes(ref.owner.split(' ')[0].toLowerCase())) connect = true;
+      if (connect) edges.push({ source: mine.id, target: ref.id, type: 'produces' });
+    });
+  });
+
+  // Edges: Refinery -> Alloy
+  refNodes.forEach(function(ref) {
+    alloyNodes.forEach(function(alloy) {
+      edges.push({ source: ref.id, target: alloy.id, type: 'refines_to' });
+    });
+  });
+
+  // Edges: Alloy -> Engine
+  m.sufficiency.demand.forEach(function(d) {
+    if (d.type !== 'indirect' || !d.alloy || d.alloy === 'n/a') return;
+    var alloyNode = alloyNodes.find(function(a) { return a.name === d.alloy; });
+    var engineId = engineMap[d.engine];
+    if (alloyNode && engineId) {
+      var exists = edges.some(function(e) { return e.source === alloyNode.id && e.target === engineId; });
+      if (!exists) edges.push({ source: alloyNode.id, target: engineId, type: 'cast_into' });
+    }
+  });
+
+  // Edges: Engine -> Platform
+  m.sufficiency.demand.forEach(function(d) {
+    if (d.type !== 'indirect' || !d.engine) return;
+    var engineId = engineMap[d.engine];
+    var platNode = platNodes.find(function(p) { return p.name === d.platform; });
+    if (engineId && platNode) edges.push({ source: engineId, target: platNode.id, type: 'powers' });
+  });
+
+  // Direct platforms -> connect from refineries
+  m.sufficiency.demand.forEach(function(d) {
+    if (d.type !== 'direct') return;
+    var platNode = platNodes.find(function(p) { return p.name === d.platform; });
+    if (!platNode) return;
+    var matchAlloy = alloyNodes.find(function(a) { return d.use && a.name.toLowerCase().includes(d.use.split(' ')[0].toLowerCase()); });
+    if (matchAlloy) {
+      edges.push({ source: matchAlloy.id, target: platNode.id, type: 'used_in' });
+    } else if (refNodes.length > 0) {
+      edges.push({ source: refNodes[0].id, target: platNode.id, type: 'supplies' });
+    }
+  });
+
+  return { nodes: nodes, edges: edges };
+}
+
+function renderLayeredGraph(data, container, mineralName) {
+  container.innerHTML = '';
+  var width = container.clientWidth;
+  var tierCounts = [0, 0, 0, 0, 0];
+  data.nodes.forEach(function(n) { tierCounts[n.tier]++; });
+  var maxTierCount = Math.max.apply(null, tierCounts);
+  var height = Math.max(550, maxTierCount * 42 + 60);
+  container.style.position = 'relative';
+
+  var svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
+  var tierX = [0.08, 0.28, 0.50, 0.70, 0.90];
+  var tierLabels = ['Mining', 'Refining', 'Alloys', 'Engines', 'Platforms'];
+
+  // Column headers
+  svg.append('g').selectAll('text').data(tierLabels).join('text')
+    .attr('x', function(d, i) { return tierX[i] * width; })
+    .attr('y', 18).attr('text-anchor', 'middle').attr('fill', '#64748b')
+    .attr('font-size', '11px').attr('font-family', 'var(--font-mono)')
+    .text(function(d) { return d; });
+
+  // Assign positions
+  var tierIdx = [0, 0, 0, 0, 0];
+  data.nodes.forEach(function(n) {
+    var count = tierCounts[n.tier];
+    var idx = tierIdx[n.tier]++;
+    n.x = tierX[n.tier] * width;
+    n.y = 40 + (idx + 0.5) * ((height - 50) / count);
+  });
+
+  var nodeMap = {};
+  data.nodes.forEach(function(n) { nodeMap[n.id] = n; });
+
+  // Edges
+  svg.append('g').selectAll('path').data(data.edges).join('path')
+    .attr('class', 'mineral-graph-edge')
+    .attr('d', function(e) {
+      var s = nodeMap[e.source], t = nodeMap[e.target];
+      if (!s || !t) return '';
+      var mx = (s.x + t.x) / 2;
+      return 'M' + s.x + ',' + s.y + ' C' + mx + ',' + s.y + ' ' + mx + ',' + t.y + ' ' + t.x + ',' + t.y;
+    })
+    .attr('fill', 'none').attr('stroke', '#1e293b').attr('stroke-width', 1).attr('stroke-dasharray', '4 2');
+
+  // Nodes
+  var tierShapes = [d3.symbolCircle, d3.symbolSquare, d3.symbolDiamond, d3.symbolCircle, d3.symbolStar];
+  var nodeEls = svg.append('g').selectAll('g').data(data.nodes).join('g')
+    .attr('class', 'mineral-graph-node')
+    .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+    .style('cursor', 'pointer')
+    .on('click', function(event, d) { onMineralNodeClick(d, data); })
+    .on('mouseenter', function(event, d) { showMineralGraphTooltip(event, d); })
+    .on('mouseleave', function() { hideMineralGraphTooltip(); });
+
+  nodeEls.append('path')
+    .attr('d', function(d) { return d3.symbol().type(tierShapes[d.tier] || d3.symbolCircle).size(180)(); })
+    .attr('fill', function(d) { return d.fill; })
+    .attr('stroke', function(d) { return d.border.color; })
+    .attr('stroke-width', function(d) { return d.border.width; });
+
+  nodeEls.append('text').attr('class', 'mineral-graph-label').attr('dy', 22)
+    .text(function(d) { return d.name.length > 15 ? d.name.slice(0, 13) + '\u2026' : d.name; });
+}
+
+// Tooltip
+var mineralGraphTooltip = null;
+function showMineralGraphTooltip(event, d) {
+  if (!mineralGraphTooltip) {
+    mineralGraphTooltip = document.createElement('div');
+    mineralGraphTooltip.style.cssText = 'position:fixed;background:var(--surface-glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--text);z-index:100;pointer-events:none;max-width:220px;';
+    document.body.appendChild(mineralGraphTooltip);
+  }
+  var html = '<strong>' + esc(d.name) + '</strong><br>';
+  html += '<span style="color:var(--text-dim);">' + esc(d.type) + '</span>';
+  if (d.country) html += ' \u2014 ' + esc(d.country);
+  if (d.riskLevel) html += '<br>Risk: <span style="color:' + getRiskColor(d.riskLevel) + ';">' + d.riskLevel.toUpperCase() + '</span>';
+  mineralGraphTooltip.innerHTML = html;
+  mineralGraphTooltip.style.display = 'block';
+  mineralGraphTooltip.style.left = (event.clientX + 12) + 'px';
+  mineralGraphTooltip.style.top = (event.clientY - 10) + 'px';
+}
+function hideMineralGraphTooltip() {
+  if (mineralGraphTooltip) mineralGraphTooltip.style.display = 'none';
+}
+
+function clearGraphHighlights() {
+  d3.selectAll('.mineral-graph-node').classed('dimmed', false).classed('highlighted', false);
+  d3.selectAll('.mineral-graph-edge').classed('dimmed', false).classed('highlighted-up', false).classed('highlighted-down', false);
+}
+
+function onMineralNodeClick(clicked, data) {
+  var upstream = {}, downstream = {};
+  data.edges.forEach(function(e) {
+    if (!downstream[e.source]) downstream[e.source] = [];
+    downstream[e.source].push(e.target);
+    if (!upstream[e.target]) upstream[e.target] = [];
+    upstream[e.target].push(e.source);
+  });
+
+  // BFS upstream
+  var upSet = {}, queue = [clicked.id];
+  upSet[clicked.id] = true;
+  while (queue.length > 0) {
+    var curr = queue.shift();
+    (upstream[curr] || []).forEach(function(src) { if (!upSet[src]) { upSet[src] = true; queue.push(src); } });
+  }
+
+  // BFS downstream
+  var downSet = {};
+  queue = [clicked.id];
+  downSet[clicked.id] = true;
+  while (queue.length > 0) {
+    var curr2 = queue.shift();
+    (downstream[curr2] || []).forEach(function(tgt) { if (!downSet[tgt]) { downSet[tgt] = true; queue.push(tgt); } });
+  }
+
+  var allH = {};
+  for (var k in upSet) allH[k] = true;
+  for (var k2 in downSet) allH[k2] = true;
+
+  d3.selectAll('.mineral-graph-node').classed('dimmed', function(d) { return !allH[d.id]; })
+    .classed('highlighted', function(d) { return !!allH[d.id]; });
+
+  d3.selectAll('.mineral-graph-edge').each(function(e) {
+    var el = d3.select(this);
+    var srcUp = upSet[e.source] && upSet[e.target];
+    var srcDown = downSet[e.source] && downSet[e.target];
+    el.classed('dimmed', !srcUp && !srcDown);
+    el.classed('highlighted-up', !!srcUp);
+    el.classed('highlighted-down', !!srcDown && !srcUp);
+  });
+
+  showMineralGraphInfoPanel(clicked, upSet, downSet);
+}
+
+function showMineralGraphInfoPanel(node, upSet, downSet) {
+  var panel = document.getElementById('psi-graph-info-panel');
+  var title = document.getElementById('psi-graph-info-title');
+  var body = document.getElementById('psi-graph-info-body');
+
+  title.textContent = node.name;
+  title.style.color = node.fill;
+
+  var html = '<div style="margin-bottom:6px;">';
+  html += '<span style="background:' + node.fill + '22; color:' + node.fill + '; padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600;">' + node.riskLevel.toUpperCase() + '</span>';
+  html += ' <span style="background:' + node.border.color + '22; color:' + node.border.color + '; padding:2px 8px; border-radius:8px; font-size:10px;">' + node.type.toUpperCase() + '</span>';
+  if (node.depType) {
+    var badge = node.depType === 'indirect' ? '\uD83D\uDD17 INDIRECT' : '\uD83C\uDF41 DIRECT';
+    var badgeColor = node.depType === 'indirect' ? '#8b5cf6' : '#00d4ff';
+    html += ' <span style="background:' + badgeColor + '22; color:' + badgeColor + '; padding:2px 8px; border-radius:8px; font-size:10px;">' + badge + '</span>';
+  }
+  html += '</div>';
+
+  if (node.country) html += '<div><strong>Country:</strong> ' + esc(node.country) + '</div>';
+  if (node.owner) html += '<div><strong>Owner:</strong> ' + esc(node.owner) + '</div>';
+  if (node.oem) html += '<div><strong>OEM:</strong> ' + esc(node.oem) + ' (' + esc(node.oem_country || '') + ')</div>';
+  if (node.production) html += '<div><strong>Production:</strong> ' + node.production.toLocaleString() + ' t/yr</div>';
+  if (node.capacity) html += '<div><strong>Capacity:</strong> ' + node.capacity.toLocaleString() + ' t/yr</div>';
+  if (node.cobalt_pct) html += '<div><strong>Cobalt:</strong> ' + node.cobalt_pct + '%</div>';
+  if (node.kg_yr) html += '<div><strong>CAF demand:</strong> ' + node.kg_yr + ' kg/yr</div>';
+  if (node.fleet_note) html += '<div><strong>Fleet:</strong> ' + esc(node.fleet_note) + '</div>';
+  if (node.use) html += '<div><strong>Use:</strong> ' + esc(node.use) + '</div>';
+
+  var upCount = Object.keys(upSet).length - 1;
+  var downCount = Object.keys(downSet).length - 1;
+  html += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border); font-size:11px;">';
+  if (upCount > 0) html += '<div style="color:#00d4ff;">\u25B2 Upstream suppliers: ' + upCount + ' nodes</div>';
+  if (downCount > 0) html += '<div style="color:#f59e0b;">\u25BC Downstream dependents: ' + downCount + ' nodes</div>';
+  html += '</div>';
+
+  body.innerHTML = html;
+  panel.style.display = '';
+}
 
 function renderPsiRiskMatrix(alerts) {
   const ctx = document.getElementById('psi-risk-matrix').getContext('2d');
