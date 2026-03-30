@@ -38,6 +38,8 @@ import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
+import asyncio
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -2432,11 +2434,15 @@ _FAS_NUCLEAR_DATA: list[dict] = [
 class FASNuclearClient:
     """Fetches nuclear warhead estimates from Our World in Data (sourced from FAS).
 
-    OWID repackages FAS Nuclear Notebook data as a downloadable CSV.
-    Falls back to hardcoded 2024 data if the download fails.
+    OWID repackages FAS Nuclear Notebook data via their API (indicator 1033214).
+    Falls back to hardcoded 2024 data if the API is unavailable.
     """
 
     _cache: dict = {}
+
+    # OWID API v1 — indicator 1033214 = nuclear warhead stockpiles (FAS)
+    _DATA_URL = "https://api.ourworldindata.org/v1/indicators/1033214.data.json"
+    _META_URL = "https://api.ourworldindata.org/v1/indicators/1033214.metadata.json"
 
     def __init__(self, timeout: float = 30.0):
         self.timeout = timeout
@@ -2452,58 +2458,64 @@ class FASNuclearClient:
         if cached is not None:
             return cached
 
-        url = "https://raw.githubusercontent.com/owid/owid-datasets/refs/heads/master/datasets/Nuclear%20warhead%20stockpiles%20%E2%80%93%20Federation%20of%20American%20Scientists/Nuclear%20warhead%20stockpiles%20%E2%80%93%20Federation%20of%20American%20Scientists.csv"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                resp = await client.get(url)
-                if resp.status_code != 200:
-                    logger.warning("OWID Nuclear CSV returned HTTP %s", resp.status_code)
+                # Fetch data and metadata in parallel
+                data_resp, meta_resp = await asyncio.gather(
+                    client.get(self._DATA_URL),
+                    client.get(self._META_URL),
+                )
+                if data_resp.status_code != 200 or meta_resp.status_code != 200:
+                    logger.warning("OWID Nuclear API returned HTTP %s / %s",
+                                   data_resp.status_code, meta_resp.status_code)
                     return self._fallback()
 
-                lines = resp.text.strip().split("\n")
-                if len(lines) < 2:
-                    return self._fallback()
+                data = data_resp.json()
+                meta = meta_resp.json()
 
-                # CSV: Entity, Year, Nuclear warhead stockpiles (Federation of American Scientists)
-                # Get the latest year for each nuclear state
-                latest: dict[str, dict] = {}
-                for line in lines[1:]:
-                    parts = line.split(",")
-                    if len(parts) < 3:
-                        continue
-                    entity = parts[0].strip()
-                    try:
-                        year = int(parts[1].strip())
-                        warheads = int(parts[2].strip())
-                    except (ValueError, IndexError):
-                        continue
-                    if entity not in latest or year > latest[entity]["year"]:
-                        latest[entity] = {"country": entity, "year": year, "total_warheads": warheads}
+            # Build entity ID → name map from metadata
+            entity_map: dict[int, str] = {}
+            for ent in meta.get("dimensions", {}).get("entities", {}).get("values", []):
+                entity_map[ent["id"]] = ent["name"]
 
-                # Map to the 9 nuclear states
-                nuclear_states = ["Russia", "United States", "China", "France",
-                                  "United Kingdom", "Pakistan", "India", "Israel",
-                                  "North Korea"]
-                results: list[dict] = []
-                for state in nuclear_states:
-                    entry = latest.get(state)
-                    if entry:
-                        # Merge with hardcoded metadata for status/trend/deployed
-                        meta = next((h for h in _FAS_NUCLEAR_DATA if h["country"] == state), {})
-                        results.append({
-                            "country": state,
-                            "total_warheads": entry["total_warheads"],
-                            "deployed_strategic": meta.get("deployed_strategic"),
-                            "status": meta.get("status", ""),
-                            "trend": meta.get("trend", "unknown"),
-                            "year": entry["year"],
-                            "source": "FAS via Our World in Data",
-                        })
+            # Parse parallel arrays: values[], years[], entities[]
+            values = data.get("values", [])
+            years = data.get("years", [])
+            entities = data.get("entities", [])
 
-                if results:
-                    _cache_set(self._cache, "fas_nuclear_arsenals", results)
-                    return results
-                return self._fallback()
+            # Get the latest year for each nuclear state
+            latest: dict[str, dict] = {}
+            for i in range(len(values)):
+                entity_name = entity_map.get(entities[i], "")
+                year = years[i]
+                warheads = int(values[i])
+                if entity_name not in latest or year > latest[entity_name]["year"]:
+                    latest[entity_name] = {"country": entity_name, "year": year, "total_warheads": warheads}
+
+            # Map to the 9 nuclear states
+            nuclear_states = ["Russia", "United States", "China", "France",
+                              "United Kingdom", "Pakistan", "India", "Israel",
+                              "North Korea"]
+            results: list[dict] = []
+            for state in nuclear_states:
+                entry = latest.get(state)
+                if entry:
+                    # Merge with hardcoded metadata for status/trend/deployed
+                    hmeta = next((h for h in _FAS_NUCLEAR_DATA if h["country"] == state), {})
+                    results.append({
+                        "country": state,
+                        "total_warheads": entry["total_warheads"],
+                        "deployed_strategic": hmeta.get("deployed_strategic"),
+                        "status": hmeta.get("status", ""),
+                        "trend": hmeta.get("trend", "unknown"),
+                        "year": entry["year"],
+                        "source": "FAS via Our World in Data",
+                    })
+
+            if results:
+                _cache_set(self._cache, "fas_nuclear_arsenals", results)
+                return results
+            return self._fallback()
 
         except Exception as exc:
             logger.warning("OWID Nuclear fetch failed: %s", exc)
