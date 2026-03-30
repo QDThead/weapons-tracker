@@ -817,8 +817,8 @@ async def get_nuclear_arsenals():
         result = {
             "source": "Federation of American Scientists — Status of World Nuclear Forces",
             "url": "https://fas.org/issues/nuclear-weapons/status-world-nuclear-forces/",
-            "as_of": "2024 estimates (published 2025)",
-            "note": "Hardcoded from latest FAS public estimates. Deployed strategic counts exclude tactical warheads.",
+            "as_of": "Latest available (FAS via Our World in Data)",
+            "note": "Live data from OWID CSV; falls back to hardcoded 2024 if unavailable.",
             "total_nuclear_states": len(arsenals),
             "global_total_warheads": total_warheads,
             "global_deployed_strategic": total_deployed,
@@ -933,6 +933,55 @@ async def get_unroca_country_list():
     except Exception as e:
         logger.error("UNROCA country list fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+
+@router.get("/opensanctions")
+async def get_opensanctions():
+    """OpenSanctions consolidated sanctions (329 sources, daily updates)."""
+    cached = _check("opensanctions")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import OpenSanctionsClient
+        client = OpenSanctionsClient()
+        data = await client.fetch_sanctions_stats()
+        _cache["opensanctions"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch OpenSanctions data")
+
+
+@router.get("/military-bases")
+async def get_military_bases():
+    """US DoD military installations worldwide (Data.gov)."""
+    cached = _check("military_bases")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import USMilitaryBasesClient
+        client = USMilitaryBasesClient()
+        data = await client.fetch_bases()
+        _cache["military_bases"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch military bases data")
+
+
+@router.get("/dod-spending")
+async def get_dod_spending():
+    """US DoD contract spending from USAspending.gov."""
+    cached = _check("dod_spending")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import USASpendingDefenceClient
+        client = USASpendingDefenceClient()
+        data = await client.fetch_dod_spending()
+        _cache["dod_spending"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch DoD spending data")
 
 
 # ── COBALT SUPPLY CHAIN INTELLIGENCE ─────────────────────────────

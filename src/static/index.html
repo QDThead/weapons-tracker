@@ -4324,6 +4324,8 @@ const FEED_DEFINITIONS = [
     renderSample: () => '<div class="feed-sample-row" style="color:var(--text-dim);">DND contracts from Open Canada disclosure portal. Weekly scrape (Sun 02:00).</div>' },
   { section: 'Enrichment & Governance', name: 'OpenAlex Defence Research', key: 'OpenAlex',
     sampleEndpoint: '/enrichment/defence-research', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Enrichment & Governance', name: 'USAspending DoD Contracts', key: 'USAspending DoD',
+    sampleEndpoint: '/enrichment/dod-spending', rawResponse: true, renderSample: data => genericSample(data) },
 
   // ── SUPPLY CHAIN & MINERALS ──
   { section: 'Supply Chain & Minerals', sectionNote: 'PSI data sources', name: 'USGS Mineral Deposits (MRDS)', key: 'USGS MRDS',
@@ -4351,6 +4353,8 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/cobalt/cmoc', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Supply Chain & Minerals', name: 'Glencore Cobalt Production', key: 'Glencore Cobalt',
     sampleEndpoint: '/enrichment/cobalt/glencore', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Supply Chain & Minerals', name: 'OpenSanctions Consolidated', key: 'OpenSanctions',
+    sampleEndpoint: '/enrichment/opensanctions', rawResponse: true, renderSample: data => genericSample(data) },
 
   // ── CYBER THREAT INTELLIGENCE ──
   { section: 'Cyber Threat Intelligence', sectionNote: 'CTI feeds', name: 'APT Threat Actor Registry', key: 'APT Registry',
@@ -4379,6 +4383,8 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/connectivity', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Infrastructure & Communications', name: 'OpenSky Arctic Aircraft', key: 'OpenSky Arctic',
     sampleEndpoint: '/enrichment/arctic-aircraft', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Infrastructure & Communications', name: 'US Military Bases (Data.gov)', key: 'US Mil Bases',
+    sampleEndpoint: '/enrichment/military-bases', rawResponse: true, renderSample: data => genericSample(data) },
 
   // ── ANALYSIS & OVERLAYS ──
   { section: 'Analysis & Overlays', sectionNote: 'derived / enriched', name: 'Sanctions & Embargoes (17 countries)', key: 'Sanctions',

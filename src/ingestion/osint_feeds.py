@@ -2430,30 +2430,90 @@ _FAS_NUCLEAR_DATA: list[dict] = [
 
 
 class FASNuclearClient:
-    """Returns FAS nuclear warhead estimates (hardcoded latest figures).
+    """Fetches nuclear warhead estimates from Our World in Data (sourced from FAS).
 
-    Since FAS publishes HTML pages rather than a JSON API the data is
-    hardcoded from the most recent publicly-available FAS estimates (2024).
-    The ``fetch_nuclear_arsenals`` method is async for API consistency.
+    OWID repackages FAS Nuclear Notebook data as a downloadable CSV.
+    Falls back to hardcoded 2024 data if the download fails.
     """
 
     _cache: dict = {}
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
 
     async def fetch_nuclear_arsenals(self) -> list[dict]:
         """Return the nine nuclear-armed states with warhead counts and trend.
 
         Returns
         -------
-        list of {country, total_warheads, deployed_strategic, status, trend}
+        list of {country, total_warheads, deployed_strategic, status, trend, year, source}
         """
         cached = _cache_get(self._cache, "fas_nuclear_arsenals")
         if cached is not None:
             return cached
 
-        results = list(_FAS_NUCLEAR_DATA)  # shallow copy
+        url = "https://raw.githubusercontent.com/owid/owid-datasets/refs/heads/master/datasets/Nuclear%20warhead%20stockpiles%20%E2%80%93%20Federation%20of%20American%20Scientists/Nuclear%20warhead%20stockpiles%20%E2%80%93%20Federation%20of%20American%20Scientists.csv"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("OWID Nuclear CSV returned HTTP %s", resp.status_code)
+                    return self._fallback()
+
+                lines = resp.text.strip().split("\n")
+                if len(lines) < 2:
+                    return self._fallback()
+
+                # CSV: Entity, Year, Nuclear warhead stockpiles (Federation of American Scientists)
+                # Get the latest year for each nuclear state
+                latest: dict[str, dict] = {}
+                for line in lines[1:]:
+                    parts = line.split(",")
+                    if len(parts) < 3:
+                        continue
+                    entity = parts[0].strip()
+                    try:
+                        year = int(parts[1].strip())
+                        warheads = int(parts[2].strip())
+                    except (ValueError, IndexError):
+                        continue
+                    if entity not in latest or year > latest[entity]["year"]:
+                        latest[entity] = {"country": entity, "year": year, "total_warheads": warheads}
+
+                # Map to the 9 nuclear states
+                nuclear_states = ["Russia", "United States", "China", "France",
+                                  "United Kingdom", "Pakistan", "India", "Israel",
+                                  "North Korea"]
+                results: list[dict] = []
+                for state in nuclear_states:
+                    entry = latest.get(state)
+                    if entry:
+                        # Merge with hardcoded metadata for status/trend/deployed
+                        meta = next((h for h in _FAS_NUCLEAR_DATA if h["country"] == state), {})
+                        results.append({
+                            "country": state,
+                            "total_warheads": entry["total_warheads"],
+                            "deployed_strategic": meta.get("deployed_strategic"),
+                            "status": meta.get("status", ""),
+                            "trend": meta.get("trend", "unknown"),
+                            "year": entry["year"],
+                            "source": "FAS via Our World in Data",
+                        })
+
+                if results:
+                    _cache_set(self._cache, "fas_nuclear_arsenals", results)
+                    return results
+                return self._fallback()
+
+        except Exception as exc:
+            logger.warning("OWID Nuclear fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> list[dict]:
+        """Return hardcoded FAS 2024 data as fallback."""
+        results = []
+        for d in _FAS_NUCLEAR_DATA:
+            results.append({**d, "year": 2024, "source": "FAS (hardcoded 2024)"})
         _cache_set(self._cache, "fas_nuclear_arsenals", results)
         return results
 
@@ -3179,3 +3239,238 @@ class GlencoreProductionClient:
             "website_accessible": website_accessible,
             "source": "Glencore quarterly production reports",
         }
+
+
+class OpenSanctionsClient:
+    """Fetches consolidated sanctions data from OpenSanctions.org.
+
+    Aggregates 329 sanctions sources (OFAC, EU, UN, national lists) into
+    a single normalized dataset. Updated daily. Free for non-commercial use.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_sanctions_stats(self) -> dict:
+        """Return OpenSanctions dataset statistics and recent entries.
+
+        Returns
+        -------
+        dict with total_entities, sources, last_updated, recent_additions, source
+        """
+        cached = _cache_get(self._cache, "opensanctions")
+        if cached is not None:
+            return cached
+
+        url = "https://data.opensanctions.org/datasets/latest/index.json"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("OpenSanctions index returned HTTP %s", resp.status_code)
+                    return self._fallback()
+
+                data = resp.json()
+
+            datasets = data.get("datasets", []) if isinstance(data, dict) else []
+            # Find the consolidated sanctions dataset
+            sanctions = None
+            for ds in datasets:
+                if isinstance(ds, dict) and ds.get("name") == "sanctions":
+                    sanctions = ds
+                    break
+
+            if not sanctions and isinstance(data, dict):
+                sanctions = data  # Root might be the dataset itself
+
+            result = {
+                "total_entities": sanctions.get("entity_count", 0) if sanctions else 0,
+                "sources": sanctions.get("source_count", 329) if sanctions else 329,
+                "last_updated": sanctions.get("last_change", "") if sanctions else "",
+                "title": sanctions.get("title", "OpenSanctions Consolidated") if sanctions else "OpenSanctions",
+                "description": "Consolidated sanctions from OFAC, EU, UN, and 326+ national/international lists",
+                "download_url": "https://data.opensanctions.org/datasets/latest/sanctions/entities.ftm.json",
+                "source": "OpenSanctions.org",
+            }
+
+            _cache_set(self._cache, "opensanctions", result)
+            return result
+
+        except Exception as exc:
+            logger.warning("OpenSanctions fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> dict:
+        """Fallback with known stats."""
+        result = {
+            "total_entities": 250000,
+            "sources": 329,
+            "last_updated": "daily",
+            "title": "OpenSanctions Consolidated Sanctions",
+            "description": "Consolidated sanctions from OFAC, EU, UN, and 326+ national/international lists",
+            "download_url": "https://data.opensanctions.org/datasets/latest/sanctions/entities.ftm.json",
+            "source": "OpenSanctions.org (fallback)",
+        }
+        _cache_set(self._cache, "opensanctions", result)
+        return result
+
+
+class USMilitaryBasesClient:
+    """Fetches US DoD military installation data from Data.gov.
+
+    GIS-sourced dataset of all DoD sites, installations, ranges worldwide.
+    No auth required. Updated periodically.
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_bases(self) -> dict:
+        """Return US military base dataset metadata and summary.
+
+        Returns
+        -------
+        dict with total_bases, regions, dataset_url, source
+        """
+        cached = _cache_get(self._cache, "us_mil_bases")
+        if cached is not None:
+            return cached
+
+        url = "https://catalog.data.gov/api/3/action/package_show?id=military-bases1"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("Data.gov Military Bases returned HTTP %s", resp.status_code)
+                    return self._fallback()
+
+                data = resp.json()
+
+            pkg = data.get("result", {})
+            resources = pkg.get("resources", [])
+            geojson_url = ""
+            for r in resources:
+                if r.get("format", "").upper() in ("GEOJSON", "JSON", "SHP"):
+                    geojson_url = r.get("url", "")
+                    break
+
+            result = {
+                "title": pkg.get("title", "US Military Bases"),
+                "description": pkg.get("notes", "DoD Sites, Installations, and Ranges"),
+                "total_resources": len(resources),
+                "last_modified": pkg.get("metadata_modified", ""),
+                "organization": pkg.get("organization", {}).get("title", "US DoD"),
+                "geojson_url": geojson_url,
+                "dataset_url": "https://catalog.data.gov/dataset/military-bases1",
+                "source": "Data.gov",
+            }
+
+            _cache_set(self._cache, "us_mil_bases", result)
+            return result
+
+        except Exception as exc:
+            logger.warning("Data.gov Military Bases fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> dict:
+        result = {
+            "title": "US Military Bases",
+            "description": "DoD Sites, Installations, and Ranges worldwide",
+            "total_resources": 5,
+            "last_modified": "2025-11",
+            "organization": "US Department of Defense",
+            "geojson_url": "",
+            "dataset_url": "https://catalog.data.gov/dataset/military-bases1",
+            "source": "Data.gov (fallback)",
+        }
+        _cache_set(self._cache, "us_mil_bases", result)
+        return result
+
+
+class USASpendingDefenceClient:
+    """Fetches US DoD contract spending data from USAspending.gov API.
+
+    Free, no auth. Real-time federal procurement data.
+    Filters to Department of Defense (agency code 097).
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_dod_spending(self) -> dict:
+        """Return recent DoD contract spending summary.
+
+        Returns
+        -------
+        dict with total_obligations, contracts, top_recipients, fiscal_year, source
+        """
+        cached = _cache_get(self._cache, "usa_spending_dod")
+        if cached is not None:
+            return cached
+
+        url = "https://api.usaspending.gov/api/v2/agency/097/awards/"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("USAspending API returned HTTP %s", resp.status_code)
+                    # Try alternative endpoint
+                    return await self._fetch_overview(client)
+
+                data = resp.json()
+
+            result = {
+                "fiscal_year": data.get("fiscal_year", 2025),
+                "total_obligations": data.get("total_obligated_amount", 0),
+                "contract_count": data.get("transaction_count", 0),
+                "agency": "Department of Defense",
+                "agency_code": "097",
+                "api_url": "https://api.usaspending.gov/api/v2/agency/097/awards/",
+                "source": "USAspending.gov",
+            }
+
+            _cache_set(self._cache, "usa_spending_dod", result)
+            return result
+
+        except Exception as exc:
+            logger.warning("USAspending DoD fetch failed: %s", exc)
+            return await self._fetch_overview_fallback()
+
+    async def _fetch_overview(self, client: httpx.AsyncClient) -> dict:
+        """Try the agency overview endpoint."""
+        try:
+            resp = await client.get("https://api.usaspending.gov/api/v2/agency/097/")
+            if resp.status_code == 200:
+                data = resp.json()
+                result = {
+                    "fiscal_year": data.get("fiscal_year", 2025),
+                    "total_obligations": data.get("total_obligated_amount", 0),
+                    "budget_authority": data.get("total_budgetary_resources", 0),
+                    "agency": data.get("name", "Department of Defense"),
+                    "agency_code": "097",
+                    "source": "USAspending.gov",
+                }
+                _cache_set(self._cache, "usa_spending_dod", result)
+                return result
+        except Exception:
+            pass
+        return await self._fetch_overview_fallback()
+
+    async def _fetch_overview_fallback(self) -> dict:
+        result = {
+            "fiscal_year": 2025,
+            "total_obligations": 886000000000,
+            "budget_authority": 886000000000,
+            "agency": "Department of Defense",
+            "agency_code": "097",
+            "note": "FY2025 DoD budget. Live API unavailable — using published figure.",
+            "source": "USAspending.gov (fallback)",
+        }
+        _cache_set(self._cache, "usa_spending_dod", result)
+        return result

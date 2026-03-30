@@ -19,7 +19,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # SIPRI provides Excel downloads for the Top 100 data
-SIPRI_TOP100_URL = "https://www.sipri.org/sites/default/files/SIPRI-Top-100-2002-2023.xlsx"
+SIPRI_TOP100_URL = "https://www.sipri.org/sites/default/files/SIPRI-Top-100-2002-2024.xlsx"
 
 
 @dataclass
