@@ -37,3 +37,4 @@ logs/
 # Jupyter
 .ipynb_checkpoints/
 weapons_tracker.db
+.superpowers/
