@@ -1648,3 +1648,56 @@ async def list_enrichment_sources():
         "total_sources": 52,
         "total_active": 52,
     }
+
+
+# ── ECONOMIC & TRADE INTELLIGENCE ────────────────────────────────
+
+
+@router.get("/metals/prices")
+async def get_metal_prices():
+    """FRED monthly defence-relevant metal and energy commodity prices (13 series)."""
+    cached = _check("fred_metals")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import FREDDefenceMetalsClient
+        client = FREDDefenceMetalsClient()
+        data = await client.fetch_metal_prices()
+        result = {"source": "FRED", "records": len(data), "data": data}
+        _cache["fred_metals"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch metal prices")
+
+
+@router.get("/risk-indicators")
+async def get_risk_indicators():
+    """FRED daily financial risk and geopolitical stress indicators (8 series)."""
+    cached = _check("fred_risk")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import FREDRiskIndicatorsClient
+        client = FREDRiskIndicatorsClient()
+        data = await client.fetch_risk_indicators()
+        result = {"source": "FRED", "records": len(data), "data": data}
+        _cache["fred_risk"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch risk indicators")
+
+
+@router.get("/fx-rates")
+async def get_fx_rates():
+    """Daily exchange rates for 15 defence-relevant currencies (ECB via Frankfurter)."""
+    cached = _check("fx_rates")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import FrankfurterFXClient
+        client = FrankfurterFXClient()
+        data = await client.fetch_rates()
+        _cache["fx_rates"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch exchange rates")

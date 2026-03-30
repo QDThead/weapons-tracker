@@ -4337,6 +4337,14 @@ const FEED_DEFINITIONS = [
   { section: 'Conflict & War Data', name: 'GDELT Conflict Events', key: 'GDELT Conflict',
     sampleEndpoint: '/enrichment/conflict/gdelt-events', rawResponse: true, renderSample: data => genericSample(data) },
 
+  // ── ECONOMIC & TRADE INTELLIGENCE ──
+  { section: 'Economic & Trade Intelligence', sectionNote: 'daily / monthly', name: 'FRED Defence Metal Prices (13 commodities)', key: 'FRED Metals',
+    sampleEndpoint: '/enrichment/metals/prices', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Economic & Trade Intelligence', name: 'FRED Risk & Stress Indicators (8 indices)', key: 'FRED Risk',
+    sampleEndpoint: '/enrichment/risk-indicators', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Economic & Trade Intelligence', name: 'Frankfurter FX Rates (15 currencies)', key: 'Frankfurter FX',
+    sampleEndpoint: '/enrichment/fx-rates', rawResponse: true, renderSample: data => genericSample(data) },
+
   // ── SUPPLY CHAIN & MINERALS ──
   { section: 'Supply Chain & Minerals', sectionNote: 'PSI data sources', name: 'USGS Mineral Deposits (MRDS)', key: 'USGS MRDS',
     sampleEndpoint: '/enrichment/mineral-deposits', rawResponse: true, renderSample: data => genericSample(data) },

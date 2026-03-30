@@ -97,7 +97,7 @@ class ComtradeQuery:
     """Query parameters for UN Comtrade API."""
     reporter_codes: list[int] = field(default_factory=list)
     partner_codes: list[int] = field(default_factory=list)
-    years: list[int] = field(default_factory=lambda: [2023])
+    years: list[int] = field(default_factory=lambda: [2023, 2024])
     flow_codes: list[str] = field(default_factory=lambda: ["M", "X"])
     hs_codes: list[str] = field(default_factory=lambda: ["93"])
     include_descriptions: bool = True
@@ -230,7 +230,7 @@ class ComtradeClient:
 
         query = ComtradeQuery(
             reporter_codes=[code],
-            years=years or [2022, 2023],
+            years=years or [2022, 2023, 2024],
             flow_codes=["X"],
             hs_codes=["9301", "9302", "9303", "9304", "9305", "9306"],
         )
@@ -246,7 +246,7 @@ class ComtradeClient:
 
         query = ComtradeQuery(
             reporter_codes=[code],
-            years=years or [2022, 2023],
+            years=years or [2022, 2023, 2024],
             flow_codes=["M"],
             hs_codes=["9301", "9302", "9303", "9304", "9305", "9306"],
         )
@@ -260,7 +260,7 @@ class ComtradeClient:
         query = ComtradeQuery(
             reporter_codes=top_exporters,
             partner_codes=[0],  # World aggregate (explicitly requested)
-            years=years or [2020, 2021, 2022, 2023],
+            years=years or [2020, 2021, 2022, 2023, 2024],
             flow_codes=["X"],
             hs_codes=["93"],
         )
@@ -390,7 +390,7 @@ class ComtradeMaterialsClient(ComtradeClient):
 
         Args:
             material: Material key from MATERIAL_SOURCE_COUNTRIES.
-            years: Years to query (default: [2022, 2023]).
+            years: Years to query (default: [2022, 2023, 2024]).
 
         Returns:
             List of ComtradeRecords for the material's HS codes.
@@ -410,7 +410,7 @@ class ComtradeMaterialsClient(ComtradeClient):
         query = ComtradeQuery(
             reporter_codes=source_codes,
             partner_codes=[0],  # World aggregate
-            years=years or [2022, 2023],
+            years=years or [2022, 2023, 2024],
             flow_codes=["X"],
             hs_codes=hs_codes,
         )
@@ -437,7 +437,7 @@ class ComtradeMaterialsClient(ComtradeClient):
         all_hs = list(HS_DEFENSE_MATERIALS.keys())
         query = ComtradeQuery(
             reporter_codes=[code],
-            years=years or [2022, 2023],
+            years=years or [2022, 2023, 2024],
             flow_codes=["M"],
             hs_codes=all_hs,
         )

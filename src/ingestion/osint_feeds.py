@@ -3491,6 +3491,253 @@ class USASpendingDefenceClient:
         return result
 
 
+# ---------------------------------------------------------------------------
+# FREDDefenceMetalsClient — 13 monthly commodity price series
+# ---------------------------------------------------------------------------
+
+
+class FREDDefenceMetalsClient:
+    """Fetches monthly defence-relevant metal and commodity prices from FRED.
+
+    No API key needed for CSV endpoint. 13 series covering aluminum, nickel,
+    copper, uranium, iron ore, tin, lead, zinc, coal, oil (Brent + WTI),
+    and natural gas (US + EU).
+    """
+
+    _cache: dict = {}
+
+    SERIES = {
+        "PALUMUSDM": {"name": "Aluminum", "unit": "$/mt"},
+        "PNICKUSDM": {"name": "Nickel", "unit": "$/mt"},
+        "PCOPPUSDM": {"name": "Copper", "unit": "$/mt"},
+        "PURANUSDM": {"name": "Uranium", "unit": "$/lb"},
+        "PIORECRUSDM": {"name": "Iron Ore", "unit": "$/mt"},
+        "PTINUSDM": {"name": "Tin", "unit": "$/mt"},
+        "PLEADUSDM": {"name": "Lead", "unit": "$/mt"},
+        "PZINCUSDM": {"name": "Zinc", "unit": "$/mt"},
+        "PCOALAUUSDM": {"name": "Coal (Australia)", "unit": "$/mt"},
+        "POILBREUSDM": {"name": "Brent Crude", "unit": "$/bbl"},
+        "POILWTIUSDM": {"name": "WTI Crude", "unit": "$/bbl"},
+        "PNGASUSUSDM": {"name": "Natural Gas (US)", "unit": "$/mmBtu"},
+        "PNGASEUUSDM": {"name": "Natural Gas (EU)", "unit": "$/mmBtu"},
+    }
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_metal_prices(self) -> list[dict]:
+        """Return latest prices for 13 defence-relevant commodities.
+
+        Returns
+        -------
+        list of {series_id, name, unit, date, price, source}
+        """
+        cached = _cache_get(self._cache, "fred_metals")
+        if cached is not None:
+            return cached
+
+        results: list[dict] = []
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                for series_id, meta in self.SERIES.items():
+                    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd=2025-01-01"
+                    try:
+                        resp = await client.get(url)
+                        if resp.status_code != 200:
+                            continue
+                        lines = resp.text.strip().split("\n")
+                        if len(lines) < 2:
+                            continue
+                        # Get last non-empty value
+                        for line in reversed(lines[1:]):
+                            parts = line.split(",")
+                            if len(parts) >= 2 and parts[1].strip() and parts[1].strip() != ".":
+                                results.append({
+                                    "series_id": series_id,
+                                    "name": meta["name"],
+                                    "unit": meta["unit"],
+                                    "date": parts[0].strip(),
+                                    "price": float(parts[1].strip()),
+                                    "source": "FRED",
+                                })
+                                break
+                    except Exception:
+                        continue
+
+            if not results:
+                results = self._fallback()
+            _cache_set(self._cache, "fred_metals", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("FRED Defence Metals fetch failed: %s", exc)
+            results = self._fallback()
+            _cache_set(self._cache, "fred_metals", results)
+            return results
+
+    def _fallback(self) -> list[dict]:
+        return [
+            {"series_id": "PALUMUSDM", "name": "Aluminum", "unit": "$/mt", "date": "2026-02", "price": 3065, "source": "FRED (fallback)"},
+            {"series_id": "PNICKUSDM", "name": "Nickel", "unit": "$/mt", "date": "2026-02", "price": 17173, "source": "FRED (fallback)"},
+            {"series_id": "PCOPPUSDM", "name": "Copper", "unit": "$/mt", "date": "2026-02", "price": 12951, "source": "FRED (fallback)"},
+            {"series_id": "PURANUSDM", "name": "Uranium", "unit": "$/lb", "date": "2026-02", "price": 71.30, "source": "FRED (fallback)"},
+            {"series_id": "POILBREUSDM", "name": "Brent Crude", "unit": "$/bbl", "date": "2026-02", "price": 69.41, "source": "FRED (fallback)"},
+        ]
+
+
+# ---------------------------------------------------------------------------
+# FREDRiskIndicatorsClient — 8 daily financial risk / geopolitical stress series
+# ---------------------------------------------------------------------------
+
+
+class FREDRiskIndicatorsClient:
+    """Fetches daily financial risk and geopolitical stress indicators from FRED.
+
+    VIX, USD strength, credit spreads, financial stress, treasury spread,
+    geopolitical risk index. No API key needed for CSV endpoint.
+    """
+
+    _cache: dict = {}
+
+    SERIES = {
+        "VIXCLS": {"name": "CBOE VIX (Volatility)", "desc": "Market fear gauge"},
+        "DTWEXBGS": {"name": "USD Trade-Weighted (Broad)", "desc": "Dollar strength"},
+        "T10Y2Y": {"name": "10Y-2Y Treasury Spread", "desc": "Recession signal"},
+        "BAMLH0A0HYM2": {"name": "High-Yield Credit Spread", "desc": "Credit stress"},
+        "STLFSI4": {"name": "St. Louis Financial Stress", "desc": "Systemic risk"},
+        "GEPUCURRENT": {"name": "Geopolitical Risk Index", "desc": "Global threat level"},
+        "DEXCHUS": {"name": "USD/CNY Exchange Rate", "desc": "China currency"},
+        "DEXUSEU": {"name": "USD/EUR Exchange Rate", "desc": "Euro currency"},
+    }
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_risk_indicators(self) -> list[dict]:
+        """Return latest values for 8 risk/stress indicators.
+
+        Returns
+        -------
+        list of {series_id, name, description, date, value, source}
+        """
+        cached = _cache_get(self._cache, "fred_risk")
+        if cached is not None:
+            return cached
+
+        results: list[dict] = []
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                for series_id, meta in self.SERIES.items():
+                    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd=2025-01-01"
+                    try:
+                        resp = await client.get(url)
+                        if resp.status_code != 200:
+                            continue
+                        lines = resp.text.strip().split("\n")
+                        if len(lines) < 2:
+                            continue
+                        for line in reversed(lines[1:]):
+                            parts = line.split(",")
+                            if len(parts) >= 2 and parts[1].strip() and parts[1].strip() != ".":
+                                results.append({
+                                    "series_id": series_id,
+                                    "name": meta["name"],
+                                    "description": meta["desc"],
+                                    "date": parts[0].strip(),
+                                    "value": float(parts[1].strip()),
+                                    "source": "FRED",
+                                })
+                                break
+                    except Exception:
+                        continue
+
+            if not results:
+                results = self._fallback()
+            _cache_set(self._cache, "fred_risk", results)
+            return results
+
+        except Exception as exc:
+            logger.warning("FRED Risk Indicators fetch failed: %s", exc)
+            results = self._fallback()
+            _cache_set(self._cache, "fred_risk", results)
+            return results
+
+    def _fallback(self) -> list[dict]:
+        return [
+            {"series_id": "VIXCLS", "name": "CBOE VIX", "description": "Market fear gauge", "date": "2026-03-27", "value": 31.05, "source": "FRED (fallback)"},
+            {"series_id": "GEPUCURRENT", "name": "Geopolitical Risk Index", "description": "Global threat level", "date": "2025-11", "value": 371.10, "source": "FRED (fallback)"},
+            {"series_id": "T10Y2Y", "name": "10Y-2Y Treasury Spread", "description": "Recession signal", "date": "2026-03-27", "value": 0.56, "source": "FRED (fallback)"},
+        ]
+
+
+# ---------------------------------------------------------------------------
+# FrankfurterFXClient — ECB-sourced daily FX rates for 15 defence currencies
+# ---------------------------------------------------------------------------
+
+
+class FrankfurterFXClient:
+    """Fetches daily exchange rates from Frankfurter.app (ECB-sourced).
+
+    Free, no auth, covers 30+ currencies. Useful for defence supplier
+    country risk assessment via currency volatility.
+    """
+
+    _cache: dict = {}
+
+    # Defence-relevant currencies
+    CURRENCIES = "CNY,TRY,INR,KRW,BRL,ZAR,GBP,EUR,JPY,AUD,SEK,NOK,PLN,ILS,CAD"
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_rates(self) -> dict:
+        """Return latest USD exchange rates for defence-relevant currencies.
+
+        Returns
+        -------
+        dict with date, base, rates, source
+        """
+        cached = _cache_get(self._cache, "fx_rates")
+        if cached is not None:
+            return cached
+
+        url = f"https://api.frankfurter.app/latest?from=USD&to={self.CURRENCIES}"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    logger.warning("Frankfurter FX returned HTTP %s", resp.status_code)
+                    return self._fallback()
+
+                data = resp.json()
+
+            result = {
+                "date": data.get("date", ""),
+                "base": data.get("base", "USD"),
+                "rates": data.get("rates", {}),
+                "currency_count": len(data.get("rates", {})),
+                "source": "Frankfurter.app (ECB)",
+            }
+
+            _cache_set(self._cache, "fx_rates", result)
+            return result
+
+        except Exception as exc:
+            logger.warning("Frankfurter FX fetch failed: %s", exc)
+            return self._fallback()
+
+    def _fallback(self) -> dict:
+        return {
+            "date": "2026-03-28",
+            "base": "USD",
+            "rates": {"CNY": 6.91, "TRY": 44.46, "INR": 94.71, "KRW": 1517.7,
+                      "BRL": 5.24, "ZAR": 17.18, "GBP": 0.77, "EUR": 0.92,
+                      "CAD": 1.39, "JPY": 150.8},
+            "currency_count": 10,
+            "source": "Frankfurter.app (fallback)",
+        }
+
+
 class WarSpottingClient:
     """Fetches visually confirmed Russian equipment losses from WarSpotting.net.
 
