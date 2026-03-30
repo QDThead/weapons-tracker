@@ -935,6 +935,145 @@ async def get_unroca_country_list():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+# ── COBALT SUPPLY CHAIN INTELLIGENCE ─────────────────────────────
+
+
+@router.get("/cobalt/prices")
+async def get_cobalt_prices():
+    """IMF monthly cobalt spot prices (USD/metric ton)."""
+    cached = _check("cobalt_prices")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import IMFCobaltPriceClient
+        client = IMFCobaltPriceClient()
+        data = await client.fetch_cobalt_prices()
+        result = {"source": "IMF PCPS", "records": len(data), "data": data[:60]}
+        _cache["cobalt_prices"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch cobalt prices")
+
+
+@router.get("/cobalt/drc-mines")
+async def get_drc_mines():
+    """IPIS DRC artisanal mining sites with conflict indicators."""
+    cached = _check("drc_mines")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import IPISDRCMinesClient
+        client = IPISDRCMinesClient()
+        data = await client.fetch_drc_mines()
+        result = {"source": "IPIS Research", "records": len(data), "data": data[:50]}
+        _cache["drc_mines"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch DRC mine data")
+
+
+@router.get("/cobalt/production")
+async def get_cobalt_production():
+    """USGS world cobalt production by country."""
+    cached = _check("cobalt_production")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import USGSCobaltDataClient
+        client = USGSCobaltDataClient()
+        data = await client.fetch_cobalt_production()
+        result = {"source": "USGS MCS 2025", "records": len(data), "data": data}
+        _cache["cobalt_production"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch cobalt production data")
+
+
+@router.get("/cobalt/refiners")
+async def get_cobalt_refiners():
+    """RMI-assessed cobalt refiners with compliance status."""
+    cached = _check("cobalt_refiners")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import RMICobaltRefinersClient
+        client = RMICobaltRefinersClient()
+        data = await client.fetch_refiners()
+        result = {"source": "RMI Cobalt Refiners List", "records": len(data), "data": data}
+        _cache["cobalt_refiners"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch cobalt refiner data")
+
+
+@router.get("/cobalt/sec-filings")
+async def get_cobalt_sec_filings():
+    """SEC EDGAR filings mentioning cobalt/superalloy supply chain risks."""
+    cached = _check("cobalt_sec")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import SECEdgarCobaltClient
+        client = SECEdgarCobaltClient()
+        data = await client.fetch_cobalt_filings()
+        result = {"source": "SEC EDGAR", "records": len(data), "data": data}
+        _cache["cobalt_sec"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch SEC filings")
+
+
+@router.get("/cobalt/market")
+async def get_cobalt_market():
+    """Cobalt Institute market overview (supply, demand, refining concentration)."""
+    cached = _check("cobalt_market")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import CobaltInstituteClient
+        client = CobaltInstituteClient()
+        data = await client.fetch_market_data()
+        result = data
+        _cache["cobalt_market"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch cobalt market data")
+
+
+@router.get("/cobalt/cmoc")
+async def get_cmoc_production():
+    """CMOC Group cobalt production (TFM + Kisanfu mines, 31% global share)."""
+    cached = _check("cmoc_production")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import CMOCProductionClient
+        client = CMOCProductionClient()
+        data = await client.fetch_production()
+        result = data
+        _cache["cmoc_production"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch CMOC production data")
+
+
+@router.get("/cobalt/glencore")
+async def get_glencore_production():
+    """Glencore cobalt production (KCC + Mutanda + Murrin Murrin + Raglan)."""
+    cached = _check("glencore_production")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import GlencoreProductionClient
+        client = GlencoreProductionClient()
+        data = await client.fetch_production()
+        result = data
+        _cache["glencore_production"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch Glencore production data")
+
+
 @router.get("/sources")
 async def list_enrichment_sources():
     """List all available enrichment data sources and their status."""
