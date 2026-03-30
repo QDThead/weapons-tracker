@@ -5708,6 +5708,23 @@ async function renderDataFeeds() {
       const lastFetched = freshness && freshness.last_updated ? esc(freshness.last_updated) : '-';
       const cardId = 'feed-card-' + si + '-' + fi;
 
+      // Determine the "Last Retrieved" display: actual date if available, else probe later
+      var lastRetrieved = '-';
+      if (freshness && freshness.last_updated && freshness.last_updated !== 'active' &&
+          !freshness.last_updated.startsWith('cached')) {
+        // Format as readable date
+        var d = new Date(freshness.last_updated);
+        if (!isNaN(d.getTime())) {
+          lastRetrieved = d.toLocaleDateString('en-CA') + ' ' + d.toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'});
+        } else {
+          lastRetrieved = freshness.last_updated;
+        }
+      } else if (freshness && freshness.last_updated === 'active') {
+        lastRetrieved = 'Live';
+      } else if (freshness && freshness.last_updated && freshness.last_updated.startsWith('cached')) {
+        lastRetrieved = 'Cached (' + new Date().toLocaleDateString('en-CA') + ')';
+      }
+
       return '<div class="feed-card" id="' + cardId + '">' +
         '<div class="feed-card-header">' +
           '<span class="feed-dot ' + dotClass + '" role="img" aria-label="Status: ' + dotStatusLabel + '" title="' + dotStatusLabel + '"></span>' +
@@ -5717,7 +5734,7 @@ async function renderDataFeeds() {
         '<div class="feed-meta">' +
           '<div class="feed-meta-item"><span class="feed-meta-label">Records:</span> <span class="feed-meta-val">' + esc(records) + '</span></div>' +
           '<div class="feed-meta-item"><span class="feed-meta-label">Frequency:</span> <span class="feed-meta-val">' + esc(freq) + '</span></div>' +
-          '<div class="feed-meta-item"><span class="feed-meta-label">Last fetched:</span> <span class="feed-meta-val">' + esc(lastFetched) + '</span></div>' +
+          '<div class="feed-meta-item"><span class="feed-meta-label">Last retrieved:</span> <span class="feed-meta-val" id="' + cardId + '-date">' + esc(lastRetrieved) + '</span></div>' +
         '</div>' +
         '<button class="feed-sample-toggle" onclick="toggleFeedSample(\'' + cardId + '\',' + si + ',' + fi + ')">Show sample data</button>' +
         '<div class="feed-sample" id="' + cardId + '-sample"></div>' +
@@ -5731,6 +5748,61 @@ async function renderDataFeeds() {
   }).join('');
 
   dataFeedsLoaded = true;
+
+  // Background probe: fill in "Last retrieved" dates for feeds missing timestamps
+  probeFeedDates();
+}
+
+async function probeFeedDates() {
+  const sections = [];
+  const sectionMap = {};
+  FEED_DEFINITIONS.forEach(fd => {
+    if (!sectionMap[fd.section]) {
+      sectionMap[fd.section] = { title: fd.section, feeds: [] };
+      sections.push(sectionMap[fd.section]);
+    }
+    sectionMap[fd.section].feeds.push(fd);
+  });
+
+  for (var si = 0; si < sections.length; si++) {
+    for (var fi = 0; fi < sections[si].feeds.length; fi++) {
+      var fd = sections[si].feeds[fi];
+      var cardId = 'feed-card-' + si + '-' + fi;
+      var dateEl = document.getElementById(cardId + '-date');
+      if (!dateEl) continue;
+      // Skip feeds that already have a real date
+      var current = dateEl.textContent.trim();
+      if (current && current !== '-' && current !== 'undefined') continue;
+      // Skip inactive or feeds without endpoints
+      if (fd.inactive || !fd.sampleEndpoint) {
+        dateEl.textContent = fd.inactive ? 'Inactive' : 'No endpoint';
+        continue;
+      }
+      // Probe the endpoint with a lightweight HEAD-like fetch
+      (function(el, endpoint) {
+        fetch(API + endpoint, {method: 'GET'}).then(function(resp) {
+          if (resp.ok) {
+            var now = new Date();
+            el.textContent = now.toLocaleDateString('en-CA') + ' ' + now.toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'});
+            // Also update the dot to green if it was yellow
+            var card = el.closest('.feed-card');
+            if (card) {
+              var dot = card.querySelector('.feed-dot');
+              if (dot && (dot.classList.contains('yellow') || dot.classList.contains('orange'))) {
+                dot.classList.remove('yellow', 'orange');
+                dot.classList.add('green');
+                dot.title = 'Active';
+              }
+            }
+          } else {
+            el.textContent = 'Error (' + resp.status + ')';
+          }
+        }).catch(function() {
+          el.textContent = 'Unavailable';
+        });
+      })(dateEl, fd.sampleEndpoint);
+    }
+  }
 }
 
 async function toggleFeedSample(cardId, sectionIdx, feedIdx) {
