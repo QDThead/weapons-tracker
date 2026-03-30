@@ -1772,6 +1772,126 @@ async def get_gov_defence_news():
         raise HTTPException(status_code=500, detail="Failed to fetch government defence news")
 
 
+# ── CYBER THREAT & CONFLICT INTELLIGENCE ─────────────────────────
+
+
+@router.get("/cyber/mitre-stix")
+async def get_mitre_stix_groups():
+    """MITRE ATT&CK STIX 2.1 threat groups (160+ intrusion sets)."""
+    cached = _check("mitre_stix")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import MITREAttackSTIXClient
+        client = MITREAttackSTIXClient()
+        data = await client.fetch_threat_groups()
+        result = {"source": "MITRE ATT&CK STIX 2.1", "records": len(data), "data": data[:50]}
+        _cache["mitre_stix"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch MITRE STIX data")
+
+
+@router.get("/cyber/malpedia")
+async def get_malpedia_actors():
+    """Malpedia threat actor profiles with malware family linkages."""
+    cached = _check("malpedia_actors")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import MalpediaActorsClient
+        client = MalpediaActorsClient()
+        data = await client.fetch_actors()
+        result = {"source": "Malpedia (Fraunhofer FKIE)", "records": len(data), "data": data[:50]}
+        _cache["malpedia_actors"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch Malpedia data")
+
+
+@router.get("/cyber/apt-crossref")
+async def get_apt_crossref():
+    """ThaiCERT/ETDA APT group cross-reference (MISP Galaxy format)."""
+    cached = _check("thaicert_apt")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import ThaiCERTAPTClient
+        client = ThaiCERTAPTClient()
+        data = await client.fetch_apt_galaxy()
+        result = {"source": "ThaiCERT ETDA MISP Galaxy", "records": len(data), "data": data[:50]}
+        _cache["thaicert_apt"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch APT cross-reference data")
+
+
+@router.get("/cyber/kev-live")
+async def get_cisa_kev_live():
+    """CISA Known Exploited Vulnerabilities catalog (live, updated weekdays)."""
+    cached = _check("cisa_kev_live")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import CISAKEVLiveClient
+        client = CISAKEVLiveClient()
+        data = await client.fetch_kev_catalog()
+        _cache["cisa_kev_live"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch CISA KEV data")
+
+
+@router.get("/cyber/breach-news")
+async def get_breach_news():
+    """DataBreaches.net latest breach news (RSS, updated daily)."""
+    cached = _check("databreaches")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import DataBreachesRSSClient
+        client = DataBreachesRSSClient()
+        data = await client.fetch_latest()
+        result = {"source": "DataBreaches.net", "records": len(data), "data": data}
+        _cache["databreaches"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch breach news")
+
+
+@router.get("/conflict/displacement")
+async def get_displacement():
+    """IDMC internal displacement updates (daily, rolling 180 days)."""
+    cached = _check("idmc")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import IDMCDisplacementClient
+        client = IDMCDisplacementClient()
+        data = await client.fetch_displacement()
+        result = {"source": "IDMC", "records": len(data), "data": data}
+        _cache["idmc"] = (time.time(), result)
+        return result
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch displacement data")
+
+
+@router.get("/conflict/ucdp")
+async def get_ucdp_conflict():
+    """UCDP conflict data (battle deaths 1989-2024, georeferenced events)."""
+    cached = _check("ucdp_conflict")
+    if cached:
+        return cached
+    try:
+        from src.ingestion.osint_feeds import UCDPConflictClient
+        client = UCDPConflictClient()
+        data = await client.fetch_conflict_summary()
+        _cache["ucdp_conflict"] = (time.time(), data)
+        return data
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch UCDP conflict data")
+
+
 # ── ARCTIC, MARITIME & PROCUREMENT ───────────────────────────────
 
 

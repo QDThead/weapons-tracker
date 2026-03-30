@@ -4468,6 +4468,24 @@ const FEED_DEFINITIONS = [
   { section: 'Arctic & Maritime', name: 'CanadaBuys Tenders (2-hourly)', key: 'CanadaBuys',
     sampleEndpoint: '/enrichment/procurement/canadabuys', rawResponse: true, renderSample: data => genericSample(data) },
 
+  // ── CYBER THREAT INTELLIGENCE (LIVE) ──
+  { section: 'Cyber Threat Intelligence', name: 'MITRE ATT&CK STIX Groups (160+)', key: 'MITRE STIX',
+    sampleEndpoint: '/enrichment/cyber/mitre-stix', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Cyber Threat Intelligence', name: 'Malpedia Threat Actors', key: 'Malpedia',
+    sampleEndpoint: '/enrichment/cyber/malpedia', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Cyber Threat Intelligence', name: 'ThaiCERT APT Cross-Reference', key: 'ThaiCERT APT',
+    sampleEndpoint: '/enrichment/cyber/apt-crossref', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Cyber Threat Intelligence', name: 'CISA KEV Catalog (live)', key: 'CISA KEV Live',
+    sampleEndpoint: '/enrichment/cyber/kev-live', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Cyber Threat Intelligence', name: 'DataBreaches.net News (RSS)', key: 'DataBreaches',
+    sampleEndpoint: '/enrichment/cyber/breach-news', rawResponse: true, renderSample: data => genericSample(data) },
+
+  // ── CONFLICT & DISPLACEMENT ──
+  { section: 'Conflict & War Data', name: 'IDMC Internal Displacement (daily)', key: 'IDMC',
+    sampleEndpoint: '/enrichment/conflict/displacement', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Conflict & War Data', name: 'UCDP Conflict Data (1989-2024)', key: 'UCDP',
+    sampleEndpoint: '/enrichment/conflict/ucdp', rawResponse: true, renderSample: data => genericSample(data) },
+
   // ── INACTIVE ──
   { section: 'Inactive', sectionNote: 'pending configuration', name: 'Maritime Tracking (AIS)', key: 'Maritime',
     inactive: true, sampleEndpoint: null,
