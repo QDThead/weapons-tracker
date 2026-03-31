@@ -123,7 +123,7 @@ header::after {
   display: flex; gap: 4px; padding: 8px 32px;
   background: rgba(15, 23, 42, 0.8);
   border-bottom: 1px solid var(--border);
-  overflow-x: auto;
+  overflow: visible;
 }
 .nav-tab {
   font-family: var(--font-display);
@@ -152,7 +152,7 @@ header::after {
   background: var(--surface-glass); backdrop-filter: blur(16px);
   border: 1px solid var(--border); border-radius: 8px;
   min-width: 220px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  margin-top: 4px;
+  padding-top: 4px;
 }
 .nav-tab-dropdown:hover .nav-dropdown-menu { display: block; }
 .nav-dropdown-item {
@@ -1889,6 +1889,12 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <button class="tab" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
       <button class="tab" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
       <button class="tab" data-psi-tab="psi-taxonomy" onclick="switchPsiTab(this)">Risk Taxonomy</button>
+      <button class="tab" data-psi-tab="psi-forecasting" onclick="switchPsiTab(this)">Forecasting</button>
+      <button class="tab" data-psi-tab="psi-bom" onclick="switchPsiTab(this)">BOM Explorer</button>
+      <button class="tab" data-psi-tab="psi-dossier" onclick="switchPsiTab(this)">Supplier Dossier</button>
+      <button class="tab" data-psi-tab="psi-alerts" onclick="switchPsiTab(this)">Alerts</button>
+      <button class="tab" data-psi-tab="psi-register" onclick="switchPsiTab(this)">Risk Register</button>
+      <button class="tab" data-psi-tab="psi-feedback" onclick="switchPsiTab(this)">Analyst Feedback</button>
       <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
         <span style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Mineral:</span>
         <select id="psi-global-mineral" onchange="onGlobalMineralChange()" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-family:var(--font-body); font-size:12px; font-weight:600;">
@@ -1899,56 +1905,62 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
     <!-- PSI Overview -->
     <div id="psi-overview" class="psi-sub">
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:18px;">
-        <div class="card" style="text-align:center; padding:20px;">
-          <div class="stat-label">Global Risk Score</div>
-          <div id="psi-global-score" class="stat-num" style="font-size:42px; color:var(--accent4);">--</div>
-          <div style="font-size:11px; color:var(--text-dim);">composite (0-100)</div>
-        </div>
-        <div class="card" style="text-align:center; padding:20px;">
-          <div class="stat-label">Active Alerts</div>
-          <div id="psi-alert-count" class="stat-num" style="font-size:42px; color:var(--accent2);">--</div>
-          <div style="font-size:11px; color:var(--text-dim);">supply chain disruptions</div>
-        </div>
-        <div class="card" style="text-align:center; padding:20px;">
-          <div class="stat-label">Graph Nodes</div>
-          <div id="psi-node-count" class="stat-num" style="font-size:42px; color:var(--accent);">--</div>
-          <div style="font-size:11px; color:var(--text-dim);">materials + components + platforms</div>
-        </div>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px;">
-        <!-- Risk dimensions -->
-        <div class="card" style="padding:18px;">
-          <h3 style="margin-bottom:14px;">Canada Risk Dimensions</h3>
-          <canvas id="psi-radar-chart" height="280" aria-label="Chart: Canada supply chain risk dimensions radar showing 6 risk factors"></canvas>
-          <div style="margin-top:12px; font-size:11px; color:var(--text-dim); line-height:1.7;">
-            <div><strong style="color:var(--text);">Concentration:</strong> Single-supplier dependency risk</div>
-            <div><strong style="color:var(--text);">Sanctions:</strong> Exposure to sanctioned supply chains</div>
-            <div><strong style="color:var(--text);">Chokepoints:</strong> Maritime transit vulnerability</div>
-            <div><strong style="color:var(--text);">Instability:</strong> Source country political fragility</div>
-            <div><strong style="color:var(--text);">Scarcity:</strong> Material availability constraints</div>
-            <div><strong style="color:var(--text);">Alternatives:</strong> Availability of substitute sources</div>
+      <!-- Global overview (hidden when mineral selected) -->
+      <div id="psi-overview-global">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:18px;">
+          <div class="card" style="text-align:center; padding:20px;">
+            <div class="stat-label">Global Risk Score</div>
+            <div id="psi-global-score" class="stat-num" style="font-size:42px; color:var(--accent4);">--</div>
+            <div style="font-size:11px; color:var(--text-dim);">composite (0-100)</div>
+          </div>
+          <div class="card" style="text-align:center; padding:20px;">
+            <div class="stat-label">Active Alerts</div>
+            <div id="psi-alert-count" class="stat-num" style="font-size:42px; color:var(--accent2);">--</div>
+            <div style="font-size:11px; color:var(--text-dim);">supply chain disruptions</div>
+          </div>
+          <div class="card" style="text-align:center; padding:20px;">
+            <div class="stat-label">Graph Nodes</div>
+            <div id="psi-node-count" class="stat-num" style="font-size:42px; color:var(--accent);">--</div>
+            <div style="font-size:11px; color:var(--text-dim);">materials + components + platforms</div>
           </div>
         </div>
-        <!-- Top material risks -->
-        <div class="card" style="padding:18px;">
-          <h3 style="margin-bottom:14px;">Critical Material Risks</h3>
-          <div id="psi-material-list" style="max-height:350px; overflow-y:auto;"></div>
+
+        <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px;">
+          <!-- Risk dimensions -->
+          <div class="card" style="padding:18px;">
+            <h3 style="margin-bottom:14px;">Canada Risk Dimensions</h3>
+            <canvas id="psi-radar-chart" height="280" aria-label="Chart: Canada supply chain risk dimensions radar showing 6 risk factors"></canvas>
+            <div style="margin-top:12px; font-size:11px; color:var(--text-dim); line-height:1.7;">
+              <div><strong style="color:var(--text);">Concentration:</strong> Single-supplier dependency risk</div>
+              <div><strong style="color:var(--text);">Sanctions:</strong> Exposure to sanctioned supply chains</div>
+              <div><strong style="color:var(--text);">Chokepoints:</strong> Maritime transit vulnerability</div>
+              <div><strong style="color:var(--text);">Instability:</strong> Source country political fragility</div>
+              <div><strong style="color:var(--text);">Scarcity:</strong> Material availability constraints</div>
+              <div><strong style="color:var(--text);">Alternatives:</strong> Availability of substitute sources</div>
+            </div>
+          </div>
+          <!-- Top material risks -->
+          <div class="card" style="padding:18px;">
+            <h3 style="margin-bottom:14px;">Critical Material Risks</h3>
+            <div id="psi-material-list" style="max-height:350px; overflow-y:auto;"></div>
+          </div>
+        </div>
+
+        <!-- Active alerts -->
+        <div class="card" style="padding:18px; margin-top:14px;">
+          <h3 style="margin-bottom:14px;">Active Supply Chain Alerts</h3>
+          <div id="psi-alerts-list"></div>
+        </div>
+
+        <!-- Chokepoints -->
+        <div class="card" style="padding:18px; margin-top:14px;">
+          <h3 style="margin-bottom:14px;">Strategic Chokepoint Status</h3>
+          <div id="psi-chokepoints-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;"></div>
         </div>
       </div>
 
-      <!-- Active alerts -->
-      <div class="card" style="padding:18px; margin-top:14px;">
-        <h3 style="margin-bottom:14px;">Active Supply Chain Alerts</h3>
-        <div id="psi-alerts-list"></div>
-      </div>
-
-      <!-- Chokepoints -->
-      <div class="card" style="padding:18px; margin-top:14px;">
-        <h3 style="margin-bottom:14px;">Strategic Chokepoint Status</h3>
-        <div id="psi-chokepoints-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;"></div>
-      </div>
+      <!-- Mineral-specific overview (shown when mineral selected) -->
+      <div id="psi-overview-mineral" style="display:none;"></div>
     </div>
 
     <!-- PSI 3D Supply Map (CesiumJS Globe) -->
@@ -2236,6 +2248,48 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div id="psi-taxonomy-mineral" style="display:none;"></div>
     </div>
 
+    <!-- PSI Forecasting -->
+    <div id="psi-forecasting" class="psi-sub" style="display:none;">
+      <div id="psi-forecasting-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view forecasting data.</div>
+      </div>
+    </div>
+
+    <!-- PSI BOM Explorer -->
+    <div id="psi-bom" class="psi-sub" style="display:none;">
+      <div id="psi-bom-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view BOM explosion.</div>
+      </div>
+    </div>
+
+    <!-- PSI Supplier Dossier -->
+    <div id="psi-dossier" class="psi-sub" style="display:none;">
+      <div id="psi-dossier-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view supplier dossiers.</div>
+      </div>
+    </div>
+
+    <!-- PSI Alerts & Sensing -->
+    <div id="psi-alerts" class="psi-sub" style="display:none;">
+      <div id="psi-alerts-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view alerts.</div>
+      </div>
+    </div>
+
+    <!-- PSI Risk Register -->
+    <div id="psi-register" class="psi-sub" style="display:none;">
+      <div id="psi-register-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view risk register.</div>
+      </div>
+    </div>
+
+    <!-- PSI Analyst Feedback -->
+    <div id="psi-feedback" class="psi-sub" style="display:none;">
+      <div id="psi-feedback-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view analyst feedback.</div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ════ DATA FEEDS PAGE ════ -->
@@ -2361,7 +2415,7 @@ const ENGLISH_LABELS = {
   'live-flights': 'Live Flights',
   'deals': 'Deals',
   'canada-intel': 'Canada Intel',
-  'supply-chain': 'Supply Chain',
+  'supply-chain': 'Supply Chain \u25BE',
   'data-feeds': 'Data Feeds',
   'compliance': 'Compliance'
 };
@@ -2374,7 +2428,7 @@ const FRENCH_LABELS = {
   'live-flights': 'Vols en direct',
   'deals': 'Transactions',
   'canada-intel': 'Renseignements Canada',
-  'supply-chain': 'Cha\u00eene d\u2019approvisionnement',
+  'supply-chain': 'Cha\u00eene d\u2019approvisionnement \u25BE',
   'data-feeds': 'Flux de donn\u00e9es',
   'compliance': 'Conformit\u00e9'
 };
@@ -6026,6 +6080,8 @@ async function populateGlobalMineralDropdown() {
     globalMineralPopulated = true;
     // Also populate the nav hover dropdown
     populateNavMineralDropdown(minerals);
+    // Trigger mineral-specific views on all sub-tabs
+    onGlobalMineralChange();
   } catch (e) { /* stay with "All Minerals" */ }
 }
 
@@ -6043,12 +6099,12 @@ function populateNavMineralDropdown(minerals) {
     btn.className = 'nav-dropdown-item' + (m.name === 'Cobalt' ? ' active-mineral' : '');
     var hasDeep = m.mines && m.mines.length > 0;
     btn.innerHTML = (hasDeep ? '<span class="mineral-star">\u2605</span>' : '<span style="margin-right:4px;opacity:0.3;">\u25CB</span>') + esc(m.name);
-    btn.onclick = function() { selectMineralFromNav(m.name); };
+    btn.onclick = function(e) { selectMineralFromNav(m.name, e); };
     list.appendChild(btn);
   });
 }
 
-function selectMineralFromNav(mineralName) {
+function selectMineralFromNav(mineralName, e) {
   // Navigate to Supply Chain tab
   var supplyTab = document.getElementById('tab-supply-chain');
   if (supplyTab && !supplyTab.classList.contains('active')) {
@@ -6064,7 +6120,10 @@ function selectMineralFromNav(mineralName) {
   document.querySelectorAll('.nav-dropdown-item').forEach(function(item) {
     item.classList.remove('active-mineral');
   });
-  event.target.closest('.nav-dropdown-item').classList.add('active-mineral');
+  if (e && e.target) {
+    var btn = e.target.closest('.nav-dropdown-item');
+    if (btn) btn.classList.add('active-mineral');
+  }
 }
 
 function getGlobalMineral() {
@@ -6078,10 +6137,17 @@ function onGlobalMineralChange() {
   if (!activeTab) return;
   var tabId = activeTab.id;
 
+  if (tabId === 'psi-overview') onOverviewMineralChange();
   if (tabId === 'psi-graph') loadPsiGraph();
   if (tabId === 'psi-risks') onRiskMineralChange();
   if (tabId === 'psi-scenarios') onScenarioMineralChange();
   if (tabId === 'psi-taxonomy') onTaxonomyMineralChange();
+  if (tabId === 'psi-forecasting') onForecastingMineralChange();
+  if (tabId === 'psi-bom') onBomMineralChange();
+  if (tabId === 'psi-dossier') onDossierMineralChange();
+  if (tabId === 'psi-alerts') onAlertsMineralChange();
+  if (tabId === 'psi-register') onRegisterMineralChange();
+  if (tabId === 'psi-feedback') onFeedbackMineralChange();
   if (tabId === 'psi-globe') {
     var mineral = getGlobalMineral();
     if (mineral) selectMineralDetail(mineral);
@@ -6100,9 +6166,16 @@ function switchPsiTab(btn) {
   // Apply global mineral to the newly active tab
   var mineral = getGlobalMineral();
   if (mineral) {
+    if (btn.dataset.psiTab === 'psi-overview') onOverviewMineralChange();
     if (btn.dataset.psiTab === 'psi-risks') onRiskMineralChange();
     if (btn.dataset.psiTab === 'psi-scenarios') onScenarioMineralChange();
     if (btn.dataset.psiTab === 'psi-taxonomy') onTaxonomyMineralChange();
+    if (btn.dataset.psiTab === 'psi-forecasting') onForecastingMineralChange();
+    if (btn.dataset.psiTab === 'psi-bom') onBomMineralChange();
+    if (btn.dataset.psiTab === 'psi-dossier') onDossierMineralChange();
+    if (btn.dataset.psiTab === 'psi-alerts') onAlertsMineralChange();
+    if (btn.dataset.psiTab === 'psi-register') onRegisterMineralChange();
+    if (btn.dataset.psiTab === 'psi-feedback') onFeedbackMineralChange();
   }
 }
 
@@ -7671,6 +7744,10 @@ async function loadSupplyChain() {
   if (chokepoints) renderPsiChokepoints(chokepoints);
   renderPsiRiskMatrix(alerts || []);
   updateScenarioFields();
+
+  // If a mineral is already selected, show its overview instead of global
+  var mineral = getGlobalMineral();
+  if (mineral) onOverviewMineralChange();
 }
 
 function renderPsiOverview(data) {
@@ -7756,6 +7833,304 @@ function renderPsiChokepoints(data) {
     </div>`;
   }).join('');
 }
+
+// ── Mineral-specific Overview ──
+
+var overviewMineralChart = null;
+
+async function onOverviewMineralChange() {
+  var mineral = getGlobalMineral();
+  var globalDiv = document.getElementById('psi-overview-global');
+  var mineralDiv = document.getElementById('psi-overview-mineral');
+  if (!mineral) {
+    globalDiv.style.display = '';
+    mineralDiv.style.display = 'none';
+    return;
+  }
+  globalDiv.style.display = 'none';
+  mineralDiv.style.display = '';
+  mineralDiv.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading ' + esc(mineral) + ' overview...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderMineralOverview(m, mineralDiv);
+  } catch (e) {
+    mineralDiv.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Overview data not yet available for ' + esc(mineral) + '</div>';
+  }
+}
+
+function renderMineralOverview(m, container) {
+  var riskColor = m.risk_level === 'critical' ? 'var(--accent2)' : m.risk_level === 'high' ? 'var(--accent4)' : 'var(--accent3)';
+  var topMiner = m.mining && m.mining[0] ? m.mining[0] : {};
+  var topProcessor = m.processing && m.processing[0] ? m.processing[0] : {};
+  var mineCount = m.mines ? m.mines.length : 0;
+  var refCount = m.refineries ? m.refineries.length : 0;
+  var platformCount = m.platforms ? m.platforms.length : 0;
+  var chokepointCount = m.chokepoints ? m.chokepoints.length : 0;
+  var riskFactors = m.risk_factors || [];
+  var canada = m.canada || {};
+  var sufficiency = m.sufficiency || {};
+  var demand = sufficiency.demand || [];
+  var scenarios = sufficiency.scenarios || [];
+  var coas = sufficiency.coa || [];
+
+  var html = '';
+
+  // ── Header with risk badge ──
+  html += '<div class="card" style="padding:18px; margin-bottom:14px; border-left:4px solid ' + riskColor + ';">';
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">';
+  html += '<div>';
+  html += '<h2 style="font-family:var(--font-display); font-size:22px; margin:0;">' + esc(m.name) + ' Supply Chain Overview</h2>';
+  html += '<div style="font-size:12px; color:var(--text-dim); margin-top:4px;">' + esc(m.category || '') + ' — Defence-critical mineral</div>';
+  html += '</div>';
+  html += '<div style="display:flex; align-items:center; gap:14px;">';
+  html += '<div style="background:' + riskColor + '22; color:' + riskColor + '; padding:6px 14px; border-radius:6px; font-weight:700; font-size:13px; text-transform:uppercase;">' + esc(m.risk_level || 'unknown') + ' RISK</div>';
+  html += '<div style="text-align:center;"><div class="stat-num" style="font-size:28px; color:var(--accent);">' + (m.hhi || '--') + '</div><div style="font-size:9px; color:var(--text-dim);">HHI</div></div>';
+  html += '</div></div></div>';
+
+  // ── Key stats row ──
+  html += '<div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin-bottom:14px;">';
+  var stats = [
+    { label: 'Top Miner', value: esc(topMiner.country || '--'), sub: (topMiner.pct || 0) + '% share', color: 'var(--accent2)' },
+    { label: 'Top Processor', value: esc(topProcessor.country || '--'), sub: (topProcessor.pct || 0) + '% share', color: 'var(--accent5)' },
+    { label: 'Tracked Mines', value: mineCount, sub: 'with risk data', color: 'var(--accent3)' },
+    { label: 'Tracked Refineries', value: refCount, sub: 'with risk data', color: 'var(--accent)' },
+    { label: 'CAF Platforms', value: platformCount + (demand.length > 0 ? ' (' + demand.length + ' dep.)' : ''), sub: 'dependent', color: 'var(--accent4)' },
+    { label: 'Chokepoints', value: chokepointCount, sub: 'maritime transit', color: 'var(--accent2)' },
+  ];
+  stats.forEach(function(s) {
+    html += '<div class="card" style="text-align:center; padding:14px;">';
+    html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">' + s.label + '</div>';
+    html += '<div class="stat-num" style="font-size:24px; color:' + s.color + '; margin:4px 0;">' + s.value + '</div>';
+    html += '<div style="font-size:10px; color:var(--text-dim);">' + s.sub + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ── Two-column: Mining/Processing concentration + Canada dependency ──
+  html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">';
+
+  // Left: Mining & Processing concentration
+  html += '<div class="card" style="padding:18px;">';
+  html += '<h3 style="margin-bottom:14px;">Mining &amp; Processing Concentration</h3>';
+  html += '<div style="margin-bottom:14px;">';
+  html += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Mining Share by Country</div>';
+  (m.mining || []).forEach(function(entry) {
+    var w = Math.max(entry.pct, 2);
+    var barColor = entry.country === 'China' || entry.country === 'Russia' ? 'var(--accent2)' : entry.country === 'DRC' ? 'var(--accent4)' : 'var(--accent3)';
+    html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">';
+    html += '<div style="width:80px; font-size:12px; color:var(--text); white-space:nowrap;">' + esc(entry.country) + '</div>';
+    html += '<div style="flex:1; background:var(--surface); border-radius:4px; height:18px; overflow:hidden;">';
+    html += '<div style="width:' + w + '%; height:100%; background:' + barColor + '; border-radius:4px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px;">';
+    html += '<span style="font-size:10px; font-weight:600; color:#fff;">' + entry.pct + '%</span>';
+    html += '</div></div></div>';
+  });
+  html += '</div>';
+  html += '<div>';
+  html += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Processing Share by Country</div>';
+  (m.processing || []).forEach(function(entry) {
+    var w = Math.max(entry.pct, 2);
+    var barColor = entry.country === 'China' || entry.country === 'Russia' ? 'var(--accent2)' : 'var(--accent3)';
+    html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">';
+    html += '<div style="width:80px; font-size:12px; color:var(--text); white-space:nowrap;">' + esc(entry.country) + '</div>';
+    html += '<div style="flex:1; background:var(--surface); border-radius:4px; height:18px; overflow:hidden;">';
+    html += '<div style="width:' + w + '%; height:100%; background:' + barColor + '; border-radius:4px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px;">';
+    html += '<span style="font-size:10px; font-weight:600; color:#fff;">' + entry.pct + '%</span>';
+    html += '</div></div></div>';
+  });
+  html += '</div></div>';
+
+  // Right: Canada dependency
+  html += '<div class="card" style="padding:18px;">';
+  html += '<h3 style="margin-bottom:14px;">Canada Dependency</h3>';
+  if (canada.import_pct) {
+    html += '<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">';
+    html += '<div class="stat-num" style="font-size:36px; color:var(--accent4);">' + canada.import_pct + '%</div>';
+    html += '<div style="font-size:12px; color:var(--text-dim);">import dependent</div>';
+    html += '</div>';
+  }
+  if (canada.domestic) {
+    html += '<div style="font-size:12px; color:var(--text); line-height:1.6; margin-bottom:12px; padding:10px; background:var(--surface); border-radius:6px;">' + esc(canada.domestic) + '</div>';
+  }
+  if (canada.strategic_note) {
+    html += '<div style="font-size:12px; color:var(--text-dim); line-height:1.6; padding:10px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:6px;">';
+    html += '<strong style="color:var(--accent2);">Strategic Note:</strong> ' + esc(canada.strategic_note);
+    html += '</div>';
+  }
+  if (canada.platforms && canada.platforms.length > 0) {
+    html += '<div style="margin-top:12px;">';
+    html += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Dependent CAF Platforms</div>';
+    canada.platforms.forEach(function(p) {
+      html += '<div style="font-size:11px; color:var(--text); padding:4px 0; border-bottom:1px solid var(--border);">' + esc(p) + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // ── Risk factors ──
+  if (riskFactors.length > 0) {
+    html += '<div class="card" style="padding:18px; margin-bottom:14px; border-top:3px solid ' + riskColor + ';">';
+    html += '<h3 style="margin-bottom:12px;">Key Risk Factors</h3>';
+    html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
+    riskFactors.forEach(function(rf, i) {
+      html += '<div style="font-size:12px; color:var(--text); padding:8px 10px; background:var(--surface); border-radius:6px; border-left:3px solid ' + riskColor + ';">';
+      html += '<span style="color:var(--accent2); font-weight:700; margin-right:4px;">' + (i + 1) + '.</span>' + esc(rf);
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  // ── Supply chain flow summary ──
+  html += '<div class="card" style="padding:18px; margin-bottom:14px;">';
+  html += '<h3 style="margin-bottom:14px;">Supply Chain Flow</h3>';
+  html += '<div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; align-items:start; gap:8px;">';
+
+  // Mining column
+  html += '<div>';
+  html += '<div style="font-size:10px; color:var(--accent3); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Mining</div>';
+  (m.mining || []).forEach(function(entry) {
+    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(16,185,129,0.08); border-radius:4px; color:var(--text);">' + esc(entry.country) + ' <span style="color:var(--text-dim);">' + entry.pct + '%</span></div>';
+  });
+  html += '</div>';
+  html += '<div style="color:var(--text-dim); font-size:18px; padding-top:20px;">&#8594;</div>';
+
+  // Processing column
+  html += '<div>';
+  html += '<div style="font-size:10px; color:var(--accent5); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Processing</div>';
+  (m.processing || []).forEach(function(entry) {
+    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(139,92,246,0.08); border-radius:4px; color:var(--text);">' + esc(entry.country) + ' <span style="color:var(--text-dim);">' + entry.pct + '%</span></div>';
+  });
+  html += '</div>';
+  html += '<div style="color:var(--text-dim); font-size:18px; padding-top:20px;">&#8594;</div>';
+
+  // Components column
+  html += '<div>';
+  html += '<div style="font-size:10px; color:var(--accent4); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Components</div>';
+  (m.components || []).forEach(function(entry) {
+    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(245,158,11,0.08); border-radius:4px; color:var(--text);">' + esc(entry.name) + '</div>';
+  });
+  html += '</div>';
+  html += '<div style="color:var(--text-dim); font-size:18px; padding-top:20px;">&#8594;</div>';
+
+  // Platforms column
+  html += '<div>';
+  html += '<div style="font-size:10px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Platforms</div>';
+  (m.platforms || []).forEach(function(entry) {
+    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(0,212,255,0.08); border-radius:4px; color:var(--text);">' + esc(entry.name) + '</div>';
+  });
+  html += '</div>';
+
+  html += '</div></div>';
+
+  // ── Chokepoints ──
+  if (m.chokepoints && m.chokepoints.length > 0) {
+    html += '<div class="card" style="padding:18px;">';
+    html += '<h3 style="margin-bottom:12px;">Maritime Chokepoints</h3>';
+    html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">';
+    m.chokepoints.forEach(function(cp) {
+      html += '<div style="padding:10px; background:var(--surface); border-radius:6px; border-left:3px solid var(--accent4);">';
+      html += '<div style="font-weight:600; font-size:13px; color:var(--text);">' + esc(cp.name) + '</div>';
+      if (cp.risk) {
+        var cpColor = cp.risk === 'critical' ? 'var(--accent2)' : cp.risk === 'high' ? 'var(--accent4)' : 'var(--accent3)';
+        html += '<div style="font-size:11px; color:' + cpColor + '; margin-top:2px;">' + esc(cp.risk).toUpperCase() + ' risk</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// PSI Sub-tab Mineral Change Handlers (Stubs)
+// ═══════════════════════════════════════════════════
+
+async function onForecastingMineralChange() {
+  var mineral = getGlobalMineral();
+  var container = document.getElementById('psi-forecasting-content');
+  if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view forecasting data.</div>'; return; }
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderForecasting(m, container);
+  } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Forecasting data not yet available for ' + esc(mineral) + '</div>'; }
+}
+function renderForecasting(m, container) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Forecasting — coming soon for ' + esc(m.name) + '</div>'; }
+
+async function onBomMineralChange() {
+  var mineral = getGlobalMineral();
+  var container = document.getElementById('psi-bom-content');
+  if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view BOM explosion.</div>'; return; }
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderBomExplorer(m, container);
+  } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">BOM data not yet available for ' + esc(mineral) + '</div>'; }
+}
+function renderBomExplorer(m, container) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">BOM Explorer — coming soon for ' + esc(m.name) + '</div>'; }
+
+async function onDossierMineralChange() {
+  var mineral = getGlobalMineral();
+  var container = document.getElementById('psi-dossier-content');
+  if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view supplier dossiers.</div>'; return; }
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderDossier(m, container);
+  } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Supplier dossier data not yet available for ' + esc(mineral) + '</div>'; }
+}
+function renderDossier(m, container) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Supplier Dossier — coming soon for ' + esc(m.name) + '</div>'; }
+
+async function onAlertsMineralChange() {
+  var mineral = getGlobalMineral();
+  var container = document.getElementById('psi-alerts-content');
+  if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view alerts.</div>'; return; }
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderAlertsSensing(m, container);
+  } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Alerts data not yet available for ' + esc(mineral) + '</div>'; }
+}
+function renderAlertsSensing(m, container) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Alerts & Sensing — coming soon for ' + esc(m.name) + '</div>'; }
+
+async function onRegisterMineralChange() {
+  var mineral = getGlobalMineral();
+  var container = document.getElementById('psi-register-content');
+  if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view risk register.</div>'; return; }
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderRiskRegister(m, container);
+  } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Risk register data not yet available for ' + esc(mineral) + '</div>'; }
+}
+function renderRiskRegister(m, container) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Risk Register — coming soon for ' + esc(m.name) + '</div>'; }
+
+async function onFeedbackMineralChange() {
+  var mineral = getGlobalMineral();
+  var container = document.getElementById('psi-feedback-content');
+  if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view analyst feedback.</div>'; return; }
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  try {
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    if (!resp.ok) throw new Error('Not found');
+    var m = await resp.json();
+    renderAnalystFeedback(m, container);
+  } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Analyst feedback data not yet available for ' + esc(mineral) + '</div>'; }
+}
+function renderAnalystFeedback(m, container) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Analyst Feedback — coming soon for ' + esc(m.name) + '</div>'; }
 
 async function loadPsiGraph() {
   var mineralFilter = getGlobalMineral();
