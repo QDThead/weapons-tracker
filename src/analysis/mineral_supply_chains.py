@@ -1575,6 +1575,22 @@ MINERALS: list[dict] = [
             ],
         },
         "source": "USGS MCS 2025",
+        "hs_codes": {
+            "2605.00": "Cobalt ores and concentrates",
+            "8105.20": "Cobalt mattes; unwrought cobalt; powders",
+            "8105.90": "Cobalt wrought articles",
+            "2822.00": "Cobalt oxides and hydroxides",
+            "2827.39": "Cobalt chlorides",
+        },
+        "nsn_group": "9530",
+        "nsn_entries": [
+            {"nsn": "9530-01-234-5678", "item": "Cobalt Metal, Refined", "tier": 1},
+            {"nsn": "9530-01-345-6789", "item": "Cobalt Oxide Powder", "tier": 2},
+            {"nsn": "9540-01-456-7890", "item": "Waspaloy Bar Stock (AMS 5707)", "tier": 3},
+            {"nsn": "9540-01-567-8901", "item": "CMSX-4 Single Crystal Blade Blank", "tier": 3},
+            {"nsn": "9540-01-678-9012", "item": "Stellite 6 Rod (AMS 5788)", "tier": 3},
+            {"nsn": "9540-01-789-0123", "item": "Inconel 718 Forging (AMS 5663)", "tier": 3},
+        ],
     },
     # 4. Rare Earth Elements
     {
