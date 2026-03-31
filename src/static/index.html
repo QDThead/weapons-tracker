@@ -6282,9 +6282,13 @@ async function initCesiumGlobe() {
   setupGlobeClickHandler();
   loadShippingLanes();
 
-  // Auto-enable top 3 critical minerals
-  const criticals = globeMinerals.filter(m => m.risk_level === 'critical').slice(0, 3);
-  criticals.forEach(m => toggleMineralLayer(m.name, true));
+  // Default to Cobalt on globe init
+  var globalMin = getGlobalMineral();
+  if (globalMin) {
+    selectMineralDetail(globalMin);
+  } else {
+    selectMineralDetail('Cobalt');
+  }
 }
 
 function renderMineralLayerPanel() {
