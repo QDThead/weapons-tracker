@@ -718,6 +718,7 @@ class PersistenceService:
                 risk_source=risk_source,
                 risk_entity=risk_entity,
                 risk_dimension=risk_dimension,
+                status="open",
                 **kwargs,
             )
             self.session.add(existing)
