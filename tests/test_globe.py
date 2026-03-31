@@ -240,3 +240,98 @@ class TestCobaltSufficiency:
         assert abs(indirect_kg - suf["totals"]["indirect_kg"]) <= 1, (
             f"Indirect sum {indirect_kg} != indirect_kg {suf['totals']['indirect_kg']}"
         )
+
+
+class TestCobaltNewData:
+    """Verify new Cobalt sub-tab data structures."""
+
+    def test_forecasting_exists(self):
+        m = get_mineral_by_name("Cobalt")
+        assert "forecasting" in m
+        f = m["forecasting"]
+        assert "price_forecast" in f
+        assert "lead_time" in f
+        assert "insolvency_risks" in f
+        assert isinstance(f["insolvency_risks"], list)
+        assert len(f["insolvency_risks"]) >= 1
+        assert "signals" in f
+        assert isinstance(f["signals"], list)
+        assert len(f["signals"]) >= 3
+        assert "price_history" in f
+        assert isinstance(f["price_history"], list)
+
+    def test_forecasting_signals_structure(self):
+        signals = get_mineral_by_name("Cobalt")["forecasting"]["signals"]
+        for s in signals:
+            assert "text" in s
+            assert "severity" in s
+            assert s["severity"] in ("critical", "high", "medium", "low")
+
+    def test_alerts_exist(self):
+        m = get_mineral_by_name("Cobalt")
+        assert "watchtower_alerts" in m
+        alerts = m["watchtower_alerts"]
+        assert isinstance(alerts, list)
+        assert len(alerts) >= 6
+
+    def test_alerts_structure(self):
+        alerts = get_mineral_by_name("Cobalt")["watchtower_alerts"]
+        for a in alerts:
+            assert "id" in a
+            assert "title" in a
+            assert "severity" in a and 1 <= a["severity"] <= 5
+            assert "category" in a
+            assert "sources" in a and isinstance(a["sources"], list)
+            assert "confidence" in a and 0 <= a["confidence"] <= 100
+            assert "coa" in a
+            assert "timestamp" in a
+
+    def test_risk_register_exists(self):
+        m = get_mineral_by_name("Cobalt")
+        assert "risk_register" in m
+        rr = m["risk_register"]
+        assert isinstance(rr, list)
+        assert len(rr) >= 8
+
+    def test_risk_register_structure(self):
+        rr = get_mineral_by_name("Cobalt")["risk_register"]
+        valid_statuses = {"open", "in_progress", "mitigated", "closed"}
+        valid_severities = {"critical", "high", "medium", "low"}
+        for r in rr:
+            assert "id" in r
+            assert "risk" in r
+            assert "category" in r
+            assert "severity" in r and r["severity"] in valid_severities
+            assert "status" in r and r["status"] in valid_statuses
+            assert "owner" in r
+            assert "due_date" in r
+            assert "coas" in r and isinstance(r["coas"], list)
+
+    def test_analyst_feedback_exists(self):
+        m = get_mineral_by_name("Cobalt")
+        assert "analyst_feedback" in m
+        af = m["analyst_feedback"]
+        assert "accuracy" in af and 0 <= af["accuracy"] <= 100
+        assert "fp_rate" in af and 0 <= af["fp_rate"] <= 100
+        assert "threshold" in af
+        assert "pending" in af and isinstance(af["pending"], list)
+        assert len(af["pending"]) >= 3
+        assert "recent" in af and isinstance(af["recent"], list)
+        assert len(af["recent"]) >= 5
+
+    def test_analyst_feedback_pending_structure(self):
+        pending = get_mineral_by_name("Cobalt")["analyst_feedback"]["pending"]
+        for p in pending:
+            assert "text" in p
+            assert "source" in p
+            assert "confidence" in p and 0 <= p["confidence"] <= 100
+
+    def test_mine_dossier_exists(self):
+        m = get_mineral_by_name("Cobalt")
+        tfm = m["mines"][0]
+        assert "dossier" in tfm
+        d = tfm["dossier"]
+        assert "z_score" in d
+        assert "insolvency_prob" in d
+        assert "ubo_chain" in d and isinstance(d["ubo_chain"], list)
+        assert "recent_intel" in d and isinstance(d["recent_intel"], list)
