@@ -8525,6 +8525,33 @@ function toggleRegisterRow(idx) {
   if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
 }
 
+async function submitFeedback(btn, entity, text, verdict) {
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  try {
+    var resp = await fetch(API + '/ml/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity: entity, assessment_type: 'cobalt_risk', verdict: verdict, notes: text })
+    });
+    if (!resp.ok) throw new Error('Server returned ' + resp.status);
+    var row = btn.closest('[data-feedback-row]');
+    if (row) {
+      row.style.opacity = '0.4';
+      var statusEl = row.querySelector('[data-feedback-status]');
+      if (statusEl) {
+        statusEl.style.display = 'inline';
+        statusEl.textContent = verdict === 'true_positive' ? 'Verified \u2713' : 'Rejected \u2717';
+      }
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.borderColor = 'var(--accent2)';
+    setTimeout(function(){ btn.style.borderColor = ''; }, 2000);
+  }
+}
+
 async function onFeedbackMineralChange() {
   var mineral = getGlobalMineral();
   var container = document.getElementById('psi-feedback-content');
@@ -8551,13 +8578,13 @@ function renderAnalystFeedback(m, container) {
 
   html += '<div class="card" style="padding:18px; margin-bottom:14px;"><h3 style="margin-bottom:12px;">Pending Adjudication</h3>';
   (af.pending || []).forEach(function(p){
-    html += '<div style="background:var(--surface); border-radius:6px; padding:12px; margin-bottom:8px; border-left:3px solid var(--accent);">';
+    html += '<div data-feedback-row style="background:var(--surface); border-radius:6px; padding:12px; margin-bottom:8px; border-left:3px solid var(--accent);">';
     html += '<div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;"><div style="flex:1;">';
     html += '<div style="font-size:12px; color:var(--text);">"' + esc(p.text) + '"</div>';
-    html += '<div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Source: ' + esc(p.source) + ' — Confidence: '+p.confidence+'%</div></div>';
+    html += '<div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Source: ' + esc(p.source) + ' — Confidence: '+p.confidence+'% <span data-feedback-status style="display:none; margin-left:8px; font-weight:600; color:var(--accent3);"></span></div></div>';
     html += '<div style="display:flex; gap:6px;">';
-    html += '<button style="background:rgba(16,185,129,0.15); color:var(--accent3); border:1px solid rgba(16,185,129,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="this.parentElement.parentElement.parentElement.style.opacity=\'0.4\'; this.textContent=\'Verified &#10003;\';">&#10003; Verified</button>';
-    html += '<button style="background:rgba(239,68,68,0.15); color:var(--accent2); border:1px solid rgba(239,68,68,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="this.parentElement.parentElement.parentElement.style.opacity=\'0.4\'; this.textContent=\'Rejected &#10007;\';">&#10007; False Positive</button>';
+    html += '<button style="background:rgba(16,185,129,0.15); color:var(--accent3); border:1px solid rgba(16,185,129,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="submitFeedback(this, \'' + esc(m.name).replace(/'/g, "\\'") + '\', \'' + esc(p.text).replace(/'/g, "\\'") + '\', \'true_positive\')">&#10003; Verified</button>';
+    html += '<button style="background:rgba(239,68,68,0.15); color:var(--accent2); border:1px solid rgba(239,68,68,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="submitFeedback(this, \'' + esc(m.name).replace(/'/g, "\\'") + '\', \'' + esc(p.text).replace(/'/g, "\\'") + '\', \'false_positive\')">&#10007; False Positive</button>';
     html += '</div></div></div>';
   });
   html += '</div>';
