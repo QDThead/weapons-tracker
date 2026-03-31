@@ -8241,7 +8241,29 @@ function renderBomExplorer(m, container) {
   var html = '';
   var tierColors = {1:'var(--accent3)',2:'var(--accent5)',3:'var(--accent4)',4:'var(--accent)'};
   var tierLabels = {1:'Mining / Extraction',2:'Processing / Refining',3:'Components / Alloys',4:'Platforms'};
-  var tierConf = {1:'99%',2:'85-95%',3:'70-85%',4:'60-75%'};
+  function computeTierConf(m) {
+    var t = {1:'99%',2:'85-95%',3:'70-85%',4:'60-75%'};
+    if (m.mines && m.mines.length > 0) {
+      var totalSrc = 0, cnt = 0;
+      m.mines.forEach(function(mine) {
+        var ts = mine.taxonomy_scores || {};
+        for (var k in ts) { if (ts[k] && ts[k].source_count) { totalSrc += ts[k].source_count; cnt++; } }
+      });
+      var avgSrc = cnt > 0 ? totalSrc / cnt : 1;
+      t[1] = avgSrc >= 3 ? '95-99%' : avgSrc >= 2 ? '85-95%' : '75-85%';
+    }
+    if (m.refineries && m.refineries.length > 0) {
+      var totalSrc2 = 0, cnt2 = 0;
+      m.refineries.forEach(function(ref) {
+        var ts = ref.taxonomy_scores || {};
+        for (var k in ts) { if (ts[k] && ts[k].source_count) { totalSrc2 += ts[k].source_count; cnt2++; } }
+      });
+      var avgSrc2 = cnt2 > 0 ? totalSrc2 / cnt2 : 1;
+      t[2] = avgSrc2 >= 3 ? '90-95%' : avgSrc2 >= 2 ? '80-90%' : '70-80%';
+    }
+    return t;
+  }
+  var tierConf = computeTierConf(m);
 
   html += '<div class="card" style="padding:18px; margin-bottom:14px; border-left:4px solid var(--accent);">';
   html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
