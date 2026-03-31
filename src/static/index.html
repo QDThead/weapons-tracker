@@ -8680,6 +8680,8 @@ function renderMineralScenarios(m, container) {
 let taxonomyBarChart = null;
 
 async function loadTaxonomyTab() {
+  // Skip global load if a mineral is selected — mineral-specific view will handle it
+  if (getGlobalMineral()) return;
   try {
     const data = await fetch('/psi/taxonomy').then(r => r.json());
     if (data.error) return;
@@ -8779,8 +8781,8 @@ function onTaxonomyMineralChange() {
     mineralDiv.style.display = 'none';
     return;
   }
-  // Hide all existing cards except the first (header with dropdown)
-  existingCards.forEach(function(c, i) { if (i > 0) c.style.display = 'none'; });
+  // Hide all existing global taxonomy cards (dropdown is now global, not in these cards)
+  existingCards.forEach(function(c) { c.style.display = 'none'; });
   mineralDiv.style.display = '';
   mineralDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">Loading...</div>';
 
