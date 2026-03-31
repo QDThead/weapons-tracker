@@ -200,6 +200,14 @@ PLATFORM_SUBSYSTEM_EDGES: dict[str, list[str]] = {
 
 SUBSYSTEM_COMPONENT_EDGES: dict[str, list[str]] = {
     "F135-PW-100 Engine": ["Turbine Blades"],
+    "F110-GE-129 Engine": ["Turbine Blades"],
+    "F414-GE-400 Engine": ["Turbine Blades"],
+    "EJ200 Engine": ["Turbine Blades"],
+    "M88-2 Engine": ["Turbine Blades"],
+    "RM12 Engine": ["Turbine Blades"],
+    "AGT-1500 Engine": ["Turbine Blades"],
+    "AL-41F1S Engine": ["Turbine Blades"],
+    "T700-GE-401C Engine": ["Turbine Blades"],
     "AN/APG-81 AESA Radar": ["AESA Antenna Modules"],
     "AN/APG-79 AESA Radar": ["AESA Antenna Modules"],
     "CAPTOR-E Radar": ["AESA Antenna Modules"],
