@@ -8459,30 +8459,23 @@ function renderDossierEntity() {
   detail.innerHTML = html;
 }
 
-function alertAcknowledge(btn) {
-  btn.textContent = '\u2713 Acknowledged';
-  btn.style.color = 'var(--accent3)';
-  btn.style.borderColor = 'var(--accent3)';
-  btn.disabled = true;
+function alertAcknowledge(btn, alertId) {
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'acknowledge', analyst:'Current User'})});
   var card = btn.closest('.card');
-  if (card) card.style.borderLeftColor = 'var(--accent3)';
+  btn.textContent = '\u2713 Acknowledged'; btn.style.color = 'var(--accent3)'; btn.style.borderColor = 'var(--accent3)'; btn.disabled = true;
+  card.style.borderLeftColor = 'var(--accent3)'; card.dataset.acknowledged = 'true';
 }
-function alertAssign(btn) {
+function alertAssign(btn, alertId) {
   var name = prompt('Assign to analyst:');
   if (!name) return;
-  btn.textContent = '\u2192 ' + name;
-  btn.style.color = 'var(--accent)';
-  btn.style.borderColor = 'var(--accent)';
-  btn.disabled = true;
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'assign', analyst:name})});
+  btn.textContent = '\u2192 ' + name; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.disabled = true;
 }
-function alertEscalate(btn) {
-  btn.textContent = '\u2B06 Escalated';
-  btn.style.color = 'var(--accent2)';
-  btn.style.borderColor = 'var(--accent2)';
-  btn.style.background = 'rgba(239,68,68,0.15)';
-  btn.disabled = true;
+function alertEscalate(btn, alertId) {
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'escalate', analyst:'Current User'})});
   var card = btn.closest('.card');
-  if (card) card.style.borderLeftWidth = '6px';
+  btn.textContent = '\u2B06 Escalated'; btn.style.color = 'var(--accent2)'; btn.style.borderColor = 'var(--accent2)'; btn.style.background = 'rgba(239,68,68,0.15)'; btn.disabled = true;
+  card.style.borderLeftWidth = '6px';
 }
 function alertEvidence(btn) {
   var panel = btn.parentElement.nextElementSibling;
@@ -8539,9 +8532,9 @@ function renderAlertsSensing(m, container) {
     }
     var btnStyle = 'background:var(--surface); border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);';
     html += '<div style="margin-top:8px; display:flex; gap:6px;">';
-    html += '<button style="'+btnStyle+'" onclick="alertAcknowledge(this)">Acknowledge</button>';
-    html += '<button style="'+btnStyle+'" onclick="alertAssign(this)">Assign</button>';
-    html += '<button style="'+btnStyle+'" onclick="alertEscalate(this)">Escalate</button>';
+    html += '<button style="'+btnStyle+'" onclick="alertAcknowledge(this,\'' + esc(a.id) + '\')">Acknowledge</button>';
+    html += '<button style="'+btnStyle+'" onclick="alertAssign(this,\'' + esc(a.id) + '\')">Assign</button>';
+    html += '<button style="'+btnStyle+'" onclick="alertEscalate(this,\'' + esc(a.id) + '\')">Escalate</button>';
     html += '<button style="'+btnStyle+'" onclick="alertEvidence(this)">Evidence Locker</button>';
     html += '</div>';
     html += '<div data-evidence-panel style="display:none; margin-top:8px; padding:10px; background:var(--surface); border-radius:6px; border:1px solid var(--border); font-size:11px;">';
@@ -8604,7 +8597,7 @@ function renderRiskRegister(m, container) {
       var stColors = {open:'var(--accent2)',in_progress:'var(--accent4)',mitigated:'var(--accent3)',closed:'var(--text-dim)'};
       var stLabels = {open:'Open',in_progress:'In Progress',mitigated:'Mitigated',closed:'Closed'};
       var isCurrent = r.status === st;
-      html += '<button style="background:' + (isCurrent ? stColors[st]+'22' : 'var(--surface)') + '; border:1px solid ' + (isCurrent ? stColors[st] : 'var(--border)') + '; color:' + (isCurrent ? stColors[st] : 'var(--text-dim)') + '; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);' + (isCurrent ? ' opacity:0.5;' : '') + '" onclick="updateRegisterStatus(this,'+i+',\''+st+'\')"' + (isCurrent ? ' disabled' : '') + '>'+stLabels[st]+'</button>';
+      html += '<button style="background:' + (isCurrent ? stColors[st]+'22' : 'var(--surface)') + '; border:1px solid ' + (isCurrent ? stColors[st] : 'var(--border)') + '; color:' + (isCurrent ? stColors[st] : 'var(--text-dim)') + '; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);' + (isCurrent ? ' opacity:0.5;' : '') + '" onclick="updateRegisterStatus(this,'+i+',\''+st+'\',\''+esc(r.id)+'\')"' + (isCurrent ? ' disabled' : '') + '>'+stLabels[st]+'</button>';
     });
     html += '</div>';
     if (r.coas && r.coas.length > 0) {
@@ -8626,19 +8619,17 @@ function toggleRegisterRow(idx) {
   if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
 }
 
-function updateRegisterStatus(btn, idx, newStatus) {
+function updateRegisterStatus(btn, idx, newStatus, riskId) {
+  fetch(API + '/psi/register/cobalt/' + encodeURIComponent(riskId), {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({risk_id:riskId, new_status:newStatus, analyst:'Current User'})});
   btn.disabled = true;
   var statusColors = {open:'var(--accent2)',in_progress:'var(--accent4)',mitigated:'var(--accent3)',closed:'var(--text-dim)'};
   var statusLabels = {open:'Open',in_progress:'In Progress',mitigated:'Mitigated',closed:'Closed'};
   var row = btn.closest('tr').previousElementSibling;
   var statusCell = row.querySelectorAll('td')[4];
-  if (statusCell) {
-    statusCell.innerHTML = '<span style="color:' + (statusColors[newStatus]||'var(--text)') + ';">' + (statusLabels[newStatus]||newStatus) + '</span>';
-  }
+  if (statusCell) { statusCell.innerHTML = '<span style="color:' + (statusColors[newStatus]||'var(--text)') + ';">' + (statusLabels[newStatus]||newStatus) + '</span>'; }
   var btnGroup = btn.parentElement;
   btnGroup.querySelectorAll('button').forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
+  btn.disabled = true; btn.style.opacity = '0.5';
 }
 
 async function submitFeedback(btn, entity, text, verdict) {

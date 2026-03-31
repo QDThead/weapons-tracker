@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -863,6 +864,56 @@ async def get_taxonomy_category(category_id: int):
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
+
+
+# --- Cobalt Alert & Risk Register Persistence (G2, G3) ---
+
+class CobaltAlertAction(BaseModel):
+    alert_id: str
+    action: str
+    analyst: str = ""
+
+_cobalt_alert_actions: dict[str, dict] = {}
+
+@router.post("/alerts/cobalt/action")
+async def cobalt_alert_action(req: CobaltAlertAction):
+    """Record an analyst action on a Cobalt watchtower alert."""
+    _cobalt_alert_actions[req.alert_id] = {
+        "alert_id": req.alert_id,
+        "action": req.action,
+        "analyst": req.analyst,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    return {"status": "recorded", **_cobalt_alert_actions[req.alert_id]}
+
+@router.get("/alerts/cobalt/actions")
+async def get_cobalt_alert_actions():
+    """Get all recorded Cobalt alert actions."""
+    return list(_cobalt_alert_actions.values())
+
+
+class RegisterStatusUpdate(BaseModel):
+    risk_id: str
+    new_status: str
+    analyst: str = ""
+
+_cobalt_register_status: dict[str, dict] = {}
+
+@router.patch("/register/cobalt/{risk_id}")
+async def update_cobalt_register_status(risk_id: str, update: RegisterStatusUpdate):
+    """Update status of a Cobalt risk register entry."""
+    _cobalt_register_status[risk_id] = {
+        "risk_id": risk_id,
+        "status": update.new_status,
+        "analyst": update.analyst,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    return {"status": "updated", **_cobalt_register_status[risk_id]}
+
+@router.get("/register/cobalt/status")
+async def get_cobalt_register_status():
+    """Get all Cobalt risk register status overrides."""
+    return _cobalt_register_status
 
 
 # ------------------------------------------------------------------
