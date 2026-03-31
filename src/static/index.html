@@ -145,6 +145,25 @@ header::after {
   box-shadow: 0 0 12px rgba(0,212,255,0.1);
 }
 
+/* Nav Dropdown */
+.nav-tab-dropdown { position: relative; display: inline-block; }
+.nav-dropdown-menu {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 50;
+  background: var(--surface-glass); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 8px;
+  min-width: 220px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  margin-top: 4px;
+}
+.nav-tab-dropdown:hover .nav-dropdown-menu { display: block; }
+.nav-dropdown-item {
+  display: block; width: 100%; padding: 7px 14px; border: none; background: none;
+  color: var(--text-dim); font-size: 12px; font-family: var(--font-body);
+  text-align: left; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.nav-dropdown-item:hover { background: rgba(0,212,255,0.08); color: var(--text); }
+.nav-dropdown-item.active-mineral { color: var(--accent); font-weight: 600; }
+.nav-dropdown-item .mineral-star { color: var(--accent3); margin-right: 4px; }
+
 /* Layout */
 .container { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
 .page { display: none; }
@@ -1087,7 +1106,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   <button class="nav-tab" data-page="live-flights" role="tab" id="tab-live-flights" aria-selected="false" aria-controls="page-live-flights">Live Flights</button>
   <button class="nav-tab" data-page="deals" role="tab" id="tab-deals" aria-selected="false" aria-controls="page-deals">Deals</button>
   <button class="nav-tab" data-page="canada-intel" role="tab" id="tab-canada-intel" aria-selected="false" aria-controls="page-canada-intel">Canada Intel</button>
-  <button class="nav-tab" data-page="supply-chain" role="tab" id="tab-supply-chain" aria-selected="false" aria-controls="page-supply-chain">Supply Chain</button>
+  <div class="nav-tab-dropdown" style="position:relative; display:inline-block;">
+    <button class="nav-tab" data-page="supply-chain" role="tab" id="tab-supply-chain" aria-selected="false" aria-controls="page-supply-chain">Supply Chain &#x25BE;</button>
+    <div class="nav-dropdown-menu" id="supply-chain-dropdown">
+      <div style="padding:6px 10px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border);">Select Mineral</div>
+      <div id="supply-chain-mineral-list" style="max-height:320px; overflow-y:auto;"></div>
+    </div>
+  </div>
   <button class="nav-tab" data-page="data-feeds" role="tab" id="tab-data-feeds" aria-selected="false" aria-controls="page-data-feeds">Data Feeds</button>
   <button class="nav-tab" data-page="compliance" role="tab" id="tab-compliance" aria-selected="false" aria-controls="page-compliance">Compliance</button>
   <button class="nav-tab" id="lang-toggle" onclick="toggleLanguage()" style="margin-left:auto;font-size:11px;padding:6px 10px;">EN | FR</button>
@@ -5999,7 +6024,47 @@ async function populateGlobalMineralDropdown() {
     // Default to Cobalt
     select.value = 'Cobalt';
     globalMineralPopulated = true;
+    // Also populate the nav hover dropdown
+    populateNavMineralDropdown(minerals);
   } catch (e) { /* stay with "All Minerals" */ }
+}
+
+function populateNavMineralDropdown(minerals) {
+  var list = document.getElementById('supply-chain-mineral-list');
+  if (!list || list.children.length > 0) return;
+  if (!minerals) {
+    fetch(API + '/globe/minerals').then(function(r) { return r.json(); }).then(function(m) {
+      populateNavMineralDropdown(m);
+    });
+    return;
+  }
+  minerals.forEach(function(m) {
+    var btn = document.createElement('button');
+    btn.className = 'nav-dropdown-item' + (m.name === 'Cobalt' ? ' active-mineral' : '');
+    var hasDeep = m.mines && m.mines.length > 0;
+    btn.innerHTML = (hasDeep ? '<span class="mineral-star">\u2605</span>' : '<span style="margin-right:4px;opacity:0.3;">\u25CB</span>') + esc(m.name);
+    btn.onclick = function() { selectMineralFromNav(m.name); };
+    list.appendChild(btn);
+  });
+}
+
+function selectMineralFromNav(mineralName) {
+  // Navigate to Supply Chain tab
+  var supplyTab = document.getElementById('tab-supply-chain');
+  if (supplyTab && !supplyTab.classList.contains('active')) {
+    supplyTab.click();
+  }
+  // Set the global mineral dropdown
+  var select = document.getElementById('psi-global-mineral');
+  if (select) {
+    select.value = mineralName;
+    onGlobalMineralChange();
+  }
+  // Update active state in nav dropdown
+  document.querySelectorAll('.nav-dropdown-item').forEach(function(item) {
+    item.classList.remove('active-mineral');
+  });
+  event.target.closest('.nav-dropdown-item').classList.add('active-mineral');
 }
 
 function getGlobalMineral() {
@@ -9140,6 +9205,8 @@ updateClock();
 loadData();
 loadInsights();
 loadFreshness();
+// Populate nav mineral dropdown on page load
+populateNavMineralDropdown(null);
 
 // ═══════════════════════════════════════════════════
 // ── COMPLIANCE MATRIX ──
