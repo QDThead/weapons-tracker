@@ -8553,6 +8553,14 @@ function renderRiskRegister(m, container) {
     html += '<td style="padding:8px;">'+esc(r.owner)+'</td>';
     html += '<td style="padding:8px;'+(isOverdue?' color:var(--accent2); font-weight:600;':'')+'">'+esc(r.due_date)+(isOverdue?' &#9888;':'')+'</td></tr>';
     html += '<tr id="register-detail-'+i+'" style="display:none;"><td colspan="7" style="padding:12px 8px 12px 32px; background:var(--surface);">';
+    html += '<div style="display:flex; gap:6px; margin-bottom:10px; align-items:center;"><span style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-right:4px;">Update Status:</span>';
+    ['open','in_progress','mitigated','closed'].forEach(function(st){
+      var stColors = {open:'var(--accent2)',in_progress:'var(--accent4)',mitigated:'var(--accent3)',closed:'var(--text-dim)'};
+      var stLabels = {open:'Open',in_progress:'In Progress',mitigated:'Mitigated',closed:'Closed'};
+      var isCurrent = r.status === st;
+      html += '<button style="background:' + (isCurrent ? stColors[st]+'22' : 'var(--surface)') + '; border:1px solid ' + (isCurrent ? stColors[st] : 'var(--border)') + '; color:' + (isCurrent ? stColors[st] : 'var(--text-dim)') + '; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);' + (isCurrent ? ' opacity:0.5;' : '') + '" onclick="updateRegisterStatus(this,'+i+',\''+st+'\')"' + (isCurrent ? ' disabled' : '') + '>'+stLabels[st]+'</button>';
+    });
+    html += '</div>';
     if (r.coas && r.coas.length > 0) {
       html += '<div style="margin-bottom:8px;"><strong style="font-size:11px; color:var(--accent4);">Linked COAs:</strong></div>';
       r.coas.forEach(function(c){ html += '<div style="font-size:11px; padding:2px 0; color:var(--text);">&#8226; '+esc(c)+'</div>'; });
@@ -8570,6 +8578,21 @@ function renderRiskRegister(m, container) {
 function toggleRegisterRow(idx) {
   var row = document.getElementById('register-detail-' + idx);
   if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+function updateRegisterStatus(btn, idx, newStatus) {
+  btn.disabled = true;
+  var statusColors = {open:'var(--accent2)',in_progress:'var(--accent4)',mitigated:'var(--accent3)',closed:'var(--text-dim)'};
+  var statusLabels = {open:'Open',in_progress:'In Progress',mitigated:'Mitigated',closed:'Closed'};
+  var row = btn.closest('tr').previousElementSibling;
+  var statusCell = row.querySelectorAll('td')[4];
+  if (statusCell) {
+    statusCell.innerHTML = '<span style="color:' + (statusColors[newStatus]||'var(--text)') + ';">' + (statusLabels[newStatus]||newStatus) + '</span>';
+  }
+  var btnGroup = btn.parentElement;
+  btnGroup.querySelectorAll('button').forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
 }
 
 async function submitFeedback(btn, entity, text, verdict) {
