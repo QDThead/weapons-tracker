@@ -14,11 +14,11 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~10,400 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~10,700 lines)
 - **3D Globe:** CesiumJS 1.119 (CDN) with CartoDB Dark Matter tiles, global shipping lanes overlay
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 67 Python files, ~32,000 total lines
-- **Tests:** 87 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting
+- **Codebase:** 68 Python files, ~33,000 total lines
+- **Tests:** 195 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine (110 unit/integration + 85 adversarial)
 - **Compliance:** 95.3% DND DMPP 11 RFI compliance (137 sub-requirements across 22 questions)
 
 ## Project Structure
@@ -227,7 +227,9 @@ weapons-tracker/
 - `GET /psi/risk/{country}` — 6-dimension risk scores + composite + mitigations
 - `GET /psi/material/{name}` — Material scarcity, source countries, dependent platforms
 - `GET /psi/platform/{weapon}` — BOM tree with risk at each tier
-- `POST /psi/scenario` — What-if simulation (5 scenario types)
+- `POST /psi/scenario` — What-if simulation (5 scenario types, legacy)
+- `POST /psi/scenario/v2` — Multi-variable scenario sandbox (stackable layers, cascade propagation, Likelihood×Impact, COAs)
+- `POST /psi/scenario/export/pdf` — PDF briefing export from scenario results (single or multi-scenario comparison)
 - `GET /psi/graph` — Knowledge graph as D3.js-ready JSON
 - `GET /psi/suppliers/{name}` — Company profile, alternatives
 - `GET /psi/alerts` — Active supply chain disruption alerts

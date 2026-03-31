@@ -35,7 +35,7 @@ Open `http://localhost:8000` after starting the server:
 | **Live Flights** | Real-time military aircraft positions worldwide (auto-refreshes 30s) with context banner |
 | **Deals** | Searchable table of 9,311 individual arms transfers (2000-2025) |
 | **Canada Intel** | Supplier risk ranking, ally vs adversary flows, threat watchlist, Arctic monitor, Action Centre |
-| **Supply Chain** | 12 sub-tabs: Overview, 3D Supply Map, Knowledge Graph, Risk Matrix, Scenarios, Risk Taxonomy, **Forecasting** (live FRED data), **BOM Explorer**, **Supplier Dossier**, **Alerts**, **Risk Register**, **Analyst Feedback** — all Cobalt-focused |
+| **Supply Chain** | 12 sub-tabs: Overview, 3D Supply Map, Knowledge Graph, Risk Matrix, **Scenario Sandbox** (multi-variable Digital Twin with Sankey cascade, preset scenarios, COA comparison, PDF/CSV/JSON export), Risk Taxonomy, **Forecasting** (live FRED data), **BOM Explorer**, **Supplier Dossier**, **Alerts**, **Risk Register**, **Analyst Feedback** — all Cobalt-focused |
 | **Data Feeds** | 57 active feeds with health indicators, freshness, and sample data |
 | **Compliance** | DMPP 11 compliance matrix — 22 RFI questions, 137 requirements with traceability |
 
