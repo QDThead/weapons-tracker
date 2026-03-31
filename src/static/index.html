@@ -8495,11 +8495,26 @@ async function onAlertsMineralChange() {
   var mineral = getGlobalMineral();
   var container = document.getElementById('psi-alerts-content');
   if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view alerts.</div>'; return; }
-  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
+  container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading alerts...</div>';
   try {
     var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
     if (!resp.ok) throw new Error('Not found');
     var m = await resp.json();
+    if (mineral.toLowerCase() === 'cobalt') {
+      try {
+        var liveResp = await fetch(API + '/psi/alerts/cobalt/live');
+        if (liveResp.ok) {
+          var liveData = await liveResp.json();
+          var existingIds = new Set((m.watchtower_alerts || []).map(function(a){ return a.id; }));
+          (liveData.alerts || []).forEach(function(la) {
+            if (!existingIds.has(la.id)) {
+              m.watchtower_alerts = m.watchtower_alerts || [];
+              m.watchtower_alerts.push(la);
+            }
+          });
+        }
+      } catch(e) { /* live alerts unavailable — use static only */ }
+    }
     renderAlertsSensing(m, container);
   } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Alerts data not yet available for ' + esc(mineral) + '</div>'; }
 }

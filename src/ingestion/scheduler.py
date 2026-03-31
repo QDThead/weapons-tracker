@@ -32,6 +32,7 @@ from src.ingestion.sipri_transfers import SIPRITransfersClient, SIPRIQuery, SIPR
 from src.ingestion.worldbank import WorldBankClient
 from src.ingestion.gdelt_news import GDELTArmsNewsClient
 from src.ingestion.flight_tracker import FlightTrackerClient
+from src.analysis.cobalt_alert_engine import run_cobalt_alert_engine
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +248,15 @@ def create_scheduler() -> AsyncIOScheduler:
         trigger=IntervalTrigger(minutes=15),
         id="gdelt",
         name="GDELT arms trade news",
+        max_instances=1,
+    )
+
+    # Cobalt-specific alert engine (every 30 minutes)
+    scheduler.add_job(
+        run_cobalt_alert_engine,
+        trigger=IntervalTrigger(minutes=30),
+        id="cobalt_alerts",
+        name="Cobalt supply chain alert engine",
         max_instances=1,
     )
 

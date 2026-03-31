@@ -875,6 +875,18 @@ class CobaltAlertAction(BaseModel):
 
 _cobalt_alert_actions: dict[str, dict] = {}
 
+@router.get("/alerts/cobalt/live")
+async def get_cobalt_live_alerts():
+    """Get live-generated Cobalt alerts from GDELT + rule engine."""
+    from src.analysis.cobalt_alert_engine import run_cobalt_alert_engine
+    try:
+        alerts = await run_cobalt_alert_engine()
+        return {"alerts": alerts, "count": len(alerts), "generated_at": datetime.utcnow().isoformat()}
+    except Exception as e:
+        logger.error("Cobalt live alerts failed: %s", e)
+        return {"alerts": [], "count": 0, "error": "Live alert generation unavailable"}
+
+
 @router.post("/alerts/cobalt/action")
 async def cobalt_alert_action(req: CobaltAlertAction):
     """Record an analyst action on a Cobalt watchtower alert."""
