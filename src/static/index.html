@@ -9497,56 +9497,112 @@ function onRiskMineralChange() {
 
 function renderMineralRiskMatrix(m, container) {
   var entities = [];
-  // Mines
   if (m.mines) m.mines.forEach(function(mine) {
     var scores = mine.taxonomy_scores || {};
-    var total = 0, count = 0;
-    for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; } }
+    var total = 0, count = 0, topRisks = [];
+    for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; if (scores[k].rationale) topRisks.push({cat:k,score:scores[k].score,rationale:scores[k].rationale}); } }
     var avg = count > 0 ? total / count : 50;
-    var impact = mine.production_t ? Math.min(95, (mine.production_t / 500)) : 50;
-    entities.push({ name: mine.name, type: 'Mine', country: mine.country, risk: avg, impact: impact, owner: mine.owner || '' });
+    var impact = mine.production_t ? Math.min(95, (mine.production_t / 500) * 100) : 50;
+    topRisks.sort(function(a,b){ return b.score - a.score; });
+    entities.push({ name: mine.name, type: 'Mine', country: mine.country, risk: avg, impact: impact, owner: mine.owner || '', rationales: topRisks.slice(0,3) });
   });
-  // Refineries
   if (m.refineries) m.refineries.forEach(function(ref) {
     var scores = ref.taxonomy_scores || {};
-    var total = 0, count = 0;
-    for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; } }
+    var total = 0, count = 0, topRisks = [];
+    for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; if (scores[k].rationale) topRisks.push({cat:k,score:scores[k].score,rationale:scores[k].rationale}); } }
     var avg = count > 0 ? total / count : 50;
-    var impact = ref.capacity_t ? Math.min(95, (ref.capacity_t / 400)) : 50;
-    entities.push({ name: ref.name, type: 'Refinery', country: ref.country, risk: avg, impact: impact, owner: ref.owner || '' });
+    var impact = ref.capacity_t ? Math.min(95, (ref.capacity_t / 400) * 100) : 50;
+    topRisks.sort(function(a,b){ return b.score - a.score; });
+    entities.push({ name: ref.name, type: 'Refinery', country: ref.country, risk: avg, impact: impact, owner: ref.owner || '', rationales: topRisks.slice(0,3) });
   });
 
-  var html = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">';
-  // Sort by risk desc
-  entities.sort(function(a, b) { return b.risk - a.risk; });
+  var html = '';
+  // Chart container
+  html += '<div class="card" style="padding:14px; margin-bottom:14px;">';
+  html += '<h3 style="margin-bottom:12px;">' + esc(m.name) + ' — Risk \u00D7 Impact Matrix</h3>';
+  html += '<div style="position:relative; height:400px;">';
+  html += '<canvas id="mineral-risk-scatter" style="width:100%; height:100%;"></canvas>';
+  html += '<div style="position:absolute; top:8px; right:12px; font-size:10px; color:var(--accent2); font-weight:600; opacity:0.6;">MITIGATE NOW</div>';
+  html += '<div style="position:absolute; top:8px; left:60px; font-size:10px; color:var(--accent4); font-weight:600; opacity:0.6;">MONITOR</div>';
+  html += '<div style="position:absolute; bottom:28px; right:12px; font-size:10px; color:var(--accent); font-weight:600; opacity:0.6;">TRANSFER</div>';
+  html += '<div style="position:absolute; bottom:28px; left:60px; font-size:10px; color:var(--accent3); font-weight:600; opacity:0.6;">ACCEPT</div>';
+  html += '</div></div>';
+
+  // Entity detail cards
+  html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">';
+  entities.sort(function(a,b){ return b.risk - a.risk; });
   entities.forEach(function(e) {
     var riskColor = e.risk >= 75 ? '#ef4444' : e.risk >= 55 ? '#f59e0b' : e.risk >= 35 ? '#eab308' : '#10b981';
     var riskLabel = e.risk >= 75 ? 'CRITICAL' : e.risk >= 55 ? 'HIGH' : e.risk >= 35 ? 'MEDIUM' : 'LOW';
     var typeIcon = e.type === 'Mine' ? '\u26CF' : '\u2699';
-    html += '<div class="card" style="padding:10px; border-left:3px solid ' + riskColor + ';">';
+    html += '<div class="card" style="padding:10px; border-left:3px solid '+riskColor+';">';
     html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
-    html += '<span style="font-weight:bold; font-size:12px;">' + typeIcon + ' ' + esc(e.name) + '</span>';
-    html += '<span style="background:' + riskColor + '22; color:' + riskColor + '; padding:2px 8px; border-radius:8px; font-size:9px; font-weight:600;">' + riskLabel + '</span>';
-    html += '</div>';
-    html += '<div style="font-size:10px; color:var(--text-dim); margin-top:4px;">' + esc(e.country) + ' \u2014 ' + esc(e.owner) + '</div>';
+    html += '<span style="font-weight:bold; font-size:12px;">'+typeIcon+' '+esc(e.name)+'</span>';
+    html += '<span style="background:'+riskColor+'22; color:'+riskColor+'; padding:2px 8px; border-radius:8px; font-size:9px; font-weight:600;">'+riskLabel+'</span></div>';
+    html += '<div style="font-size:10px; color:var(--text-dim); margin-top:4px;">'+esc(e.country)+' \u2014 '+esc(e.owner)+'</div>';
     html += '<div style="margin-top:6px; display:flex; gap:12px; font-size:10px;">';
-    html += '<span>Risk: <strong style="color:' + riskColor + ';">' + Math.round(e.risk) + '/100</strong></span>';
-    html += '<span>Impact: <strong>' + Math.round(e.impact) + '/100</strong></span>';
-    html += '</div>';
-    // Risk bar
-    html += '<div style="margin-top:4px; height:4px; background:var(--border); border-radius:2px;">';
-    html += '<div style="height:100%; width:' + Math.round(e.risk) + '%; background:' + riskColor + '; border-radius:2px;"></div>';
-    html += '</div>';
+    html += '<span>Risk: <strong style="color:'+riskColor+';">'+Math.round(e.risk)+'/100</strong></span>';
+    html += '<span>Impact: <strong>'+Math.round(e.impact)+'/100</strong></span></div>';
+    html += '<div style="margin-top:4px; height:4px; background:var(--border); border-radius:2px;"><div style="height:100%; width:'+Math.round(e.risk)+'%; background:'+riskColor+'; border-radius:2px;"></div></div>';
+    // G8: Top risk rationales (Glass Box)
+    if (e.rationales && e.rationales.length > 0) {
+      html += '<div style="margin-top:6px; padding-top:6px; border-top:1px solid var(--border);">';
+      e.rationales.forEach(function(r) { html += '<div style="font-size:9px; color:var(--text-dim); padding:1px 0;"><span style="text-transform:capitalize;">'+esc(r.cat.replace(/_/g,' '))+':</span> '+esc(r.rationale)+'</div>'; });
+      html += '</div>';
+    }
     html += '</div>';
   });
   html += '</div>';
-
-  html += '<div class="suf-insight" style="margin-top:0;"><strong>INSIGHT:</strong> ' + entities.filter(function(e) { return e.risk >= 75; }).length + ' of ' + entities.length + ' ' + esc(m.name) + ' entities rated CRITICAL risk. ';
-  var chinaControlled = entities.filter(function(e) { return (e.country || '').toLowerCase().includes('china'); });
-  if (chinaControlled.length > 0) html += chinaControlled.length + ' entities are Chinese-controlled.';
+  // Insight banner
+  html += '<div class="suf-insight" style="margin-top:10px;"><strong>INSIGHT:</strong> '+entities.filter(function(e){return e.risk>=75;}).length+' of '+entities.length+' '+esc(m.name)+' entities rated CRITICAL. ';
+  var cn = entities.filter(function(e){return (e.country||'').toLowerCase().includes('china');});
+  if (cn.length>0) html += cn.length + ' Chinese-controlled.';
   html += '</div>';
-
   container.innerHTML = html;
+
+  // Render Chart.js scatter
+  setTimeout(function() {
+    var canvas = document.getElementById('mineral-risk-scatter');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (window._mineralRiskChart) window._mineralRiskChart.destroy();
+    window._mineralRiskChart = new Chart(ctx, {
+      type: 'bubble',
+      data: {
+        datasets: [{
+          data: entities.map(function(e) {
+            return { x: e.risk, y: e.impact, r: 8, name: e.name, country: e.country, owner: e.owner, topRisk: (e.rationales && e.rationales[0]) ? e.rationales[0].rationale : '' };
+          }),
+          backgroundColor: entities.map(function(e) {
+            return e.risk >= 75 ? 'rgba(239,68,68,0.6)' : e.risk >= 55 ? 'rgba(245,158,11,0.6)' : 'rgba(16,185,129,0.6)';
+          }),
+          borderColor: entities.map(function(e) {
+            return e.risk >= 75 ? '#ef4444' : e.risk >= 55 ? '#f59e0b' : '#10b981';
+          }),
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { min: 0, max: 100, title: { display: true, text: 'Risk Probability', color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+          y: { min: 0, max: 100, title: { display: true, text: 'Operational Impact', color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var d = ctx.raw;
+                return [d.name + ' (' + d.country + ')', 'Owner: ' + d.owner, 'Risk: ' + Math.round(d.x) + ' | Impact: ' + Math.round(d.y), d.topRisk];
+              }
+            }
+          }
+        },
+      },
+    });
+  }, 50);
 }
 
 // ═══════ SCENARIO SANDBOX v2 (Unified Mineral-First) ═══════
