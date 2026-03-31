@@ -77,8 +77,10 @@ class ScenarioEngine:
         # Generate COAs
         coa = self._generate_coas(state, layers, impact)
 
-        # Compute sufficiency
-        supply_t = state["effective_supply_t"]
+        # Compute sufficiency — scale baseline supply by disruption ratio
+        node_total = state.get("node_supply_total", state["baseline_supply_t"])
+        disruption_ratio = state["effective_supply_t"] / max(node_total, 1)
+        supply_t = state["baseline_supply_t"] * disruption_ratio
         demand_t = state["demand_t"]
         ratio = supply_t / demand_t if demand_t > 0 else 999
         if ratio >= 0.9:
@@ -179,6 +181,12 @@ class ScenarioEngine:
         scenarios = suf.get("scenarios", [])
         baseline = scenarios[0] if scenarios else {"supply_t": 237000, "demand_t": 237000}
 
+        # Track undisrupted node-level totals as the reference for supply reduction
+        # (named mines/refineries may not sum to the global baseline figure)
+        node_mining_total = sum(m["production_t"] for m in mines)
+        node_refining_total = sum(r["capacity_t"] for r in refineries)
+        node_supply_total = min(node_mining_total, node_refining_total) if mines else baseline.get("supply_t", 237000)
+
         return {
             "mines": mines,
             "refineries": refineries,
@@ -186,7 +194,8 @@ class ScenarioEngine:
             "platforms": platforms,
             "routes": routes,
             "baseline_supply_t": baseline.get("supply_t", 237000),
-            "effective_supply_t": baseline.get("supply_t", 237000),
+            "node_supply_total": node_supply_total,
+            "effective_supply_t": node_supply_total,
             "demand_t": baseline.get("demand_t", 237000),
         }
 
@@ -245,14 +254,16 @@ class ScenarioEngine:
                 route["status"] = "disrupted"
 
     def _apply_supplier_failure(self, state: dict, params: dict) -> None:
-        """Zero out a specific mine or refinery."""
-        entity = params.get("entity", "")
+        """Zero out a specific mine or refinery (partial name match)."""
+        entity = params.get("entity", "").lower()
+        if not entity:
+            return
         for mine in state["mines"]:
-            if mine["name"].lower() == entity.lower():
+            if entity in mine["name"].lower() or mine["name"].lower() in entity:
                 mine["capacity_remaining_pct"] = 0
                 mine["status"] = "disrupted"
         for ref in state["refineries"]:
-            if ref["name"].lower() == entity.lower():
+            if entity in ref["name"].lower() or ref["name"].lower() in entity:
                 ref["capacity_remaining_pct"] = 0
                 ref["status"] = "disrupted"
         self._recalc_supply(state)
@@ -264,21 +275,17 @@ class ScenarioEngine:
 
     def _recalc_supply(self, state: dict) -> None:
         """Recalculate effective supply based on remaining mine/refinery capacity."""
-        # Mining output
+        if not state["mines"] and not state["refineries"]:
+            return  # No node data — keep baseline
         total_mining = sum(
             m["production_t"] * m["capacity_remaining_pct"] / 100
             for m in state["mines"]
         )
-        # Refining throughput (capped by mining input)
         total_refining_capacity = sum(
             r["capacity_t"] * r["capacity_remaining_pct"] / 100
             for r in state["refineries"]
         )
-        # Effective supply is the bottleneck
-        state["effective_supply_t"] = min(total_mining, total_refining_capacity) if state["mines"] else state["baseline_supply_t"]
-        # If no mines/refineries data, estimate from baseline
-        if not state["mines"] and not state["refineries"]:
-            state["effective_supply_t"] = state["baseline_supply_t"]
+        state["effective_supply_t"] = min(total_mining, total_refining_capacity) if state["mines"] else state["node_supply_total"]
 
     def _propagate_cascade(self, state: dict) -> dict:
         """Build the 4-tier cascade data for the Sankey visualization."""
@@ -394,9 +401,10 @@ class ScenarioEngine:
                 "lead_time_increase_days": 0,
             }
 
-        # Supply reduction
+        # Supply reduction — compare against undisrupted node total, not global baseline
+        node_total = state.get("node_supply_total", state["baseline_supply_t"])
         supply_reduction_pct = round(
-            (1 - state["effective_supply_t"] / max(state["baseline_supply_t"], 1)) * 100, 1
+            max(0, (1 - state["effective_supply_t"] / max(node_total, 1)) * 100), 1
         )
 
         # Platforms affected
