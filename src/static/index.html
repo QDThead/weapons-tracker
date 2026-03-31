@@ -8253,6 +8253,15 @@ function renderBomExplorer(m, container) {
   html += '<div style="font-family:var(--font-mono); font-size:12px; line-height:2.4; color:var(--text);">';
 
   html += '<div><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span></div>';
+  var hsCodes = m.hs_codes || {};
+  var hsKeys = Object.keys(hsCodes);
+  if (hsKeys.length > 0) {
+    html += '<div style="padding-left:24px; margin-bottom:4px;">';
+    hsKeys.forEach(function(hs) {
+      html += '<span style="background:rgba(0,212,255,0.08); color:var(--accent); padding:1px 6px; border-radius:3px; font-size:9px; margin-right:6px;">HS ' + esc(hs) + ': ' + esc(hsCodes[hs]) + '</span>';
+    });
+    html += '</div>';
+  }
   (m.mining || []).forEach(function(entry){
     html += '<div style="padding-left:24px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
@@ -8293,6 +8302,16 @@ function renderBomExplorer(m, container) {
     html += '<span style="font-size:11px;"><span style="color:'+tierColors[t]+'; margin-right:4px;">&#9679;</span>Tier '+t+': '+tierLabels[t]+' <span style="color:var(--text-dim);">('+tierConf[t]+')</span></span>';
   });
   html += '</div>';
+  var nsns = m.nsn_entries || [];
+  if (nsns.length > 0) {
+    html += '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">';
+    html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px;">NATO Stock Numbers (NSN Group ' + esc(m.nsn_group || '') + ')</div>';
+    nsns.forEach(function(n) {
+      var tColor = tierColors[n.tier] || 'var(--text)';
+      html += '<div style="font-size:11px; padding:2px 0;"><span style="color:' + tColor + ';">&#9679;</span> <span style="font-family:var(--font-mono); color:var(--accent);">' + esc(n.nsn) + '</span> — ' + esc(n.item) + '</div>';
+    });
+    html += '</div>';
+  }
   html += '</div>';
   container.innerHTML = html;
 }
