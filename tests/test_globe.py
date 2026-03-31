@@ -335,3 +335,59 @@ class TestCobaltNewData:
         assert "insolvency_prob" in d
         assert "ubo_chain" in d and isinstance(d["ubo_chain"], list)
         assert "recent_intel" in d and isinstance(d["recent_intel"], list)
+
+
+class TestCobaltForecasting:
+    """Test the cobalt forecasting computation engine."""
+
+    def test_linear_regression(self):
+        from src.analysis.cobalt_forecasting import _linear_regression
+        slope, intercept = _linear_regression([1, 2, 3, 4], [2, 4, 6, 8])
+        assert abs(slope - 2.0) < 0.01
+        assert abs(intercept - 0.0) < 0.01
+
+    def test_compute_lead_time(self):
+        from src.analysis.cobalt_forecasting import _compute_lead_time
+        m = get_mineral_by_name("Cobalt")
+        lt = _compute_lead_time(m)
+        assert lt["base_transit_days"] > 0
+        assert lt["chokepoint_count"] > 0
+        assert lt["days"] > 0
+        assert "primary_route" in lt
+
+    def test_compute_insolvency_risks(self):
+        from src.analysis.cobalt_forecasting import _compute_insolvency_risks
+        m = get_mineral_by_name("Cobalt")
+        risks = _compute_insolvency_risks(m)
+        assert isinstance(risks, list)
+        assert len(risks) > 0
+        # Should be sorted by probability descending
+        probs = [r["probability_pct"] for r in risks]
+        assert probs == sorted(probs, reverse=True)
+        for r in risks:
+            assert "supplier" in r
+            assert "probability_pct" in r
+            assert 0 <= r["probability_pct"] <= 100
+
+    def test_compute_price_forecast_with_empty_data(self):
+        from src.analysis.cobalt_forecasting import _compute_price_forecast
+        result = _compute_price_forecast([])
+        assert result["status"] == "no_data"
+
+    def test_compute_price_forecast_with_data(self):
+        from src.analysis.cobalt_forecasting import _compute_price_forecast
+        prices = [
+            {"date": "2025-01-01", "usd_mt": 15000},
+            {"date": "2025-02-01", "usd_mt": 15200},
+            {"date": "2025-03-01", "usd_mt": 15500},
+            {"date": "2025-04-01", "usd_mt": 15100},
+            {"date": "2025-05-01", "usd_mt": 15300},
+            {"date": "2025-06-01", "usd_mt": 15600},
+        ]
+        result = _compute_price_forecast(prices)
+        assert "price_forecast" in result
+        assert "price_history" in result
+        assert len(result["price_history"]) > len(prices) // 3  # quarters + forecasts
+        # Should have forecast entries
+        forecast_entries = [p for p in result["price_history"] if p["type"] == "forecast"]
+        assert len(forecast_entries) == 4

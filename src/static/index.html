@@ -8054,68 +8054,89 @@ async function onForecastingMineralChange() {
   if (!mineral) { container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view forecasting data.</div>'; return; }
   container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading...</div>';
   try {
-    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
+    var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral) + '/forecast');
     if (!resp.ok) throw new Error('Not found');
     var m = await resp.json();
     renderForecasting(m, container);
   } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Forecasting data not yet available for ' + esc(mineral) + '</div>'; }
 }
 function renderForecasting(m, container) {
-  var f = m.forecasting;
-  if (!f) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Forecasting data not yet available for ' + esc(m.name) + '</div>'; return; }
-  var suf = m.sufficiency || {};
-  var scenario0 = (suf.scenarios || [])[0] || {};
+  if (m.error) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">' + esc(m.error) + '</div>'; return; }
   var html = '';
 
+  // Live data badge
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">';
+  html += '<h3 style="margin:0;">' + esc(m.mineral || 'Cobalt') + ' — Predictive Forecasting (12-18 Month Horizon)</h3>';
+  html += '<div style="display:flex; align-items:center; gap:8px;">';
+  if (m.live_data) {
+    html += '<span style="background:rgba(16,185,129,0.15); color:var(--accent3); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; LIVE DATA</span>';
+  } else {
+    html += '<span style="background:rgba(245,158,11,0.15); color:var(--accent4); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; CACHED</span>';
+  }
+  html += '<span style="font-size:10px; color:var(--text-dim);">' + (m.price_data_points || 0) + ' data points</span>';
+  html += '</div></div>';
+
+  // Stat cards
+  var pf = m.price_forecast || {};
+  var lt = m.lead_time || {};
+  var topInsol = (m.insolvency_risks || [])[0] || {};
+  var sa = m.supply_adequacy || {};
+
   html += '<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:14px;">';
-  var pf = f.price_forecast || {};
-  var lt = f.lead_time || {};
-  var topInsol = (f.insolvency_risks || [])[0] || {};
   var stats = [
-    {label:'Price Forecast', value:(pf.direction==='up'?'+':'-')+pf.pct_change+'%', sub:pf.period||'', color:pf.direction==='up'?'var(--accent2)':'var(--accent3)'},
-    {label:'Lead Time Risk', value:'+'+lt.days+' days', sub:lt.period||'', color:'var(--accent4)'},
-    {label:'Supplier Insolvency', value:topInsol.probability_pct+'%', sub:esc(topInsol.supplier||'').split('(')[0], color:topInsol.probability_pct>25?'var(--accent2)':'var(--accent4)'},
-    {label:'Supply Adequacy', value:(scenario0.ratio||'--')+'x', sub:'steady-state', color:(scenario0.ratio||0)>=1?'var(--accent3)':'var(--accent2)'},
+    {label:'Price Forecast', value:(pf.direction==='up'?'+':'-')+(pf.pct_change||0)+'%', sub:pf.period||'12 months', color:pf.direction==='up'?'var(--accent2)':'var(--accent3)'},
+    {label:'Lead Time Risk', value:'+'+(lt.days||0)+' days', sub:esc(lt.primary_route||'').substring(0,20), color:(lt.days||0)>15?'var(--accent2)':'var(--accent4)'},
+    {label:'Top Insolvency Risk', value:(topInsol.probability_pct||0)+'%', sub:esc(topInsol.supplier||'N/A').split('(')[0].substring(0,20), color:(topInsol.probability_pct||0)>25?'var(--accent2)':'var(--accent4)'},
+    {label:'Supply Adequacy', value:(sa.ratio||'--')+'x', sub:esc(sa.verdict||''), color:(sa.ratio||0)>=1?'var(--accent3)':'var(--accent2)'},
   ];
   stats.forEach(function(s){
     html += '<div class="card" style="text-align:center; padding:16px; border-top:3px solid '+s.color+';">';
     html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">'+s.label+'</div>';
     html += '<div class="stat-num" style="font-size:28px; color:'+s.color+'; margin:4px 0;">'+s.value+'</div>';
-    html += '<div style="font-size:10px; color:var(--text-dim);">'+s.sub+'</div>';
-    html += '</div>';
+    html += '<div style="font-size:10px; color:var(--text-dim);">'+s.sub+'</div></div>';
   });
   html += '</div>';
 
+  // Two columns: chart + signals
   html += '<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px; margin-bottom:14px;">';
 
+  // Price chart
   html += '<div class="card" style="padding:18px;">';
-  html += '<h3 style="margin-bottom:12px;">' + esc(m.name) + ' Price Forecast (USD/lb)</h3>';
-  var prices = f.price_history || [];
+  html += '<h3 style="margin-bottom:4px;">Cobalt Price Forecast (USD/lb)</h3>';
+  html += '<div style="font-size:10px; color:var(--text-dim); margin-bottom:12px;">Source: ' + esc(m.price_source || 'FRED Nickel proxy') + '</div>';
+  var prices = m.price_history || [];
   if (prices.length > 0) {
     var maxP = Math.max.apply(null, prices.map(function(p){return p.usd_lb;}));
+    var minP = Math.min.apply(null, prices.map(function(p){return p.usd_lb;}));
     html += '<div style="display:flex; align-items:flex-end; gap:3px; height:180px; padding:0 4px;">';
     prices.forEach(function(p){
-      var h = Math.round((p.usd_lb / maxP) * 100);
+      var range = maxP - minP || 1;
+      var h = Math.max(5, Math.round(((p.usd_lb - minP) / range) * 85 + 15));
       var isForecast = p.type === 'forecast';
-      var bg = isForecast ? 'rgba(245,158,11,0.15); border:1px dashed var(--accent4)' : 'var(--accent); opacity:0.7';
-      html += '<div style="flex:1; height:'+h+'%; background:'+bg+'; border-radius:3px 3px 0 0; position:relative;" title="'+esc(p.quarter)+': $'+p.usd_lb+'/lb">';
-      html += '<div style="position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--text-dim); white-space:nowrap;">'+p.usd_lb+'</div>';
+      var bg = isForecast ? 'rgba(245,158,11,0.2); border:2px dashed var(--accent4)' : 'var(--accent); opacity:0.8';
+      html += '<div style="flex:1; height:'+h+'%; background:'+bg+'; border-radius:3px 3px 0 0; position:relative; cursor:help;" title="'+esc(p.quarter)+': $'+p.usd_lb+'/lb (Ni: $'+(p.nickel_usd_mt||0).toLocaleString()+'/mt)">';
+      html += '<div style="position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap;">'+p.usd_lb+'</div>';
       html += '</div>';
     });
     html += '</div>';
-    html += '<div style="display:flex; justify-content:space-between; margin-top:4px; font-size:9px; color:var(--text-dim);">';
+    html += '<div style="display:flex; justify-content:space-between; margin-top:4px; font-size:8px; color:var(--text-dim);">';
     prices.forEach(function(p){ html += '<span>'+esc(p.quarter)+'</span>'; });
     html += '</div>';
     html += '<div style="display:flex; gap:16px; margin-top:8px; font-size:10px; color:var(--text-dim);">';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);opacity:0.7;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Historical</span>';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;border:1px dashed var(--accent4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Forecast</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);opacity:0.8;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Historical (FRED Nickel × 2.0)</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--accent4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Forecast (Linear Regression)</span>';
     html += '</div>';
+  } else {
+    html += '<div style="color:var(--text-dim); padding:20px; text-align:center;">Price data unavailable — FRED API may be unreachable</div>';
   }
   html += '</div>';
 
+  // Signals
   html += '<div class="card" style="padding:18px;">';
   html += '<h3 style="margin-bottom:12px;">Forecast Signals</h3>';
-  (f.signals || []).forEach(function(s){
+  var signals = m.signals || [];
+  if (signals.length === 0) { html += '<div style="color:var(--text-dim);">No signals generated</div>'; }
+  signals.forEach(function(s){
     var dot = s.severity === 'critical' ? 'var(--accent2)' : s.severity === 'high' ? 'var(--accent4)' : s.severity === 'medium' ? 'var(--accent)' : 'var(--accent3)';
     html += '<div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text);">';
     html += '<span style="color:'+dot+'; margin-right:6px;">&#9679;</span>' + esc(s.text);
@@ -8124,20 +8145,43 @@ function renderForecasting(m, container) {
   html += '</div>';
   html += '</div>';
 
-  if (f.insolvency_risks && f.insolvency_risks.length > 0) {
-    html += '<div class="card" style="padding:18px;">';
-    html += '<h3 style="margin-bottom:12px;">Supplier Insolvency Watch</h3>';
-    f.insolvency_risks.forEach(function(r){
-      var c = r.probability_pct > 30 ? 'var(--accent2)' : r.probability_pct > 15 ? 'var(--accent4)' : 'var(--accent3)';
-      html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">';
-      html += '<div><div style="font-weight:600; font-size:13px;">' + esc(r.supplier) + '</div>';
-      html += '<div style="font-size:11px; color:var(--text-dim);">' + esc(r.reason) + '</div></div>';
-      html += '<div style="text-align:right;"><div class="stat-num" style="font-size:22px; color:'+c+';">'+r.probability_pct+'%</div>';
-      html += '<div style="font-size:10px; color:var(--text-dim);">'+esc(r.horizon)+'</div></div>';
-      html += '</div>';
-    });
+  // Lead time detail
+  html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">';
+  html += '<div class="card" style="padding:18px;">';
+  html += '<h3 style="margin-bottom:12px;">Lead Time Analysis</h3>';
+  html += '<div style="font-size:12px; line-height:2.2;">';
+  html += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:4px 0;"><span style="color:var(--text-dim);">Primary Route</span><span style="color:var(--text);">'+esc(lt.primary_route||'N/A')+'</span></div>';
+  html += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:4px 0;"><span style="color:var(--text-dim);">Base Transit</span><span style="font-family:var(--font-mono); color:var(--accent);">'+(lt.base_transit_days||0)+' days</span></div>';
+  html += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:4px 0;"><span style="color:var(--text-dim);">Chokepoint Delay Risk</span><span style="font-family:var(--font-mono); color:var(--accent4);">+'+(lt.chokepoint_delay_days||0)+' days ('+( lt.chokepoint_count||0)+' chokepoints)</span></div>';
+  html += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:4px 0;"><span style="color:var(--text-dim);">Disruption Delay Risk</span><span style="font-family:var(--font-mono); color:var(--accent2);">+'+(lt.disruption_delay_days||0)+' days</span></div>';
+  html += '<div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-dim);">Risk-Adjusted Total</span><span style="font-family:var(--font-mono); color:var(--accent2); font-weight:700;">'+(lt.risk_adjusted_transit_days||0)+' days</span></div>';
+  html += '</div></div>';
+
+  // Insolvency watch
+  html += '<div class="card" style="padding:18px;">';
+  html += '<h3 style="margin-bottom:12px;">Supplier Insolvency Watch</h3>';
+  var insolRisks = m.insolvency_risks || [];
+  if (insolRisks.length === 0) { html += '<div style="color:var(--text-dim);">No insolvency risks detected</div>'; }
+  insolRisks.forEach(function(r){
+    var c = r.probability_pct > 30 ? 'var(--accent2)' : r.probability_pct > 15 ? 'var(--accent4)' : 'var(--accent3)';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">';
+    html += '<div style="flex:1;"><div style="font-weight:600; font-size:13px;">' + esc(r.supplier) + '</div>';
+    html += '<div style="font-size:11px; color:var(--text-dim);">' + esc(r.owner || '') + ' — ' + esc(r.country || '') + '</div>';
+    html += '<div style="font-size:11px; color:var(--text-dim); margin-top:2px;">' + esc(r.reason) + '</div></div>';
+    html += '<div style="text-align:right; min-width:80px;"><div class="stat-num" style="font-size:22px; color:'+c+';">'+r.probability_pct+'%</div>';
+    if (r.z_score != null) { html += '<div style="font-size:10px; color:var(--text-dim);">Z: '+r.z_score+'</div>'; }
+    html += '<div style="font-size:10px; color:var(--text-dim);">'+esc(r.horizon)+'</div></div>';
     html += '</div>';
-  }
+  });
+  html += '</div>';
+  html += '</div>';
+
+  // Footer: methodology
+  html += '<div style="font-size:10px; color:var(--text-dim); padding:8px 0; border-top:1px solid var(--border); display:flex; justify-content:space-between;">';
+  html += '<span>Methodology: ' + esc(pf.methodology || 'Linear regression on proxy data') + '</span>';
+  if (m.generated_at) html += '<span>Generated: ' + esc(m.generated_at.substring(0,16).replace('T',' ')) + ' UTC</span>';
+  html += '</div>';
+
   container.innerHTML = html;
 }
 

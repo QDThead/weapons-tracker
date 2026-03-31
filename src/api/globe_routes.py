@@ -29,3 +29,12 @@ async def get_mineral(name: str):
     if result is None:
         raise HTTPException(status_code=404, detail="Mineral not found")
     return result
+
+
+@router.get("/minerals/{name}/forecast")
+async def get_mineral_forecast(name: str):
+    """Return computed forecast for a mineral (live data + regression)."""
+    if name.lower() != "cobalt":
+        raise HTTPException(status_code=404, detail="Forecasting only available for Cobalt currently")
+    from src.analysis.cobalt_forecasting import compute_cobalt_forecast
+    return await compute_cobalt_forecast()
