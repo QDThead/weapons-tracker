@@ -26,6 +26,7 @@ from src.storage.models import (
 )
 from src.analysis.supply_chain import SupplyChainAnalyzer
 from src.analysis.supply_chain_graph import SupplyChainGraph
+from src.analysis.scenario_engine import ScenarioEngine
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,17 @@ def _set_cache(key: str, data: dict | list) -> None:
 class ScenarioRequest(BaseModel):
     type: str
     parameters: dict
+
+
+class ScenarioLayerRequest(BaseModel):
+    type: str
+    params: dict
+
+class ScenarioRequestV2(BaseModel):
+    mineral: str
+    layers: list[ScenarioLayerRequest]
+    demand_surge_pct: float = 0
+    time_horizon_months: int = 12
 
 
 # ------------------------------------------------------------------
@@ -258,6 +270,24 @@ async def run_scenario(request: ScenarioRequest):
         raise HTTPException(status_code=500, detail="Scenario simulation failed")
     finally:
         session.close()
+
+
+@router.post("/scenario/v2")
+async def run_scenario_v2(request: ScenarioRequestV2):
+    """Run a multi-variable what-if scenario with cascade propagation."""
+    try:
+        engine = ScenarioEngine(request.mineral)
+        result = engine.run(
+            layers=[{"type": l.type, "params": l.params} for l in request.layers],
+            demand_surge_pct=request.demand_surge_pct,
+            time_horizon_months=request.time_horizon_months,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Scenario v2 failed: %s", e)
+        raise HTTPException(status_code=500, detail="Scenario simulation failed")
 
 
 @router.get("/graph")
