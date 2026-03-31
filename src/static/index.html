@@ -2124,7 +2124,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     <!-- PSI Risk Matrix -->
     <div id="psi-risks" class="psi-sub" style="display:none;">
       <div class="card" style="padding:18px;">
-        <h3 style="margin-bottom:14px;">Risk-Impact Matrix</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3>Risk-Impact Matrix</h3>
+          <select id="psi-risk-mineral-filter" onchange="onRiskMineralChange()" style="max-width:160px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px;">
+            <option value="">All (Supply Chain Alerts)</option>
+          </select>
+        </div>
+        <div id="psi-risk-default">
         <div style="position:relative;">
           <canvas id="psi-risk-matrix" height="400" aria-label="Chart: Supply chain risk-impact matrix with quadrants for mitigate, monitor, transfer, and accept"></canvas>
           <div style="position:absolute; top:10px; right:20px; font-size:11px; color:var(--accent2); font-weight:600;">MITIGATE NOW</div>
@@ -2132,14 +2138,21 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           <div style="position:absolute; bottom:40px; right:20px; font-size:11px; color:var(--accent); font-weight:600;">TRANSFER</div>
           <div style="position:absolute; bottom:40px; left:20px; font-size:11px; color:var(--accent3); font-weight:600;">ACCEPT</div>
         </div>
+        </div>
+        <div id="psi-risk-mineral" style="display:none;"></div>
       </div>
     </div>
 
     <!-- PSI Scenario Sandbox -->
     <div id="psi-scenarios" class="psi-sub" style="display:none;">
       <div class="card" style="padding:18px;">
-        <h3 style="margin-bottom:14px;">Scenario Sandbox</h3>
-        <div style="display:grid; grid-template-columns:300px 1fr; gap:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3>Scenario Sandbox</h3>
+          <select id="psi-scenario-mineral-filter" onchange="onScenarioMineralChange()" style="max-width:160px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px;">
+            <option value="">General (API-driven)</option>
+          </select>
+        </div>
+        <div id="psi-scenario-default" style="display:grid; grid-template-columns:300px 1fr; gap:18px;">
           <div>
             <label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:4px;">Scenario Type</label>
             <select id="psi-scenario-type" onchange="updateScenarioFields()" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:6px; margin-bottom:12px; font-family:var(--font-body); transition:border-color 0.2s;">
@@ -2156,6 +2169,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
             <div style="color:var(--text-dim); text-align:center; padding:60px 0;">Select a scenario type and click "Run Scenario"</div>
           </div>
         </div>
+        <div id="psi-scenario-mineral" style="display:none;"></div>
       </div>
     </div>
 
@@ -2165,6 +2179,9 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="display:flex;align-items:center;gap:14px;">
             <h3>DND/CAF Defence Supply Chain Risk Taxonomy</h3>
+            <select id="psi-taxonomy-mineral-filter" onchange="onTaxonomyMineralChange()" style="max-width:160px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px;">
+              <option value="">All (Global Scores)</option>
+            </select>
             <div class="stat-box" style="padding:4px 14px;">
               <span class="stat-num" style="font-size:24px;" id="taxonomy-tab-global">--</span>
             </div>
@@ -2193,6 +2210,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
 
       <div id="taxonomy-accordion"></div>
+      <div id="psi-taxonomy-mineral" style="display:none;"></div>
     </div>
 
   </div>
@@ -5970,6 +5988,9 @@ function switchPsiTab(btn) {
   document.getElementById(btn.dataset.psiTab).style.display = '';
   if (btn.dataset.psiTab === 'psi-graph') { populateMineralDropdown(); if (!psiGraphSim) loadPsiGraph(); }
   if (btn.dataset.psiTab === 'psi-taxonomy') loadTaxonomyTab();
+  if (btn.dataset.psiTab === 'psi-taxonomy') populateTaxonomyMineralDropdown();
+  if (btn.dataset.psiTab === 'psi-risks') populateRiskMineralDropdown();
+  if (btn.dataset.psiTab === 'psi-scenarios') populateScenarioMineralDropdown();
   if (btn.dataset.psiTab === 'psi-globe' && !globeInitialized) initCesiumGlobe();
 }
 
@@ -8124,6 +8145,98 @@ function renderPsiRiskMatrix(alerts) {
   });
 }
 
+function populateRiskMineralDropdown() {
+  var select = document.getElementById('psi-risk-mineral-filter');
+  if (!select || select.options.length > 1) return;
+  fetch(API + '/globe/minerals').then(function(r) { return r.json(); }).then(function(minerals) {
+    minerals.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.name;
+      var hasDeep = m.mines && m.mines.length > 0;
+      opt.textContent = (hasDeep ? '\u2605 ' : '') + m.name;
+      select.appendChild(opt);
+    });
+  }).catch(function() {});
+}
+
+function onRiskMineralChange() {
+  var mineral = document.getElementById('psi-risk-mineral-filter').value;
+  var defaultDiv = document.getElementById('psi-risk-default');
+  var mineralDiv = document.getElementById('psi-risk-mineral');
+  if (!mineral) {
+    defaultDiv.style.display = '';
+    mineralDiv.style.display = 'none';
+    return;
+  }
+  defaultDiv.style.display = 'none';
+  mineralDiv.style.display = '';
+  mineralDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">Loading...</div>';
+
+  fetch(API + '/globe/minerals/' + encodeURIComponent(mineral)).then(function(r) { return r.json(); }).then(function(m) {
+    if (!m.mines && !m.refineries) {
+      mineralDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Deep risk data not yet available for ' + esc(mineral) + '.</div>';
+      return;
+    }
+    renderMineralRiskMatrix(m, mineralDiv);
+  }).catch(function(e) {
+    mineralDiv.innerHTML = '<div style="color:var(--accent2);padding:20px;">Failed to load: ' + esc(e.message) + '</div>';
+  });
+}
+
+function renderMineralRiskMatrix(m, container) {
+  var entities = [];
+  // Mines
+  if (m.mines) m.mines.forEach(function(mine) {
+    var scores = mine.taxonomy_scores || {};
+    var total = 0, count = 0;
+    for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; } }
+    var avg = count > 0 ? total / count : 50;
+    var impact = mine.production_t ? Math.min(95, (mine.production_t / 500)) : 50;
+    entities.push({ name: mine.name, type: 'Mine', country: mine.country, risk: avg, impact: impact, owner: mine.owner || '' });
+  });
+  // Refineries
+  if (m.refineries) m.refineries.forEach(function(ref) {
+    var scores = ref.taxonomy_scores || {};
+    var total = 0, count = 0;
+    for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; } }
+    var avg = count > 0 ? total / count : 50;
+    var impact = ref.capacity_t ? Math.min(95, (ref.capacity_t / 400)) : 50;
+    entities.push({ name: ref.name, type: 'Refinery', country: ref.country, risk: avg, impact: impact, owner: ref.owner || '' });
+  });
+
+  var html = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">';
+  // Sort by risk desc
+  entities.sort(function(a, b) { return b.risk - a.risk; });
+  entities.forEach(function(e) {
+    var riskColor = e.risk >= 75 ? '#ef4444' : e.risk >= 55 ? '#f59e0b' : e.risk >= 35 ? '#eab308' : '#10b981';
+    var riskLabel = e.risk >= 75 ? 'CRITICAL' : e.risk >= 55 ? 'HIGH' : e.risk >= 35 ? 'MEDIUM' : 'LOW';
+    var typeIcon = e.type === 'Mine' ? '\u26CF' : '\u2699';
+    html += '<div class="card" style="padding:10px; border-left:3px solid ' + riskColor + ';">';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+    html += '<span style="font-weight:bold; font-size:12px;">' + typeIcon + ' ' + esc(e.name) + '</span>';
+    html += '<span style="background:' + riskColor + '22; color:' + riskColor + '; padding:2px 8px; border-radius:8px; font-size:9px; font-weight:600;">' + riskLabel + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:10px; color:var(--text-dim); margin-top:4px;">' + esc(e.country) + ' \u2014 ' + esc(e.owner) + '</div>';
+    html += '<div style="margin-top:6px; display:flex; gap:12px; font-size:10px;">';
+    html += '<span>Risk: <strong style="color:' + riskColor + ';">' + Math.round(e.risk) + '/100</strong></span>';
+    html += '<span>Impact: <strong>' + Math.round(e.impact) + '/100</strong></span>';
+    html += '</div>';
+    // Risk bar
+    html += '<div style="margin-top:4px; height:4px; background:var(--border); border-radius:2px;">';
+    html += '<div style="height:100%; width:' + Math.round(e.risk) + '%; background:' + riskColor + '; border-radius:2px;"></div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="suf-insight" style="margin-top:0;"><strong>INSIGHT:</strong> ' + entities.filter(function(e) { return e.risk >= 75; }).length + ' of ' + entities.length + ' ' + esc(m.name) + ' entities rated CRITICAL risk. ';
+  var chinaControlled = entities.filter(function(e) { return (e.country || '').toLowerCase().includes('china'); });
+  if (chinaControlled.length > 0) html += chinaControlled.length + ' entities are Chinese-controlled.';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
 function updateScenarioFields() {
   const type = document.getElementById('psi-scenario-type').value;
   const el = document.getElementById('psi-scenario-fields');
@@ -8199,6 +8312,90 @@ function renderScenarioResults(data, el) {
   }
 
   el.innerHTML = html;
+}
+
+function populateScenarioMineralDropdown() {
+  var select = document.getElementById('psi-scenario-mineral-filter');
+  if (!select || select.options.length > 1) return;
+  fetch(API + '/globe/minerals').then(function(r) { return r.json(); }).then(function(minerals) {
+    minerals.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.name;
+      var hasDeep = m.sufficiency;
+      opt.textContent = (hasDeep ? '\u2605 ' : '') + m.name;
+      select.appendChild(opt);
+    });
+  }).catch(function() {});
+}
+
+function onScenarioMineralChange() {
+  var mineral = document.getElementById('psi-scenario-mineral-filter').value;
+  var defaultDiv = document.getElementById('psi-scenario-default');
+  var mineralDiv = document.getElementById('psi-scenario-mineral');
+  if (!mineral) {
+    defaultDiv.style.display = 'grid';
+    mineralDiv.style.display = 'none';
+    return;
+  }
+  defaultDiv.style.display = 'none';
+  mineralDiv.style.display = '';
+  mineralDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">Loading...</div>';
+
+  fetch(API + '/globe/minerals/' + encodeURIComponent(mineral)).then(function(r) { return r.json(); }).then(function(m) {
+    if (!m.sufficiency) {
+      mineralDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Scenario data not yet available for ' + esc(mineral) + '.</div>';
+      return;
+    }
+    renderMineralScenarios(m, mineralDiv);
+  }).catch(function(e) {
+    mineralDiv.innerHTML = '<div style="color:var(--accent2);padding:20px;">Failed: ' + esc(e.message) + '</div>';
+  });
+}
+
+function renderMineralScenarios(m, container) {
+  var suf = m.sufficiency;
+  var html = '<h4 style="margin-bottom:12px;">' + esc(m.name) + ' Supply Disruption Scenarios</h4>';
+  html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;">';
+
+  suf.scenarios.forEach(function(s) {
+    var ratioColor = s.ratio >= 0.9 ? '#10b981' : s.ratio >= 0.5 ? '#f59e0b' : '#ef4444';
+    var ratioLabel = s.ratio >= 100 ? s.ratio.toFixed(0) + 'x' : s.ratio.toFixed(2) + 'x';
+    html += '<div class="card" style="padding:14px; border-top:3px solid ' + ratioColor + ';">';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+    html += '<span style="font-weight:bold; font-size:12px;">' + esc(s.name) + '</span>';
+    html += '<span style="font-family:var(--font-mono); font-size:18px; font-weight:bold; color:' + ratioColor + ';">' + ratioLabel + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:11px; color:var(--text-dim); margin-top:6px;">' + esc(s.verdict) + '</div>';
+    html += '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:8px;">';
+    html += '<span>Supply: ' + s.supply_t.toLocaleString() + ' t/yr</span>';
+    html += '<span>Demand: ' + s.demand_t.toLocaleString() + ' t/yr</span>';
+    html += '</div>';
+    // Impact on platforms
+    var atRisk = suf.demand.filter(function(d) { return s.ratio < d.threshold_ratio; });
+    if (atRisk.length > 0) {
+      html += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border); font-size:10px;">';
+      html += '<span style="color:#ef4444; font-weight:600;">\u26D4 ' + atRisk.length + ' platforms at risk:</span> ';
+      html += atRisk.map(function(d) { return esc(d.platform); }).join(', ');
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // COAs
+  html += '<h4 style="margin:16px 0 10px;">Recommended Courses of Action</h4>';
+  html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:8px;">';
+  suf.coa.forEach(function(c) {
+    html += '<div class="card" style="padding:10px;">';
+    html += '<div style="font-weight:bold; font-size:11px; color:var(--accent3);">' + esc(c.id) + '</div>';
+    html += '<div style="font-size:11px; margin:4px 0;">' + esc(c.action) + '</div>';
+    html += '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim);">';
+    html += '<span>Cost: ' + esc(c.cost) + '</span><span>' + esc(c.impact) + '</span>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  container.innerHTML = html;
 }
 
 // ═══════ RISK TAXONOMY TAB (Supply Chain page) ═══════
@@ -8279,6 +8476,110 @@ function applyWeights() {
   var btn = event.target;
   btn.textContent = 'Applied!';
   setTimeout(function() { btn.textContent = 'Apply Weights'; }, 1500);
+}
+
+function populateTaxonomyMineralDropdown() {
+  var select = document.getElementById('psi-taxonomy-mineral-filter');
+  if (!select || select.options.length > 1) return;
+  fetch(API + '/globe/minerals').then(function(r) { return r.json(); }).then(function(minerals) {
+    minerals.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.name;
+      var hasDeep = m.mines && m.mines.length > 0;
+      opt.textContent = (hasDeep ? '\u2605 ' : '') + m.name;
+      select.appendChild(opt);
+    });
+  }).catch(function() {});
+}
+
+function onTaxonomyMineralChange() {
+  var mineral = document.getElementById('psi-taxonomy-mineral-filter').value;
+  var mineralDiv = document.getElementById('psi-taxonomy-mineral');
+  // Hide/show existing taxonomy content
+  var existingCards = document.querySelectorAll('#psi-taxonomy > .card');
+  if (!mineral) {
+    existingCards.forEach(function(c) { c.style.display = ''; });
+    mineralDiv.style.display = 'none';
+    return;
+  }
+  // Hide all existing cards except the first (header with dropdown)
+  existingCards.forEach(function(c, i) { if (i > 0) c.style.display = 'none'; });
+  mineralDiv.style.display = '';
+  mineralDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">Loading...</div>';
+
+  fetch(API + '/globe/minerals/' + encodeURIComponent(mineral)).then(function(r) { return r.json(); }).then(function(m) {
+    if (!m.mines || !m.refineries) {
+      mineralDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Taxonomy data not yet available for ' + esc(mineral) + '.</div>';
+      return;
+    }
+    renderMineralTaxonomy(m, mineralDiv);
+  }).catch(function(e) {
+    mineralDiv.innerHTML = '<div style="color:var(--accent2);padding:20px;">Failed: ' + esc(e.message) + '</div>';
+  });
+}
+
+function renderMineralTaxonomy(m, container) {
+  var taxonomyCats = ['foci', 'political_regulatory', 'manufacturing_supply', 'technology_cyber',
+    'infrastructure', 'planning', 'transportation', 'human_capital', 'environmental',
+    'compliance', 'economic', 'financial', 'product_quality'];
+  var catLabels = {
+    foci: 'FOCI (Foreign Ownership)', political_regulatory: 'Political & Regulatory',
+    manufacturing_supply: 'Manufacturing & Supply', technology_cyber: 'Technology & Cyber',
+    infrastructure: 'Infrastructure', planning: 'Planning & Forecasting',
+    transportation: 'Transportation & Logistics', human_capital: 'Human Capital',
+    environmental: 'Environmental', compliance: 'Compliance & Legal',
+    economic: 'Economic', financial: 'Financial', product_quality: 'Product Quality'
+  };
+
+  // Collect all entities with taxonomy scores
+  var entities = [];
+  if (m.mines) m.mines.forEach(function(mine) {
+    if (mine.taxonomy_scores) entities.push({ name: mine.name, type: 'Mine', country: mine.country, scores: mine.taxonomy_scores });
+  });
+  if (m.refineries) m.refineries.forEach(function(ref) {
+    if (ref.taxonomy_scores) entities.push({ name: ref.name, type: 'Refinery', country: ref.country, scores: ref.taxonomy_scores });
+  });
+
+  var html = '';
+
+  // Per-entity taxonomy cards
+  entities.forEach(function(entity) {
+    var total = 0, count = 0;
+    for (var k in entity.scores) { if (entity.scores[k] && typeof entity.scores[k].score === 'number') { total += entity.scores[k].score; count++; } }
+    var avg = count > 0 ? Math.round(total / count) : 0;
+    var avgColor = avg >= 75 ? '#ef4444' : avg >= 55 ? '#f59e0b' : avg >= 35 ? '#eab308' : '#10b981';
+
+    html += '<div class="card" style="padding:14px; margin-bottom:10px;">';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">';
+    html += '<div>';
+    html += '<span style="font-weight:bold; font-size:13px;">' + (entity.type === 'Mine' ? '\u26CF ' : '\u2699 ') + esc(entity.name) + '</span>';
+    html += '<span style="font-size:10px; color:var(--text-dim); margin-left:8px;">' + esc(entity.country) + ' \u2014 ' + esc(entity.type) + '</span>';
+    html += '</div>';
+    html += '<div style="background:' + avgColor + '22; color:' + avgColor + '; padding:4px 12px; border-radius:8px; font-weight:bold; font-size:14px; font-family:var(--font-mono);">' + avg + '</div>';
+    html += '</div>';
+
+    // 13-category bars
+    taxonomyCats.forEach(function(cat) {
+      var s = entity.scores[cat];
+      if (!s) return;
+      var color = s.score >= 75 ? '#ef4444' : s.score >= 55 ? '#f59e0b' : s.score >= 35 ? '#eab308' : '#10b981';
+      html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:3px; font-size:10px;">';
+      html += '<span style="width:160px; color:var(--text-dim); text-align:right; flex-shrink:0;">' + esc(catLabels[cat] || cat) + '</span>';
+      html += '<div style="flex:1; height:12px; background:var(--border); border-radius:2px; overflow:hidden;">';
+      html += '<div style="height:100%; width:' + s.score + '%; background:' + color + '; border-radius:2px;"></div>';
+      html += '</div>';
+      html += '<span style="width:28px; text-align:right; font-family:var(--font-mono); color:' + color + '; font-weight:600;">' + s.score + '</span>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  if (entities.length === 0) {
+    html = '<div style="text-align:center;padding:40px;color:var(--text-dim);">No taxonomy scores available for ' + esc(m.name) + ' entities.</div>';
+  }
+
+  container.innerHTML = html;
 }
 
 function renderTaxonomyBarChart(categories) {
