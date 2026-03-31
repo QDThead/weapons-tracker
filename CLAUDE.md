@@ -70,7 +70,8 @@ weapons-tracker/
 │   │   ├── cyber_threat_intel.py    # APT groups, breach registry, Tor nodes, IOC aggregation
 │   │   ├── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
 │   │   ├── mineral_supply_chains.py # 30 mineral supply chains (USGS 2025, geo-coords, Canada deps, deep Cobalt data)
-│   │   └── cobalt_forecasting.py    # Live cobalt forecasting: FRED nickel proxy + linear regression + insolvency scoring
+│   │   ├── cobalt_forecasting.py    # Live cobalt forecasting: FRED nickel proxy + linear regression + insolvency scoring
+│   │   └── scenario_engine.py      # Multi-variable scenario sandbox engine: layer composition, cascade propagation, impact metrics
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
 │   │   ├── trend_routes.py           # Trend analysis endpoints (/trends/*)
@@ -146,7 +147,7 @@ weapons-tracker/
 | **PSI: Supply Chain Risk** | supply_chain.py | 6-dimension risk scoring (concentration, sanctions, chokepoints, instability, scarcity, alternatives) |
 | **PSI: Knowledge Graph** | supply_chain_graph.py | NetworkX graph: 90 nodes (materials, components, platforms), 97 edges, BOM explosion |
 | **PSI: BOM Explosion** | supply_chain_graph.py | Trace weapon platform -> subsystems -> components -> raw materials -> source countries |
-| **PSI: Scenario Modeling** | supply_chain.py | 5 what-if simulations: sanctions expansion, material shortage, route disruption, demand surge, supplier substitution |
+| **PSI: Scenario Sandbox** | scenario_engine.py, supply_chain.py | Multi-variable "Digital Twin" sandbox: stackable disruption layers (sanctions, shortages, route disruptions, supplier failures, demand surges), 5 preset compound scenarios (Indo-Pacific Conflict, Arctic Escalation, Global Recession, DRC Collapse, Suez Closure), Sankey cascade visualization (4-tier Rocks-to-Rockets), Likelihood×Impact scoring with dollar values, up to 4 saved runs with side-by-side comparison, COA comparison drawer, PDF/CSV/JSON export |
 | **PSI: Critical Minerals** | critical_minerals.py | 30 defense-critical materials with USGS production data, HHI concentration indices |
 | **PSI: 3D Supply Globe** | mineral_supply_chains.py, globe_routes.py | CesiumJS 3D globe: 30 minerals with 4-tier flow (mine→process→component→platform), shipping routes to 5 Canadian ports, risk-colored sea lanes, entity-level 13-category DND risk taxonomy scorecards |
 | **PSI: Cobalt Deep Dive** | mineral_supply_chains.py | 9 named mines, 9 refineries, 8 defence alloys (Waspaloy/CMSX-4/Stellite), 6 shipping corridors with risk ratings, 13-cat taxonomy scores + KPIs per entity, Canada platform-engine dependencies |
