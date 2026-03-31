@@ -8413,6 +8413,45 @@ function renderDossierEntity() {
   detail.innerHTML = html;
 }
 
+function alertAcknowledge(btn) {
+  btn.textContent = '\u2713 Acknowledged';
+  btn.style.color = 'var(--accent3)';
+  btn.style.borderColor = 'var(--accent3)';
+  btn.disabled = true;
+  var card = btn.closest('.card');
+  if (card) card.style.borderLeftColor = 'var(--accent3)';
+}
+function alertAssign(btn) {
+  var name = prompt('Assign to analyst:');
+  if (!name) return;
+  btn.textContent = '\u2192 ' + name;
+  btn.style.color = 'var(--accent)';
+  btn.style.borderColor = 'var(--accent)';
+  btn.disabled = true;
+}
+function alertEscalate(btn) {
+  btn.textContent = '\u2B06 Escalated';
+  btn.style.color = 'var(--accent2)';
+  btn.style.borderColor = 'var(--accent2)';
+  btn.style.background = 'rgba(239,68,68,0.15)';
+  btn.disabled = true;
+  var card = btn.closest('.card');
+  if (card) card.style.borderLeftWidth = '6px';
+}
+function alertEvidence(btn) {
+  var panel = btn.parentElement.nextElementSibling;
+  if (!panel || !panel.hasAttribute('data-evidence-panel')) return;
+  if (panel.style.display === 'none' || !panel.style.display) {
+    panel.style.display = 'block';
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+  } else {
+    panel.style.display = 'none';
+    btn.style.color = 'var(--text-dim)';
+    btn.style.borderColor = 'var(--border)';
+  }
+}
+
 async function onAlertsMineralChange() {
   var mineral = getGlobalMineral();
   var container = document.getElementById('psi-alerts-content');
@@ -8452,10 +8491,18 @@ function renderAlertsSensing(m, container) {
       html += '<div style="margin-top:10px; padding:8px 10px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.15); border-radius:6px; font-size:11px;">';
       html += '<strong style="color:var(--accent4);">Recommended COA:</strong> ' + esc(a.coa) + '</div>';
     }
+    var btnStyle = 'background:var(--surface); border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);';
     html += '<div style="margin-top:8px; display:flex; gap:6px;">';
-    ['Acknowledge','Assign','Escalate','Evidence Locker'].forEach(function(btn){
-      html += '<button style="background:var(--surface); border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);" onclick="this.style.color=\'var(--accent)\'; this.style.borderColor=\'var(--accent)\';">'+btn+'</button>';
-    });
+    html += '<button style="'+btnStyle+'" onclick="alertAcknowledge(this)">Acknowledge</button>';
+    html += '<button style="'+btnStyle+'" onclick="alertAssign(this)">Assign</button>';
+    html += '<button style="'+btnStyle+'" onclick="alertEscalate(this)">Escalate</button>';
+    html += '<button style="'+btnStyle+'" onclick="alertEvidence(this)">Evidence Locker</button>';
+    html += '</div>';
+    html += '<div data-evidence-panel style="display:none; margin-top:8px; padding:10px; background:var(--surface); border-radius:6px; border:1px solid var(--border); font-size:11px;">';
+    html += '<div style="text-transform:uppercase; color:var(--text-dim); font-size:10px; font-weight:600; margin-bottom:6px;">Evidence &amp; Sources</div>';
+    (a.sources||[]).forEach(function(s){ html += '<div style="padding:2px 0;">\uD83D\uDCC4 '+esc(s)+'</div>'; });
+    if (a.coa) html += '<div style="margin-top:6px; color:var(--accent4);"><strong>COA:</strong> '+esc(a.coa)+'</div>';
+    html += '<div style="margin-top:6px; color:var(--text-dim);">Confidence: '+a.confidence+'% &mdash; '+esc(a.timestamp||'')+'</div>';
     html += '</div></div>';
   });
   container.innerHTML = html;
