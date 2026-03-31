@@ -8596,8 +8596,8 @@ function updateRegisterStatus(btn, idx, newStatus) {
 }
 
 async function submitFeedback(btn, entity, text, verdict) {
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
+  var row = btn.closest('[data-feedback-row]');
+  if (row) row.querySelectorAll('button').forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
   try {
     var resp = await fetch(API + '/ml/feedback', {
       method: 'POST',
@@ -8615,8 +8615,8 @@ async function submitFeedback(btn, entity, text, verdict) {
       }
     }
   } catch (e) {
-    btn.disabled = false;
-    btn.style.opacity = '1';
+    var row2 = btn.closest('[data-feedback-row]');
+    if (row2) row2.querySelectorAll('button').forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
     btn.style.borderColor = 'var(--accent2)';
     setTimeout(function(){ btn.style.borderColor = ''; }, 2000);
   }
@@ -9965,8 +9965,8 @@ function renderCOATable() {
     html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim);">' + c.triggered_by.map(esc).join(', ') + '</td>';
     html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); color:' + pColor + '; font-weight:600; text-transform:uppercase;">' + esc(c.priority) + '</td>';
     html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">' + esc(c.cost_estimate || '') + '</td>';
-    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">-' + (c.risk_reduction_pts || 0) + ' pts</td>';
-    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">' + (c.timeline_months || 0) + ' mo</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">-' + esc(c.risk_reduction_pts || 0) + ' pts</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">' + esc(c.timeline_months || 0) + ' mo</td>';
     html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim);">' + (c.affected_platforms || []).map(esc).join(', ') + '</td>';
     html += '</tr>';
   });
