@@ -1857,13 +1857,19 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   <!-- ════ SUPPLY CHAIN (PSI) PAGE ════ -->
   <div id="page-supply-chain" class="page" role="tabpanel" aria-labelledby="tab-supply-chain">
 
-    <div class="psi-tab-bar">
+    <div class="psi-tab-bar" style="display:flex; align-items:center; gap:0;">
       <button class="tab active" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
       <button class="tab" data-psi-tab="psi-globe" onclick="switchPsiTab(this)">3D Supply Map</button>
       <button class="tab" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
       <button class="tab" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
       <button class="tab" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
       <button class="tab" data-psi-tab="psi-taxonomy" onclick="switchPsiTab(this)">Risk Taxonomy</button>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+        <span style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Mineral:</span>
+        <select id="psi-global-mineral" onchange="onGlobalMineralChange()" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-family:var(--font-body); font-size:12px; font-weight:600;">
+          <option value="">All Minerals</option>
+        </select>
+      </div>
     </div>
 
     <!-- PSI Overview -->
@@ -2075,9 +2081,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <h3>Supply Chain Knowledge Graph</h3>
           <div class="psi-controls" style="display:flex; gap:8px; align-items:center;">
-            <select id="psi-graph-mineral-filter" onchange="loadPsiGraph()" style="max-width:160px;">
-              <option value="">All Minerals</option>
-            </select>
+
             <select id="psi-graph-type-filter">
               <option value="">All Types</option>
               <option value="material">Materials</option>
@@ -2126,9 +2130,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div class="card" style="padding:18px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
           <h3>Risk-Impact Matrix</h3>
-          <select id="psi-risk-mineral-filter" onchange="onRiskMineralChange()" style="max-width:160px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px;">
-            <option value="">All (Supply Chain Alerts)</option>
-          </select>
+
         </div>
         <div id="psi-risk-default">
         <div style="position:relative;">
@@ -2148,9 +2150,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div class="card" style="padding:18px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
           <h3>Scenario Sandbox</h3>
-          <select id="psi-scenario-mineral-filter" onchange="onScenarioMineralChange()" style="max-width:160px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px;">
-            <option value="">General (API-driven)</option>
-          </select>
+
         </div>
         <div id="psi-scenario-default" style="display:grid; grid-template-columns:300px 1fr; gap:18px;">
           <div>
@@ -2179,9 +2179,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="display:flex;align-items:center;gap:14px;">
             <h3>DND/CAF Defence Supply Chain Risk Taxonomy</h3>
-            <select id="psi-taxonomy-mineral-filter" onchange="onTaxonomyMineralChange()" style="max-width:160px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px;">
-              <option value="">All (Global Scores)</option>
-            </select>
+
             <div class="stat-box" style="padding:4px 14px;">
               <span class="stat-num" style="font-size:24px;" id="taxonomy-tab-global">--</span>
             </div>
@@ -5981,17 +5979,66 @@ let cesiumViewer = null;
 let globeMinerals = [];
 let activeGlobeLayers = new Set();
 
+var globalMineralPopulated = false;
+
+async function populateGlobalMineralDropdown() {
+  if (globalMineralPopulated) return;
+  var select = document.getElementById('psi-global-mineral');
+  if (!select || select.options.length > 1) return;
+  try {
+    var resp = await fetch(API + '/globe/minerals');
+    if (!resp.ok) return;
+    var minerals = await resp.json();
+    minerals.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.name;
+      var hasDeep = m.mines && m.mines.length > 0;
+      opt.textContent = (hasDeep ? '\u2605 ' : '') + m.name;
+      select.appendChild(opt);
+    });
+    // Default to Cobalt
+    select.value = 'Cobalt';
+    globalMineralPopulated = true;
+  } catch (e) { /* stay with "All Minerals" */ }
+}
+
+function getGlobalMineral() {
+  var select = document.getElementById('psi-global-mineral');
+  return select ? select.value : '';
+}
+
+function onGlobalMineralChange() {
+  // Find which sub-tab is currently active and refresh it
+  var activeTab = document.querySelector('.psi-sub:not([style*="display:none"]):not([style*="display: none"])');
+  if (!activeTab) return;
+  var tabId = activeTab.id;
+
+  if (tabId === 'psi-graph') loadPsiGraph();
+  if (tabId === 'psi-risks') onRiskMineralChange();
+  if (tabId === 'psi-scenarios') onScenarioMineralChange();
+  if (tabId === 'psi-taxonomy') onTaxonomyMineralChange();
+  if (tabId === 'psi-globe') {
+    var mineral = getGlobalMineral();
+    if (mineral) selectMineralDetail(mineral);
+  }
+}
+
 function switchPsiTab(btn) {
+  populateGlobalMineralDropdown();
   document.querySelectorAll('[data-psi-tab]').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.psi-sub').forEach(d => d.style.display = 'none');
   btn.classList.add('active');
   document.getElementById(btn.dataset.psiTab).style.display = '';
-  if (btn.dataset.psiTab === 'psi-graph') { populateMineralDropdown(); if (!psiGraphSim) loadPsiGraph(); }
+  if (btn.dataset.psiTab === 'psi-graph') { if (!psiGraphSim) loadPsiGraph(); }
   if (btn.dataset.psiTab === 'psi-taxonomy') loadTaxonomyTab();
-  if (btn.dataset.psiTab === 'psi-taxonomy') populateTaxonomyMineralDropdown();
-  if (btn.dataset.psiTab === 'psi-risks') populateRiskMineralDropdown();
-  if (btn.dataset.psiTab === 'psi-scenarios') populateScenarioMineralDropdown();
   if (btn.dataset.psiTab === 'psi-globe' && !globeInitialized) initCesiumGlobe();
+  // Apply global mineral to the newly active tab
+  var mineral = getGlobalMineral();
+  if (mineral) {
+    if (btn.dataset.psiTab === 'psi-risks') onRiskMineralChange();
+    if (btn.dataset.psiTab === 'psi-scenarios') onScenarioMineralChange();
+    if (btn.dataset.psiTab === 'psi-taxonomy') onTaxonomyMineralChange();
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -7646,7 +7693,7 @@ function renderPsiChokepoints(data) {
 }
 
 async function loadPsiGraph() {
-  var mineralFilter = document.getElementById('psi-graph-mineral-filter').value;
+  var mineralFilter = getGlobalMineral();
   var typeFilter = document.getElementById('psi-graph-type-filter').value;
   var riskMin = parseInt(document.getElementById('psi-graph-risk-slider').value);
   document.getElementById('psi-graph-risk-val').textContent = riskMin;
@@ -8390,7 +8437,7 @@ function populateRiskMineralDropdown() {
 }
 
 function onRiskMineralChange() {
-  var mineral = document.getElementById('psi-risk-mineral-filter').value;
+  var mineral = getGlobalMineral();
   var defaultDiv = document.getElementById('psi-risk-default');
   var mineralDiv = document.getElementById('psi-risk-mineral');
   if (!mineral) {
@@ -8559,7 +8606,7 @@ function populateScenarioMineralDropdown() {
 }
 
 function onScenarioMineralChange() {
-  var mineral = document.getElementById('psi-scenario-mineral-filter').value;
+  var mineral = getGlobalMineral();
   var defaultDiv = document.getElementById('psi-scenario-default');
   var mineralDiv = document.getElementById('psi-scenario-mineral');
   if (!mineral) {
@@ -8723,7 +8770,7 @@ function populateTaxonomyMineralDropdown() {
 }
 
 function onTaxonomyMineralChange() {
-  var mineral = document.getElementById('psi-taxonomy-mineral-filter').value;
+  var mineral = getGlobalMineral();
   var mineralDiv = document.getElementById('psi-taxonomy-mineral');
   // Hide/show existing taxonomy content
   var existingCards = document.querySelectorAll('#psi-taxonomy > .card');
