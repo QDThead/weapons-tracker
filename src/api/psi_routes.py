@@ -70,6 +70,10 @@ class ScenarioRequestV2(BaseModel):
     time_horizon_months: int = 12
 
 
+class ScenarioExportRequest(BaseModel):
+    scenarios: list[dict]
+
+
 # ------------------------------------------------------------------
 # Endpoints
 # ------------------------------------------------------------------
@@ -288,6 +292,125 @@ async def run_scenario_v2(request: ScenarioRequestV2):
     except Exception as e:
         logger.error("Scenario v2 failed: %s", e)
         raise HTTPException(status_code=500, detail="Scenario simulation failed")
+
+
+@router.post("/scenario/export/pdf")
+async def export_scenario_pdf(request: ScenarioExportRequest):
+    """Generate a PDF briefing from scenario results."""
+    from fpdf import FPDF
+    from fastapi.responses import Response
+
+    def _safe(text: str) -> str:
+        """Replace characters outside Latin-1 range so Helvetica can encode them."""
+        return (
+            text
+            .replace("\u2013", "-")   # en-dash
+            .replace("\u2014", "--")  # em-dash
+            .replace("\u2019", "'")   # right single quotation
+            .replace("\u2018", "'")   # left single quotation
+            .replace("\u201c", '"')   # left double quotation
+            .replace("\u201d", '"')   # right double quotation
+            .encode("latin-1", errors="replace")
+            .decode("latin-1")
+        )
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    for i, scenario in enumerate(request.scenarios):
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        mineral = scenario.get("mineral", "Unknown")
+        pdf.cell(0, 10, _safe(f"Scenario Briefing: {mineral}"), new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "", 10)
+        layers = scenario.get("layers", [])
+        if layers:
+            pdf.cell(0, 8, f"Disruption Layers: {len(layers)}", new_x="LMARGIN", new_y="NEXT")
+            for layer in layers:
+                layer_type = layer.get("type", "unknown").replace("_", " ").title()
+                params = layer.get("params", {})
+                param_str = ", ".join(f"{k}: {v}" for k, v in params.items())
+                pdf.cell(0, 6, _safe(f"  - {layer_type}: {param_str}"), new_x="LMARGIN", new_y="NEXT")
+
+        impact = scenario.get("impact", {})
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 8, "Impact Summary", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(0, 6, f"Value at Risk: ${impact.get('value_at_risk_usd', 0):,.0f}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, f"Platforms Affected: {impact.get('platforms_affected', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, _safe(f"Risk Score: {impact.get('risk_score', 0)} ({impact.get('risk_rating', 'N/A')})"), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, f"Likelihood: {impact.get('likelihood', 0)}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, f"Supply Reduction: {impact.get('supply_reduction_pct', 0)}%", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, f"Lead Time Increase: {impact.get('lead_time_increase_days', 0)} days", new_x="LMARGIN", new_y="NEXT")
+
+        cascade = scenario.get("cascade", {})
+        tiers = cascade.get("tiers", [])
+        if tiers:
+            pdf.ln(4)
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.cell(0, 8, "Disruption Cascade", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 10)
+            for tier in tiers:
+                tier_name = tier.get("name", "")
+                loss = tier.get("loss_pct", 0)
+                node_count = len(tier.get("nodes", []))
+                disrupted = sum(1 for n in tier.get("nodes", []) if n.get("status") == "disrupted")
+                pdf.cell(0, 6, _safe(f"  {tier_name}: {disrupted}/{node_count} disrupted, -{loss}% capacity"), new_x="LMARGIN", new_y="NEXT")
+
+        coas = scenario.get("coa", [])
+        if coas:
+            pdf.ln(4)
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.cell(0, 8, "Recommended Courses of Action", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 10)
+            for coa in coas:
+                priority = coa.get("priority", "medium").upper()
+                action = coa.get("action", "")
+                cost = coa.get("cost_estimate", "TBD")
+                pdf.cell(0, 6, _safe(f"  [{priority}] {action} (Cost: {cost})"), new_x="LMARGIN", new_y="NEXT")
+
+        suf = scenario.get("sufficiency", {})
+        if suf:
+            pdf.ln(4)
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.cell(0, 8, "Supply Sufficiency", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(0, 6, f"  Supply: {suf.get('supply_t', 0):,.0f} t/yr | Demand: {suf.get('demand_t', 0):,.0f} t/yr", new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 6, _safe(f"  Ratio: {suf.get('ratio', 0):.3f}x | Verdict: {suf.get('verdict', 'N/A')}"), new_x="LMARGIN", new_y="NEXT")
+
+    if len(request.scenarios) > 1:
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, "Scenario Comparison", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.ln(4)
+
+        header = "Metric"
+        for s in request.scenarios:
+            header += f" | {s.get('mineral', '?')}"
+        pdf.cell(0, 6, header, new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 1, "-" * 80, new_x="LMARGIN", new_y="NEXT")
+
+        metrics = ["value_at_risk_usd", "platforms_affected", "risk_score", "likelihood", "supply_reduction_pct", "lead_time_increase_days"]
+        labels = ["Value at Risk ($)", "Platforms Affected", "Risk Score", "Likelihood", "Supply Reduction (%)", "Lead Time (+days)"]
+        for metric, label in zip(metrics, labels):
+            row = label
+            for s in request.scenarios:
+                val = s.get("impact", {}).get(metric, 0)
+                if metric == "value_at_risk_usd":
+                    row += f" | ${val:,.0f}"
+                else:
+                    row += f" | {val}"
+            pdf.cell(0, 6, row, new_x="LMARGIN", new_y="NEXT")
+
+    pdf_bytes = pdf.output()
+    return Response(
+        content=bytes(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=scenario-briefing.pdf"},
+    )
 
 
 @router.get("/graph")

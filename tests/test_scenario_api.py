@@ -69,3 +69,23 @@ class TestScenarioV2Endpoint:
         })
         data = resp.json()
         assert len(data["cascade"]["tiers"]) == 4
+
+
+class TestScenarioExportPDF:
+    """Test POST /psi/scenario/export/pdf."""
+
+    def test_pdf_export_returns_200_with_pdf_content(self):
+        scenario_resp = client.post("/psi/scenario/v2", json={
+            "mineral": "Cobalt",
+            "layers": [{"type": "sanctions_expansion", "params": {"country": "China"}}],
+            "demand_surge_pct": 0,
+            "time_horizon_months": 12,
+        })
+        scenario_data = scenario_resp.json()
+
+        resp = client.post("/psi/scenario/export/pdf", json={
+            "scenarios": [scenario_data],
+        })
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "application/pdf"
+        assert resp.content[:5] == b"%PDF-"
