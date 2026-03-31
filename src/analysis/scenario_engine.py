@@ -411,16 +411,20 @@ class ScenarioEngine:
         # Lead time increase from route disruptions
         lead_time_days = sum(r["delay_days"] for r in state["routes"])
 
-        # Likelihood — multiplicative across layer types
-        likelihood = 1.0
+        # Likelihood — union probability: P(at least one event occurs)
+        # = 1 - product(1 - p_i), ensuring more layers always increases or holds likelihood.
+        # Single-layer base probabilities are scaled so that one high-confidence layer
+        # (e.g. sanctions at 0.60) maps to a plausible compound value after ×2 scaling.
+        not_happening = 1.0
         for layer in layers:
             base = _LAYER_LIKELIHOODS.get(layer.get("type", ""), 0.5)
             # Route disruption scales with duration
             if layer["type"] == "route_disruption":
                 duration = layer.get("params", {}).get("duration_days", 90)
                 base = base * min(duration / 365, 1.0)
-            likelihood *= base
-        likelihood = round(min(likelihood * 2, 1.0), 2)  # Scale up (single layers would be too low)
+            not_happening *= (1.0 - base)
+        raw_likelihood = 1.0 - not_happening
+        likelihood = round(min(raw_likelihood * 2, 1.0), 2)  # Scale up to make single layers meaningful
 
         # Risk score: composite
         supply_factor = min(supply_reduction_pct / 100, 1.0)
