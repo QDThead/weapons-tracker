@@ -2182,31 +2182,67 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- PSI Scenario Sandbox -->
+    <!-- PSI Scenario Sandbox (v2 — unified mineral-first) -->
     <div id="psi-scenarios" class="psi-sub" style="display:none;">
-      <div class="card" style="padding:18px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-          <h3>Scenario Sandbox</h3>
-
-        </div>
-        <div id="psi-scenario-default" style="display:grid; grid-template-columns:300px 1fr; gap:18px;">
-          <div>
-            <label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:4px;">Scenario Type</label>
-            <select id="psi-scenario-type" onchange="updateScenarioFields()" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:6px; margin-bottom:12px; font-family:var(--font-body); transition:border-color 0.2s;">
-              <option value="sanctions_expansion">Sanctions Expansion</option>
-              <option value="material_shortage">Material Shortage</option>
-              <option value="route_disruption">Route Disruption</option>
-              <option value="demand_surge">Demand Surge</option>
-              <option value="supplier_substitution">Supplier Substitution</option>
-            </select>
-            <div id="psi-scenario-fields"></div>
-            <button id="psi-run-scenario" onclick="runScenario()" class="btn-primary" style="width:100%; margin-top:14px; padding:10px;">Run Scenario</button>
+      <div style="display:grid; grid-template-columns:280px 1fr 240px; gap:1px; min-height:600px;">
+        <!-- LEFT: Scenario Builder -->
+        <div class="card" style="padding:14px; border-radius:8px 0 0 8px; overflow-y:auto; max-height:700px;">
+          <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; font-weight:700;">Scenario Builder</div>
+          <div style="margin-bottom:14px;">
+            <div style="font-size:10px; color:var(--text-dim); margin-bottom:4px;">Quick Presets</div>
+            <div id="scenario-presets" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
           </div>
-          <div id="psi-scenario-results" style="min-height:300px;">
-            <div style="color:var(--text-dim); text-align:center; padding:60px 0;">Select a scenario type and click "Run Scenario"</div>
+          <div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">Disruption Layers</div>
+          <div id="scenario-layers"></div>
+          <div id="scenario-add-layer" onclick="scenarioAddLayer()" style="padding:8px; border:1px dashed var(--border); border-radius:6px; text-align:center; color:var(--accent); font-size:11px; cursor:pointer; margin-bottom:14px;">+ Add Disruption Layer</div>
+          <div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">Global Parameters</div>
+          <div class="card" style="padding:8px; margin-bottom:6px;">
+            <div style="font-size:10px; color:var(--text-dim);">Demand Surge</div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+              <input type="range" id="scenario-demand" min="-50" max="200" value="0" oninput="document.getElementById('scenario-demand-val').textContent=(this.value>0?'+':'')+this.value+'%'" style="flex:1; accent-color:var(--accent);">
+              <span id="scenario-demand-val" style="font-family:var(--font-mono); font-size:11px; color:var(--accent); min-width:40px;">0%</span>
+            </div>
+          </div>
+          <div class="card" style="padding:8px; margin-bottom:14px;">
+            <div style="font-size:10px; color:var(--text-dim);">Time Horizon</div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+              <input type="range" id="scenario-horizon" min="3" max="24" value="12" oninput="document.getElementById('scenario-horizon-val').textContent=this.value+' mo'" style="flex:1; accent-color:var(--accent);">
+              <span id="scenario-horizon-val" style="font-family:var(--font-mono); font-size:11px; color:var(--accent); min-width:40px;">12 mo</span>
+            </div>
+          </div>
+          <button onclick="runScenarioV2()" class="btn-primary" style="width:100%; padding:10px; font-size:13px;">Run Scenario</button>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button onclick="scenarioReset()" style="flex:1; padding:6px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); font-size:10px; cursor:pointer;">Reset</button>
+            <button onclick="scenarioExport('pdf')" style="flex:1; padding:6px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); font-size:10px; cursor:pointer;">Export</button>
           </div>
         </div>
-        <div id="psi-scenario-mineral" style="display:none;"></div>
+        <!-- CENTER: Results + Cascade -->
+        <div id="scenario-center" class="card" style="padding:14px; border-radius:0; overflow-y:auto; max-height:700px;">
+          <div id="scenario-results" style="color:var(--text-dim); text-align:center; padding:80px 20px;">
+            <div style="font-size:14px; margin-bottom:8px;">Select a preset or build a custom scenario</div>
+            <div style="font-size:11px;">Add disruption layers, then click "Run Scenario"</div>
+          </div>
+        </div>
+        <!-- RIGHT: History Panel -->
+        <div class="card" style="padding:14px; border-radius:0 8px 8px 0; overflow-y:auto; max-height:700px;">
+          <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; font-weight:700;">Saved Runs (<span id="scenario-run-count">0</span>/4)</div>
+          <div id="scenario-history"></div>
+          <div id="scenario-empty-slots"></div>
+          <button id="scenario-compare-btn" onclick="scenarioCompare()" disabled style="width:100%; margin-top:10px; padding:8px; background:var(--accent5); color:white; border:none; border-radius:6px; font-weight:600; font-size:11px; cursor:pointer; opacity:0.5;">Compare Selected (0)</button>
+          <div style="display:flex; gap:4px; margin-top:6px;">
+            <button onclick="scenarioExport('pdf')" style="flex:1; padding:6px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); font-size:9px; cursor:pointer;">PDF</button>
+            <button onclick="scenarioExport('csv')" style="flex:1; padding:6px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); font-size:9px; cursor:pointer;">CSV</button>
+            <button onclick="scenarioExport('json')" style="flex:1; padding:6px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); font-size:9px; cursor:pointer;">JSON</button>
+          </div>
+        </div>
+      </div>
+      <!-- COA Comparison Drawer -->
+      <div id="scenario-coa-drawer" style="display:none; position:fixed; bottom:0; left:0; right:0; max-height:400px; background:var(--card-bg); border-top:2px solid var(--accent); z-index:1000; overflow-y:auto; padding:18px; backdrop-filter:blur(16px);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3>COA Comparison</h3>
+          <button onclick="closeCOADrawer()" style="background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer;">&#x2715;</button>
+        </div>
+        <div id="scenario-coa-table"></div>
       </div>
     </div>
 
@@ -6140,7 +6176,7 @@ function onGlobalMineralChange() {
   if (tabId === 'psi-overview') onOverviewMineralChange();
   if (tabId === 'psi-graph') loadPsiGraph();
   if (tabId === 'psi-risks') onRiskMineralChange();
-  if (tabId === 'psi-scenarios') onScenarioMineralChange();
+  if (tabId === 'psi-scenarios') initScenarioSandbox();
   if (tabId === 'psi-taxonomy') onTaxonomyMineralChange();
   if (tabId === 'psi-forecasting') onForecastingMineralChange();
   if (tabId === 'psi-bom') onBomMineralChange();
@@ -6168,7 +6204,7 @@ function switchPsiTab(btn) {
   if (mineral) {
     if (btn.dataset.psiTab === 'psi-overview') onOverviewMineralChange();
     if (btn.dataset.psiTab === 'psi-risks') onRiskMineralChange();
-    if (btn.dataset.psiTab === 'psi-scenarios') onScenarioMineralChange();
+    if (btn.dataset.psiTab === 'psi-scenarios') initScenarioSandbox();
     if (btn.dataset.psiTab === 'psi-taxonomy') onTaxonomyMineralChange();
     if (btn.dataset.psiTab === 'psi-forecasting') onForecastingMineralChange();
     if (btn.dataset.psiTab === 'psi-bom') onBomMineralChange();
@@ -7743,7 +7779,6 @@ async function loadSupplyChain() {
   if (alerts) renderPsiAlerts(alerts);
   if (chokepoints) renderPsiChokepoints(chokepoints);
   renderPsiRiskMatrix(alerts || []);
-  updateScenarioFields();
 
   // If a mineral is already selected, show its overview instead of global
   var mineral = getGlobalMineral();
@@ -9367,165 +9402,472 @@ function renderMineralRiskMatrix(m, container) {
   container.innerHTML = html;
 }
 
-function updateScenarioFields() {
-  const type = document.getElementById('psi-scenario-type').value;
-  const el = document.getElementById('psi-scenario-fields');
-  const field = (label, id, placeholder, val) =>
-    `<label style="font-size:12px; color:var(--text-dim); display:block; margin-bottom:2px; margin-top:8px;">${label}</label>
-     <input id="${id}" value="${val || ''}" placeholder="${placeholder}" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px; border-radius:6px; font-family:var(--font-body);">`;
+// ═══════ SCENARIO SANDBOX v2 (Unified Mineral-First) ═══════
 
-  const configs = {
-    sanctions_expansion: field('Country', 'sc-country', 'e.g. China', 'China'),
-    material_shortage: field('Material', 'sc-material', 'e.g. Cobalt', 'Cobalt') + field('Reduction %', 'sc-reduction', '40', '40'),
-    route_disruption: field('Chokepoint', 'sc-chokepoint', 'e.g. Strait of Hormuz', 'Strait of Hormuz') + field('Duration (days)', 'sc-duration', '90', '90'),
-    demand_surge: field('Region', 'sc-region', 'NATO', 'NATO') + field('Increase %', 'sc-increase', '30', '30'),
-    supplier_substitution: field('Original Supplier', 'sc-original', 'e.g. Russia', 'Russia') + field('Replacement', 'sc-replacement', 'e.g. South Korea', 'South Korea'),
-  };
-  el.innerHTML = configs[type] || '';
+var SCENARIO_PRESETS = {
+  'Indo-Pacific Conflict': {
+    layers: [
+      {type:'sanctions_expansion', params:{country:'China'}},
+      {type:'route_disruption', params:{chokepoint:'Strait of Malacca', duration_days:180}},
+    ],
+    demand_surge_pct: 50,
+  },
+  'Arctic Escalation': {
+    layers: [
+      {type:'sanctions_expansion', params:{country:'Russia'}},
+      {type:'route_disruption', params:{chokepoint:'Northern Sea Route', duration_days:365}},
+    ],
+    demand_surge_pct: 30,
+  },
+  'Global Recession': {
+    layers: [{type:'material_shortage', params:{reduction_pct:15}}],
+    demand_surge_pct: -20,
+  },
+  'DRC Collapse': {
+    layers: [{type:'material_shortage', params:{reduction_pct:73}}],
+    demand_surge_pct: 0,
+  },
+  'Suez Closure': {
+    layers: [{type:'route_disruption', params:{chokepoint:'Suez Canal', duration_days:180}}],
+    demand_surge_pct: 0,
+  },
+};
+
+var scenarioLayers = [];
+var scenarioHistory = [];
+var scenarioSelected = new Set();
+var _activePreset = null;
+
+var LAYER_COLORS = {
+  sanctions_expansion: 'var(--accent2)',
+  material_shortage: 'var(--accent4)',
+  route_disruption: 'var(--accent5)',
+  supplier_failure: '#ef4444',
+  demand_surge: 'var(--accent)',
+};
+
+var LAYER_LABELS = {
+  sanctions_expansion: 'Sanctions Expansion',
+  material_shortage: 'Material Shortage',
+  route_disruption: 'Route Disruption',
+  supplier_failure: 'Supplier Failure',
+  demand_surge: 'Demand Surge',
+};
+
+function initScenarioSandbox() {
+  var presetsEl = document.getElementById('scenario-presets');
+  if (!presetsEl) return;
+  presetsEl.innerHTML = '';
+  Object.keys(SCENARIO_PRESETS).forEach(function(name) {
+    var chip = document.createElement('div');
+    chip.style.cssText = 'padding:4px 8px; border-radius:4px; border:1px solid var(--border); color:var(--text-dim); font-size:10px; cursor:pointer; transition:all 0.2s;';
+    chip.textContent = name;
+    chip.onclick = function() { loadPreset(name); };
+    presetsEl.appendChild(chip);
+  });
+  renderLayers();
+  renderHistoryPanel();
 }
 
-async function runScenario() {
-  const type = document.getElementById('psi-scenario-type').value;
-  const params = {};
-  if (type === 'sanctions_expansion') params.country = document.getElementById('sc-country').value;
-  if (type === 'material_shortage') { params.material = document.getElementById('sc-material').value; params.reduction_pct = parseInt(document.getElementById('sc-reduction').value) || 40; }
-  if (type === 'route_disruption') { params.chokepoint = document.getElementById('sc-chokepoint').value; params.duration_days = parseInt(document.getElementById('sc-duration').value) || 90; }
-  if (type === 'demand_surge') { params.region = document.getElementById('sc-region').value; params.increase_pct = parseInt(document.getElementById('sc-increase').value) || 30; }
-  if (type === 'supplier_substitution') { params.original_supplier = document.getElementById('sc-original').value; params.replacement_supplier = document.getElementById('sc-replacement').value; }
+function loadPreset(name) {
+  var preset = SCENARIO_PRESETS[name];
+  if (!preset) return;
+  _activePreset = name;
+  scenarioLayers = JSON.parse(JSON.stringify(preset.layers));
+  document.getElementById('scenario-demand').value = preset.demand_surge_pct || 0;
+  document.getElementById('scenario-demand-val').textContent = (preset.demand_surge_pct > 0 ? '+' : '') + (preset.demand_surge_pct || 0) + '%';
+  renderLayers();
+  var chips = document.getElementById('scenario-presets').children;
+  for (var i = 0; i < chips.length; i++) {
+    if (chips[i].textContent === name) {
+      chips[i].style.background = 'var(--accent2)33';
+      chips[i].style.borderColor = 'var(--accent2)';
+      chips[i].style.color = 'var(--accent2)';
+    } else {
+      chips[i].style.background = '';
+      chips[i].style.borderColor = 'var(--border)';
+      chips[i].style.color = 'var(--text-dim)';
+    }
+  }
+}
 
-  const resEl = document.getElementById('psi-scenario-results');
-  resEl.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-dim);">Running simulation...</div>';
+function scenarioAddLayer() {
+  scenarioLayers.push({type: 'sanctions_expansion', params: {country: 'China'}});
+  _activePreset = null;
+  renderLayers();
+}
 
-  try {
-    const resp = await fetch(API + '/psi/scenario', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, parameters: params }),
+function scenarioRemoveLayer(idx) {
+  scenarioLayers.splice(idx, 1);
+  _activePreset = null;
+  renderLayers();
+}
+
+function scenarioUpdateLayer(idx, field, value) {
+  if (field === 'type') {
+    var defaults = {
+      sanctions_expansion: {country:'China'},
+      material_shortage: {reduction_pct:40},
+      route_disruption: {chokepoint:'Strait of Malacca', duration_days:90},
+      supplier_failure: {entity:'Mutanda Mine', failure_type:'insolvency'},
+      demand_surge: {region:'NATO', increase_pct:30},
+    };
+    scenarioLayers[idx] = {type: value, params: defaults[value] || {}};
+  } else {
+    var numVal = parseFloat(value);
+    scenarioLayers[idx].params[field] = isNaN(numVal) ? value : numVal;
+  }
+  _activePreset = null;
+  renderLayers();
+}
+
+function renderLayers() {
+  var el = document.getElementById('scenario-layers');
+  if (!el) return;
+  if (scenarioLayers.length === 0) { el.innerHTML = ''; return; }
+  var html = '';
+  scenarioLayers.forEach(function(layer, idx) {
+    var color = LAYER_COLORS[layer.type] || 'var(--accent)';
+    var label = LAYER_LABELS[layer.type] || layer.type;
+    html += '<div class="card" style="padding:8px; margin-bottom:6px; border-left:3px solid ' + color + ';">';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+    html += '<select onchange="scenarioUpdateLayer(' + idx + ',\'type\',this.value)" style="background:var(--bg); color:' + color + '; border:none; font-size:11px; font-weight:600; font-family:var(--font-body); cursor:pointer;">';
+    Object.keys(LAYER_LABELS).forEach(function(t) {
+      html += '<option value="' + t + '"' + (t === layer.type ? ' selected' : '') + '>' + LAYER_LABELS[t] + '</option>';
     });
-    if (!resp.ok) throw new Error('Scenario failed');
-    const data = await resp.json();
-    renderScenarioResults(data, resEl);
+    html += '</select>';
+    html += '<span onclick="scenarioRemoveLayer(' + idx + ')" style="color:var(--text-dim); cursor:pointer; font-size:14px; padding:0 4px;">&times;</span>';
+    html += '</div>';
+    html += renderLayerParams(idx, layer);
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderLayerParams(idx, layer) {
+  var p = layer.params;
+  var html = '<div style="margin-top:4px; font-size:10px; color:var(--text-dim);">';
+  if (layer.type === 'sanctions_expansion') {
+    html += 'Country: <input value="' + esc(p.country || '') + '" onchange="scenarioUpdateLayer(' + idx + ',\'country\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:100px; font-size:10px;">';
+  } else if (layer.type === 'material_shortage') {
+    html += 'Reduction: <input type="number" value="' + (p.reduction_pct || 40) + '" min="10" max="100" onchange="scenarioUpdateLayer(' + idx + ',\'reduction_pct\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:50px; font-size:10px;">%';
+  } else if (layer.type === 'route_disruption') {
+    html += 'Chokepoint: <input value="' + esc(p.chokepoint || '') + '" onchange="scenarioUpdateLayer(' + idx + ',\'chokepoint\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:120px; font-size:10px;">';
+    html += '<br>Duration: <input type="number" value="' + (p.duration_days || 90) + '" min="1" max="365" onchange="scenarioUpdateLayer(' + idx + ',\'duration_days\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:50px; font-size:10px; margin-top:4px;"> days';
+  } else if (layer.type === 'supplier_failure') {
+    html += 'Entity: <input value="' + esc(p.entity || '') + '" onchange="scenarioUpdateLayer(' + idx + ',\'entity\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:120px; font-size:10px;">';
+  } else if (layer.type === 'demand_surge') {
+    html += 'Region: <input value="' + esc(p.region || '') + '" onchange="scenarioUpdateLayer(' + idx + ',\'region\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:60px; font-size:10px;">';
+    html += ' +<input type="number" value="' + (p.increase_pct || 30) + '" min="10" max="200" onchange="scenarioUpdateLayer(' + idx + ',\'increase_pct\',this.value)" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:2px 6px; border-radius:4px; width:40px; font-size:10px;">%';
+  }
+  html += '</div>';
+  return html;
+}
+
+function scenarioReset() {
+  scenarioLayers = [];
+  _activePreset = null;
+  document.getElementById('scenario-demand').value = 0;
+  document.getElementById('scenario-demand-val').textContent = '0%';
+  document.getElementById('scenario-results').innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:80px 20px;"><div style="font-size:14px; margin-bottom:8px;">Select a preset or build a custom scenario</div><div style="font-size:11px;">Add disruption layers, then click "Run Scenario"</div></div>';
+  renderLayers();
+  var chips = document.getElementById('scenario-presets').children;
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].style.background = '';
+    chips[i].style.borderColor = 'var(--border)';
+    chips[i].style.color = 'var(--text-dim)';
+  }
+}
+
+async function runScenarioV2() {
+  var mineral = getGlobalMineral() || 'Cobalt';
+  var demandSurge = parseFloat(document.getElementById('scenario-demand').value) || 0;
+  var horizon = parseInt(document.getElementById('scenario-horizon').value) || 12;
+  var resEl = document.getElementById('scenario-results');
+  resEl.innerHTML = '<div style="text-align:center; padding:60px; color:var(--text-dim);">Running simulation...</div>';
+  try {
+    var resp = await fetch(API + '/psi/scenario/v2', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mineral: mineral, layers: scenarioLayers, demand_surge_pct: demandSurge, time_horizon_months: horizon}),
+    });
+    if (!resp.ok) throw new Error('Scenario failed: ' + resp.status);
+    var data = await resp.json();
+    renderScenarioV2Results(data, resEl);
+    saveScenarioRun(data);
   } catch (e) {
     resEl.innerHTML = '<div style="color:var(--accent2); padding:20px;">' + esc(e.message) + '</div>';
   }
 }
 
-function renderScenarioResults(data, el) {
-  const summary = data.impact_summary || {};
-  let html = '<div style="margin-bottom:14px;"><h4 style="margin-bottom:8px;">Impact Summary</h4><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:8px;">';
-  for (const [k, v] of Object.entries(summary)) {
-    html += `<div class="card" style="padding:10px; text-align:center;"><div style="font-size:20px; font-weight:700; color:var(--accent4);">${typeof v === 'number' ? v.toLocaleString() : v}</div><div style="font-size:10px; color:var(--text-dim);">${k.replace(/_/g, ' ')}</div></div>`;
-  }
-  html += '</div></div>';
-
-  // Recommendations
-  if (data.recommendations && data.recommendations.length) {
-    html += '<h4 style="margin-bottom:8px;">Recommended Actions</h4>';
-    data.recommendations.forEach(r => {
-      const pColor = r.priority === 'critical' ? 'var(--accent2)' : r.priority === 'high' ? 'var(--accent4)' : 'var(--accent)';
-      html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center;">
-        <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:${pColor}; min-width:60px;">${esc(r.priority)}</span>
-        <span>${esc(r.action)}</span></div>`;
-    });
-  }
-
-  // Affected items
-  const affected = data.affected_countries || data.affected_platforms || data.affected_routes || data.bottlenecks || data.affected_buyers || [];
-  if (affected.length) {
-    html += '<h4 style="margin:14px 0 8px;">Affected Entities (' + affected.length + ')</h4>';
-    html += '<div style="max-height:200px; overflow-y:auto;">';
-    affected.forEach(item => {
-      const label = item.country || item.platform || item.route || item.supplier || item.route_name || JSON.stringify(item);
-      const detail = item.tiv_at_risk ? `TIV: ${item.tiv_at_risk.toLocaleString()}M` : item.tiv_to_replace ? `TIV: ${item.tiv_to_replace.toLocaleString()}M` : '';
-      html += `<div style="padding:5px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;"><span>${esc(String(label))}</span><span style="color:var(--text-dim); font-size:12px;">${detail}</span></div>`;
-    });
-    html += '</div>';
-  }
-
+function renderScenarioV2Results(data, el) {
+  var impact = data.impact || {};
+  var html = '';
+  html += '<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px;">';
+  html += renderImpactCard('$' + formatDollar(impact.value_at_risk_usd || 0), 'Value at Risk', impact.risk_rating === 'CRITICAL' ? 'var(--accent2)' : 'var(--accent4)');
+  html += renderImpactCard(impact.platforms_affected || 0, 'Platforms Affected', impact.platforms_affected > 3 ? 'var(--accent2)' : 'var(--accent4)');
+  html += renderImpactCard(impact.risk_score || 0, 'Risk Score', impact.risk_rating === 'CRITICAL' ? 'var(--accent2)' : impact.risk_rating === 'HIGH' ? 'var(--accent4)' : 'var(--accent3)', impact.risk_rating);
+  html += renderImpactCard(impact.likelihood || 0, 'Likelihood', 'var(--accent4)');
+  html += '</div>';
+  html += renderSankeyCascade(data.cascade || {});
+  html += renderInlineCOAs(data.coa || []);
   el.innerHTML = html;
 }
 
-function populateScenarioMineralDropdown() {
-  var select = document.getElementById('psi-scenario-mineral-filter');
-  if (!select || select.options.length > 1) return;
-  fetch(API + '/globe/minerals').then(function(r) { return r.json(); }).then(function(minerals) {
-    minerals.forEach(function(m) {
-      var opt = document.createElement('option');
-      opt.value = m.name;
-      var hasDeep = m.sufficiency;
-      opt.textContent = (hasDeep ? '\u2605 ' : '') + m.name;
-      select.appendChild(opt);
-    });
-  }).catch(function() {});
+function renderImpactCard(value, label, color, badge) {
+  var h = '<div class="card" style="padding:10px; text-align:center;">';
+  h += '<div style="font-size:22px; font-weight:700; color:' + color + '; font-family:var(--font-mono);">' + value + '</div>';
+  h += '<div style="font-size:9px; color:var(--text-dim); text-transform:uppercase;">' + esc(label) + '</div>';
+  if (badge) h += '<div style="font-size:8px; color:' + color + ';">' + esc(badge) + '</div>';
+  h += '</div>';
+  return h;
 }
 
-function onScenarioMineralChange() {
-  var mineral = getGlobalMineral();
-  var defaultDiv = document.getElementById('psi-scenario-default');
-  var mineralDiv = document.getElementById('psi-scenario-mineral');
-  if (!mineral) {
-    defaultDiv.style.display = 'grid';
-    mineralDiv.style.display = 'none';
-    return;
-  }
-  defaultDiv.style.display = 'none';
-  mineralDiv.style.display = '';
-  mineralDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">Loading...</div>';
-
-  fetch(API + '/globe/minerals/' + encodeURIComponent(mineral)).then(function(r) { return r.json(); }).then(function(m) {
-    if (!m.sufficiency) {
-      mineralDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Scenario data not yet available for ' + esc(mineral) + '.</div>';
-      return;
-    }
-    renderMineralScenarios(m, mineralDiv);
-  }).catch(function(e) {
-    mineralDiv.innerHTML = '<div style="color:var(--accent2);padding:20px;">Failed: ' + esc(e.message) + '</div>';
-  });
+function formatDollar(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(0) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return n.toString();
 }
 
-function renderMineralScenarios(m, container) {
-  var suf = m.sufficiency;
-  var html = '<h4 style="margin-bottom:12px;">' + esc(m.name) + ' Supply Disruption Scenarios</h4>';
-  html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;">';
-
-  suf.scenarios.forEach(function(s) {
-    var ratioColor = s.ratio >= 0.9 ? '#10b981' : s.ratio >= 0.5 ? '#f59e0b' : '#ef4444';
-    var ratioLabel = s.ratio >= 100 ? s.ratio.toFixed(0) + 'x' : s.ratio.toFixed(2) + 'x';
-    html += '<div class="card" style="padding:14px; border-top:3px solid ' + ratioColor + ';">';
-    html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
-    html += '<span style="font-weight:bold; font-size:12px;">' + esc(s.name) + '</span>';
-    html += '<span style="font-family:var(--font-mono); font-size:18px; font-weight:bold; color:' + ratioColor + ';">' + ratioLabel + '</span>';
-    html += '</div>';
-    html += '<div style="font-size:11px; color:var(--text-dim); margin-top:6px;">' + esc(s.verdict) + '</div>';
-    html += '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:8px;">';
-    html += '<span>Supply: ' + s.supply_t.toLocaleString() + ' t/yr</span>';
-    html += '<span>Demand: ' + s.demand_t.toLocaleString() + ' t/yr</span>';
-    html += '</div>';
-    // Impact on platforms
-    var atRisk = suf.demand.filter(function(d) { return s.ratio < d.threshold_ratio; });
-    if (atRisk.length > 0) {
-      html += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border); font-size:10px;">';
-      html += '<span style="color:#ef4444; font-weight:600;">\u26D4 ' + atRisk.length + ' platforms at risk:</span> ';
-      html += atRisk.map(function(d) { return esc(d.platform); }).join(', ');
-      html += '</div>';
-    }
-    html += '</div>';
+function renderSankeyCascade(cascade) {
+  var tiers = cascade.tiers || [];
+  if (tiers.length === 0) return '';
+  var html = '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:700;">Disruption Cascade: Rocks \u2192 Rockets</div>';
+  html += '<div class="card" style="padding:16px; margin-bottom:14px;">';
+  html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px;">';
+  tiers.forEach(function(t) {
+    html += '<span style="font-size:10px; color:var(--text-dim); font-weight:600; width:' + (100 / tiers.length) + '%;">' + esc(t.name).toUpperCase() + '</span>';
   });
   html += '</div>';
+  html += '<div style="display:flex; align-items:stretch; gap:2px; height:140px;">';
+  tiers.forEach(function(tier, tIdx) {
+    var nodes = tier.nodes || [];
+    if (nodes.length === 0) {
+      html += '<div style="flex:1;"></div>';
+      if (tIdx < tiers.length - 1) html += '<div style="width:12px; display:flex; align-items:center; color:var(--text-dim);">\u25B8</div>';
+      return;
+    }
+    html += '<div style="flex:1; display:flex; flex-direction:column; gap:2px;">';
+    nodes.forEach(function(n) {
+      var statusColor = n.status === 'disrupted' ? 'var(--accent2)' : n.status === 'degraded' ? 'var(--accent4)' : 'var(--accent3)';
+      var flex = 1;
+      if (n.original_t) flex = Math.max(1, Math.round(n.original_t / 10000));
+      else if (n.value_usd) flex = Math.max(1, Math.round(n.value_usd / 200000000));
+      html += '<div style="flex:' + flex + '; background:' + statusColor + '33; border:1px solid ' + statusColor + '55; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:9px; color:' + statusColor + '; padding:2px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" title="' + esc(n.name || '') + '">';
+      html += esc((n.name || '').length > 18 ? (n.name || '').substring(0, 16) + '..' : (n.name || ''));
+      html += '</div>';
+    });
+    html += '</div>';
+    if (tIdx < tiers.length - 1) html += '<div style="width:12px; display:flex; align-items:center; color:var(--text-dim);">\u25B8</div>';
+  });
+  html += '</div>';
+  var summary = cascade.summary || {};
+  html += '<div style="margin-top:8px; display:flex; justify-content:space-between; font-size:10px; font-family:var(--font-mono);">';
+  html += '<span style="color:var(--accent2);">-' + (summary.mining_loss_pct || 0) + '% mining</span>';
+  html += '<span style="color:var(--accent2);">-' + (summary.processing_loss_pct || 0) + '% refining</span>';
+  html += '<span style="color:var(--accent4);">-' + (summary.alloy_loss_pct || 0) + '% alloys</span>';
+  html += '<span style="color:var(--accent2);">' + (summary.platforms_at_risk || 0) + ' at risk</span>';
+  html += '</div></div>';
+  return html;
+}
 
-  // COAs
-  html += '<h4 style="margin:16px 0 10px;">Recommended Courses of Action</h4>';
-  html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:8px;">';
-  suf.coa.forEach(function(c) {
-    html += '<div class="card" style="padding:10px;">';
-    html += '<div style="font-weight:bold; font-size:11px; color:var(--accent3);">' + esc(c.id) + '</div>';
-    html += '<div style="font-size:11px; margin:4px 0;">' + esc(c.action) + '</div>';
-    html += '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim);">';
-    html += '<span>Cost: ' + esc(c.cost) + '</span><span>' + esc(c.impact) + '</span>';
+function renderInlineCOAs(coas) {
+  if (!coas || coas.length === 0) return '';
+  var html = '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:700;">Recommended Courses of Action</div>';
+  html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">';
+  coas.slice(0, 6).forEach(function(c) {
+    var pColor = c.priority === 'critical' ? 'var(--accent2)' : c.priority === 'high' ? 'var(--accent4)' : 'var(--accent)';
+    html += '<div class="card" style="padding:8px; border-left:3px solid ' + pColor + ';">';
+    html += '<div style="font-size:10px; color:' + pColor + '; font-weight:700;">' + esc((c.priority || '').toUpperCase()) + '</div>';
+    html += '<div style="font-size:11px; color:var(--text); margin-top:2px;">' + esc(c.action) + '</div>';
+    html += '<div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim); margin-top:4px;">';
+    html += '<span>Cost: ' + esc(c.cost_estimate || 'TBD') + '</span>';
+    html += '<span>Risk Reduction: -' + (c.risk_reduction_pts || 0) + 'pts</span>';
     html += '</div></div>';
   });
   html += '</div>';
+  html += '<div style="text-align:center;"><span onclick="openCOADrawer()" style="font-size:11px; color:var(--accent); cursor:pointer; border-bottom:1px dashed var(--accent);">Compare All COAs \u2192</span></div>';
+  return html;
+}
 
-  container.innerHTML = html;
+function saveScenarioRun(data) {
+  var name = _activePreset || 'Custom';
+  if (scenarioHistory.length >= 4) scenarioHistory.shift();
+  scenarioHistory.push({name: name, data: data, id: scenarioHistory.length});
+  scenarioSelected.clear();
+  scenarioSelected.add(scenarioHistory.length - 1);
+  renderHistoryPanel();
+}
+
+function renderHistoryPanel() {
+  var histEl = document.getElementById('scenario-history');
+  var emptyEl = document.getElementById('scenario-empty-slots');
+  var countEl = document.getElementById('scenario-run-count');
+  if (!histEl) return;
+  countEl.textContent = scenarioHistory.length;
+  var html = '';
+  scenarioHistory.forEach(function(run, idx) {
+    var isSelected = scenarioSelected.has(idx);
+    var impact = run.data.impact || {};
+    var valColor = impact.risk_rating === 'CRITICAL' ? 'var(--accent2)' : impact.risk_rating === 'HIGH' ? 'var(--accent4)' : 'var(--accent3)';
+    var borderStyle = isSelected ? 'border:1px solid var(--accent)44; background:var(--accent)10;' : 'border:1px solid var(--border);';
+    html += '<div class="card" style="padding:8px; margin-bottom:6px; ' + borderStyle + ' cursor:pointer;" onclick="toggleScenarioSelect(' + idx + ')">';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+    html += '<span style="font-size:11px; color:' + (isSelected ? 'var(--accent)' : 'var(--text)') + '; font-weight:600;">' + esc(run.name) + '</span>';
+    html += '<input type="checkbox" ' + (isSelected ? 'checked' : '') + ' style="accent-color:var(--accent); pointer-events:none;">';
+    html += '</div>';
+    html += '<div style="font-size:9px; color:var(--text-dim); margin-top:2px;">' + (run.data.layers || []).length + ' layers \u00B7 Risk: ' + (impact.risk_score || 0) + '</div>';
+    html += '<div style="font-size:22px; font-weight:700; color:' + valColor + '; font-family:var(--font-mono); margin-top:2px;">$' + formatDollar(impact.value_at_risk_usd || 0) + '</div>';
+    html += '</div>';
+  });
+  histEl.innerHTML = html;
+  var emptyCount = 4 - scenarioHistory.length;
+  var emptyHtml = '';
+  for (var i = 0; i < emptyCount; i++) {
+    emptyHtml += '<div style="border:1px dashed var(--border); border-radius:6px; padding:14px; text-align:center; margin-bottom:6px;"><div style="font-size:10px; color:var(--text-dim);">Empty slot</div></div>';
+  }
+  emptyEl.innerHTML = emptyHtml;
+  var compareBtn = document.getElementById('scenario-compare-btn');
+  var selCount = scenarioSelected.size;
+  compareBtn.textContent = 'Compare Selected (' + selCount + ')';
+  compareBtn.disabled = selCount < 2;
+  compareBtn.style.opacity = selCount < 2 ? '0.5' : '1';
+}
+
+function toggleScenarioSelect(idx) {
+  if (scenarioSelected.has(idx)) scenarioSelected.delete(idx);
+  else scenarioSelected.add(idx);
+  renderHistoryPanel();
+}
+
+function scenarioCompare() {
+  if (scenarioSelected.size < 2) return;
+  var runs = [];
+  scenarioSelected.forEach(function(idx) { if (scenarioHistory[idx]) runs.push(scenarioHistory[idx]); });
+  var centerEl = document.getElementById('scenario-results');
+  var html = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">';
+  html += '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Scenario Comparison</div>';
+  html += '<button onclick="closeComparisonView()" style="background:none; border:1px solid var(--border); border-radius:4px; padding:4px 10px; color:var(--text-dim); font-size:10px; cursor:pointer;">\u2190 Back to Builder</button>';
+  html += '</div>';
+  html += '<div class="card" style="padding:12px; margin-bottom:14px; overflow-x:auto;">';
+  html += '<table style="width:100%; border-collapse:collapse; font-size:11px;">';
+  html += '<thead><tr><th style="text-align:left; padding:6px; border-bottom:1px solid var(--border); color:var(--text-dim);">Metric</th>';
+  runs.forEach(function(r) { html += '<th style="text-align:center; padding:6px; border-bottom:1px solid var(--border); color:var(--accent);">' + esc(r.name) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  var metrics = [
+    {key:'value_at_risk_usd', label:'Value at Risk', fmt:function(v){return '$'+formatDollar(v);}},
+    {key:'platforms_affected', label:'Platforms Affected', fmt:function(v){return v;}},
+    {key:'risk_score', label:'Risk Score', fmt:function(v){return v;}},
+    {key:'likelihood', label:'Likelihood', fmt:function(v){return v;}},
+    {key:'supply_reduction_pct', label:'Supply Reduction', fmt:function(v){return v+'%';}},
+    {key:'lead_time_increase_days', label:'Lead Time Impact', fmt:function(v){return '+'+v+' days';}},
+  ];
+  metrics.forEach(function(m) {
+    var vals = runs.map(function(r){return (r.data.impact||{})[m.key]||0;});
+    var maxVal = Math.max.apply(null, vals);
+    var minVal = Math.min.apply(null, vals);
+    html += '<tr><td style="padding:6px; border-bottom:1px solid var(--border); color:var(--text-dim);">' + m.label + '</td>';
+    runs.forEach(function(r) {
+      var val = (r.data.impact||{})[m.key]||0;
+      var cellColor = val === maxVal && maxVal > 0 ? 'var(--accent2)' : val === minVal ? 'var(--accent3)' : 'var(--text)';
+      html += '<td style="text-align:center; padding:6px; border-bottom:1px solid var(--border); color:'+cellColor+'; font-family:var(--font-mono);">' + m.fmt(val) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div style="display:grid; grid-template-columns:repeat('+runs.length+', 1fr); gap:8px;">';
+  runs.forEach(function(r) {
+    html += '<div><div style="font-size:10px; color:var(--accent); font-weight:600; margin-bottom:4px; text-align:center;">' + esc(r.name) + '</div>';
+    html += renderSankeyCascade(r.data.cascade || {});
+    html += '</div>';
+  });
+  html += '</div>';
+  centerEl.innerHTML = html;
+}
+
+function closeComparisonView() {
+  var resEl = document.getElementById('scenario-results');
+  if (scenarioHistory.length > 0) {
+    renderScenarioV2Results(scenarioHistory[scenarioHistory.length - 1].data, resEl);
+  } else {
+    resEl.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:80px 20px;"><div style="font-size:14px; margin-bottom:8px;">Select a preset or build a custom scenario</div><div style="font-size:11px;">Add disruption layers, then click "Run Scenario"</div></div>';
+  }
+}
+
+function openCOADrawer() {
+  var drawer = document.getElementById('scenario-coa-drawer');
+  var tableEl = document.getElementById('scenario-coa-table');
+  drawer.style.display = '';
+  var allCOAs = [];
+  scenarioHistory.forEach(function(run) {
+    (run.data.coa || []).forEach(function(coa) {
+      var existing = allCOAs.find(function(c) { return c.id === coa.id && c.action === coa.action; });
+      if (existing) { if (existing.triggered_by.indexOf(run.name) < 0) existing.triggered_by.push(run.name); }
+      else { allCOAs.push({id:coa.id, action:coa.action, triggered_by:[run.name], priority:coa.priority, cost_estimate:coa.cost_estimate, risk_reduction_pts:coa.risk_reduction_pts, timeline_months:coa.timeline_months, affected_platforms:coa.affected_platforms||[]}); }
+    });
+  });
+  var html = '<table style="width:100%; border-collapse:collapse; font-size:11px;">';
+  html += '<thead><tr>';
+  ['ID','Action','Triggered By','Priority','Cost','Risk Reduction','Timeline','Platforms'].forEach(function(h) {
+    html += '<th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim);">' + h + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  allCOAs.forEach(function(c) {
+    var pColor = c.priority === 'critical' ? 'var(--accent2)' : c.priority === 'high' ? 'var(--accent4)' : 'var(--accent)';
+    html += '<tr>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono); color:var(--accent);">' + esc(c.id) + '</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text);">' + esc(c.action) + '</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim);">' + c.triggered_by.map(esc).join(', ') + '</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); color:' + pColor + '; font-weight:600; text-transform:uppercase;">' + esc(c.priority) + '</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">' + esc(c.cost_estimate || '') + '</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">-' + (c.risk_reduction_pts || 0) + ' pts</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono);">' + (c.timeline_months || 0) + ' mo</td>';
+    html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-size:9px; color:var(--text-dim);">' + (c.affected_platforms || []).map(esc).join(', ') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  tableEl.innerHTML = html;
+}
+
+function closeCOADrawer() {
+  document.getElementById('scenario-coa-drawer').style.display = 'none';
+}
+
+function scenarioExport(format) {
+  var scenarios = [];
+  if (scenarioSelected.size > 0) {
+    scenarioSelected.forEach(function(idx) { if (scenarioHistory[idx]) scenarios.push(scenarioHistory[idx].data); });
+  } else if (scenarioHistory.length > 0) {
+    scenarios.push(scenarioHistory[scenarioHistory.length - 1].data);
+  }
+  if (scenarios.length === 0) return;
+  if (format === 'json') {
+    var blob = new Blob([JSON.stringify(scenarios, null, 2)], {type: 'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = 'scenario-export.json'; a.click();
+    URL.revokeObjectURL(url);
+  } else if (format === 'csv') {
+    var rows = [['Scenario','Value at Risk','Platforms Affected','Risk Score','Rating','Likelihood','Supply Reduction %','Lead Time +Days']];
+    scenarios.forEach(function(s) {
+      var imp = s.impact || {};
+      rows.push([s.mineral||'Cobalt', imp.value_at_risk_usd||0, imp.platforms_affected||0, imp.risk_score||0, imp.risk_rating||'N/A', imp.likelihood||0, imp.supply_reduction_pct||0, imp.lead_time_increase_days||0]);
+    });
+    var csv = rows.map(function(r){return r.join(',');}).join('\n');
+    var blob = new Blob([csv], {type: 'text/csv'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = 'scenario-export.csv'; a.click();
+    URL.revokeObjectURL(url);
+  } else if (format === 'pdf') {
+    fetch(API + '/psi/scenario/export/pdf', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({scenarios: scenarios}),
+    }).then(function(r){return r.blob();}).then(function(blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'scenario-briefing.pdf'; a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
 }
 
 // ═══════ RISK TAXONOMY TAB (Supply Chain page) ═══════
