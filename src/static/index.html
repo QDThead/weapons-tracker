@@ -9441,6 +9441,9 @@ var scenarioLayers = [];
 var scenarioHistory = [];
 var scenarioSelected = new Set();
 var _activePreset = null;
+var _coaDrawerData = [];
+var _coaSortCol = 'priority';
+var _coaSortAsc = true;
 
 var LAYER_COLORS = {
   sanctions_expansion: 'var(--accent2)',
@@ -9801,23 +9804,63 @@ function closeComparisonView() {
 
 function openCOADrawer() {
   var drawer = document.getElementById('scenario-coa-drawer');
-  var tableEl = document.getElementById('scenario-coa-table');
   drawer.style.display = '';
-  var allCOAs = [];
+  _coaDrawerData = [];
   scenarioHistory.forEach(function(run) {
     (run.data.coa || []).forEach(function(coa) {
-      var existing = allCOAs.find(function(c) { return c.id === coa.id && c.action === coa.action; });
+      var existing = _coaDrawerData.find(function(c) { return c.id === coa.id && c.action === coa.action; });
       if (existing) { if (existing.triggered_by.indexOf(run.name) < 0) existing.triggered_by.push(run.name); }
-      else { allCOAs.push({id:coa.id, action:coa.action, triggered_by:[run.name], priority:coa.priority, cost_estimate:coa.cost_estimate, risk_reduction_pts:coa.risk_reduction_pts, timeline_months:coa.timeline_months, affected_platforms:coa.affected_platforms||[]}); }
+      else { _coaDrawerData.push({id:coa.id, action:coa.action, triggered_by:[run.name], priority:coa.priority, cost_estimate:coa.cost_estimate, risk_reduction_pts:coa.risk_reduction_pts, timeline_months:coa.timeline_months, affected_platforms:coa.affected_platforms||[]}); }
     });
   });
+  _coaSortCol = 'priority';
+  _coaSortAsc = true;
+  renderCOATable();
+}
+
+function renderCOATable() {
+  var tableEl = document.getElementById('scenario-coa-table');
+  var priorityOrder = {critical:0, high:1, medium:2, low:3};
+  var sorted = _coaDrawerData.slice().sort(function(a, b) {
+    var col = _coaSortCol;
+    var va, vb;
+    if (col === 'priority') {
+      va = priorityOrder[a.priority] !== undefined ? priorityOrder[a.priority] : 99;
+      vb = priorityOrder[b.priority] !== undefined ? priorityOrder[b.priority] : 99;
+    } else if (col === 'risk_reduction_pts' || col === 'timeline_months') {
+      va = Number(a[col]) || 0;
+      vb = Number(b[col]) || 0;
+    } else if (col === 'triggered_by' || col === 'affected_platforms') {
+      va = (a[col] || []).join(', ').toLowerCase();
+      vb = (b[col] || []).join(', ').toLowerCase();
+    } else {
+      va = String(a[col] || '').toLowerCase();
+      vb = String(b[col] || '').toLowerCase();
+    }
+    if (va < vb) return _coaSortAsc ? -1 : 1;
+    if (va > vb) return _coaSortAsc ? 1 : -1;
+    return 0;
+  });
+  var columns = [
+    {label:'ID', key:'id'},
+    {label:'Action', key:'action'},
+    {label:'Triggered By', key:'triggered_by'},
+    {label:'Priority', key:'priority'},
+    {label:'Cost', key:'cost_estimate'},
+    {label:'Risk Reduction', key:'risk_reduction_pts'},
+    {label:'Timeline', key:'timeline_months'},
+    {label:'Platforms', key:'affected_platforms'}
+  ];
   var html = '<table style="width:100%; border-collapse:collapse; font-size:11px;">';
   html += '<thead><tr>';
-  ['ID','Action','Triggered By','Priority','Cost','Risk Reduction','Timeline','Platforms'].forEach(function(h) {
-    html += '<th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim);">' + h + '</th>';
+  columns.forEach(function(col) {
+    var arrow = col.key === _coaSortCol
+      ? (_coaSortAsc ? ' \u25B2' : ' \u25BC')
+      : ' <span style="opacity:0.3;">\u25B2</span>';
+    html += '<th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim); cursor:pointer; user-select:none;" onclick="sortCOATable(\'' + col.key + '\')">' + col.label + arrow + '</th>';
   });
   html += '</tr></thead><tbody>';
-  allCOAs.forEach(function(c) {
+  sorted.forEach(function(c) {
     var pColor = c.priority === 'critical' ? 'var(--accent2)' : c.priority === 'high' ? 'var(--accent4)' : 'var(--accent)';
     html += '<tr>';
     html += '<td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:var(--font-mono); color:var(--accent);">' + esc(c.id) + '</td>';
@@ -9832,6 +9875,16 @@ function openCOADrawer() {
   });
   html += '</tbody></table>';
   tableEl.innerHTML = html;
+}
+
+function sortCOATable(col) {
+  if (_coaSortCol === col) {
+    _coaSortAsc = !_coaSortAsc;
+  } else {
+    _coaSortCol = col;
+    _coaSortAsc = true;
+  }
+  renderCOATable();
 }
 
 function closeCOADrawer() {
