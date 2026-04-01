@@ -4936,10 +4936,11 @@ function initArcticGlobe() {
       creditContainer: document.createElement('div'),
     });
 
-    // Realistic satellite imagery (Esri World Imagery — free, no key)
+    // Realistic satellite imagery (Esri World Imagery WMTS tiles — free, no Ion/key)
     var imageryLayer = arcticCesiumViewer.scene.imageryLayers.addImageryProvider(
-      new Cesium.ArcGisMapServerImageryProvider({
-        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+      new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        maximumLevel: 18,
         credit: 'Esri World Imagery',
       })
     );
