@@ -2,6 +2,53 @@ from __future__ import annotations
 
 import pytest
 
+REQUIRED_KEYS = [
+    # Insights (10)
+    "insights", "insights.sitrep", "insights.sitrep.sanctions",
+    "insights.sitrep.arctic", "insights.taxonomy", "insights.news",
+    "insights.dsca", "insights.alliances", "insights.freshness",
+    "insights.adversary",
+    # Arctic (existing 3 + new 4 = 7 explicit)
+    "arctic", "arctic.kpis.ice_extent", "arctic.bases",
+    "arctic.flights", "arctic.routes", "arctic.trade", "arctic.naval",
+    # Deals (2)
+    "deals", "deals.transfers",
+    # Canada Intel (6)
+    "canada", "canada.flows", "canada.threats",
+    "canada.suppliers", "canada.suppliers.risk", "canada.actions",
+    # Data Feeds (3)
+    "feeds", "feeds.status", "feeds.stats",
+    # Compliance (2)
+    "compliance", "compliance.matrix",
+    # Supply Chain (20)
+    "supply.overview", "supply.globe", "supply.graph", "supply.risks",
+    "supply.scenarios", "supply.taxonomy", "supply.forecasting",
+    "supply.bom", "supply.bom.mining", "supply.bom.processing",
+    "supply.bom.alloys", "supply.bom.platforms",
+    "supply.dossier", "supply.alerts", "supply.register",
+    "supply.feedback", "supply.chokepoints", "supply.hhi",
+    "supply.canada", "supply.risk_factors",
+]
+
+
+def test_all_required_keys_present():
+    """All required registry keys are present."""
+    from src.analysis.source_registry import get_registry
+    registry = get_registry()
+    missing = [k for k in REQUIRED_KEYS if k not in registry]
+    assert missing == [], f"Missing registry keys: {missing}"
+
+
+def test_full_registry_integrity():
+    """Every registry key resolves and has valid shape."""
+    from src.analysis.source_registry import get_registry, resolve_sources
+    registry = get_registry()
+    assert len(registry) >= 50, f"Expected >= 50 keys, got {len(registry)}"
+    # Test inherited keys resolve
+    for key in ["arctic.kpis", "arctic.kpis.threat_level", "deals.transfers.row"]:
+        result = resolve_sources(key)
+        assert result is not None, f"Inherited key {key} did not resolve"
+
 
 def test_resolve_exact_key():
     """Exact key match returns the entry directly."""
