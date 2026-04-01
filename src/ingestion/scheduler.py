@@ -229,6 +229,38 @@ async def score_taxonomy():
         logger.error("[scheduler] Taxonomy scoring failed: %s", e)
 
 
+async def refresh_cobalt_feeds():
+    """Refresh all cobalt-specific data feeds (BGS, NRCan, USGS, Sherritt, Glencore, CMOC)."""
+    try:
+        from src.ingestion.bgs_minerals import BGSCobaltClient
+        from src.ingestion.nrcan_cobalt import NRCanCobaltClient
+        from src.ingestion.sherritt_cobalt import SherrittCobaltClient
+        from src.ingestion.osint_feeds import (
+            USGSCobaltDataClient, GlencoreProductionClient,
+            CMOCProductionClient, IMFCobaltPriceClient,
+        )
+
+        results = {}
+        bgs = await BGSCobaltClient().fetch_cobalt_production()
+        results["bgs"] = len(bgs)
+        nrcan = await NRCanCobaltClient().fetch_canada_cobalt_stats()
+        results["nrcan"] = "ok" if nrcan.get("production_tonnes") else "fallback"
+        usgs = await USGSCobaltDataClient().fetch_cobalt_production()
+        results["usgs"] = len(usgs)
+        sherritt = await SherrittCobaltClient().fetch_stock_data()
+        results["sherritt_price"] = sherritt.get("price_cad", "n/a")
+        glencore = await GlencoreProductionClient().fetch_production()
+        results["glencore"] = "ok" if glencore else "fallback"
+        cmoc = await CMOCProductionClient().fetch_production()
+        results["cmoc"] = "ok" if cmoc else "fallback"
+        imf = await IMFCobaltPriceClient().fetch_cobalt_prices()
+        results["imf_prices"] = len(imf)
+
+        logger.info("[scheduler] Cobalt feeds refreshed: %s", results)
+    except Exception as e:
+        logger.error("[scheduler] Cobalt feed refresh failed: %s", e)
+
+
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the ingestion scheduler."""
     scheduler = AsyncIOScheduler()
@@ -316,6 +348,16 @@ def create_scheduler() -> AsyncIOScheduler:
         IntervalTrigger(hours=6),
         id="taxonomy_scoring",
         name="DND risk taxonomy scoring",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Cobalt-specific data feeds (daily at 5 AM)
+    scheduler.add_job(
+        refresh_cobalt_feeds,
+        CronTrigger(hour=5, minute=0),
+        id="cobalt_feeds",
+        name="Cobalt supply chain data feeds (BGS, NRCan, USGS, Sherritt, Glencore, CMOC)",
         replace_existing=True,
         max_instances=1,
     )
