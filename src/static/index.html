@@ -8459,8 +8459,13 @@ function renderDossierEntity() {
   detail.innerHTML = html;
 }
 
+var _analystName = '';
+function getAnalystName() {
+  if (!_analystName) _analystName = prompt('Enter your analyst name:') || 'Anonymous';
+  return _analystName;
+}
 function alertAcknowledge(btn, alertId) {
-  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'acknowledge', analyst:'Current User'})});
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'acknowledge', analyst:getAnalystName()})});
   var card = btn.closest('.card');
   btn.textContent = '\u2713 Acknowledged'; btn.style.color = 'var(--accent3)'; btn.style.borderColor = 'var(--accent3)'; btn.disabled = true;
   card.style.borderLeftColor = 'var(--accent3)'; card.dataset.acknowledged = 'true';
@@ -8472,7 +8477,7 @@ function alertAssign(btn, alertId) {
   btn.textContent = '\u2192 ' + name; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.disabled = true;
 }
 function alertEscalate(btn, alertId) {
-  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'escalate', analyst:'Current User'})});
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'escalate', analyst:getAnalystName()})});
   var card = btn.closest('.card');
   btn.textContent = '\u2B06 Escalated'; btn.style.color = 'var(--accent2)'; btn.style.borderColor = 'var(--accent2)'; btn.style.background = 'rgba(239,68,68,0.15)'; btn.disabled = true;
   card.style.borderLeftWidth = '6px';
@@ -8646,7 +8651,7 @@ function toggleRegisterRow(idx) {
 }
 
 function updateRegisterStatus(btn, idx, newStatus, riskId) {
-  fetch(API + '/psi/register/cobalt/' + encodeURIComponent(riskId), {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({risk_id:riskId, new_status:newStatus, analyst:'Current User'})});
+  fetch(API + '/psi/register/cobalt/' + encodeURIComponent(riskId), {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({risk_id:riskId, new_status:newStatus, analyst:getAnalystName()})});
   btn.disabled = true;
   var statusColors = {open:'var(--accent2)',in_progress:'var(--accent4)',mitigated:'var(--accent3)',closed:'var(--text-dim)'};
   var statusLabels = {open:'Open',in_progress:'In Progress',mitigated:'Mitigated',closed:'Closed'};
