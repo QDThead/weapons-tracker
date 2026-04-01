@@ -1428,8 +1428,8 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <button class="arctic-layer-btn active" data-layer="bases" onclick="toggleArcticLayer('bases',this)">Bases</button>
         <button class="arctic-layer-btn active" data-layer="routes" onclick="toggleArcticLayer('routes',this)">Routes</button>
         <button class="arctic-layer-btn active" data-layer="flights" onclick="toggleArcticLayer('flights',this)">Flights</button>
-        <button class="arctic-layer-btn active" data-layer="adiz" onclick="toggleArcticLayer('adiz',this)">ADIZ</button>
-        <button class="arctic-layer-btn active" data-layer="ice" onclick="toggleArcticLayer('ice',this)">Ice Edge</button>
+        <button class="arctic-layer-btn" data-layer="adiz" onclick="toggleArcticLayer('adiz',this)">ADIZ</button>
+        <button class="arctic-layer-btn" data-layer="ice" onclick="toggleArcticLayer('ice',this)">Ice Edge</button>
         <button class="arctic-layer-btn active" data-layer="connections" onclick="toggleArcticLayer('connections',this)">Networks</button>
         <button class="arctic-layer-btn active" data-layer="ranges" onclick="toggleArcticLayer('ranges',this)">Ranges</button>
         <button class="arctic-layer-btn" data-layer="trades" onclick="toggleArcticLayer('trades',this)">Trade Flows</button>
@@ -4609,7 +4609,7 @@ let arcticTabLoaded = false;
 let arcticCesiumViewer = null;
 let arcticGlobeInitialized = false;
 let arcticLayerEntities = { bases: [], routes: [], flights: [], adiz: [], ice: [], connections: [], ranges: [], trades: [] };
-let arcticLayerVisible = { bases: true, routes: true, flights: true, adiz: true, ice: true, connections: true, ranges: true, trades: false };
+let arcticLayerVisible = { bases: true, routes: true, flights: true, adiz: false, ice: false, connections: true, ranges: true, trades: false };
 var arcticFlightHistory = {};
 let arcticAirspaceMap = null;
 let arcticAirspaceMarkers = [];
