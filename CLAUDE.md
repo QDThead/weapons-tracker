@@ -14,11 +14,12 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,030 lines)
-- **3D Globe:** CesiumJS 1.119 (CDN) with CartoDB Dark Matter tiles, global shipping lanes overlay
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,670 lines)
+- **3D Globes:** CesiumJS 1.119 (CDN) — Arctic globe (Esri satellite imagery, 8 layers) + Supply Chain globe (CartoDB dark tiles)
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 93 Python files, ~38,200 total lines
-- **Tests:** 283 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness (198 unit/integration + 85 adversarial)
+- **Codebase:** 94 Python files, ~38,350 total lines
+- **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
+- **Tests:** 295 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights (210 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
@@ -96,7 +97,7 @@ weapons-tracker/
 │   │   ├── globe_routes.py          # 3D supply chain globe data (/globe/*)
 │   │   └── forecast computed live  # via globe_routes.py /globe/minerals/{name}/forecast
 │   ├── static/
-│   │   └── index.html                # Dashboard UI (10 tabs, ~11,050 lines, EN/FR bilingual, CesiumJS globe)
+│   │   └── index.html                # Dashboard UI (7 tabs, ~11,670 lines, EN/FR bilingual, 2 CesiumJS globes)
 │   ├── alerts/                       # (placeholder — not yet implemented)
 │   └── main.py                       # App entry point
 ├── scripts/
@@ -114,12 +115,15 @@ weapons-tracker/
 └── README.md
 ```
 
-## Data Sources (53 active + 2 inactive)
+## Data Sources (56 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
 | 1 | Defense News RSS | `defense_news_rss.py` | Hours (4 feeds) | None | Working |
-| 2 | Military Flights | `flight_tracker.py` | Live (5 min) | None | Working |
+| 2 | Military Flights (adsb.lol) | `flight_tracker.py` | Live (60s) | None | Working |
+| 2b | Military Flights (adsb.fi) | `flight_tracker.py` | Live (60s) | None | Working |
+| 2c | Military Flights (Airplanes.live) | `flight_tracker.py` | Live (60s) | None | Working |
+| 2d | Military Flights (ADSB One) | `flight_tracker.py` | Live (60s) | None | Working |
 | 3 | GDELT News | `gdelt_news.py` | 15 min | None | Working |
 | 4 | DSCA Arms Sales | `dsca_sales.py` | Days | None | Working |
 | 5 | Statistics Canada | `statcan_trade.py` | Monthly | None | Working |
@@ -189,19 +193,16 @@ weapons-tracker/
 | **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
-## Dashboard UI (10 tabs, EN/FR bilingual)
+## Dashboard UI (7 tabs, EN/FR bilingual)
 
 | Tab | Purpose |
 |-----|---------|
 | **Insights** | Intelligence briefing: **13-category risk taxonomy strip**, situation report, live news, DSCA sales, alerts, adversary flows, Canada position, shifting alliances, what to watch |
-| **Overview** | Trade flow network (D3), top exporters/importers, weapon types, timeline |
-| **World Map** | Leaflet map with trade arcs, country bubbles, Comtrade USD values, regional breakdown |
-| **Arctic** | Force balance map with 25 bases, 3 shipping routes, Northern Sea Route threats, weapon timeline, live airspace |
-| **Live Flights** | Real-time military aircraft positions (auto-refreshes 30s) with context banner |
+| **Arctic** | **3D CesiumJS globe** (Esri satellite imagery): 8 toggleable layers (25 bases, 3 shipping routes, live flights from 4 ADS-B sources, ADIZ, ice edge, base networks, weapon range rings, trade flows). Transport freight estimation with payload/origin/destination. Base cargo intelligence chart. Top trade routes table + regional breakdown. KPI cards, base intel table, current intelligence panel. |
 | **Deals** | Searchable/filterable table of all 9,311 transfers with TIV glossary tooltips |
 | **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances, **defence supply base exposure** (10 suppliers, risk ranking, sector concentration, ownership), **Action Centre** |
 | **Supply Chain** | PSI: 12 sub-tabs (Overview, 3D Supply Map, Knowledge Graph, Risk Matrix, Scenario Sandbox, Risk Taxonomy, **Forecasting**, **BOM Explorer**, **Supplier Dossier**, **Alerts & Sensing**, **Risk Register**, **Analyst Feedback**) — all default to Cobalt |
-| **Data Feeds** | Operations view: 57 feed status cards across 10 sections with freshness, sample data, health indicators |
+| **Data Feeds** | Operations view: feed status cards across 10 sections with freshness, sample data, health indicators |
 | **Compliance** | DMPP 11 compliance matrix: 22 RFI questions, 118 sub-requirements with traceability, evidence, and View buttons |
 
 ## API Endpoints (150+ total)
