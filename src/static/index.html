@@ -5264,6 +5264,187 @@ function renderArcticIceEdge() {
   arcticLayerEntities.ice.push(iceLabel);
 }
 
+function renderArcticFlights(flights) {
+  arcticLayerEntities.flights.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.flights = [];
+
+  if (!flights || !flights.flights) return;
+
+  var nationColors = {
+    russian: '#ef4444',
+    chinese: '#f59e0b',
+    nato: '#3b82f6',
+    unknown: '#64748b',
+  };
+
+  flights.flights.forEach(function(f) {
+    var color = Cesium.Color.fromCssColorString(nationColors[f.nation] || '#64748b');
+    var altMeters = (f.altitude_ft || 35000) * 0.3048;
+
+    var entity = arcticCesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(f.longitude, f.latitude, altMeters),
+      point: {
+        pixelSize: 6,
+        color: color.withAlpha(0.85),
+        outlineColor: color,
+        outlineWidth: 1,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+      label: {
+        text: (f.callsign || '?') + (f.aircraft_description ? ' ' + f.aircraft_description : ''),
+        font: '9px JetBrains Mono, monospace',
+        fillColor: color.withAlpha(0.8),
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 2,
+        outlineColor: Cesium.Color.BLACK,
+        pixelOffset: new Cesium.Cartesian2(10, 0),
+        horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
+      },
+      properties: { type: 'arctic-flight', nation: f.nation },
+      show: arcticLayerVisible.flights,
+    });
+    arcticLayerEntities.flights.push(entity);
+  });
+}
+
+function renderArcticConnections(bases) {
+  arcticLayerEntities.connections.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.connections = [];
+
+  var russianBases = bases.filter(function(b) { return b.alliance === 'russia'; });
+  var natoBases = bases.filter(function(b) { return b.alliance === 'nato'; });
+
+  for (var i = 0; i < russianBases.length - 1; i++) {
+    var dist = _haversineJS(russianBases[i].lat, russianBases[i].lon, russianBases[i+1].lat, russianBases[i+1].lon);
+    if (dist > 3000) continue;
+    var entity = arcticCesiumViewer.entities.add({
+      polyline: {
+        positions: [
+          Cesium.Cartesian3.fromDegrees(russianBases[i].lon, russianBases[i].lat),
+          Cesium.Cartesian3.fromDegrees(russianBases[i+1].lon, russianBases[i+1].lat),
+        ],
+        width: 1,
+        material: Cesium.Color.fromCssColorString('#ef4444').withAlpha(0.25),
+        clampToGround: true,
+      },
+      show: arcticLayerVisible.connections,
+    });
+    arcticLayerEntities.connections.push(entity);
+  }
+
+  for (var j = 0; j < natoBases.length - 1; j++) {
+    var natoDist = _haversineJS(natoBases[j].lat, natoBases[j].lon, natoBases[j+1].lat, natoBases[j+1].lon);
+    if (natoDist > 3000) continue;
+    var natoEntity = arcticCesiumViewer.entities.add({
+      polyline: {
+        positions: [
+          Cesium.Cartesian3.fromDegrees(natoBases[j].lon, natoBases[j].lat),
+          Cesium.Cartesian3.fromDegrees(natoBases[j+1].lon, natoBases[j+1].lat),
+        ],
+        width: 1,
+        material: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.15),
+        clampToGround: true,
+      },
+      show: arcticLayerVisible.connections,
+    });
+    arcticLayerEntities.connections.push(natoEntity);
+  }
+
+  bases.filter(function(b) { return DISTANCE_LINE_BASES.includes(b.name); }).forEach(function(b) {
+    var nearest = _findNearestCanadianBase(b.lat, b.lon, bases);
+    if (!nearest) return;
+
+    var distEntity = arcticCesiumViewer.entities.add({
+      polyline: {
+        positions: [
+          Cesium.Cartesian3.fromDegrees(b.lon, b.lat),
+          Cesium.Cartesian3.fromDegrees(nearest.lon, nearest.lat),
+        ],
+        width: 1,
+        material: new Cesium.PolylineDashMaterialProperty({
+          color: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.3),
+          dashLength: 10,
+        }),
+        clampToGround: true,
+      },
+      show: arcticLayerVisible.connections,
+    });
+    arcticLayerEntities.connections.push(distEntity);
+
+    var midLon = (b.lon + nearest.lon) / 2;
+    var midLat = (b.lat + nearest.lat) / 2;
+    var labelEntity = arcticCesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(midLon, midLat),
+      label: {
+        text: nearest.dist.toLocaleString() + ' km',
+        font: '9px JetBrains Mono, monospace',
+        fillColor: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.6),
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 2,
+        outlineColor: Cesium.Color.BLACK,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
+      },
+      show: arcticLayerVisible.connections,
+    });
+    arcticLayerEntities.connections.push(labelEntity);
+  });
+}
+
+function renderArcticRangeRings(bases) {
+  arcticLayerEntities.ranges.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.ranges = [];
+
+  var weaponRanges = [
+    { keywords: ['S-400', 'S-300'], range_km: 400, color: '#ef4444', label: 'S-400 SAM' },
+    { keywords: ['Bastion', 'coastal defense'], range_km: 500, color: '#f97316', label: 'Bastion AShM' },
+    { keywords: ['Kinzhal', 'MiG-31', 'bomber', 'Tu-22', 'Tu-95'], range_km: 2000, color: '#ef4444', label: 'Air-launched strike' },
+    { keywords: ['interceptor', 'GBI', 'Ground-Based Interceptor'], range_km: 2000, color: '#3b82f6', label: 'GBI intercept' },
+  ];
+
+  bases.forEach(function(base) {
+    var cap = (base.capability || '').toLowerCase();
+    weaponRanges.forEach(function(wr) {
+      var match = wr.keywords.some(function(kw) { return cap.indexOf(kw.toLowerCase()) >= 0; });
+      if (!match) return;
+
+      var ringColor = Cesium.Color.fromCssColorString(wr.color);
+      var entity = arcticCesiumViewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(base.lon, base.lat),
+        ellipse: {
+          semiMajorAxis: wr.range_km * 1000,
+          semiMinorAxis: wr.range_km * 1000,
+          material: ringColor.withAlpha(0.06),
+          outline: true,
+          outlineColor: ringColor.withAlpha(0.3),
+          outlineWidth: 1,
+        },
+        show: arcticLayerVisible.ranges,
+      });
+      arcticLayerEntities.ranges.push(entity);
+
+      var edgeLat = base.lat + (wr.range_km / 111.32);
+      var labelEntity = arcticCesiumViewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(base.lon, Math.min(edgeLat, 89)),
+        label: {
+          text: wr.label + ' (' + wr.range_km + 'km)',
+          font: '8px JetBrains Mono, monospace',
+          fillColor: ringColor.withAlpha(0.5),
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          outlineWidth: 2,
+          outlineColor: Cesium.Color.BLACK,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
+        },
+        show: arcticLayerVisible.ranges,
+      });
+      arcticLayerEntities.ranges.push(labelEntity);
+    });
+  });
+}
+
 async function loadArctic() {
   // Fetch assessment + flights + bases in parallel
   const [assessResp, flightsResp, basesResp] = await Promise.all([
@@ -5296,6 +5477,15 @@ async function loadArctic() {
   renderArcticRoutes();
   renderArcticADIZ();
   renderArcticIceEdge();
+
+  if (flights) {
+    renderArcticFlights(flights);
+  }
+
+  if (arcticBasesData && arcticBasesData.bases) {
+    renderArcticConnections(arcticBasesData.bases);
+    renderArcticRangeRings(arcticBasesData.bases);
+  }
 
   // Render Base Intelligence table
   if (arcticBasesData) {
@@ -5398,8 +5588,8 @@ function renderArcticMetrics(assessment, flights) {
 }
 
 function updateArcticMainMapFlights(flights) {
-  // Will be implemented with CesiumJS flight rendering in Task 3
-  if (!arcticCesiumViewer) return;
+  if (!arcticCesiumViewer || !flights) return;
+  renderArcticFlights(flights);
 }
 
 // --- Arctic Base Intelligence Table ---
