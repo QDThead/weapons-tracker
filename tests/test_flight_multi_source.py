@@ -11,8 +11,8 @@ from datetime import datetime
 
 
 class TestAdsbSources:
-    def test_three_sources_defined(self):
-        assert len(ADSB_SOURCES) == 3
+    def test_four_sources_defined(self):
+        assert len(ADSB_SOURCES) == 4
 
     def test_sources_have_required_fields(self):
         for src in ADSB_SOURCES:
@@ -31,6 +31,10 @@ class TestAdsbSources:
     def test_airplanes_live_present(self):
         names = [s["name"] for s in ADSB_SOURCES]
         assert "airplanes.live" in names
+
+    def test_adsb_one_present(self):
+        names = [s["name"] for s in ADSB_SOURCES]
+        assert "adsb.one" in names
 
 
 class TestDeduplication:

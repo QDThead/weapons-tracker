@@ -23,6 +23,7 @@ ADSB_SOURCES = [
     {"name": "adsb.lol", "url": "https://api.adsb.lol/v2"},
     {"name": "adsb.fi", "url": "https://opendata.adsb.fi/api/v2"},
     {"name": "airplanes.live", "url": "https://api.airplanes.live/v2"},
+    {"name": "adsb.one", "url": "https://api.adsb.one/v2"},
 ]
 
 # Military transport aircraft type designators (ICAO type codes)

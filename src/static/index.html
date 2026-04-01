@@ -4273,7 +4273,7 @@ function genericSample(data) {
 
 const FEED_DEFINITIONS = [
   // ── LIVE FEEDS ──
-  { section: 'Live Feeds', sectionNote: 'real-time / minutes', name: 'Military Flights (3 ADS-B sources)', key: 'adsb.lol + adsb.fi + airplanes.live',
+  { section: 'Live Feeds', sectionNote: 'real-time / minutes', name: 'Military Flights (4 ADS-B sources)', key: 'adsb.lol + adsb.fi + airplanes.live + adsb.one',
     sampleEndpoint: '/tracking/flights/military', sampleLimit: 3,
     renderSample: items => items.slice(0, 3).map(f =>
       '<div class="feed-sample-row"><span class="feed-sample-field">Callsign:</span> <span class="feed-sample-value">' + esc(f.callsign || '---') + '</span> &middot; ' +
