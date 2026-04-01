@@ -326,6 +326,20 @@ class TestCobaltNewData:
             assert "source" in p
             assert "confidence" in p and 0 <= p["confidence"] <= 100
 
+    def test_cobalt_figure_metadata(self):
+        """All mines and refineries must have figure_type and figure_source."""
+        m = get_mineral_by_name("Cobalt")
+        valid_types = ("design_capacity", "actual_2025", "estimated_2025", "restart_estimate", "estimated", "quota_2026")
+        for mine in m["mines"]:
+            assert "figure_type" in mine, f"Mine {mine['name']} missing figure_type"
+            assert "figure_source" in mine, f"Mine {mine['name']} missing figure_source"
+            assert "figure_year" in mine, f"Mine {mine['name']} missing figure_year"
+            assert mine["figure_type"] in valid_types, f"Mine {mine['name']} invalid figure_type: {mine['figure_type']}"
+        for ref in m["refineries"]:
+            assert "figure_type" in ref, f"Refinery {ref['name']} missing figure_type"
+            assert "figure_source" in ref, f"Refinery {ref['name']} missing figure_source"
+            assert "figure_year" in ref, f"Refinery {ref['name']} missing figure_year"
+
     def test_mine_dossier_exists(self):
         m = get_mineral_by_name("Cobalt")
         tfm = m["mines"][0]
