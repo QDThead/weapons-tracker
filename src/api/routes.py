@@ -253,6 +253,7 @@ class FlightOut(BaseModel):
     heading: float
     is_military: bool
     country_of_origin: str
+    sources: list[str] = []
 
 
 @app.get("/tracking/flights/military", response_model=list[FlightOut])
@@ -272,6 +273,7 @@ async def get_military_flights():
             heading=r.heading,
             is_military=r.is_military,
             country_of_origin=r.country_of_origin,
+            sources=r.sources,
         )
         for r in records
     ]
@@ -294,6 +296,7 @@ async def get_transport_flights():
             heading=r.heading,
             is_military=r.is_military,
             country_of_origin=r.country_of_origin,
+            sources=r.sources,
         )
         for r in records
     ]

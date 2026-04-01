@@ -19,7 +19,11 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-ADSB_LOL_API = "https://api.adsb.lol/v2"
+ADSB_SOURCES = [
+    {"name": "adsb.lol", "url": "https://api.adsb.lol/v2"},
+    {"name": "adsb.fi", "url": "https://opendata.adsb.fi/api/v2"},
+    {"name": "airplanes.live", "url": "https://api.airplanes.live/v2"},
+]
 
 # Military transport aircraft type designators (ICAO type codes)
 MILITARY_TRANSPORT_TYPES = {
@@ -72,6 +76,11 @@ class MilitaryFlightRecord:
     squawk: str
 
     seen_at: datetime
+    sources: list[str] = None
+
+    def __post_init__(self):
+        if self.sources is None:
+            self.sources = []
 
 
 class FlightTrackerClient:
@@ -81,28 +90,37 @@ class FlightTrackerClient:
         self.timeout = timeout
 
     async def fetch_military_aircraft(self) -> list[MilitaryFlightRecord]:
-        """Fetch all currently visible military-flagged aircraft.
+        """Fetch military aircraft from all sources, merge and deduplicate."""
+        import asyncio
 
-        Uses the adsb.lol military filter endpoint.
-        """
-        url = f"{ADSB_LOL_API}/mil"
+        async def _fetch_source(source: dict) -> list[MilitaryFlightRecord]:
+            url = f"{source['url']}/mil"
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                data = response.json()
+                records = []
+                for ac in data.get("ac", []):
+                    record = self._parse_aircraft(ac)
+                    if record:
+                        record.sources = [source["name"]]
+                        records.append(record)
+                logger.info("Fetched %d aircraft from %s", len(records), source["name"])
+                return records
+            except Exception:
+                logger.warning("Failed to fetch from %s", source["name"], exc_info=True)
+                return []
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            logger.info("Fetching military aircraft from adsb.lol")
-            response = await client.get(url)
-            response.raise_for_status()
+        results = await asyncio.gather(*[_fetch_source(s) for s in ADSB_SOURCES])
+        all_records = []
+        for source_records in results:
+            all_records.extend(source_records)
 
-        data = response.json()
-        aircraft_list = data.get("ac", [])
-
-        records = []
-        for ac in aircraft_list:
-            record = self._parse_aircraft(ac)
-            if record:
-                records.append(record)
-
-        logger.info("Detected %d military aircraft", len(records))
-        return records
+        deduped = self._deduplicate(all_records)
+        logger.info("Multi-source: %d total, %d after dedup from %d sources",
+                     len(all_records), len(deduped), len(ADSB_SOURCES))
+        return deduped
 
     async def fetch_transport_aircraft(self) -> list[MilitaryFlightRecord]:
         """Fetch military transport aircraft specifically.
@@ -118,41 +136,41 @@ class FlightTrackerClient:
         return transports
 
     async def fetch_by_type(self, type_code: str) -> list[MilitaryFlightRecord]:
-        """Fetch all aircraft of a specific ICAO type code.
+        """Fetch all aircraft of a specific ICAO type code from all sources."""
+        import asyncio
 
-        Args:
-            type_code: ICAO type designator (e.g., "C17", "IL76").
-        """
-        url = f"{ADSB_LOL_API}/type/{type_code}"
+        async def _fetch_source(source: dict) -> list[MilitaryFlightRecord]:
+            url = f"{source['url']}/type/{type_code}"
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                data = response.json()
+                records = []
+                for ac in data.get("ac", []):
+                    record = self._parse_aircraft(ac)
+                    if record:
+                        record.sources = [source["name"]]
+                        records.append(record)
+                return records
+            except Exception:
+                logger.warning("Failed to fetch type %s from %s", type_code, source["name"], exc_info=True)
+                return []
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            logger.info("Fetching aircraft type %s from adsb.lol", type_code)
-            response = await client.get(url)
-            response.raise_for_status()
+        results = await asyncio.gather(*[_fetch_source(s) for s in ADSB_SOURCES])
+        all_records = []
+        for source_records in results:
+            all_records.extend(source_records)
 
-        data = response.json()
-        aircraft_list = data.get("ac", [])
-
-        records = []
-        for ac in aircraft_list:
-            record = self._parse_aircraft(ac)
-            if record:
-                records.append(record)
-
-        logger.info("Found %d aircraft of type %s", len(records), type_code)
-        return records
+        deduped = self._deduplicate(all_records)
+        logger.info("Found %d aircraft of type %s (deduped from %d)", len(deduped), type_code, len(all_records))
+        return deduped
 
     async def fetch_area(
         self, lat: float, lon: float, radius_nm: int = 100
     ) -> list[MilitaryFlightRecord]:
-        """Fetch military aircraft within a radius of a point.
-
-        Args:
-            lat: Center latitude.
-            lon: Center longitude.
-            radius_nm: Radius in nautical miles.
-        """
-        url = f"{ADSB_LOL_API}/point/{lat}/{lon}/{radius_nm}"
+        """Fetch military aircraft within a radius of a point."""
+        url = f"{ADSB_SOURCES[0]['url']}/point/{lat}/{lon}/{radius_nm}"
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(url)
@@ -165,6 +183,7 @@ class FlightTrackerClient:
         for ac in aircraft_list:
             record = self._parse_aircraft(ac)
             if record and record.is_military:
+                record.sources = [ADSB_SOURCES[0]["name"]]
                 records.append(record)
 
         return records
@@ -182,6 +201,21 @@ class FlightTrackerClient:
             return float(value)
         except (ValueError, TypeError):
             return default
+
+    @staticmethod
+    def _deduplicate(records: list[MilitaryFlightRecord]) -> list[MilitaryFlightRecord]:
+        """Deduplicate aircraft by ICAO hex, merging source lists."""
+        by_hex: dict[str, MilitaryFlightRecord] = {}
+        for r in records:
+            hex_key = r.icao_hex.upper()
+            if hex_key in by_hex:
+                existing = by_hex[hex_key]
+                for src in r.sources:
+                    if src not in existing.sources:
+                        existing.sources.append(src)
+            else:
+                by_hex[hex_key] = r
+        return list(by_hex.values())
 
     def _parse_aircraft(self, ac: dict) -> MilitaryFlightRecord | None:
         """Parse a raw ADS-B aircraft object into a MilitaryFlightRecord."""
