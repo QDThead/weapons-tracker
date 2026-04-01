@@ -5370,23 +5370,59 @@ function renderArcticFlights(flights) {
     unknown: '#64748b',
   };
 
-  flights.flights.forEach(function(f) {
-    var color = Cesium.Color.fromCssColorString(nationColors[f.nation] || '#64748b');
-    var altMeters = (f.altitude_ft || 35000) * 0.3048;
+  var bases = (arcticBasesData && arcticBasesData.bases) ? arcticBasesData.bases : [];
 
+  flights.flights.forEach(function(f) {
+    var nationColor = Cesium.Color.fromCssColorString(nationColors[f.nation] || '#64748b');
+    var altMeters = (f.altitude_ft || 35000) * 0.3048;
+    var isTransport = TRANSPORT_TYPES.includes(f.aircraft_type) && !TANKER_TYPES.includes(f.aircraft_type);
+    var isTanker = TANKER_TYPES.includes(f.aircraft_type);
+
+    // Aircraft type classification colors
+    var dotColor = nationColor;
+    var pixelSize = 6;
+    if (isTransport) {
+      dotColor = Cesium.Color.fromCssColorString('#10b981');
+      pixelSize = 8;
+    } else if (isTanker) {
+      dotColor = Cesium.Color.fromCssColorString('#8b5cf6');
+      pixelSize = 7;
+    }
+
+    // Build label text
+    var labelText = (f.callsign || '?');
+    if (f.aircraft_description) labelText += ' ' + f.aircraft_description;
+    var payload = TRANSPORT_PAYLOAD_TONNES[f.aircraft_type] || 0;
+
+    // Destination estimation for transports
+    var dest = null;
+    if (isTransport && bases.length > 0) {
+      dest = estimateFlightDestination(f, bases);
+    }
+
+    if (isTransport && payload > 0) {
+      labelText = f.aircraft_type + ' ' + (f.callsign || '?');
+      if (dest) {
+        labelText += ' \u2192 ' + dest.name.split(',')[0] + ' (' + payload + 't)';
+      } else {
+        labelText += ' (' + payload + 't)';
+      }
+    }
+
+    // Aircraft point entity
     var entity = arcticCesiumViewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(f.longitude, f.latitude, altMeters),
       point: {
-        pixelSize: 6,
-        color: color.withAlpha(0.85),
-        outlineColor: color,
+        pixelSize: pixelSize,
+        color: dotColor.withAlpha(0.85),
+        outlineColor: dotColor,
         outlineWidth: 1,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
       label: {
-        text: (f.callsign || '?') + (f.aircraft_description ? ' ' + f.aircraft_description : ''),
+        text: labelText,
         font: '9px JetBrains Mono, monospace',
-        fillColor: color.withAlpha(0.8),
+        fillColor: (isTransport ? Cesium.Color.fromCssColorString('#10b981') : dotColor).withAlpha(0.8),
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         outlineWidth: 2,
         outlineColor: Cesium.Color.BLACK,
@@ -5395,11 +5431,54 @@ function renderArcticFlights(flights) {
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
       },
-      properties: { type: 'arctic-flight', nation: f.nation },
+      properties: { type: 'arctic-flight', nation: f.nation, isTransport: isTransport },
       show: arcticLayerVisible.flights,
     });
     arcticLayerEntities.flights.push(entity);
+
+    // Transport-only: projected line to destination + trail behind
+    if (isTransport && f.heading != null) {
+      var lineColor = nationColor.withAlpha(0.4);
+
+      // Projected line forward to estimated destination
+      if (dest) {
+        var projEntity = arcticCesiumViewer.entities.add({
+          polyline: {
+            positions: [
+              Cesium.Cartesian3.fromDegrees(f.longitude, f.latitude, altMeters),
+              Cesium.Cartesian3.fromDegrees(dest.lon, dest.lat, 0),
+            ],
+            width: 1.5,
+            material: new Cesium.PolylineDashMaterialProperty({
+              color: lineColor,
+              dashLength: 10,
+            }),
+          },
+          show: arcticLayerVisible.flights,
+        });
+        arcticLayerEntities.flights.push(projEntity);
+      }
+
+      // Trail behind (~500km in opposite direction)
+      var behindHeading = (f.heading + 180) % 360;
+      var trailPt = _destPointJS(f.latitude, f.longitude, behindHeading, 500);
+      var trailEntity = arcticCesiumViewer.entities.add({
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(trailPt.lon, trailPt.lat, altMeters),
+            Cesium.Cartesian3.fromDegrees(f.longitude, f.latitude, altMeters),
+          ],
+          width: 1,
+          material: nationColor.withAlpha(0.15),
+        },
+        show: arcticLayerVisible.flights,
+      });
+      arcticLayerEntities.flights.push(trailEntity);
+    }
   });
+
+  // Update freight stats
+  updateArcticFreightStats(flights);
 }
 
 function renderArcticConnections(bases) {
