@@ -14,11 +14,11 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,050 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,030 lines)
 - **3D Globe:** CesiumJS 1.119 (CDN) with CartoDB Dark Matter tiles, global shipping lanes overlay
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 74 Python files, ~34,400 total lines
-- **Tests:** 219 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring (134 unit/integration + 85 adversarial)
+- **Codebase:** 93 Python files, ~38,200 total lines
+- **Tests:** 283 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness (198 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
@@ -114,7 +114,7 @@ weapons-tracker/
 └── README.md
 ```
 
-## Data Sources (52 active + 2 inactive)
+## Data Sources (53 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -145,6 +145,7 @@ weapons-tracker/
 | 48 | GLEIF LEI Ownership | `osint_feeds.py` | On-demand | None | Working |
 | 49 | SEC EDGAR XBRL | `osint_feeds.py` | Quarterly | None | Working |
 | 50 | IMF Cobalt Prices | `cobalt_forecasting.py` | Monthly | None | Working |
+| 51 | Comtrade Cobalt Bilateral | `comtrade.py` | Monthly | API key | Working |
 
 ## Intelligence Features
 
@@ -176,7 +177,9 @@ weapons-tracker/
 | **Ownership Enrichment** | corporate_graph.py | Wikidata SPARQL lookup for company parent chains and country of origin |
 | **DND Risk Taxonomy** | risk_taxonomy.py | Full 13-category, 121 sub-category Annex B compliance. Live OSINT scoring for 4 categories, hybrid for 3, seeded with drift for 6. Displayed on Insights landing page (13-card strip) and Supply Chain tab (accordion drill-down) |
 | **COA/Mitigation Engine** | mitigation_playbook.py, mitigation_routes.py | 191-entry courses-of-action playbook across all 13 risk categories; auto-generates mitigations from risk scores; Action Centre with status tracking (open/in-progress/closed) |
-| **Confidence Scoring** | confidence.py | Glass Box per-indicator confidence levels; source triangulation (number of independent sources agreeing); displayed alongside every risk score |
+| **Confidence Scoring** | confidence.py | Glass Box per-indicator confidence levels; source triangulation (number of independent sources agreeing); displayed alongside every risk score. Active cobalt triangulation: pairwise cross-check of BGS + USGS + NRCan + Comtrade with discrepancy detection (>25% = warning, >50% = critical). Live HHI computation from BGS data. |
+| **Cobalt Bilateral Trade** | comtrade.py | 10 bilateral corridors queried monthly via Comtrade Plus API (4 HS codes: 2605, 810520, 810590, 282200). Buyer-side mirror for DRC corridors. Real trade values ($2.39B DRC→China 2023) surfaced in globe, BOM, scenario, dossier. |
+| **Supplier Dossiers (18)** | mineral_supply_chains.py | All 18 cobalt mines + refineries have real dossiers: Altman Z-score (computed or parent-consolidated), UBO ownership chains, FOCI score (0-100), recent OSINT intel, financial snapshots. FOCI ranges from 8 (Niihama/Japan) to 98 (Jinchuan/PRC SOE). |
 | **Predictive Analytics** | forecasting.py | 6 forecast types (spending trajectories, supplier shift probability, material scarcity, threat escalation, alliance drift, procurement lead times); 12–18 month horizon |
 | **ML Anomaly Detection** | ml_engine.py | Statistical anomaly detection across all data streams; RLHF feedback loop with adaptive threshold adjustment (FP rate >30% raises threshold, <10% lowers it) |
 | **Disinformation Detection** | gdelt_news.py | 3-layer detection: known state-media domains (RT, TASS, PressTV), extreme tone scoring, sensationalist title patterns |
@@ -299,11 +302,11 @@ weapons-tracker/
 
 ### Globe / 3D Supply Map (src/api/globe_routes.py)
 - `GET /globe/minerals` — All 30 mineral supply chains with geo-coordinates, Canada dependencies
-- `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, shipping routes, taxonomy scores)
+- `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, shipping routes, taxonomy scores, 18 dossiers, live HHI)
 - `GET /globe/minerals/{name}/forecast` — Live computed forecast (FRED nickel proxy, linear regression, insolvency, lead time)
 
 ### Enrichment (src/api/enrichment_routes.py)
-- `GET /enrichment/sources` — All 52 active source status and metadata
+- `GET /enrichment/sources` — All 53 active source status and metadata
 - `GET /enrichment/country/{iso3}` — Full enriched country profile (governance, fragility, military)
 - `GET /enrichment/governance/{iso3}` — World Bank WGI governance indicators
 - `GET /enrichment/fragility/{iso3}` — State fragility and instability scores
