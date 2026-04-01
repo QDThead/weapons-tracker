@@ -1120,7 +1120,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 <nav class="nav" role="tablist" aria-label="Dashboard navigation">
   <button class="nav-tab active" data-page="insights" role="tab" id="tab-insights" aria-selected="true" aria-controls="page-insights">Insights</button>
   <button class="nav-tab" data-page="overview" role="tab" id="tab-overview" aria-selected="false" aria-controls="page-overview">Overview</button>
-  <button class="nav-tab" data-page="world-map" role="tab" id="tab-world-map" aria-selected="false" aria-controls="page-world-map">World Map</button>
   <button class="nav-tab" data-page="arctic" role="tab" id="tab-arctic" aria-selected="false" aria-controls="page-arctic">Arctic</button>
   <button class="nav-tab" data-page="deals" role="tab" id="tab-deals" aria-selected="false" aria-controls="page-deals">Deals</button>
   <button class="nav-tab" data-page="canada-intel" role="tab" id="tab-canada-intel" aria-selected="false" aria-controls="page-canada-intel">Canada Intel</button>
@@ -1419,52 +1418,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
   </div>
 
-  <!-- ════ WORLD MAP PAGE ════ -->
-  <div id="page-world-map" class="page" role="tabpanel" aria-labelledby="tab-world-map">
-    <div class="card">
-      <h2>Global Arms Trade Map</h2>
-      <div class="legend">
-        <span><span class="legend-dot" style="background:var(--accent)"></span> Net Exporter</span>
-        <span><span class="legend-dot" style="background:var(--accent2)"></span> Net Importer</span>
-        <span>Circle size = total trade volume. Click a country for details.</span>
-      </div>
-      <div id="world-map" class="map-container" aria-label="Interactive world map showing global arms trade flows and country trade volumes"></div>
-    </div>
-    <div class="grid grid-2" style="margin-top:20px;">
-      <div class="card">
-        <h2>Top Trade Routes by <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></h2>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Highest-volume bilateral arms trade relationships by SIPRI TIV.</p>
-        <div class="table-wrap" style="max-height:350px;">
-          <table id="routes-table">
-            <thead><tr><th>Seller</th><th>&rarr;</th><th>Buyer</th><th><span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span> (M)</th><th>Deals</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Regional Breakdown</h2>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Arms trade distribution across world regions.</p>
-        <div class="chart-container"><canvas id="regional-chart" aria-label="Chart: Arms trade distribution across world regions"></canvas></div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:20px;">
-      <h2>Real USD Arms Trade Values (UN Comtrade, HS Chapter 93)</h2>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">
-        Actual declared customs values in USD — unlike SIPRI TIV which uses an index. Covers arms, ammunition, bombs, missiles, and parts.
-      </p>
-      <div class="grid grid-2">
-        <div>
-          <h2>Top Exporters by USD Value</h2>
-          <div class="chart-container tall"><canvas id="comtrade-chart" aria-label="Chart: Top arms exporters by USD value from UN Comtrade"></canvas></div>
-        </div>
-        <div>
-          <h2>USD Export Trend (2020-2023)</h2>
-          <div class="chart-container tall"><canvas id="comtrade-trend-chart" aria-label="Chart: USD arms export trend from 2020 to 2023"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ════ ARCTIC PAGE ════ -->
   <div id="page-arctic" class="page" role="tabpanel" aria-labelledby="tab-arctic">
 
@@ -1479,6 +1432,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <button class="arctic-layer-btn active" data-layer="ice" onclick="toggleArcticLayer('ice',this)">Ice Edge</button>
         <button class="arctic-layer-btn active" data-layer="connections" onclick="toggleArcticLayer('connections',this)">Networks</button>
         <button class="arctic-layer-btn active" data-layer="ranges" onclick="toggleArcticLayer('ranges',this)">Ranges</button>
+        <button class="arctic-layer-btn" data-layer="trades" onclick="toggleArcticLayer('trades',this)">Trade Flows</button>
         <button class="arctic-layer-btn" onclick="resetArcticCamera()" style="margin-left:auto;">Reset View</button>
       </div>
       <div class="arctic-base-legend" style="font-size:10px; margin-bottom:6px;">
@@ -1528,6 +1482,39 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Estimated cargo delivered to Arctic bases based on transport aircraft landing detection. Assumes fully loaded aircraft. Bars show relative tonnage — taller bars indicate higher resupply activity and potential force expansion.</p>
       <div id="arctic-cargo-chart" style="display:flex; gap:8px; flex-wrap:wrap; min-height:120px; align-items:flex-end;">
         <div style="color:var(--text-muted); font-size:11px; padding:20px;">Tracking transport aircraft... data populates as landings are detected.</div>
+      </div>
+    </div>
+
+    <!-- Global Arms Trade Intelligence (merged from World Map) -->
+    <div class="grid grid-2" style="margin-bottom:20px;">
+      <div class="card">
+        <h2>Top Trade Routes by <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Highest-volume bilateral arms trade relationships by SIPRI TIV.</p>
+        <div class="table-wrap" style="max-height:350px;">
+          <table id="routes-table">
+            <thead><tr><th>Seller</th><th>&rarr;</th><th>Buyer</th><th><span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span> (M)</th><th>Deals</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Regional Breakdown</h2>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Arms trade distribution across world regions.</p>
+        <div class="chart-container"><canvas id="regional-chart" aria-label="Chart: Arms trade distribution across world regions"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <h2>Real USD Arms Trade Values (UN Comtrade, HS Chapter 93)</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Actual declared customs values in USD. Covers arms, ammunition, bombs, missiles, and parts.</p>
+      <div class="grid grid-2">
+        <div>
+          <h2>Top Exporters by USD Value</h2>
+          <div class="chart-container tall"><canvas id="comtrade-chart" aria-label="Chart: Top arms exporters by USD value from UN Comtrade"></canvas></div>
+        </div>
+        <div>
+          <h2>USD Export Trend (2020-2023)</h2>
+          <div class="chart-container tall"><canvas id="comtrade-trend-chart" aria-label="Chart: USD arms export trend from 2020 to 2023"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -2433,7 +2420,6 @@ let allTransfers = [];
 let countryTotals = [];
 let flows = [];
 let chartInstances = {};
-let worldMap = null;
 let arcticRefreshTimer = null;  // Arctic tab flight auto-refresh
 let insightsArcticMap = null;
 let insightsArcticMarkers = [];
@@ -2552,7 +2538,6 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     if (tab.dataset.page !== 'arctic') clearTimeout(arcticRefreshTimer);
 
     if (tab.dataset.page === 'insights') loadInsights();
-    if (tab.dataset.page === 'world-map' && !worldMap) { initWorldMap(); loadComtrade(); }
     if (tab.dataset.page === 'arctic') loadArctic();
     if (tab.dataset.page === 'canada-intel') loadCanadaIntel();
     if (tab.dataset.page === 'supply-chain') loadSupplyChain();
@@ -2807,97 +2792,54 @@ function showOverview() {
 // ── WORLD MAP ──
 // ══════════════════════════════════════════════
 
-function initWorldMap() {
-  worldMap = L.map('world-map', { zoomControl: true, attributionControl: false }).setView([25, 10], 2);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(worldMap);
-
-  // Trade flow arcs
-  const topFlows = flows.filter(f => f.total_tiv >= 100).slice(0, 60);
-  const maxFlowTIV = Math.max(...topFlows.map(f => f.total_tiv), 1);
-
-  topFlows.forEach(f => {
-    const from = CENTROIDS[f.seller];
-    const to = CENTROIDS[f.buyer];
-    if (!from || !to) return;
-
-    const weight = 1 + (f.total_tiv / maxFlowTIV) * 5;
-    const line = L.polyline([from, to], {
-      color: '#00d4ff',
-      weight: weight,
-      opacity: 0.25,
-      dashArray: '4 6',
-    }).addTo(worldMap);
-    line.bindTooltip(`${esc(f.seller)} &rarr; ${esc(f.buyer)}<br>TIV: ${fmt(f.total_tiv)} (${f.deal_count} deals)`, { sticky: true });
-  });
-
-  // Country bubbles
-  const maxTotalTrade = Math.max(...countryTotals.map(c => c.exports_tiv + c.imports_tiv), 1);
-
-  countryTotals.forEach(c => {
-    const coords = CENTROIDS[c.country];
-    if (!coords) return;
-    const totalTrade = c.exports_tiv + c.imports_tiv;
-    if (totalTrade < 1) return;
-
-    const radius = 5 + (totalTrade / maxTotalTrade) * 35;
-    const isExporter = c.exports_tiv > c.imports_tiv;
-
-    const circle = L.circleMarker(coords, {
-      radius: radius,
-      fillColor: isExporter ? '#00d4ff' : '#ef4444',
-      color: isExporter ? '#00d4ff' : '#ef4444',
-      weight: 1,
-      fillOpacity: 0.6,
-      opacity: 0.8,
-    }).addTo(worldMap);
-
-    circle.bindTooltip(`<b>${c.country}</b><br>Exports: ${fmt(c.exports_tiv)}<br>Imports: ${fmt(c.imports_tiv)}`, { sticky: true });
-    circle.on('click', () => showCountryDetail(c.country));
-  });
-
+function populateTradeCharts() {
   // Routes table
-  const routesTbody = document.querySelector('#routes-table tbody');
-  routesTbody.innerHTML = flows.slice(0, 30).map(f => `
-    <tr>
-      <td><span class="seller-tag" onclick="showCountryDetail('${esc(f.seller).replace(/'/g,"\\'")}');">${esc(f.seller)}</span></td>
-      <td style="color:var(--text-dim)">&rarr;</td>
-      <td><span class="buyer-tag" onclick="showCountryDetail('${esc(f.buyer).replace(/'/g,"\\'")}');">${esc(f.buyer)}</span></td>
-      <td class="tiv">${f.total_tiv.toFixed(0)}</td>
-      <td>${f.deal_count}</td>
-    </tr>
-  `).join('');
+  var routesTbody = document.querySelector('#routes-table tbody');
+  if (routesTbody && flows.length > 0) {
+    routesTbody.innerHTML = flows.slice(0, 30).map(function(f) {
+      return '<tr>' +
+        '<td><span class="seller-tag" onclick="showCountryDetail(\'' + esc(f.seller).replace(/'/g, "\\'") + '\');">' + esc(f.seller) + '</span></td>' +
+        '<td style="color:var(--text-dim)">&rarr;</td>' +
+        '<td><span class="buyer-tag" onclick="showCountryDetail(\'' + esc(f.buyer).replace(/'/g, "\\'") + '\');">' + esc(f.buyer) + '</span></td>' +
+        '<td class="tiv">' + f.total_tiv.toFixed(0) + '</td>' +
+        '<td>' + f.deal_count + '</td>' +
+      '</tr>';
+    }).join('');
+  }
 
-  // Regional breakdown
-  destroyChart('regional-chart');
-  const regions = {};
-  countryTotals.forEach(c => {
-    const coords = CENTROIDS[c.country];
-    if (!coords) return;
-    let region;
-    const lat = coords[0], lon = coords[1];
-    if (lon > 25 && lat > 10 && lon < 70) region = 'Middle East';
-    else if (lon >= -30 && lon <= 40 && lat >= 35) region = 'Europe';
-    else if (lon > 60 && lat > -10) region = 'Asia-Pacific';
-    else if (lon < -30 && lat > 10) region = 'North America';
-    else if (lon < -30) region = 'Latin America';
-    else if (lat < 35 && lon < 55 && lon > -30) region = 'Africa';
-    else region = 'Other';
-    if (!regions[region]) regions[region] = { exports: 0, imports: 0 };
-    regions[region].exports += c.exports_tiv;
-    regions[region].imports += c.imports_tiv;
-  });
-  const regionNames = Object.keys(regions).sort((a, b) => (regions[b].exports + regions[b].imports) - (regions[a].exports + regions[a].imports));
-  chartInstances['regional-chart'] = new Chart(document.getElementById('regional-chart'), {
-    type: 'bar',
-    data: {
-      labels: regionNames,
-      datasets: [
-        { label: 'Exports TIV', data: regionNames.map(r => regions[r].exports), backgroundColor: '#00d4ff88', borderColor: '#00d4ff', borderWidth: 1 },
-        { label: 'Imports TIV', data: regionNames.map(r => regions[r].imports), backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 1 },
-      ],
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } },
-  });
+  // Regional breakdown chart
+  if (countryTotals.length > 0) {
+    var regions = {};
+    countryTotals.forEach(function(c) {
+      var coords = CENTROIDS[c.country];
+      if (!coords) return;
+      var region;
+      var lat = coords[0], lon = coords[1];
+      if (lon > 25 && lat > 10 && lon < 70) region = 'Middle East';
+      else if (lon >= -30 && lon <= 40 && lat >= 35) region = 'Europe';
+      else if (lon > 60 && lat > -10) region = 'Asia-Pacific';
+      else if (lon < -30 && lat > 10) region = 'North America';
+      else if (lon < -30) region = 'Latin America';
+      else if (lat < 35 && lon < 55 && lon > -30) region = 'Africa';
+      else region = 'Other';
+      if (!regions[region]) regions[region] = { exports: 0, imports: 0 };
+      regions[region].exports += c.exports_tiv;
+      regions[region].imports += c.imports_tiv;
+    });
+    var regionNames = Object.keys(regions).sort(function(a, b) { return (regions[b].exports + regions[b].imports) - (regions[a].exports + regions[a].imports); });
+    destroyChart('regional-chart');
+    chartInstances['regional-chart'] = new Chart(document.getElementById('regional-chart'), {
+      type: 'bar',
+      data: {
+        labels: regionNames,
+        datasets: [
+          { label: 'Exports TIV', data: regionNames.map(function(r) { return regions[r].exports; }), backgroundColor: '#00d4ff88', borderColor: '#00d4ff', borderWidth: 1 },
+          { label: 'Imports TIV', data: regionNames.map(function(r) { return regions[r].imports; }), backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 1 },
+        ],
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } },
+    });
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -4680,8 +4622,8 @@ function getFeedLatestDisplay(feedDef, freshness) {
 let arcticTabLoaded = false;
 let arcticCesiumViewer = null;
 let arcticGlobeInitialized = false;
-let arcticLayerEntities = { bases: [], routes: [], flights: [], adiz: [], ice: [], connections: [], ranges: [] };
-let arcticLayerVisible = { bases: true, routes: true, flights: true, adiz: true, ice: true, connections: true, ranges: true };
+let arcticLayerEntities = { bases: [], routes: [], flights: [], adiz: [], ice: [], connections: [], ranges: [], trades: [] };
+let arcticLayerVisible = { bases: true, routes: true, flights: true, adiz: true, ice: true, connections: true, ranges: true, trades: false };
 var arcticFlightHistory = {};
 let arcticAirspaceMap = null;
 let arcticAirspaceMarkers = [];
@@ -5741,6 +5683,79 @@ function renderArcticRangeRings(bases) {
   });
 }
 
+function renderArcticTradeFlows() {
+  arcticLayerEntities.trades.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.trades = [];
+
+  if (!flows || flows.length === 0) return;
+
+  // Trade flow arcs (top 60 flows by TIV)
+  var topFlows = flows.filter(function(f) { return f.total_tiv >= 100; }).slice(0, 60);
+  var maxFlowTIV = Math.max.apply(null, topFlows.map(function(f) { return f.total_tiv; }).concat([1]));
+
+  topFlows.forEach(function(f) {
+    var from = CENTROIDS[f.seller];
+    var to = CENTROIDS[f.buyer];
+    if (!from || !to) return;
+
+    var width = 1 + (f.total_tiv / maxFlowTIV) * 4;
+    var entity = arcticCesiumViewer.entities.add({
+      polyline: {
+        positions: [
+          Cesium.Cartesian3.fromDegrees(from[1], from[0]),
+          Cesium.Cartesian3.fromDegrees(to[1], to[0]),
+        ],
+        width: width,
+        material: Cesium.Color.fromCssColorString('#00d4ff').withAlpha(0.2),
+        clampToGround: true,
+      },
+      description: esc(f.seller) + ' \u2192 ' + esc(f.buyer) + ': TIV ' + f.total_tiv.toFixed(0) + 'M (' + f.deal_count + ' deals)',
+      show: arcticLayerVisible.trades,
+    });
+    arcticLayerEntities.trades.push(entity);
+  });
+
+  // Country bubbles
+  if (!countryTotals || countryTotals.length === 0) return;
+  var maxTotalTrade = Math.max.apply(null, countryTotals.map(function(c) { return c.exports_tiv + c.imports_tiv; }).concat([1]));
+
+  countryTotals.forEach(function(c) {
+    var coords = CENTROIDS[c.country];
+    if (!coords) return;
+    var totalTrade = c.exports_tiv + c.imports_tiv;
+    if (totalTrade < 1) return;
+
+    var isExporter = c.exports_tiv > c.imports_tiv;
+    var color = isExporter ? Cesium.Color.fromCssColorString('#00d4ff') : Cesium.Color.fromCssColorString('#ef4444');
+    var pixelSize = 4 + Math.round((totalTrade / maxTotalTrade) * 20);
+
+    var entity = arcticCesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(coords[1], coords[0]),
+      point: {
+        pixelSize: pixelSize,
+        color: color.withAlpha(0.5),
+        outlineColor: color.withAlpha(0.8),
+        outlineWidth: 1,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+      label: {
+        text: c.country,
+        font: '9px IBM Plex Sans, sans-serif',
+        fillColor: color.withAlpha(0.6),
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 2,
+        outlineColor: Cesium.Color.BLACK,
+        pixelOffset: new Cesium.Cartesian2(0, -(pixelSize + 4)),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
+      },
+      show: arcticLayerVisible.trades,
+    });
+    arcticLayerEntities.trades.push(entity);
+  });
+}
+
 async function loadArctic() {
   // Fetch assessment + flights + bases in parallel
   const [assessResp, flightsResp, basesResp] = await Promise.all([
@@ -5790,6 +5805,17 @@ async function loadArctic() {
 
   if (flights) {
     renderArcticAirspace(flights);
+  }
+
+  // Load trade flow data for globe layer + charts
+  if (flows.length === 0) {
+    loadComtrade().then(function() {
+      populateTradeCharts();
+      renderArcticTradeFlows();
+    });
+  } else {
+    populateTradeCharts();
+    renderArcticTradeFlows();
   }
 
   arcticTabLoaded = true;
