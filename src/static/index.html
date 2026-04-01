@@ -4669,6 +4669,7 @@ let arcticCesiumViewer = null;
 let arcticGlobeInitialized = false;
 let arcticLayerEntities = { bases: [], routes: [], flights: [], adiz: [], ice: [], connections: [], ranges: [] };
 let arcticLayerVisible = { bases: true, routes: true, flights: true, adiz: true, ice: true, connections: true, ranges: true };
+var arcticFlightHistory = {};
 let arcticAirspaceMap = null;
 let arcticAirspaceMarkers = [];
 let arcticBasesData = null;  // cached bases response
@@ -4889,6 +4890,34 @@ function updateArcticFreightStats(flights) {
   el.innerHTML = 'Arctic freight (est. max): ' + parts.join(' | ');
 }
 
+function estimateFlightOrigin(hex, bases) {
+  var hist = arcticFlightHistory[hex];
+  if (!hist || hist.positions.length < 2) return null;
+  var oldest = hist.positions[0];
+  var bestBase = null;
+  var bestDist = Infinity;
+  bases.forEach(function(base) {
+    var dist = _haversineJS(oldest.lat, oldest.lon, base.lat, base.lon);
+    if (dist < 100 && dist < bestDist) {
+      bestDist = dist;
+      bestBase = base;
+    }
+  });
+  return bestBase ? { name: bestBase.name, lat: bestBase.lat, lon: bestBase.lon, dist: Math.round(bestDist) } : null;
+}
+
+function getAveragedHeading(hex) {
+  var hist = arcticFlightHistory[hex];
+  if (!hist || hist.positions.length === 0) return null;
+  var recent = hist.positions.slice(-3);
+  var headings = recent.filter(function(p) { return p.heading != null; }).map(function(p) { return p.heading; });
+  if (headings.length === 0) return null;
+  var sinSum = 0, cosSum = 0;
+  headings.forEach(function(h) { sinSum += Math.sin(h * Math.PI / 180); cosSum += Math.cos(h * Math.PI / 180); });
+  var avg = Math.atan2(sinSum / headings.length, cosSum / headings.length) * 180 / Math.PI;
+  return (avg + 360) % 360;
+}
+
 function initArcticGlobe() {
   if (arcticGlobeInitialized) return;
   arcticGlobeInitialized = true;
@@ -5051,6 +5080,52 @@ function setupArcticPopupHandler() {
       var canvasPos = click.position;
       popupDiv.style.left = (canvasPos.x + 15) + 'px';
       popupDiv.style.top = (canvasPos.y - 10) + 'px';
+      popupDiv.style.display = 'block';
+    } else if (Cesium.defined(picked) && picked.id && picked.id.properties && picked.id.properties.type &&
+               picked.id.properties.type.getValue() === 'arctic-flight') {
+      var fp = picked.id.properties;
+      var hex = fp.hex.getValue();
+      var isT = fp.isTransport.getValue();
+      var isTk = fp.isTanker.getValue();
+      var hist = arcticFlightHistory[hex.toUpperCase()] || {};
+      var trackLen = hist.positions ? hist.positions.length : 0;
+      var trackMin = hist.firstSeen ? Math.round((Date.now() - hist.firstSeen) / 60000) : 0;
+      var bases = (arcticBasesData && arcticBasesData.bases) ? arcticBasesData.bases : [];
+      var origin = estimateFlightOrigin(hex.toUpperCase(), bases);
+      var originStr = origin ? esc(origin.name.split(',')[0]) + ' (est.)' : (trackLen > 1 ? 'In transit (tracking...)' : 'Detecting...');
+      var destName = fp.destName.getValue();
+      var destStr = destName ? esc(destName.split(',')[0]) : 'Unknown';
+      var destDist = fp.destDist.getValue();
+      var payload = fp.payload.getValue();
+      var sources = fp.sources.getValue();
+      var nationLabels = { russian: 'Russia', chinese: 'China', nato: 'NATO', unknown: 'Unknown' };
+      var nationName = nationLabels[fp.nation.getValue()] || fp.nation.getValue();
+
+      var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<b style="font-size:14px;">\u2708 ' + esc(fp.aircraftDesc.getValue() || fp.aircraftType.getValue()) + '</b>' +
+        '<span onclick="document.getElementById(\'arctic-base-popup-overlay\').style.display=\'none\'" style="cursor:pointer;color:var(--text-dim);font-size:16px;">&times;</span>' +
+      '</div>' +
+      '<div style="color:var(--text-dim);margin-bottom:8px;">Callsign: <b>' + esc(fp.callsign.getValue() || '---') + '</b> | ' + esc(nationName) + '</div>';
+
+      if (isT && payload > 0) {
+        html += '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:8px;">' +
+          '<div style="margin-bottom:4px;">Payload Capacity: <b style="color:#10b981;">' + payload + ' tonnes</b></div>' +
+          '<div style="margin-bottom:4px;color:var(--text-dim);">Status: Assumed fully loaded</div>' +
+          '<div style="margin-bottom:4px;">Origin: <b>' + originStr + '</b></div>' +
+          '<div style="margin-bottom:4px;">Destination: <b>' + destStr + '</b></div>' +
+          (destDist > 0 ? '<div style="margin-bottom:4px;">Distance remaining: ~' + destDist.toLocaleString() + ' km</div>' : '') +
+        '</div>';
+      }
+
+      html += '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">' +
+        '<div>Alt: ' + (fp.altitude_ft.getValue() || 0).toLocaleString() + ' ft | Speed: ' + (fp.speed_kts.getValue() || 0).toFixed(0) + ' kts | Hdg: ' + (fp.heading.getValue() || 0).toFixed(0) + '\u00b0</div>' +
+        '<div style="margin-top:4px;color:var(--text-dim);">Track: ' + trackLen + ' positions | ' + trackMin + ' min</div>' +
+        (sources ? '<div style="margin-top:2px;color:var(--text-dim);">Sources: ' + esc(sources) + '</div>' : '') +
+      '</div>';
+
+      popupDiv.innerHTML = html;
+      popupDiv.style.left = (click.position.x + 15) + 'px';
+      popupDiv.style.top = (click.position.y - 10) + 'px';
       popupDiv.style.display = 'block';
     } else {
       popupDiv.style.display = 'none';
@@ -5252,6 +5327,24 @@ function renderArcticFlights(flights) {
 
   if (!flights || !flights.flights) return;
 
+  // Update position history
+  var now = Date.now();
+  flights.flights.forEach(function(f) {
+    var hex = (f.icao_hex || '').toUpperCase();
+    if (!hex) return;
+    if (!arcticFlightHistory[hex]) {
+      arcticFlightHistory[hex] = { positions: [], firstSeen: now, lastSeen: now, sources: [] };
+    }
+    var hist = arcticFlightHistory[hex];
+    hist.positions.push({ lat: f.latitude, lon: f.longitude, alt: f.altitude_ft, heading: f.heading, time: now });
+    if (hist.positions.length > 30) hist.positions.shift();
+    hist.lastSeen = now;
+    (f.sources || []).forEach(function(s) { if (hist.sources.indexOf(s) < 0) hist.sources.push(s); });
+  });
+  Object.keys(arcticFlightHistory).forEach(function(hex) {
+    if (now - arcticFlightHistory[hex].lastSeen > 300000) delete arcticFlightHistory[hex];
+  });
+
   var nationColors = {
     russian: '#ef4444',
     chinese: '#f59e0b',
@@ -5286,7 +5379,12 @@ function renderArcticFlights(flights) {
     // Destination estimation for transports
     var dest = null;
     if (isTransport && bases.length > 0) {
-      dest = estimateFlightDestination(f, bases);
+      var avgHeading = getAveragedHeading((f.icao_hex || '').toUpperCase());
+      if (avgHeading != null) {
+        dest = estimateFlightDestination({ latitude: f.latitude, longitude: f.longitude, heading: avgHeading }, bases);
+      } else {
+        dest = estimateFlightDestination(f, bases);
+      }
     }
 
     if (isTransport && payload > 0) {
@@ -5329,7 +5427,23 @@ function renderArcticFlights(flights) {
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
       },
-      properties: { type: 'arctic-flight', nation: f.nation, isTransport: isTransport },
+      properties: {
+        type: 'arctic-flight',
+        nation: f.nation,
+        isTransport: isTransport,
+        isTanker: isTanker,
+        hex: f.icao_hex || '',
+        callsign: f.callsign || '',
+        aircraftType: f.aircraft_type || '',
+        aircraftDesc: f.aircraft_description || '',
+        altitude_ft: f.altitude_ft || 0,
+        speed_kts: f.ground_speed_knots || 0,
+        heading: f.heading || 0,
+        payload: payload,
+        destName: dest ? dest.name : '',
+        destDist: dest ? dest.dist : 0,
+        sources: (f.sources || []).join(', '),
+      },
       show: arcticLayerVisible.flights,
     });
     arcticLayerEntities.flights.push(entity);
