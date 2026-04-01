@@ -5,7 +5,7 @@ Addresses DND Q1 (SENSE) and Q11 (Automated Sensing).
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.analysis.mineral_supply_chains import get_mineral_by_name
 
@@ -117,6 +117,48 @@ def generate_rule_alerts() -> list[dict]:
                 "timestamp": datetime.utcnow().isoformat(),
                 "auto_generated": True,
             })
+
+    # Rule 4: Data discrepancy alert (from triangulation)
+    try:
+        from src.analysis.confidence import triangulate_cobalt_production, SourceDataPoint
+        from src.ingestion.bgs_minerals import BGSCobaltClient
+
+        drc_sources = []
+        # BGS source
+        try:
+            bgs_client = BGSCobaltClient()
+            bgs_data = bgs_client._fallback_data()
+            for entry in bgs_data:
+                if entry.get("country") == "Congo (Kinshasa)":
+                    drc_sources.append(SourceDataPoint("BGS WMS", entry["production_tonnes"], entry.get("year", 2022), "live"))
+                    break
+        except Exception:
+            pass
+        # USGS figure from mineral_supply_chains
+        cobalt = get_mineral_by_name("Cobalt")
+        if cobalt:
+            drc_mines = [m for m in cobalt.get("mines", []) if m.get("country") == "DRC"]
+            drc_total = sum(m.get("production_t", 0) for m in drc_mines)
+            if drc_total > 0:
+                drc_sources.append(SourceDataPoint("USGS MCS 2025", drc_total, 2024, "live"))
+
+        if len(drc_sources) >= 2:
+            tri = triangulate_cobalt_production("DRC", drc_sources)
+            for disc in tri.get("discrepancies", []):
+                if disc["severity"] in ("warning", "critical"):
+                    alerts.append({
+                        "id": f"RULE-DISC-DRC-{len(alerts)}",
+                        "title": f"Production data discrepancy: DRC cobalt — {disc['source_a']} vs {disc['source_b']} ({disc['delta_pct']}% delta)",
+                        "severity": 4 if disc["severity"] == "critical" else 3,
+                        "category": "Economic",
+                        "sources": [disc["source_a"], disc["source_b"]],
+                        "confidence": 80,
+                        "coa": "Verify with Comtrade export volumes and company-reported DRC production figures",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "auto_generated": True,
+                    })
+    except Exception:
+        logger.warning("Discrepancy alert rule failed", exc_info=True)
 
     logger.info("Generated %d rule-based cobalt alerts", len(alerts))
     return alerts

@@ -362,4 +362,24 @@ def create_scheduler() -> AsyncIOScheduler:
         max_instances=1,
     )
 
+    # Comtrade cobalt bilateral trade flows — monthly
+    async def refresh_comtrade_cobalt():
+        import os
+        from src.ingestion.comtrade import ComtradeMaterialsClient
+        key = os.getenv("UN_COMTRADE_API_KEY")
+        if not key:
+            logger.warning("UN_COMTRADE_API_KEY not set — skipping cobalt bilateral queries")
+            return
+        client = ComtradeMaterialsClient(subscription_key=key)
+        records = await client.fetch_cobalt_bilateral_flows()
+        logger.info("Comtrade cobalt bilateral: fetched %d records", len(records))
+
+    scheduler.add_job(
+        refresh_comtrade_cobalt,
+        trigger=CronTrigger(day=1, hour=6, minute=0),
+        id="comtrade_cobalt",
+        name="Comtrade cobalt bilateral flows",
+        max_instances=1,
+    )
+
     return scheduler
