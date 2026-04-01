@@ -37,6 +37,7 @@ from src.api.enrichment_routes import router as enrichment_router
 from src.api.cyber_routes import router as cyber_router
 from src.api.export_routes import router as export_router
 from src.api.globe_routes import router as globe_router
+from src.api.validation_routes import router as validation_router
 from src.ingestion.scheduler import create_scheduler
 
 logging.basicConfig(
@@ -82,6 +83,7 @@ app.include_router(enrichment_router)
 app.include_router(cyber_router)
 app.include_router(export_router)
 app.include_router(globe_router)
+app.include_router(validation_router)
 
 # Serve dashboard UI
 _static_dir = Path(__file__).parent / "static"
