@@ -7108,6 +7108,7 @@ function renderTaxonomyScorecard(scores, kpis) {
       + '<div style="display:flex; justify-content:space-between; align-items:center; font-size:9px;">'
       + '<span style="color:var(--text-dim);" title="' + esc(cat.desc) + '">' + esc(cat.name) + '</span>'
       + '<span style="font-family:var(--font-mono); color:' + c + '; font-weight:600;">' + s.score + '</span>'
+      + (s.source_count ? '<span style="font-size:7px; color:var(--text-muted); margin-left:4px;" title="' + esc((s.sources||[]).join(', ')) + '">(' + s.source_count + ' src)</span>' : '')
       + '</div>'
       + '<div style="background:rgba(255,255,255,0.04); border-radius:2px; height:4px; margin:1px 0;">'
       + '<div style="width:' + s.score + '%; height:100%; background:' + c + '; border-radius:2px;"></div>'
