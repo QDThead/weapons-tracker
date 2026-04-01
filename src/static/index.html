@@ -1557,18 +1557,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- Section 5: Arctic Weapon Timeline (full width) -->
-    <div class="card" style="margin-bottom:20px;">
-      <h2>Arctic Weapon Accumulation Timeline (2015-2026)</h2>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Arms imports by Arctic nation per year. Look for the post-2020 acceleration in NATO spending.</p>
-      <div id="arctic-timeline-sources" style="display:flex;gap:16px;margin-bottom:12px;font-size:11px;color:var(--text-dim);">
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);margin-right:4px;vertical-align:middle;"></span>2015-2023: SIPRI (complete)</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent4);margin-right:4px;vertical-align:middle;"></span>2024-2025: SIPRI (partial) + monthly trade</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent2);margin-right:4px;vertical-align:middle;opacity:0.6;"></span>DSCA pipeline (approved, not yet delivered)</span>
-      </div>
-      <div class="chart-container tall" style="height:400px;"><canvas id="arctic-timeline-chart" aria-label="Chart: Arctic weapon accumulation timeline from 2015 to 2026 by nation"></canvas></div>
-    </div>
-
     <!-- Section 5b: Arctic Current Intelligence Panel -->
     <div class="card" style="margin-bottom:20px;">
       <h2>Arctic Current Intelligence (2024-2026)
@@ -6126,6 +6114,8 @@ function renderArcticWeaknessList(assessment) {
 }
 
 function renderArcticTimeline(assessment) {
+  // Timeline chart removed — SIPRI annual data only reliable through 2023, too far behind for current intel
+  return;
   const timeline = assessment.weapon_accumulation_timeline || [];
   if (timeline.length === 0) return;
 
