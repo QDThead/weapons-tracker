@@ -1469,7 +1469,31 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   <!-- ════ ARCTIC PAGE ════ -->
   <div id="page-arctic" class="page" role="tabpanel" aria-labelledby="tab-arctic">
 
-    <!-- Section 1: Arctic Threat Summary — 5 metric cards -->
+    <!-- Section 1: Force Balance 3D Globe (hero element) -->
+    <div class="card" style="margin-bottom:20px;">
+      <h2>Arctic Force Balance Map <span id="arctic-map-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
+      <div id="arctic-globe-controls" style="display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
+        <button class="arctic-layer-btn active" data-layer="bases" onclick="toggleArcticLayer('bases',this)">Bases</button>
+        <button class="arctic-layer-btn active" data-layer="routes" onclick="toggleArcticLayer('routes',this)">Routes</button>
+        <button class="arctic-layer-btn active" data-layer="flights" onclick="toggleArcticLayer('flights',this)">Flights</button>
+        <button class="arctic-layer-btn active" data-layer="adiz" onclick="toggleArcticLayer('adiz',this)">ADIZ</button>
+        <button class="arctic-layer-btn active" data-layer="ice" onclick="toggleArcticLayer('ice',this)">Ice Edge</button>
+        <button class="arctic-layer-btn active" data-layer="connections" onclick="toggleArcticLayer('connections',this)">Networks</button>
+        <button class="arctic-layer-btn active" data-layer="ranges" onclick="toggleArcticLayer('ranges',this)">Ranges</button>
+        <button class="arctic-layer-btn" onclick="resetArcticCamera()" style="margin-left:auto;">Reset View</button>
+      </div>
+      <div class="arctic-base-legend" style="font-size:10px; margin-bottom:6px;">
+        <div class="leg-item"><div class="leg-dot bg-russia"></div> Russia</div>
+        <div class="leg-item"><div class="leg-dot bg-nato"></div> NATO</div>
+        <div class="leg-item"><div class="leg-dot bg-china"></div> China</div>
+        <div class="leg-item"><div class="leg-dot bg-canada"></div> Canada</div>
+        <div class="leg-item"><div class="leg-pulse"></div> Expanding</div>
+        <div class="leg-item" style="color:var(--text-dim);">Size = threat level</div>
+      </div>
+      <div id="arctic-main-map" style="height:600px;border-radius:8px;overflow:hidden;" aria-label="Arctic force balance map showing military bases, shipping routes, and threat levels"></div>
+    </div>
+
+    <!-- Arctic Threat Summary — 5 metric cards (below globe) -->
     <div class="arctic-metrics" id="arctic-metrics">
       <div class="arctic-metric-card" id="amc-nato-force">
         <div class="amc-label">NATO Arctic Force</div>
@@ -1498,31 +1522,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- Section 2: Force Balance Map — Arctic Bases Intelligence -->
-    <div class="card" style="margin-bottom:20px;">
-      <h2>Arctic Force Balance Map <span id="arctic-map-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
-      <div id="arctic-globe-controls" style="display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
-        <button class="arctic-layer-btn active" data-layer="bases" onclick="toggleArcticLayer('bases',this)">Bases</button>
-        <button class="arctic-layer-btn active" data-layer="routes" onclick="toggleArcticLayer('routes',this)">Routes</button>
-        <button class="arctic-layer-btn active" data-layer="flights" onclick="toggleArcticLayer('flights',this)">Flights</button>
-        <button class="arctic-layer-btn active" data-layer="adiz" onclick="toggleArcticLayer('adiz',this)">ADIZ</button>
-        <button class="arctic-layer-btn active" data-layer="ice" onclick="toggleArcticLayer('ice',this)">Ice Edge</button>
-        <button class="arctic-layer-btn active" data-layer="connections" onclick="toggleArcticLayer('connections',this)">Networks</button>
-        <button class="arctic-layer-btn active" data-layer="ranges" onclick="toggleArcticLayer('ranges',this)">Ranges</button>
-        <button class="arctic-layer-btn" onclick="resetArcticCamera()" style="margin-left:auto;">Reset View</button>
-      </div>
-      <div class="arctic-base-legend" style="font-size:10px; margin-bottom:6px;">
-        <div class="leg-item"><div class="leg-dot bg-russia"></div> Russia</div>
-        <div class="leg-item"><div class="leg-dot bg-nato"></div> NATO</div>
-        <div class="leg-item"><div class="leg-dot bg-china"></div> China</div>
-        <div class="leg-item"><div class="leg-dot bg-canada"></div> Canada</div>
-        <div class="leg-item"><div class="leg-pulse"></div> Expanding</div>
-        <div class="leg-item" style="color:var(--text-dim);">Size = threat level</div>
-      </div>
-      <div id="arctic-main-map" style="height:600px;border-radius:8px;overflow:hidden;" aria-label="Arctic force balance map showing military bases, shipping routes, and threat levels"></div>
-    </div>
-
-    <!-- Section 2.5: Arctic Base Intelligence Table -->
+    <!-- Arctic Base Intelligence Table -->
     <div class="card" style="margin-bottom:20px;">
       <h2>Arctic Base Intelligence <span style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0;" id="arctic-intel-count"></span></h2>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">All known military installations in the Arctic. Click column headers to sort. Color-coded by alliance. Threat level 1 (friendly) to 5 (highest adversary threat).</p>
