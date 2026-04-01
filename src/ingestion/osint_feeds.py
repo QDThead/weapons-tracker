@@ -2731,6 +2731,31 @@ class IPISDRCMinesClient:
             logger.warning("IPIS DRC Mines fetch failed: %s", exc)
             return []
 
+    async def fetch_cobalt_mines(self) -> list[dict]:
+        """Return only cobalt-producing ASM sites in DRC.
+
+        Filters the full mine dataset for cobalt in mineral1 or mineral2.
+        """
+        cached = _cache_get(self._cache, "ipis_cobalt")
+        if cached is not None:
+            return cached
+
+        all_mines = await self.fetch_drc_mines()
+        cobalt_mines = []
+        for mine in all_mines:
+            props = mine.get("properties", mine)  # handle both raw and feature format
+            minerals = (
+                str(props.get("mineral1", "")).lower() + " " +
+                str(props.get("mineral2", "")).lower() + " " +
+                str(props.get("mineral3", "")).lower()
+            )
+            if "cobalt" in minerals or "co" == props.get("mineral1", "").strip().lower():
+                cobalt_mines.append(mine)
+
+        logger.info("IPIS: %d cobalt mines out of %d total DRC ASM sites", len(cobalt_mines), len(all_mines))
+        _cache_set(self._cache, "ipis_cobalt", cobalt_mines)
+        return cobalt_mines
+
 
 class USGSCobaltDataClient:
     """Fetches USGS cobalt production data from the USGS data catalog.
@@ -2747,33 +2772,60 @@ class USGSCobaltDataClient:
     async def fetch_cobalt_production(self) -> list[dict]:
         """Return world cobalt production by country.
 
-        Returns
-        -------
-        list of {country, year, production_tonnes, source}
+        Tries the USGS MCS data release CSV first, falls back to seeded data.
         """
         cached = _cache_get(self._cache, "usgs_cobalt")
         if cached is not None:
             return cached
 
-        # USGS MCS 2025 cobalt data release
-        url = "https://data.usgs.gov/datacatalog/data/USGS:6797fb00d34ea8c18376e159"
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
-                resp = await client.get(url)
-                if resp.status_code != 200:
-                    logger.warning("USGS Cobalt data returned HTTP %s", resp.status_code)
-                    return self._fallback_data()
+        # Try the USGS MCS 2025 cobalt data release CSV
+        csv_urls = [
+            "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-cobalt-production.csv",
+            "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/atoms/files/mcs2025-cobalt.csv",
+        ]
 
-                # Try to parse as JSON catalog entry
-                try:
-                    data = resp.json()
-                    return self._parse_catalog(data)
-                except Exception:
-                    return self._fallback_data()
+        for url in csv_urls:
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+                    resp = await client.get(url)
+                    if resp.status_code == 200 and "," in resp.text:
+                        results = self._parse_csv(resp.text)
+                        if results:
+                            logger.info("USGS: parsed %d cobalt production records from CSV", len(results))
+                            _cache_set(self._cache, "usgs_cobalt", results)
+                            return results
+            except Exception as exc:
+                logger.debug("USGS CSV URL %s failed: %s", url, exc)
+                continue
 
-        except Exception as exc:
-            logger.warning("USGS Cobalt fetch failed: %s", exc)
-            return self._fallback_data()
+        logger.info("USGS CSV not available, using fallback data")
+        return self._fallback_data()
+
+    def _parse_csv(self, text: str) -> list[dict]:
+        """Parse USGS MCS cobalt CSV data."""
+        import csv
+        import io
+
+        results = []
+        reader = csv.DictReader(io.StringIO(text))
+        for row in reader:
+            country = row.get("Country") or row.get("country") or ""
+            # Try common year column names
+            for year_key in ["2024", "2023", "2022", "Production"]:
+                val = row.get(year_key, "").strip()
+                if val and val not in ("--", "W", "NA", ""):
+                    try:
+                        tonnes = int(float(val.replace(",", "")))
+                        year = int(year_key) if year_key.isdigit() else 2024
+                        results.append({
+                            "country": country.strip(),
+                            "year": year,
+                            "production_tonnes": tonnes,
+                            "source": "USGS MCS 2025",
+                        })
+                    except (ValueError, TypeError):
+                        continue
+        return results
 
     def _fallback_data(self) -> list[dict]:
         """USGS MCS 2025 cobalt production data (seeded)."""
@@ -2799,10 +2851,8 @@ class USGSCobaltDataClient:
         return data
 
     def _parse_catalog(self, data: dict) -> list[dict]:
-        """Attempt to parse USGS data catalog response."""
-        results = self._fallback_data()
-        _cache_set(self._cache, "usgs_cobalt", results)
-        return results
+        """Parse USGS data catalog response — falls back to seeded data."""
+        return self._fallback_data()
 
 
 class RMICobaltRefinersClient:
@@ -3103,59 +3153,46 @@ class CMOCProductionClient:
         try:
             async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
                 resp = await client.get(url)
-                live = resp.status_code == 200
+                if resp.status_code == 200:
+                    logger.info("CMOC investor relations page accessible")
 
-            result = self._production_data(live)
+            result = self._fallback_data()
             _cache_set(self._cache, "cmoc_production", result)
             return result
 
         except Exception as exc:
             logger.warning("CMOC Production fetch failed: %s", exc)
-            result = self._production_data(False)
+            result = self._fallback_data()
             _cache_set(self._cache, "cmoc_production", result)
             return result
 
-    def _production_data(self, website_accessible: bool) -> dict:
-        """CMOC cobalt production data (from quarterly reports)."""
-        return {
-            "company": "CMOC Group (China Molybdenum Co.)",
-            "hq_country": "China",
-            "global_cobalt_share_pct": 31,
-            "mines": [
-                {
-                    "name": "Tenke Fungurume (TFM)",
-                    "country": "DRC",
-                    "ownership": "CMOC 80% / Gecamines 20%",
-                    "cobalt_production_2024_t": 32000,
-                    "status": "Operating",
-                    "note": "World's largest cobalt mine. Acquired from Freeport-McMoRan 2016.",
-                },
-                {
-                    "name": "Kisanfu (KFM)",
-                    "country": "DRC",
-                    "ownership": "CMOC 75% / CATL 25%",
-                    "cobalt_production_2024_t": 15000,
-                    "status": "Operating",
-                    "note": "World's largest undeveloped deposit. Fully Chinese-controlled.",
-                },
-            ],
-            "quarterly_production_2024": [
-                {"quarter": "Q1 2024", "cobalt_t": 11800},
-                {"quarter": "Q2 2024", "cobalt_t": 12200},
-                {"quarter": "Q3 2024", "cobalt_t": 11500},
-                {"quarter": "Q4 2024", "cobalt_t": 11500},
-            ],
-            "annual_total_2024_t": 47000,
-            "risk_flags": [
-                "Chinese state-linked enterprise",
-                "DRC conflict zone operations",
-                "Subject to DRC export quota (ARECOMS)",
-                "CATL vertical integration (battery supply chain)",
-            ],
-            "investor_relations_url": "https://en.cmoc.com/html/InvestorMedia/News/",
-            "website_accessible": website_accessible,
-            "source": "CMOC Group quarterly reports",
+    def _fallback_data(self) -> dict:
+        """CMOC cobalt production data from 2024 Annual Results and Q3 2025."""
+        data = {
+            "company": "CMOC Group Limited",
+            "ticker": "HK:3993 / SHA:603993",
+            "report_period": "FY 2024 / Q3 2025",
+            "cobalt_production": {
+                "fy_2024_t": 114165,
+                "h1_2025_t": 61073,
+                "jan_sep_2025_t": 87974,
+                "by_asset": [
+                    {"asset": "Tenke Fungurume (TFM)", "country": "DRC", "production_t": 32000, "figure_type": "design_capacity", "note": "World's largest cobalt mine"},
+                    {"asset": "Kisanfu (KFM)", "country": "DRC", "production_t": 15000, "figure_type": "design_capacity", "note": "Ramp-up phase, CATL 23.75% partner"},
+                ],
+                "drc_export_quota_2026_t": 31200,
+                "note": "CMOC is world's largest cobalt miner. DRC quota limits 2026 exports.",
+            },
+            "ownership": {
+                "ultimate_parent": "China Molybdenum Co. Ltd.",
+                "ubo": "Luoyang Mining Group -> State Council of the PRC",
+                "catl_stake_kisanfu": "23.75%",
+            },
+            "source": "CMOC 2024 Annual Results / Q3 2025 Interim Report",
+            "ir_url": "https://en.cmoc.com/html/InvestorMedia/Performance/",
         }
+        _cache_set(self._cache, "cmoc", data)
+        return data
 
 
 class GlencoreProductionClient:
@@ -3185,75 +3222,43 @@ class GlencoreProductionClient:
         try:
             async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
                 resp = await client.get(url)
-                live = resp.status_code == 200
+                if resp.status_code == 200:
+                    logger.info("Glencore publications page accessible")
 
-            result = self._production_data(live)
+            result = self._fallback_data()
             _cache_set(self._cache, "glencore_production", result)
             return result
 
         except Exception as exc:
             logger.warning("Glencore Production fetch failed: %s", exc)
-            result = self._production_data(False)
+            result = self._fallback_data()
             _cache_set(self._cache, "glencore_production", result)
             return result
 
-    def _production_data(self, website_accessible: bool) -> dict:
-        """Glencore cobalt production data (from quarterly reports)."""
-        return {
+    def _fallback_data(self) -> dict:
+        """Glencore cobalt production data from FY 2025 Production Report."""
+        data = {
             "company": "Glencore plc",
-            "hq_country": "Switzerland",
-            "global_cobalt_share_pct": 15,
-            "mines": [
-                {
-                    "name": "Kamoto (KCC)",
-                    "country": "DRC",
-                    "ownership": "Glencore 75% / Gecamines 25%",
-                    "cobalt_production_2024_t": 12000,
-                    "status": "Operating (quota-constrained)",
-                    "note": "2026 export quota: 2,775t. Western-aligned majority owner.",
-                },
-                {
-                    "name": "Mutanda",
-                    "country": "DRC",
-                    "ownership": "Glencore 95%",
-                    "cobalt_production_2024_t": 8000,
-                    "status": "Restarted (post-2022 suspension)",
-                    "note": "Suspended 2019-2022 due to price cyclicality. 2026 quota: 1,150t.",
-                },
-                {
-                    "name": "Murrin Murrin",
-                    "country": "Australia",
-                    "ownership": "Glencore 100%",
-                    "cobalt_production_2024_t": 2600,
-                    "status": "Operating",
-                    "note": "Nickel-cobalt laterite. NATO-allied jurisdiction.",
-                },
-                {
-                    "name": "Raglan / Sudbury (INO)",
-                    "country": "Canada",
-                    "ownership": "Glencore 100%",
-                    "cobalt_production_2024_t": 800,
-                    "status": "Operating",
-                    "note": "Canadian domestic production. Exported to Nikkelverk, Norway for refining.",
-                },
-            ],
-            "quarterly_production_2024": [
-                {"quarter": "Q1 2024", "cobalt_t": 5800},
-                {"quarter": "Q2 2024", "cobalt_t": 6100},
-                {"quarter": "Q3 2024", "cobalt_t": 5700},
-                {"quarter": "Q4 2024", "cobalt_t": 5800},
-            ],
-            "annual_total_2024_t": 23400,
-            "risk_flags": [
-                "DRC operations subject to export quotas",
-                "Mutanda closure risk (price-sensitive)",
-                "Potential 40% Mutanda stake sale pending",
-                "Canadian Raglan output exported, not refined domestically",
-            ],
-            "publications_url": "https://www.glencore.com/publications",
-            "website_accessible": website_accessible,
-            "source": "Glencore quarterly production reports",
+            "ticker": "LSE:GLEN",
+            "report_period": "FY 2025",
+            "cobalt_production": {
+                "total_t": 33500,
+                "by_asset": [
+                    {"asset": "Kamoto (KCC)", "country": "DRC", "production_t": 12000, "ownership_pct": 75, "note": "Quota-constrained in 2026"},
+                    {"asset": "Mutanda", "country": "DRC", "production_t": 8000, "ownership_pct": 95, "note": "Restarted at reduced capacity"},
+                    {"asset": "Murrin Murrin", "country": "Australia", "production_t": 2100, "ownership_pct": 100, "note": "Reduced output due to low cobalt prices"},
+                    {"asset": "Raglan", "country": "Canada", "production_t": 800, "ownership_pct": 100, "note": "By-product of nickel mining"},
+                    {"asset": "Sudbury (INO)", "country": "Canada", "production_t": 700, "ownership_pct": 100, "note": "By-product, exported to Norway for refining"},
+                    {"asset": "Nikkelverk", "country": "Norway", "production_t": 3200, "ownership_pct": 100, "note": "Refinery --- processes feed from Raglan/Sudbury/Murrin Murrin"},
+                ],
+                "drc_export_quota_2026_t": 22800,
+                "note": "DRC operations quota-constrained; prioritizing copper over cobalt in 2026",
+            },
+            "source": "Glencore FY 2025 Production Report",
+            "report_url": "https://www.glencore.com/publications",
         }
+        _cache_set(self._cache, "glencore", data)
+        return data
 
 
 class OpenSanctionsClient:
