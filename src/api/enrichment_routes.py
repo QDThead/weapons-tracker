@@ -1644,9 +1644,61 @@ async def list_enrichment_sources():
                 "status": "active",
                 "note": "Full threat picture: overall level, executive summary, IOC summary, APT actors, breach indicators, supplier risk top-5.",
             },
+            {
+                "name": "GC Defence News (DND/GAC/Public Safety)",
+                "endpoint": "/enrichment/gc-defence-news",
+                "indicators": 5,
+                "freshness": "30-minute refresh (4 Atom feeds)",
+                "auth": "None required",
+                "status": "active",
+                "feeds": ["DND", "GAC", "Defence & Security", "Public Safety"],
+            },
+            {
+                "name": "NATO News RSS",
+                "endpoint": "/enrichment/nato-news",
+                "indicators": 5,
+                "freshness": "1-hour refresh",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "NORAD Press Releases",
+                "endpoint": "/enrichment/norad-news",
+                "indicators": 5,
+                "freshness": "6-hour refresh (Arctic intercepts, exercises)",
+                "auth": "None required",
+                "status": "active",
+            },
+            {
+                "name": "Canadian Sanctions (GAC SEMA/JVCFOA)",
+                "endpoint": "/enrichment/canadian-sanctions",
+                "indicators": 6,
+                "freshness": "Daily (updated as sanctions change)",
+                "auth": "None required",
+                "status": "active",
+                "note": "Canada's autonomous sanctions under SEMA + JVCFOA (Magnitsky), separate from OFAC/EU.",
+            },
+            {
+                "name": "Arctic OSINT News (3 sources)",
+                "endpoint": "/enrichment/arctic-osint",
+                "indicators": 6,
+                "freshness": "2-hour refresh",
+                "auth": "None required",
+                "status": "active",
+                "feeds": ["High North News", "Arctic Today", "Barents Observer"],
+            },
+            {
+                "name": "Parliament NDDN Committee",
+                "endpoint": "/enrichment/parliament-nddn",
+                "indicators": 5,
+                "freshness": "Daily (weekly when in session)",
+                "auth": "None required",
+                "status": "active",
+                "note": "Standing Committee on National Defence — meetings, studies, witness lists.",
+            },
         ],
-        "total_sources": 52,
-        "total_active": 52,
+        "total_sources": 58,
+        "total_active": 58,
     }
 
 
@@ -2012,3 +2064,154 @@ async def get_canadabuys_tenders():
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch CanadaBuys tenders")
+
+
+# ── CANADA INTEL FRESH FEEDS ─────────────────────────────────────────────────
+
+
+@router.get("/gc-defence-news")
+async def get_gc_defence_news():
+    """Government of Canada defence news from DND, GAC, Defence & Security, Public Safety."""
+    cached = _check("gc_defence_news")
+    if cached:
+        return cached
+    from src.ingestion.gc_defence_news import GCDefenceNewsClient
+    try:
+        client = GCDefenceNewsClient()
+        articles = await client.fetch_all(filter_defence=True)
+        result = {
+            "source": "Government of Canada News (4 feeds)",
+            "records": len(articles),
+            "data": [a.to_dict() for a in articles],
+        }
+        _cache["gc_defence_news"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("GC Defence News fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/nato-news")
+async def get_nato_news():
+    """Latest NATO news from the official RSS feed."""
+    cached = _check("nato_news")
+    if cached:
+        return cached
+    from src.ingestion.nato_news import NATONewsClient
+    try:
+        client = NATONewsClient()
+        articles = await client.fetch_latest()
+        result = {
+            "source": "NATO Official RSS",
+            "records": len(articles),
+            "data": [a.to_dict() for a in articles],
+        }
+        _cache["nato_news"] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("NATO News fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/norad-news")
+async def get_norad_news():
+    """NORAD press releases (Arctic intercepts, exercises, aerospace warnings)."""
+    cache_key = "norad_news"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+    from src.ingestion.norad_news import NORADNewsClient
+    try:
+        client = NORADNewsClient()
+        releases = await client.fetch_press_releases()
+        result = {
+            "source": "NORAD Newsroom",
+            "records": len(releases),
+            "arctic_related": sum(1 for r in releases if r.is_arctic_related),
+            "data": [r.to_dict() for r in releases],
+        }
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("NORAD News fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/canadian-sanctions")
+async def get_canadian_sanctions():
+    """Canadian consolidated autonomous sanctions list (SEMA + JVCFOA)."""
+    cache_key = "canadian_sanctions"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+    from src.ingestion.canadian_sanctions import CanadianSanctionsClient
+    try:
+        client = CanadianSanctionsClient()
+        entries = await client.fetch_sanctions()
+        countries: dict[str, int] = {}
+        for e in entries:
+            if e.country:
+                countries[e.country] = countries.get(e.country, 0) + 1
+        result = {
+            "source": "Global Affairs Canada SEMA/JVCFOA",
+            "total_entities": len(entries),
+            "countries_targeted": len(countries),
+            "top_countries": dict(sorted(countries.items(), key=lambda x: -x[1])[:20]),
+            "data": [e.to_dict() for e in entries[:200]],
+        }
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Canadian Sanctions fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/arctic-osint")
+async def get_arctic_osint_news():
+    """Arctic OSINT news from High North News, Arctic Today, Barents Observer."""
+    cache_key = "arctic_osint"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+    from src.ingestion.arctic_news import ArcticNewsClient
+    try:
+        client = ArcticNewsClient()
+        articles = await client.fetch_all(filter_security=False)
+        result = {
+            "source": "Arctic OSINT (3 feeds)",
+            "records": len(articles),
+            "security_related": sum(1 for a in articles if a.is_security_related),
+            "data": [a.to_dict() for a in articles],
+        }
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Arctic OSINT fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/parliament-nddn")
+async def get_parliament_nddn():
+    """NDDN (Standing Committee on National Defence) activity."""
+    cache_key = "parliament_nddn"
+    cached = _check(cache_key)
+    if cached:
+        return cached
+    from src.ingestion.parliament_nddn import ParliamentNDDNClient
+    try:
+        client = ParliamentNDDNClient()
+        activities = await client.fetch_activities()
+        by_type: dict[str, int] = {}
+        for a in activities:
+            by_type[a.activity_type] = by_type.get(a.activity_type, 0) + 1
+        result = {
+            "source": "House of Commons — NDDN",
+            "records": len(activities),
+            "by_type": by_type,
+            "data": [a.to_dict() for a in activities],
+        }
+        _cache[cache_key] = (time.time(), result)
+        return result
+    except Exception as e:
+        logger.error("Parliament NDDN fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")

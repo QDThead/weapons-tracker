@@ -261,6 +261,72 @@ async def refresh_cobalt_feeds():
         logger.error("[scheduler] Cobalt feed refresh failed: %s", e)
 
 
+async def ingest_gc_defence_news():
+    """Fetch latest Government of Canada defence news."""
+    try:
+        from src.ingestion.gc_defence_news import GCDefenceNewsClient
+        client = GCDefenceNewsClient()
+        articles = await client.fetch_all(filter_defence=True)
+        logger.info("[scheduler] GC Defence News: fetched %d articles", len(articles))
+    except Exception as e:
+        logger.error("[scheduler] GC Defence News ingestion failed: %s", e)
+
+
+async def ingest_nato_news():
+    """Fetch latest NATO news."""
+    try:
+        from src.ingestion.nato_news import NATONewsClient
+        client = NATONewsClient()
+        articles = await client.fetch_latest()
+        logger.info("[scheduler] NATO News: fetched %d articles", len(articles))
+    except Exception as e:
+        logger.error("[scheduler] NATO News ingestion failed: %s", e)
+
+
+async def ingest_norad_news():
+    """Fetch NORAD press releases."""
+    try:
+        from src.ingestion.norad_news import NORADNewsClient
+        client = NORADNewsClient()
+        releases = await client.fetch_press_releases()
+        logger.info("[scheduler] NORAD: fetched %d press releases", len(releases))
+    except Exception as e:
+        logger.error("[scheduler] NORAD ingestion failed: %s", e)
+
+
+async def ingest_canadian_sanctions():
+    """Fetch Canadian SEMA/JVCFOA sanctions list."""
+    try:
+        from src.ingestion.canadian_sanctions import CanadianSanctionsClient
+        client = CanadianSanctionsClient()
+        entries = await client.fetch_sanctions()
+        logger.info("[scheduler] Canadian Sanctions: fetched %d entries", len(entries))
+    except Exception as e:
+        logger.error("[scheduler] Canadian Sanctions ingestion failed: %s", e)
+
+
+async def ingest_arctic_osint():
+    """Fetch Arctic OSINT news from 3 feeds."""
+    try:
+        from src.ingestion.arctic_news import ArcticNewsClient
+        client = ArcticNewsClient()
+        articles = await client.fetch_all(filter_security=False)
+        logger.info("[scheduler] Arctic OSINT: fetched %d articles", len(articles))
+    except Exception as e:
+        logger.error("[scheduler] Arctic OSINT ingestion failed: %s", e)
+
+
+async def ingest_parliament_nddn():
+    """Fetch NDDN committee activity."""
+    try:
+        from src.ingestion.parliament_nddn import ParliamentNDDNClient
+        client = ParliamentNDDNClient()
+        activities = await client.fetch_activities()
+        logger.info("[scheduler] NDDN: fetched %d activities", len(activities))
+    except Exception as e:
+        logger.error("[scheduler] Parliament NDDN ingestion failed: %s", e)
+
+
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the ingestion scheduler."""
     scheduler = AsyncIOScheduler()
@@ -358,6 +424,62 @@ def create_scheduler() -> AsyncIOScheduler:
         CronTrigger(hour=5, minute=0),
         id="cobalt_feeds",
         name="Cobalt supply chain data feeds (BGS, NRCan, USGS, Sherritt, Glencore, CMOC)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # ── Canada Intel fresh feeds ──
+
+    scheduler.add_job(
+        ingest_gc_defence_news,
+        trigger=IntervalTrigger(minutes=30),
+        id="gc_defence_news",
+        name="GC Defence News (DND/GAC/Public Safety)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_nato_news,
+        trigger=IntervalTrigger(hours=1),
+        id="nato_news",
+        name="NATO News RSS",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_norad_news,
+        trigger=IntervalTrigger(hours=6),
+        id="norad_news",
+        name="NORAD Press Releases",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_canadian_sanctions,
+        trigger=CronTrigger(hour=6, minute=0),
+        id="canadian_sanctions",
+        name="Canadian Sanctions (GAC SEMA)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_arctic_osint,
+        trigger=IntervalTrigger(hours=2),
+        id="arctic_osint",
+        name="Arctic OSINT News (3 feeds)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_parliament_nddn,
+        trigger=CronTrigger(hour=8, minute=0),
+        id="parliament_nddn",
+        name="Parliament NDDN Committee",
         replace_existing=True,
         max_instances=1,
     )
