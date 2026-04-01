@@ -252,19 +252,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .filters input:focus, .filters select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,212,255,0.1); }
 .filters label { font-size: 12px; color: var(--text-dim); }
 
-/* Country detail */
-#country-detail { display: none; }
-#country-detail.visible { display: block; }
-.back-btn {
-  background: var(--bg); border: 1px solid var(--border); color: var(--accent);
-  padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 12px;
-  font-family: var(--font-display); transition: all 0.2s;
-}
-.back-btn:hover { background: rgba(0,212,255,0.08); border-color: var(--border-hover); }
-.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.metric { background: var(--bg); border-radius: 8px; padding: 16px; text-align: center; border: 1px solid var(--border); }
-.metric .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
-.metric .value { font-size: 24px; font-weight: 700; color: var(--accent); margin-top: 4px; font-family: var(--font-mono); }
 .metric .value.red { color: var(--accent2); }
 
 /* Flights */
@@ -1119,7 +1106,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
 <nav class="nav" role="tablist" aria-label="Dashboard navigation">
   <button class="nav-tab active" data-page="insights" role="tab" id="tab-insights" aria-selected="true" aria-controls="page-insights">Insights</button>
-  <button class="nav-tab" data-page="overview" role="tab" id="tab-overview" aria-selected="false" aria-controls="page-overview">Overview</button>
   <button class="nav-tab" data-page="arctic" role="tab" id="tab-arctic" aria-selected="false" aria-controls="page-arctic">Arctic</button>
   <button class="nav-tab" data-page="deals" role="tab" id="tab-deals" aria-selected="false" aria-controls="page-deals">Deals</button>
   <button class="nav-tab" data-page="canada-intel" role="tab" id="tab-canada-intel" aria-selected="false" aria-controls="page-canada-intel">Canada Intel</button>
@@ -1351,71 +1337,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-  </div>
-
-  <!-- ════ OVERVIEW PAGE ════ -->
-  <div id="page-overview" class="page" role="tabpanel" aria-labelledby="tab-overview">
-    <div id="overview-section">
-      <div class="grid grid-2">
-        <div class="card">
-          <h2>Trade Flow Network</h2>
-          <div class="filters">
-            <label>Min TIV (M):</label>
-            <input type="number" id="network-min-tiv" value="500" min="0" step="100" style="width:80px">
-          </div>
-          <div id="network"></div>
-        </div>
-        <div class="card">
-          <h2>Top Exporters vs Importers</h2>
-          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Ranked by SIPRI Trend Indicator Values (TIV) — a measure of arms transfer volume.</p>
-          <div class="tabs" id="bar-tabs">
-            <button class="tab active" data-chart="exporters">Top Exporters</button>
-            <button class="tab" data-chart="importers">Top Importers</button>
-          </div>
-          <div class="chart-container tall">
-            <canvas id="bar-chart" aria-label="Chart: Top arms exporters and importers ranked by SIPRI TIV"></canvas>
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-2">
-        <div class="card">
-          <h2>Weapon Types by <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></h2>
-          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Distribution of global arms transfers by weapon category (SIPRI classification).</p>
-          <div class="chart-container"><canvas id="weapon-chart" aria-label="Chart: Global arms transfers distribution by weapon category"></canvas></div>
-        </div>
-        <div class="card">
-          <h2>Trade Volume by Year</h2>
-          <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Annual global arms trade volume with deal counts. Source: SIPRI Arms Transfers Database.</p>
-          <div class="chart-container"><canvas id="timeline-chart" aria-label="Chart: Annual global arms trade volume by year"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Country detail (replaces overview) -->
-    <div id="country-detail">
-      <button class="back-btn" onclick="showOverview()">&larr; Back to overview</button>
-      <h2 id="country-name" style="font-size:24px;margin-bottom:16px;"></h2>
-      <div class="metric-grid" id="country-metrics"></div>
-      <div class="grid grid-2">
-        <div class="card">
-          <h2>Top Export Partners</h2>
-          <div class="chart-container"><canvas id="export-partners-chart" aria-label="Chart: Top export partners for selected country"></canvas></div>
-        </div>
-        <div class="card">
-          <h2>Top Import Partners</h2>
-          <div class="chart-container"><canvas id="import-partners-chart" aria-label="Chart: Top import partners for selected country"></canvas></div>
-        </div>
-      </div>
-      <div class="card" style="margin-top:20px;">
-        <h2>Deals Involving <span id="detail-country-name"></span></h2>
-        <div class="table-wrap">
-          <table id="country-deals-table">
-            <thead><tr><th>Seller</th><th>Buyer</th><th>Weapon</th><th>Year</th><th><span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span> (M)</th><th>Status</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ════ ARCTIC PAGE ════ -->
@@ -2403,7 +2324,6 @@ let currentLanguage = 'en';
 
 const ENGLISH_LABELS = {
   'insights': 'Insights',
-  'overview': 'Overview',
   'world-map': 'World Map',
   'arctic': 'Arctic',
   'live-flights': 'Live Flights',
@@ -2416,7 +2336,6 @@ const ENGLISH_LABELS = {
 
 const FRENCH_LABELS = {
   'insights': 'Aper\u00e7us',
-  'overview': 'Vue d\u2019ensemble',
   'world-map': 'Carte mondiale',
   'arctic': 'Arctique',
   'live-flights': 'Vols en direct',
@@ -2530,33 +2449,17 @@ async function loadData() {
     fetch(API + '/dashboard/transfers?limit=5000'),
     fetch(API + '/dashboard/flows?min_tiv=0'),
     fetch(API + '/dashboard/country-totals'),
-    fetch(API + '/dashboard/weapon-types'),
-    fetch(API + '/trends/global/volume?start_year=2015&end_year=2025'),
   ]);
   const safeJson = async (r) => r.ok ? r.json() : [];
 
   allTransfers = await safeJson(responses[0]);
   flows = await safeJson(responses[1]);
   countryTotals = await safeJson(responses[2]);
-  const weapons = await safeJson(responses[3]);
-  const volume = await safeJson(responses[4]);
 
   updateStats();
-  renderBarChart('exporters');
-  renderNetwork();
-  renderWeaponChart(weapons);
-  renderTimeline(volume);
   populateFilters();
   renderDealsTable(allTransfers);
 
-  document.querySelectorAll('#bar-tabs .tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('#bar-tabs .tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      renderBarChart(tab.dataset.chart);
-    });
-  });
-  document.getElementById('network-min-tiv').addEventListener('change', () => renderNetwork());
   document.getElementById('table-search').addEventListener('input', filterTable);
   document.getElementById('table-min-tiv').addEventListener('change', filterTable);
   document.getElementById('filter-seller').addEventListener('change', filterTable);
@@ -2583,100 +2486,9 @@ function populateFilters() {
   buyers.forEach(b => { const o = document.createElement('option'); o.value = b; o.textContent = b; selBuy.appendChild(o); });
 }
 
-// ── Bar Chart ──
-function renderBarChart(mode) {
-  destroyChart('bar-chart');
-  const sorted = [...countryTotals]
-    .sort((a, b) => mode === 'exporters' ? b.exports_tiv - a.exports_tiv : b.imports_tiv - a.imports_tiv)
-    .slice(0, 15);
-  const labels = sorted.map(c => c.country);
-  const values = sorted.map(c => mode === 'exporters' ? c.exports_tiv : c.imports_tiv);
-  const color = mode === 'exporters' ? '#00d4ff' : '#ef4444';
-  chartInstances['bar-chart'] = new Chart(document.getElementById('bar-chart'), {
-    type: 'bar',
-    data: { labels, datasets: [{ label: mode === 'exporters' ? 'Exports TIV (M)' : 'Imports TIV (M)', data: values, backgroundColor: color + '88', borderColor: color, borderWidth: 1 }] },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      onClick: (e, els) => { if (els.length) showCountryDetail(labels[els[0].index]); },
-      plugins: { legend: { display: false } },
-      scales: { x: { title: { display: true, text: 'TIV (millions)' } } },
-    },
-  });
-}
 
-// ── Network Graph ──
-let _networkSim = null;
-function renderNetwork() {
-  if (_networkSim) { _networkSim.stop(); _networkSim = null; }
-  const minTIV = parseFloat(document.getElementById('network-min-tiv').value) || 0;
-  const filtered = flows.filter(f => f.total_tiv >= minTIV);
-  const nodesMap = new Map();
-  filtered.forEach(f => {
-    if (!nodesMap.has(f.seller)) nodesMap.set(f.seller, { id: f.seller, exports: 0, imports: 0 });
-    if (!nodesMap.has(f.buyer)) nodesMap.set(f.buyer, { id: f.buyer, exports: 0, imports: 0 });
-    nodesMap.get(f.seller).exports += f.total_tiv;
-    nodesMap.get(f.buyer).imports += f.total_tiv;
-  });
-  const nodes = Array.from(nodesMap.values());
-  const links = filtered.map(f => ({ source: f.seller, target: f.buyer, value: f.total_tiv, deals: f.deal_count }));
-  const container = document.getElementById('network');
-  container.innerHTML = '';
-  const width = container.clientWidth;
-  const height = container.clientHeight || 500;
-  const svg = d3.select('#network').append('svg').attr('viewBox', [0, 0, width, height]);
-  const maxTIV = d3.max(links, d => d.value) || 1;
-  const linkWidth = d3.scaleLinear().domain([0, maxTIV]).range([1, 8]);
-  const nodeSize = d3.scaleLinear().domain([0, d3.max(nodes, d => d.exports + d.imports) || 1]).range([5, 30]);
-  const simulation = _networkSim = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(120))
-    .force('charge', d3.forceManyBody().strength(-300))
-    .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(d => nodeSize(d.exports + d.imports) + 5));
-  const link = svg.append('g').selectAll('line').data(links).join('line').attr('class', 'link').attr('stroke', '#00d4ff').attr('stroke-width', d => linkWidth(d.value));
-  const node = svg.append('g').selectAll('g').data(nodes).join('g').attr('class', 'node')
-    .call(d3.drag()
-      .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
-  node.append('circle').attr('r', d => nodeSize(d.exports + d.imports)).attr('fill', d => d.exports > d.imports ? '#00d4ff' : '#ef4444').attr('opacity', 0.8).on('click', (e, d) => showCountryDetail(d.id));
-  node.append('text').text(d => d.id).attr('dx', d => nodeSize(d.exports + d.imports) + 4).attr('dy', 4);
-  node.append('title').text(d => `${d.id}\nExports: ${fmt(d.exports)}\nImports: ${fmt(d.imports)}`);
-  link.append('title').text(d => `${d.source.id || d.source} \u2192 ${d.target.id || d.target}\nTIV: ${fmt(d.value)} (${d.deals} deals)`);
-  simulation.on('tick', () => {
-    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-    node.attr('transform', d => `translate(${d.x},${d.y})`);
-  });
-}
 
-// ── Weapon Chart ──
-function renderWeaponChart(weapons) {
-  destroyChart('weapon-chart');
-  const top = weapons.slice(0, 10);
-  chartInstances['weapon-chart'] = new Chart(document.getElementById('weapon-chart'), {
-    type: 'doughnut',
-    data: { labels: top.map(w => w.weapon_type), datasets: [{ data: top.map(w => w.total_tiv), backgroundColor: COLORS.slice(0, top.length), borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } } },
-  });
-}
 
-// ── Timeline ──
-function renderTimeline(volume) {
-  destroyChart('timeline-chart');
-  chartInstances['timeline-chart'] = new Chart(document.getElementById('timeline-chart'), {
-    type: 'bar',
-    data: {
-      labels: volume.map(v => v.year),
-      datasets: [
-        { type: 'bar', label: 'TIV (M)', data: volume.map(v => v.tiv_total), backgroundColor: '#00d4ff44', borderColor: '#00d4ff', borderWidth: 1, yAxisID: 'y' },
-        { type: 'line', label: 'Deal Count', data: volume.map(v => v.deal_count), borderColor: '#ef4444', backgroundColor: '#ef4444', pointRadius: 3, yAxisID: 'y1' },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: { y: { title: { display: true, text: 'TIV (M)' }, position: 'left' }, y1: { title: { display: true, text: 'Deals' }, position: 'right', grid: { drawOnChartArea: false } } },
-    },
-  });
-}
 
 // ── Deals Table ──
 function renderDealsTable(transfers) {
@@ -2709,57 +2521,9 @@ function filterTable() {
   renderDealsTable(filtered);
 }
 
-// ── Country Detail ──
-async function showCountryDetail(country) {
-  // Navigate to overview page first
-  document.querySelectorAll('.nav-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  var overviewTab = document.querySelector('[data-page="overview"]');
-  overviewTab.classList.add('active');
-  overviewTab.setAttribute('aria-selected', 'true');
-  document.getElementById('page-overview').classList.add('active');
-
-  document.getElementById('overview-section').style.display = 'none';
-  document.getElementById('country-detail').classList.add('visible');
-  document.getElementById('country-name').textContent = country;
-  document.getElementById('detail-country-name').textContent = country;
-
-  const resp = await fetch(API + '/trends/country/' + encodeURIComponent(country) + '/profile?start_year=2015&end_year=2025');
-  const profile = await resp.json();
-  if (profile.error) { document.getElementById('country-metrics').innerHTML = `<p style="color:var(--text-dim)">${profile.error}</p>`; return; }
-
-  document.getElementById('country-metrics').innerHTML = `
-    <div class="metric"><div class="label">Export TIV</div><div class="value">${fmt(profile.total_exports_tiv)}</div></div>
-    <div class="metric"><div class="label">Import TIV</div><div class="value red">${fmt(profile.total_imports_tiv)}</div></div>
-    <div class="metric"><div class="label">Export Deals</div><div class="value">${fmtInt(profile.export_deal_count)}</div></div>
-    <div class="metric"><div class="label">Import Deals</div><div class="value red">${fmtInt(profile.import_deal_count)}</div></div>`;
-
-  destroyChart('export-partners-chart');
-  const ep = (profile.top_export_partners || []).slice(0, 10);
-  if (ep.length) {
-    chartInstances['export-partners-chart'] = new Chart(document.getElementById('export-partners-chart'), {
-      type: 'bar', data: { labels: ep.map(p => p.partner), datasets: [{ data: ep.map(p => p.tiv), backgroundColor: '#00d4ff88', borderColor: '#00d4ff', borderWidth: 1 }] },
-      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-    });
-  }
-  destroyChart('import-partners-chart');
-  const ip = (profile.top_import_partners || []).slice(0, 10);
-  if (ip.length) {
-    chartInstances['import-partners-chart'] = new Chart(document.getElementById('import-partners-chart'), {
-      type: 'bar', data: { labels: ip.map(p => p.partner), datasets: [{ data: ip.map(p => p.tiv), backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 1 }] },
-      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-    });
-  }
-  const countryDeals = allTransfers.filter(t => t.seller === country || t.buyer === country);
-  document.querySelector('#country-deals-table tbody').innerHTML = countryDeals.map(t => `
-    <tr><td><span class="seller-tag">${esc(t.seller)}</span></td><td><span class="buyer-tag">${esc(t.buyer)}</span></td>
-    <td>${esc(t.weapon_description) || '-'}</td><td>${t.order_year || '-'}</td>
-    <td class="tiv">${t.tiv_delivered != null ? t.tiv_delivered.toFixed(1) : '-'}</td><td>${esc(t.status) || '-'}</td></tr>
-  `).join('');
-}
-function showOverview() {
-  document.getElementById('overview-section').style.display = 'block';
-  document.getElementById('country-detail').classList.remove('visible');
+// ── Country Detail (stub — Overview tab removed; function kept for onclick references in Deals/Arctic/Insights) ──
+function showCountryDetail(country) {
+  // No-op: country detail view was part of Overview tab which has been removed.
 }
 
 // ══════════════════════════════════════════════
