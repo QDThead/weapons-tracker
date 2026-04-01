@@ -342,6 +342,9 @@ class BriefingGenerator:
             [44, 24, 50, 20],
         )
 
+        # ── 7. COBALT SUPPLY CHAIN ──
+        self._add_cobalt_section(pdf)
+
         # ── END ──
         pdf.ln(20)
         pdf.set_font("Helvetica", "I", 9)
@@ -352,3 +355,74 @@ class BriefingGenerator:
         pdf_bytes = pdf.output()
         logger.info("Generated briefing PDF: %d bytes, %d pages", len(pdf_bytes), pdf.pages_count)
         return pdf_bytes
+
+    def _add_cobalt_section(self, pdf: BriefingPDF):
+        """Add Cobalt supply chain intelligence section."""
+        from src.analysis.mineral_supply_chains import get_mineral_by_name
+
+        mineral = get_mineral_by_name("Cobalt")
+        if not mineral:
+            return
+
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_text_color(0, 180, 220)
+        pdf.cell(0, 8, _safe_text("COBALT SUPPLY CHAIN INTELLIGENCE"), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_draw_color(0, 180, 220)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(4)
+
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(60, 60, 60)
+        hhi = mineral.get("hhi", "N/A")
+        risk = mineral.get("risk_level", "N/A")
+        top_miner_pct = mineral.get("mining", [{}])[0].get("pct", 0) if mineral.get("mining") else 0
+        pdf.cell(0, 4, _safe_text(f"HHI: {hhi} | Risk Level: {risk} | Top Miner: DRC ({top_miner_pct}%)"), new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(2)
+
+        # Mining concentration
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(0, 5, "Mining Concentration", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 8)
+        for m in mineral.get("mining", [])[:5]:
+            pdf.cell(0, 4, _safe_text(f"  {m.get('country', '')}: {m.get('pct', 0)}%"), new_x="LMARGIN", new_y="NEXT")
+
+        # Processing concentration
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(0, 5, "Processing Concentration", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 8)
+        for p in mineral.get("processing", [])[:5]:
+            pdf.cell(0, 4, _safe_text(f"  {p.get('country', '')}: {p.get('pct', 0)}%"), new_x="LMARGIN", new_y="NEXT")
+
+        # Risk register summary
+        rr = mineral.get("risk_register", [])
+        if rr:
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 5, _safe_text(f"Risk Register ({len(rr)} items)"), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 8)
+            for r in rr[:5]:
+                sev = r.get("severity", "").upper()
+                text = r.get("risk", "")[:80]
+                pdf.cell(0, 4, _safe_text(f"  [{sev}] {r.get('id', '')}: {text}"), new_x="LMARGIN", new_y="NEXT")
+
+        # Watchtower alerts
+        alerts = mineral.get("watchtower_alerts", [])
+        if alerts:
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 5, _safe_text(f"Active Alerts ({len(alerts)})"), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 8)
+            for a in alerts[:4]:
+                pdf.cell(0, 4, _safe_text(f"  [SEV {a.get('severity', 0)}] {a.get('title', '')[:80]}"), new_x="LMARGIN", new_y="NEXT")
+
+        # Key risk factors
+        risk_factors = mineral.get("risk_factors", [])
+        if risk_factors:
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 5, "Key Risk Factors", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 8)
+            for rf in risk_factors[:5]:
+                pdf.cell(0, 4, _safe_text(f"  - {rf[:90]}"), new_x="LMARGIN", new_y="NEXT")
