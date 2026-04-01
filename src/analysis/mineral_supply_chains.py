@@ -470,9 +470,7 @@ MINERALS: list[dict] = [
                      {"text": "DRC quota limits KCC to 2,775t cobalt in 2026 vs 12,000t capacity", "severity": "critical", "date": "2026-01-15"},
                      {"text": "Gecamines seeking to renegotiate royalty terms — 5% to 10%", "severity": "high", "date": "2026-03-01"},
                  ],
-                 "contracts": [
-                     {"id": "DND-CO-KCC-001", "description": "Glencore cobalt metal supply via London Metal Exchange warrant", "value_cad": 8500000, "status": "active", "end_date": "2028-06-30"},
-                 ],
+                 "contracts": [],
              }},
             {"name": "Mutanda", "owner": "Glencore (95%)", "country": "DRC", "lat": -10.7, "lon": 25.9, "production_t": 8000, "figure_type": "restart_estimate", "figure_source": "Glencore FY 2025 Report", "figure_year": 2025, "note": "Suspended 2019-2022 due to low prices; Glencore considering 40% sale",
              "risks": [
