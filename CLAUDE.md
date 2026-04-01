@@ -14,12 +14,12 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~10,700 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,050 lines)
 - **3D Globe:** CesiumJS 1.119 (CDN) with CartoDB Dark Matter tiles, global shipping lanes overlay
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 68 Python files, ~33,000 total lines
-- **Tests:** 195 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine (110 unit/integration + 85 adversarial)
-- **Compliance:** 95.3% DND DMPP 11 RFI compliance (137 sub-requirements across 22 questions)
+- **Codebase:** 69 Python files, ~33,400 total lines
+- **Tests:** 196 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine (111 unit/integration + 85 adversarial)
+- **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
 ```
@@ -71,6 +71,7 @@ weapons-tracker/
 │   │   ├── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
 │   │   ├── mineral_supply_chains.py # 30 mineral supply chains (USGS 2025, geo-coords, Canada deps, deep Cobalt data)
 │   │   ├── cobalt_forecasting.py    # Live cobalt forecasting: FRED nickel proxy + linear regression + insolvency scoring
+│   │   ├── cobalt_alert_engine.py   # Live Cobalt alert engine: GDELT keyword monitoring + rule-based triggers (30-min scheduler)
 │   │   └── scenario_engine.py      # Multi-variable scenario sandbox engine: layer composition, cascade propagation, impact metrics
 │   ├── api/
 │   │   ├── routes.py                 # Core API endpoints (live external sources)
@@ -90,14 +91,14 @@ weapons-tracker/
 │   │   ├── globe_routes.py          # 3D supply chain globe data (/globe/*)
 │   │   └── forecast computed live  # via globe_routes.py /globe/minerals/{name}/forecast
 │   ├── static/
-│   │   └── index.html                # Dashboard UI (10 tabs, ~10,400 lines, EN/FR bilingual, CesiumJS globe)
+│   │   └── index.html                # Dashboard UI (10 tabs, ~11,050 lines, EN/FR bilingual, CesiumJS globe)
 │   ├── alerts/                       # (placeholder — not yet implemented)
 │   └── main.py                       # App entry point
 ├── scripts/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 87 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting)
+├── tests/                            # 196 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine adversarial)
 ├── docs/superpowers/                 # Design specs and implementation plans
 ├── Dockerfile                        # Container image definition
 ├── docker-compose.yml                # Multi-service local orchestration
@@ -152,11 +153,11 @@ weapons-tracker/
 | **PSI: 3D Supply Globe** | mineral_supply_chains.py, globe_routes.py | CesiumJS 3D globe: 30 minerals with 4-tier flow (mine→process→component→platform), shipping routes to 5 Canadian ports, risk-colored sea lanes, entity-level 13-category DND risk taxonomy scorecards |
 | **PSI: Cobalt Deep Dive** | mineral_supply_chains.py | 9 named mines, 9 refineries, 8 defence alloys (Waspaloy/CMSX-4/Stellite), 6 shipping corridors with risk ratings, 13-cat taxonomy scores + KPIs per entity, Canada platform-engine dependencies |
 | **PSI: Live Forecasting** | cobalt_forecasting.py, globe_routes.py | FRED nickel proxy prices (live) × 2.0x ratio → quarterly linear regression → 12-month cobalt price forecast; lead time from shipping routes + chokepoint risk; supplier insolvency from taxonomy financial scores + Z-scores; auto-generated signals |
-| **PSI: BOM Explorer** | index.html | 4-tier Rocks-to-Rockets tree: Mining → Processing → Alloys (8 cobalt alloys with Co%) → CAF Platforms via engines; confidence levels per tier (99%/85-95%/70-85%/60-75%) |
+| **PSI: BOM Explorer** | index.html | 4-tier Rocks-to-Rockets tree: Mining → Processing → Alloys (8 cobalt alloys with Co%) → CAF Platforms via engines; computed confidence per tier from source counts; HS codes (5 entries) and NSN entries (6 items, illustrative) |
 | **PSI: Supplier Dossier** | mineral_supply_chains.py | Per-entity deep dive: 18 entities (mines + refineries), FOCI badges, Altman Z-Score, UBO ownership chains, recent intelligence, DND contract summary |
-| **PSI: Watchtower Alerts** | mineral_supply_chains.py | 6 active cobalt alerts (FOCI, political, financial, cyber, environmental, logistics) with severity, confidence, sources, recommended COAs, action buttons |
-| **PSI: Risk Register** | mineral_supply_chains.py | 10 cobalt risks cataloged with ID, category, severity, status lifecycle (Open→In Progress→Mitigated→Closed), owner, due dates, linked COAs, evidence |
-| **PSI: Analyst Feedback** | mineral_supply_chains.py | RLHF panel: 87% model accuracy, 18% FP rate, 4 pending adjudications (Verified/False Positive buttons), Z-score threshold config, 6 recent feedback entries |
+| **PSI: Watchtower Alerts** | cobalt_alert_engine.py, mineral_supply_chains.py | 6 seed alerts + live GDELT keyword monitoring (8 queries) + rule-based triggers (HHI, China refining, paused ops); SEEDED/LIVE badges; Acknowledge/Assign/Escalate persist to DB; Evidence Locker |
+| **PSI: Risk Register** | mineral_supply_chains.py, psi_routes.py | 10 cobalt risks cataloged with ID, category, severity, status lifecycle (Open→In Progress→Mitigated→Closed), owner, due dates, linked COA IDs (cross-referenced to sufficiency COAs), evidence; status persists to DB and survives reload |
+| **PSI: Analyst Feedback** | mineral_supply_chains.py, ml_routes.py | RLHF panel: live ML stats overlay (accuracy, FP rate from /ml/thresholds), LIVE/BASELINE badge, 4 pending adjudications (Verified/False Positive POST to /ml/feedback), Z-score threshold synced from live ML engine |
 | **PSI: Material Trade** | comtrade.py | 27 expanded HS codes: ores, rare earths, specialty metals, semiconductors, propellants |
 | **Supplier Exposure** | supplier_risk.py | 6-dimension risk scoring for Canadian defence suppliers (foreign ownership, concentration, single-source, contract activity, sanctions, performance) |
 | **Procurement Intel** | procurement_scraper.py | DND contracts from Open Canada disclosure portal, vendor normalization, sector classification |
@@ -168,8 +169,8 @@ weapons-tracker/
 | **ML Anomaly Detection** | ml_engine.py | Statistical anomaly detection across all data streams; RLHF feedback loop with adaptive threshold adjustment (FP rate >30% raises threshold, <10% lowers it) |
 | **Disinformation Detection** | gdelt_news.py | 3-layer detection: known state-media domains (RT, TASS, PressTV), extreme tone scoring, sensationalist title patterns |
 | **Cyber Threat Intelligence** | cyber_threat_intel.py | 13 APT groups, Tor exit nodes, CISA KEV, NVD CVEs, DIB breach registry, supplier cyber risk, IOC aggregation |
-| **CSV/Excel Export** | export_routes.py | Transfers, suppliers, news, taxonomy as CSV or Excel download |
-| **PDF Intelligence Briefing** | briefing_generator.py, briefing_routes.py | One-click 7-page PDF export (fpdf2): executive summary, threat matrix, Arctic assessment, supplier risks, recommendations |
+| **CSV/Excel Export** | export_routes.py | Transfers, suppliers, news, taxonomy, **Cobalt risk register**, **Cobalt alerts** as CSV or Excel download |
+| **PDF Intelligence Briefing** | briefing_generator.py, briefing_routes.py | One-click **8-page** PDF export (fpdf2): executive summary, threat matrix, Arctic assessment, supplier risks, **Cobalt supply chain intelligence**, recommendations |
 | **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
@@ -238,6 +239,11 @@ weapons-tracker/
 - `GET /psi/taxonomy` — All 13 DND risk categories with composite scores
 - `GET /psi/taxonomy/summary` — Dashboard-ready 13-card summary for Insights strip
 - `GET /psi/taxonomy/{category_id}` — Single category drill-down with all sub-categories
+- `GET /psi/alerts/cobalt/live` — Live-generated Cobalt alerts (GDELT + rule engine, cached 30min)
+- `POST /psi/alerts/cobalt/action` — Record analyst action on Cobalt alert (DB-persisted)
+- `GET /psi/alerts/cobalt/actions` — Get all recorded Cobalt alert actions
+- `PATCH /psi/register/cobalt/{risk_id}` — Update Cobalt risk register status (DB-persisted)
+- `GET /psi/register/cobalt/status` — Get all Cobalt risk register status overrides
 
 ### Supplier Exposure (src/api/supplier_routes.py)
 - `GET /dashboard/suppliers` — All Canadian defence suppliers with 6-dimension risk scores
@@ -276,6 +282,8 @@ weapons-tracker/
 - `GET /export/suppliers/csv` — Defence suppliers as CSV
 - `GET /export/news/csv` — News articles as CSV
 - `GET /export/taxonomy/csv` — Risk taxonomy scores as CSV
+- `GET /export/cobalt/register/csv` — Cobalt risk register as CSV
+- `GET /export/cobalt/alerts/csv` — Cobalt watchtower alerts as CSV
 
 ### Globe / 3D Supply Map (src/api/globe_routes.py)
 - `GET /globe/minerals` — All 30 mineral supply chains with geo-coordinates, Canada dependencies
@@ -349,12 +357,13 @@ python -m src.main
 - **Responsive:** Breakpoints at 1200px and 768px
 
 ## Next Steps (Priority Order)
-1. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity)
-2. Activate maritime tracker (needs aisstream.io API key)
-3. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
-4. Migrate to async SQLAlchemy sessions for production
-5. Migrate `@app.on_event` to lifespan context manager
-6. Add Alembic migration framework for production schema evolution
-7. Expand ML anomaly detection with time-series models (LSTM/Prophet)
-8. Add SAML/OAuth SSO integration for DND Azure AD
-9. Formal PBMM / ITSG-33 security certification
+1. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity, HS codes, NSN)
+2. Full French translation of dynamic content (currently covers nav tabs + PSI sub-tab headers; body content is English-only)
+3. Activate maritime tracker (needs aisstream.io API key)
+4. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
+5. Migrate to async SQLAlchemy sessions for production
+6. Migrate `@app.on_event` to lifespan context manager
+7. Add Alembic migration framework for production schema evolution
+8. Expand ML anomaly detection with time-series models (LSTM/Prophet)
+9. Add SAML/OAuth SSO integration for DND Azure AD
+10. Formal PBMM / ITSG-33 security certification
