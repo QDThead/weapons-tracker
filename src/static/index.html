@@ -750,6 +750,25 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   width: 12px; height: 12px; border-radius: 50%; display: inline-block;
   background: var(--accent2); animation: pulse-marker 1.5s ease-in-out infinite;
 }
+.arctic-layer-btn {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,212,255,0.3);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.arctic-layer-btn.active {
+  background: rgba(0,212,255,0.15);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.arctic-layer-btn:hover {
+  border-color: var(--accent);
+}
 
 .arctic-naval-item {
   padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;
@@ -1482,17 +1501,23 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     <!-- Section 2: Force Balance Map — Arctic Bases Intelligence -->
     <div class="card" style="margin-bottom:20px;">
       <h2>Arctic Force Balance Map <span id="arctic-map-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
-      <div class="arctic-base-legend">
+      <div id="arctic-globe-controls" style="display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
+        <button class="arctic-layer-btn active" data-layer="bases" onclick="toggleArcticLayer('bases',this)">Bases</button>
+        <button class="arctic-layer-btn active" data-layer="routes" onclick="toggleArcticLayer('routes',this)">Routes</button>
+        <button class="arctic-layer-btn active" data-layer="flights" onclick="toggleArcticLayer('flights',this)">Flights</button>
+        <button class="arctic-layer-btn active" data-layer="adiz" onclick="toggleArcticLayer('adiz',this)">ADIZ</button>
+        <button class="arctic-layer-btn active" data-layer="ice" onclick="toggleArcticLayer('ice',this)">Ice Edge</button>
+        <button class="arctic-layer-btn active" data-layer="connections" onclick="toggleArcticLayer('connections',this)">Networks</button>
+        <button class="arctic-layer-btn active" data-layer="ranges" onclick="toggleArcticLayer('ranges',this)">Ranges</button>
+        <button class="arctic-layer-btn" onclick="resetArcticCamera()" style="margin-left:auto;">Reset View</button>
+      </div>
+      <div class="arctic-base-legend" style="font-size:10px; margin-bottom:6px;">
         <div class="leg-item"><div class="leg-dot bg-russia"></div> Russia</div>
         <div class="leg-item"><div class="leg-dot bg-nato"></div> NATO</div>
         <div class="leg-item"><div class="leg-dot bg-china"></div> China</div>
         <div class="leg-item"><div class="leg-dot bg-canada"></div> Canada</div>
-        <div class="leg-item"><div class="leg-pulse"></div> Expanding/Planned</div>
-        <div class="leg-item" style="color:var(--text-dim);">Size = threat level (1-5)</div>
-        <div class="leg-item" style="color:var(--accent2);">\ud83c\uddf7\ud83c\uddfa Red dashed = Northern Sea Route (Russia)</div>
-        <div class="leg-item" style="color:var(--accent);">\ud83c\udde8\ud83c\udde6 Blue dashed = Northwest Passage (Canada)</div>
-        <div class="leg-item" style="color:var(--text-dim);">\ud83c\udf0d Gray dashed = Transpolar Route (International)</div>
-        <div class="leg-item" style="color:var(--text-dim);">Red zone = Canadian ADIZ</div>
+        <div class="leg-item"><div class="leg-pulse"></div> Expanding</div>
+        <div class="leg-item" style="color:var(--text-dim);">Size = threat level</div>
       </div>
       <div id="arctic-main-map" style="height:600px;border-radius:8px;overflow:hidden;" aria-label="Arctic force balance map showing military bases, shipping routes, and threat levels"></div>
     </div>
@@ -4743,9 +4768,10 @@ function getFeedLatestDisplay(feedDef, freshness) {
 // ══════════════════════════════════════════════
 
 let arcticTabLoaded = false;
-let arcticMainMap = null;
-let arcticMainMarkers = [];
-let arcticMainLayers = [];   // persistent layers (lines, labels) for bases
+let arcticCesiumViewer = null;
+let arcticGlobeInitialized = false;
+let arcticLayerEntities = { bases: [], routes: [], flights: [], adiz: [], ice: [], connections: [], ranges: [] };
+let arcticLayerVisible = { bases: true, routes: true, flights: true, adiz: true, ice: true, connections: true, ranges: true };
 let arcticAirspaceMap = null;
 let arcticAirspaceMarkers = [];
 let arcticBasesData = null;  // cached bases response
@@ -4888,6 +4914,189 @@ function _haversineJS(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function initArcticGlobe() {
+  if (arcticGlobeInitialized) return;
+  arcticGlobeInitialized = true;
+
+  try {
+    arcticCesiumViewer = new Cesium.Viewer('arctic-main-map', {
+      baseLayer: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      selectionIndicator: false,
+      infoBox: false,
+      baseLayerPicker: false,
+      requestRenderMode: true,
+      maximumRenderTimeChange: Infinity,
+      creditContainer: document.createElement('div'),
+    });
+
+    arcticCesiumViewer.scene.imageryLayers.addImageryProvider(
+      new Cesium.UrlTemplateImageryProvider({
+        url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png',
+        subdomains: 'abcd',
+        maximumLevel: 6,
+        credit: 'CartoDB Dark Matter',
+      })
+    );
+
+    var scene = arcticCesiumViewer.scene;
+    scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e1a');
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#111827');
+    scene.globe.showGroundAtmosphere = false;
+    scene.globe.enableLighting = false;
+    if (scene.skyBox) scene.skyBox.show = false;
+    if (scene.sun) scene.sun.show = false;
+    if (scene.moon) scene.moon.show = false;
+    if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
+
+    // Canadian perspective looking north toward Russia
+    arcticCesiumViewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(-95, 65, 12000000),
+      orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-60),
+        roll: 0,
+      }
+    });
+
+    setupArcticPopupHandler();
+  } catch (e) {
+    document.getElementById('arctic-main-map').innerHTML =
+      '<div style="color:var(--accent2); text-align:center; padding:60px;">Failed to initialize Arctic 3D globe: ' + esc(e.message) + '</div>';
+  }
+}
+
+function renderArcticBases(bases) {
+  arcticLayerEntities.bases.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.bases = [];
+
+  var allianceColors = {
+    russia: Cesium.Color.fromCssColorString('#ef4444'),
+    nato: Cesium.Color.fromCssColorString('#3b82f6'),
+    china: Cesium.Color.fromCssColorString('#f59e0b'),
+  };
+
+  bases.forEach(function(base) {
+    var color = allianceColors[base.alliance] || Cesium.Color.fromCssColorString('#3b82f6');
+    if (base.country === 'Canada') color = Cesium.Color.fromCssColorString('#10b981');
+    var threat = base.threat_level || 1;
+    var pixelSize = threat <= 1 ? 8 : threat <= 3 ? 12 : threat <= 4 ? 16 : 20;
+
+    var entity = arcticCesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(base.lon, base.lat),
+      point: {
+        pixelSize: pixelSize,
+        color: color.withAlpha(0.6),
+        outlineColor: color,
+        outlineWidth: 2,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+      label: {
+        text: (base.flag_emoji || '') + ' ' + base.name.split(',')[0],
+        font: '11px JetBrains Mono, monospace',
+        fillColor: color,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 3,
+        outlineColor: Cesium.Color.BLACK,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -(pixelSize + 4)),
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+      properties: {
+        type: 'arctic-base',
+        name: base.name,
+        country: base.country,
+        alliance: base.alliance,
+        baseType: base.type,
+        status: base.status,
+        capability: base.capability,
+        personnel: base.personnel || 0,
+        threat_level: threat,
+        flag_emoji: base.flag_emoji || '',
+        recent_developments: base.recent_developments || '',
+        distance_to_ottawa_km: base.distance_to_ottawa_km || 0,
+        nearest_canadian_base: base.nearest_canadian_base || '',
+        distance_to_nearest_canadian_km: base.distance_to_nearest_canadian_km || 0,
+        arms_imports_tiv: base.arms_imports_tiv || 0,
+      },
+      show: arcticLayerVisible.bases,
+    });
+    arcticLayerEntities.bases.push(entity);
+  });
+}
+
+function setupArcticPopupHandler() {
+  var popupDiv = document.createElement('div');
+  popupDiv.id = 'arctic-base-popup-overlay';
+  popupDiv.style.cssText = 'display:none;position:absolute;z-index:999;max-width:320px;background:rgba(10,14,26,0.92);backdrop-filter:blur(16px);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:14px;color:#e2e8f0;font-size:12px;pointer-events:auto;';
+  document.getElementById('arctic-main-map').appendChild(popupDiv);
+
+  var handler = new Cesium.ScreenSpaceEventHandler(arcticCesiumViewer.scene.canvas);
+  handler.setInputAction(function(click) {
+    var picked = arcticCesiumViewer.scene.pick(click.position);
+    if (Cesium.defined(picked) && picked.id && picked.id.properties && picked.id.properties.type &&
+        picked.id.properties.type.getValue() === 'arctic-base') {
+      var p = picked.id.properties;
+      var threat = p.threat_level.getValue();
+      var threatColor = threat >= 4 ? '#ef4444' : threat >= 3 ? '#fb923c' : '#00d4ff';
+      var distStr = p.country.getValue() !== 'Canada'
+        ? '<div style="margin-top:4px;">Nearest Canadian base: <b>' + esc(p.nearest_canadian_base.getValue()) + '</b> (' + (p.distance_to_nearest_canadian_km.getValue() || 0).toLocaleString() + ' km)</div>'
+        : '';
+      var armsStr = p.arms_imports_tiv.getValue() > 0
+        ? '<div style="margin-top:2px;color:var(--text-dim);">Country arms imports: ' + p.arms_imports_tiv.getValue().toFixed(0) + ' TIV</div>'
+        : '';
+
+      popupDiv.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<b style="font-size:14px;">' + esc(p.flag_emoji.getValue()) + ' ' + esc(p.name.getValue()) + '</b>' +
+          '<span onclick="document.getElementById(\'arctic-base-popup-overlay\').style.display=\'none\'" style="cursor:pointer;color:var(--text-dim);font-size:16px;">&times;</span>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);margin-bottom:6px;">' + esc(p.baseType.getValue()) + ' base &mdash; ' + esc(p.country.getValue()) +
+          ' &mdash; <span style="text-transform:uppercase;color:' + (p.status.getValue() === 'expanding' ? '#f59e0b' : '#10b981') + ';">' + esc(p.status.getValue()) + '</span></div>' +
+        '<div style="margin-bottom:6px;">Threat: <b style="color:' + threatColor + ';">' + threat + '/5</b>' +
+          (p.personnel.getValue() > 0 ? ' &mdash; ~' + p.personnel.getValue().toLocaleString() + ' personnel' : '') + '</div>' +
+        '<div style="margin-bottom:6px;line-height:1.4;">' + esc(p.capability.getValue()) + '</div>' +
+        distStr + armsStr +
+        '<div style="margin-top:6px;color:var(--text-dim);font-size:11px;line-height:1.4;">' + esc(p.recent_developments.getValue()) + '</div>';
+
+      var canvasPos = click.position;
+      popupDiv.style.left = (canvasPos.x + 15) + 'px';
+      popupDiv.style.top = (canvasPos.y - 10) + 'px';
+      popupDiv.style.display = 'block';
+    } else {
+      popupDiv.style.display = 'none';
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+}
+
+function toggleArcticLayer(layerName, btn) {
+  arcticLayerVisible[layerName] = !arcticLayerVisible[layerName];
+  var show = arcticLayerVisible[layerName];
+  if (btn) btn.classList.toggle('active', show);
+  (arcticLayerEntities[layerName] || []).forEach(function(e) { e.show = show; });
+  if (arcticCesiumViewer) arcticCesiumViewer.scene.requestRender();
+}
+
+function resetArcticCamera() {
+  if (!arcticCesiumViewer) return;
+  arcticCesiumViewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(-95, 65, 12000000),
+    orientation: {
+      heading: Cesium.Math.toRadians(0),
+      pitch: Cesium.Math.toRadians(-60),
+      roll: 0,
+    },
+    duration: 1.5,
+  });
+}
+
 async function loadArctic() {
   // Fetch assessment + flights + bases in parallel
   const [assessResp, flightsResp, basesResp] = await Promise.all([
@@ -4909,8 +5118,13 @@ async function loadArctic() {
     renderArcticTimeline(assessment);
   }
 
-  // Render the main map using bases data (primary) + flights
-  renderArcticMainMap(arcticBasesData, flights);
+  // Initialize Arctic 3D globe (first time only)
+  initArcticGlobe();
+
+  // Render base layer
+  if (arcticBasesData && arcticBasesData.bases) {
+    renderArcticBases(arcticBasesData.bases);
+  }
 
   // Render Base Intelligence table
   if (arcticBasesData) {
@@ -5012,235 +5226,9 @@ function renderArcticMetrics(assessment, flights) {
     `Iran: ${fmt(iranTIV)} | China: ${fmt(chinaTIV)}`;
 }
 
-function renderArcticMainMap(basesData, flights) {
-  if (!arcticMainMap) {
-    arcticMainMap = L.map('arctic-main-map', {
-      zoomControl: true,
-      attributionControl: false,
-    }).setView([72, -20], 3);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 18
-    }).addTo(arcticMainMap);
-
-    // Draw CADIZ
-    L.polygon(CADIZ_BOUNDARY, {
-      color: '#ef4444', weight: 1.5, fillColor: '#ef4444',
-      fillOpacity: 0.06, dashArray: '10 5'
-    }).addTo(arcticMainMap).bindTooltip('Canadian ADIZ (approximate)', { sticky: true });
-
-    // Draw all Arctic shipping routes with flags, ownership, and navigation points
-    ARCTIC_ROUTES.forEach(route => {
-      // Draw the route line
-      const line = L.polyline(route.points, {
-        color: route.color, weight: route.weight, dashArray: '10 6', opacity: 0.7
-      }).addTo(arcticMainMap);
-      line.bindTooltip(
-        '<div style="font-size:13px;max-width:280px;"><b>' + route.flag + ' ' + esc(route.name) + '</b><br>' +
-        '<span style="color:#ccc;">Controlled by: ' + esc(route.owner) + '</span><br>' +
-        '<span style="font-size:11px;color:#aaa;line-height:1.4;">' + esc(route.status) + '</span></div>',
-        { sticky: true }
-      );
-      // Flag + name label on the route
-      const labelIcon = L.divIcon({
-        className: '',
-        html: '<div style="font-size:12px;color:' + route.color + ';font-weight:700;white-space:nowrap;text-shadow:0 0 6px #000,0 0 3px #000;pointer-events:none;">' +
-          route.flag + ' ' + esc(route.name) + '</div>',
-        iconSize: [200, 18],
-        iconAnchor: [100, 9],
-      });
-      L.marker(route.labelPos, { icon: labelIcon, interactive: false }).addTo(arcticMainMap);
-
-      // Mark key navigation points (straits, channels) along the route
-      (route.keyPoints || []).forEach(kp => {
-        const dot = L.circleMarker([kp.lat, kp.lon], {
-          radius: 4, color: route.color, fillColor: route.color,
-          fillOpacity: 0.9, weight: 1,
-        }).addTo(arcticMainMap);
-        dot.bindTooltip('<b>' + esc(kp.name) + '</b>', { direction: 'top', offset: [0, -6] });
-        // Small label
-        const kpIcon = L.divIcon({
-          className: '',
-          html: '<div style="font-size:9px;color:' + route.color + ';opacity:0.7;white-space:nowrap;text-shadow:0 0 4px #000;pointer-events:none;">' + esc(kp.name) + '</div>',
-          iconSize: [100, 12], iconAnchor: [-6, 6],
-        });
-        L.marker([kp.lat, kp.lon], { icon: kpIcon, interactive: false }).addTo(arcticMainMap);
-      });
-    });
-
-    // Draw approximate permanent ice edge at ~75N
-    L.polyline(ICE_EDGE, {
-      color: '#ffffff', weight: 1, dashArray: '4 8', opacity: 0.3
-    }).addTo(arcticMainMap).bindTooltip('Approximate permanent ice edge (~75\u00b0N)', { sticky: true });
-
-    // Add waterway labels
-    WATERWAY_LABELS.forEach(wl => {
-      const icon = L.divIcon({
-        className: '',
-        html: `<div style="font-size:10px;color:rgba(255,255,255,0.45);font-style:italic;white-space:nowrap;pointer-events:none;text-shadow:0 0 4px rgba(0,0,0,0.8);">${esc(wl.name)}</div>`,
-        iconSize: [100, 14],
-        iconAnchor: [50, 7],
-      });
-      L.marker([wl.lat, wl.lon], { icon, interactive: false }).addTo(arcticMainMap);
-    });
-  }
-
-  // Clear old dynamic markers and layers
-  arcticMainMarkers.forEach(m => arcticMainMap.removeLayer(m));
-  arcticMainMarkers = [];
-  arcticMainLayers.forEach(l => arcticMainMap.removeLayer(l));
-  arcticMainLayers = [];
-
-  const bases = (basesData && basesData.bases) ? basesData.bases : [];
-  if (bases.length === 0) {
-    document.getElementById('arctic-map-time').textContent = 'No base data available';
-    return;
-  }
-
-  // Separate bases by alliance for network lines
-  const russianBases = bases.filter(b => b.alliance === 'russia');
-  const natoBases = bases.filter(b => b.alliance === 'nato');
-  const canadianBases = bases.filter(b => b.country === 'Canada');
-  const chinaBases = bases.filter(b => b.alliance === 'china');
-
-  // Draw Russian base network (thin red lines connecting Russian bases)
-  if (russianBases.length > 1) {
-    const russCoords = russianBases.map(b => [b.lat, b.lon]);
-    // Connect sequential bases
-    for (let i = 0; i < russCoords.length - 1; i++) {
-      const line = L.polyline([russCoords[i], russCoords[i+1]], {
-        color: '#ef4444', weight: 1, opacity: 0.3, dashArray: '4 4'
-      }).addTo(arcticMainMap);
-      arcticMainLayers.push(line);
-    }
-  }
-
-  // Draw NATO base network (thin blue lines connecting NATO bases)
-  if (natoBases.length > 1) {
-    const natoCoords = natoBases.map(b => [b.lat, b.lon]);
-    for (let i = 0; i < natoCoords.length - 1; i++) {
-      const line = L.polyline([natoCoords[i], natoCoords[i+1]], {
-        color: '#00d4ff', weight: 1, opacity: 0.2, dashArray: '4 4'
-      }).addTo(arcticMainMap);
-      arcticMainLayers.push(line);
-    }
-  }
-
-  // Draw distance lines from key adversary bases to nearest Canadian base
-  bases.filter(b => DISTANCE_LINE_BASES.includes(b.name)).forEach(b => {
-    const nearest = _findNearestCanadianBase(b.lat, b.lon, bases);
-    if (!nearest) return;
-
-    const midLat = (b.lat + nearest.lat) / 2;
-    const midLon = (b.lon + nearest.lon) / 2;
-
-    // Dashed line
-    const distLine = L.polyline([[b.lat, b.lon], [nearest.lat, nearest.lon]], {
-      color: '#ef4444', weight: 1, opacity: 0.4, dashArray: '6 6'
-    }).addTo(arcticMainMap);
-    arcticMainLayers.push(distLine);
-
-    // Distance label at midpoint
-    const distLabel = L.divIcon({
-      className: '',
-      html: `<div style="font-size:9px;color:#ef4444;white-space:nowrap;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none;">${nearest.dist.toLocaleString()} km</div>`,
-      iconSize: [60, 12],
-      iconAnchor: [30, 6],
-    });
-    const distMarker = L.marker([midLat, midLon], { icon: distLabel, interactive: false }).addTo(arcticMainMap);
-    arcticMainLayers.push(distMarker);
-  });
-
-  // Color mapping
-  function baseColor(b) {
-    if (b.country === 'Canada') return '#10b981';
-    if (b.alliance === 'russia') return '#ef4444';
-    if (b.alliance === 'china') return '#f59e0b';
-    return '#00d4ff';
-  }
-
-  // Add base markers
-  bases.forEach(base => {
-    const color = baseColor(base);
-    const threat = base.threat_level || 1;
-    const radius = 6 + (threat * 3);  // 9 to 21
-    const isPulsing = (base.status === 'expanding' || base.status === 'planned');
-
-    const marker = L.circleMarker([base.lat, base.lon], {
-      radius: radius,
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.4,
-      weight: 2,
-      className: isPulsing ? 'pulsing-marker' : '',
-    }).addTo(arcticMainMap);
-
-    // Flag + name label next to marker
-    const labelOffset = radius + 4;
-    const labelIcon = L.divIcon({
-      className: '',
-      html: `<div style="font-size:11px;white-space:nowrap;color:${color};text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none;font-weight:600;">${esc(base.flag_emoji)} ${esc(base.name).split(',')[0]}</div>`,
-      iconSize: [150, 16],
-      iconAnchor: [-labelOffset, 8],
-    });
-    const label = L.marker([base.lat, base.lon], { icon: labelIcon, interactive: false }).addTo(arcticMainMap);
-    arcticMainMarkers.push(label);
-
-    // Rich popup on click
-    const statusClass = base.status;
-    const armsStr = base.arms_imports_tiv > 0 ? `Country arms imports (2020+): ${fmt(base.arms_imports_tiv)}` : '';
-    const distStr = base.country !== 'Canada'
-      ? `Distance to ${esc(base.nearest_canadian_base || 'Canada')}: <b>${(base.distance_to_nearest_canadian_km || 0).toLocaleString()} km</b>`
-      : '';
-
-    marker.bindPopup(
-      `<div class="arctic-base-popup">` +
-        `<h3>${esc(base.flag_emoji)} ${esc(base.name)}</h3>` +
-        `<div class="base-type">${esc(base.type)} base \u2014 ${esc(base.country)}</div>` +
-        `<div class="base-capability">${esc(base.capability)}</div>` +
-        `<div class="base-status ${statusClass}">Status: ${esc(base.status).toUpperCase()}${base.personnel > 0 ? ' | ~' + base.personnel.toLocaleString() + ' personnel' : ''}</div>` +
-        `<div style="font-size:11px;margin-top:4px;">Threat Level: <b style="color:${threat >= 4 ? '#ef4444' : threat >= 3 ? '#fb923c' : '#00d4ff'};">${threat}/5</b></div>` +
-        (distStr ? `<div style="font-size:11px;margin-top:2px;">${distStr}</div>` : '') +
-        (armsStr ? `<div class="base-arms">${armsStr}</div>` : '') +
-        `<div class="base-dev">${esc(base.recent_developments)}</div>` +
-      `</div>`,
-      { maxWidth: 300 }
-    );
-
-    arcticMainMarkers.push(marker);
-  });
-
-  // Add live aircraft on top
-  if (flights && flights.flights) {
-    flights.flights.forEach(f => {
-      const nationColors = { russian: '#ef4444', chinese: '#f59e0b', nato: '#00d4ff', unknown: '#64748b' };
-      const color = nationColors[f.nation] || '#64748b';
-      const icon = L.divIcon({
-        className: '',
-        html: `<svg width="16" height="16" viewBox="0 0 20 20" style="transform:rotate(${f.heading || 0}deg)">
-          <polygon points="10,2 4,18 10,14 16,18" fill="${color}" opacity="0.85"/>
-        </svg>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      });
-      const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(arcticMainMap);
-      marker.bindTooltip(
-        `<b>${esc(f.callsign || 'Unknown')}</b><br>${esc(f.aircraft_description || '')}<br>` +
-        `Alt: ${(f.altitude_ft || 0).toLocaleString()} ft<br>` +
-        `Nation: <span style="color:${color}">${f.nation.toUpperCase()}</span>`,
-        { sticky: true }
-      );
-      arcticMainMarkers.push(marker);
-    });
-  }
-
-  document.getElementById('arctic-map-time').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-}
-
 function updateArcticMainMapFlights(flights) {
-  if (!arcticMainMap || !flights || !flights.flights) return;
-  // Re-render full map with cached bases data + new flights
-  renderArcticMainMap(arcticBasesData, flights);
+  // Will be implemented with CesiumJS flight rendering in Task 3
+  if (!arcticCesiumViewer) return;
 }
 
 // --- Arctic Base Intelligence Table ---
