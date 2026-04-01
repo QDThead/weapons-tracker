@@ -243,7 +243,7 @@ def _generate_signals(mineral: dict, price_data: dict, lead_time: dict, insolven
         signals.append({
             "text": f"Lead time risk: +{lead_time['days']} days on {lead_time['primary_route']} ({lead_time['chokepoint_count']} chokepoints)",
             "severity": "high" if lead_time["days"] > 20 else "medium",
-            "sources": ["PSI Shipping Routes", "Lloyd's List Intelligence"],
+            "sources": ["PSI Shipping Routes", "Mineral Supply Chain Data"],
             "confidence_pct": 82,
         })
 
