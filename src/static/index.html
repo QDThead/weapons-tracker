@@ -5808,15 +5808,11 @@ async function loadArctic() {
   }
 
   // Load trade flow data for globe layer + charts
-  if (flows.length === 0) {
-    loadComtrade().then(function() {
-      populateTradeCharts();
-      renderArcticTradeFlows();
-    });
-  } else {
+  // Always call loadComtrade to render Comtrade USD charts on this page
+  loadComtrade().then(function() {
     populateTradeCharts();
     renderArcticTradeFlows();
-  }
+  });
 
   arcticTabLoaded = true;
 
