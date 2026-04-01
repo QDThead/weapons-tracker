@@ -1522,6 +1522,15 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
+    <!-- Arctic Base Cargo Intelligence -->
+    <div class="card" style="margin-bottom:20px;">
+      <h2>Base Cargo Intelligence <span id="arctic-cargo-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0;"></span></h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Estimated cargo delivered to Arctic bases based on transport aircraft landing detection. Assumes fully loaded aircraft. Bars show relative tonnage — taller bars indicate higher resupply activity and potential force expansion.</p>
+      <div id="arctic-cargo-chart" style="display:flex; gap:8px; flex-wrap:wrap; min-height:120px; align-items:flex-end;">
+        <div style="color:var(--text-muted); font-size:11px; padding:20px;">Tracking transport aircraft... data populates as landings are detected.</div>
+      </div>
+    </div>
+
     <!-- Arctic Base Intelligence Table -->
     <div class="card" style="margin-bottom:20px;">
       <h2>Arctic Base Intelligence <span style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0;" id="arctic-intel-count"></span></h2>
@@ -4922,6 +4931,103 @@ function getAveragedHeading(hex) {
   return (avg + 360) % 360;
 }
 
+// --- Arctic Base Cargo Tracking ---
+// Tracks detected landings at Arctic bases and accumulates cargo estimates
+var arcticBaseCargoLog = {};  // keyed by base name: { landings: [{hex, type, payload, time}], totalTonnes: 0 }
+var arcticLandingDetected = {};  // keyed by hex: true (prevents double-counting same aircraft)
+
+function detectLandingsAndUpdateCargo(flights, bases) {
+  if (!flights || !flights.flights || !bases || bases.length === 0) return;
+
+  flights.flights.forEach(function(f) {
+    var hex = (f.icao_hex || '').toUpperCase();
+    if (!hex || arcticLandingDetected[hex]) return;
+
+    var isTransport = TRANSPORT_TYPES.includes(f.aircraft_type) && !TANKER_TYPES.includes(f.aircraft_type);
+    if (!isTransport) return;
+
+    var hist = arcticFlightHistory[hex];
+    if (!hist || hist.positions.length < 3) return;
+
+    // Check if descending: last 3 positions show decreasing altitude
+    var recent = hist.positions.slice(-3);
+    var descending = recent[0].alt > recent[1].alt && recent[1].alt > recent[2].alt;
+    var lowAlt = recent[2].alt < 5000;  // below 5000 ft
+
+    if (!descending || !lowAlt) return;
+
+    // Find nearest base within 50km
+    var bestBase = null;
+    var bestDist = Infinity;
+    bases.forEach(function(base) {
+      var dist = _haversineJS(f.latitude, f.longitude, base.lat, base.lon);
+      if (dist < 50 && dist < bestDist) {
+        bestDist = dist;
+        bestBase = base;
+      }
+    });
+
+    if (!bestBase) return;
+
+    // Record the landing
+    var payload = TRANSPORT_PAYLOAD_TONNES[f.aircraft_type] || 0;
+    if (!arcticBaseCargoLog[bestBase.name]) {
+      arcticBaseCargoLog[bestBase.name] = { landings: [], totalTonnes: 0, alliance: bestBase.alliance || 'nato', country: bestBase.country || '' };
+    }
+    arcticBaseCargoLog[bestBase.name].landings.push({
+      hex: hex,
+      type: f.aircraft_type,
+      callsign: f.callsign || '',
+      payload: payload,
+      time: Date.now(),
+    });
+    arcticBaseCargoLog[bestBase.name].totalTonnes += payload;
+    arcticLandingDetected[hex] = true;  // prevent double-counting
+  });
+
+  renderArcticCargoChart();
+}
+
+function renderArcticCargoChart() {
+  var container = document.getElementById('arctic-cargo-chart');
+  if (!container) return;
+
+  var entries = Object.keys(arcticBaseCargoLog).map(function(name) {
+    return { name: name, data: arcticBaseCargoLog[name] };
+  }).sort(function(a, b) { return b.data.totalTonnes - a.data.totalTonnes; });
+
+  // Also show bases with 0 cargo if we have bases data (top bases by threat)
+  if (entries.length === 0 && arcticBasesData && arcticBasesData.bases) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:20px; text-align:center;">No transport landings detected yet. Cargo data populates as aircraft descend below 5,000 ft within 50km of an Arctic base. Data accumulates over your session.</div>';
+    return;
+  }
+
+  var maxTonnes = Math.max.apply(null, entries.map(function(e) { return e.data.totalTonnes; }).concat([1]));
+  var allianceColors = { russia: '#ef4444', nato: '#3b82f6', china: '#f59e0b' };
+
+  var html = '';
+  entries.forEach(function(entry) {
+    var d = entry.data;
+    var barHeight = Math.max(8, Math.round((d.totalTonnes / maxTonnes) * 140));
+    var color = allianceColors[d.alliance] || '#3b82f6';
+    if (d.country === 'Canada') color = '#10b981';
+    var shortName = entry.name.split(',')[0].split('(')[0].trim();
+    if (shortName.length > 14) shortName = shortName.substring(0, 12) + '..';
+
+    html += '<div style="display:flex; flex-direction:column; align-items:center; min-width:70px; max-width:90px;">';
+    html += '<div style="font-size:11px; font-family:var(--font-mono); color:' + color + '; font-weight:700; margin-bottom:4px;">' + d.totalTonnes + 't</div>';
+    html += '<div style="width:40px; height:' + barHeight + 'px; background:' + color + '; border-radius:4px 4px 0 0; opacity:0.8; position:relative;" title="' + esc(entry.name) + ': ' + d.landings.length + ' landings, ' + d.totalTonnes + 't estimated cargo">';
+    html += '<div style="position:absolute; top:4px; left:50%; transform:translateX(-50%); font-size:9px; color:#fff; font-weight:700;">' + d.landings.length + '</div>';
+    html += '</div>';
+    html += '<div style="font-size:8px; color:var(--text-dim); text-align:center; margin-top:4px; max-width:80px; line-height:1.2; word-break:break-word;">' + esc(shortName) + '</div>';
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  document.getElementById('arctic-cargo-time').textContent = 'Session tracking: ' + entries.length + ' bases, ' +
+    entries.reduce(function(sum, e) { return sum + e.data.landings.length; }, 0) + ' landings detected';
+}
+
 function initArcticGlobe() {
   if (arcticGlobeInitialized) return;
   arcticGlobeInitialized = true;
@@ -5493,8 +5599,10 @@ function renderArcticFlights(flights) {
     }
   });
 
-  // Update freight stats
+  // Update freight stats + detect landings
   updateArcticFreightStats(flights);
+  var bases = (arcticBasesData && arcticBasesData.bases) ? arcticBasesData.bases : [];
+  if (bases.length > 0) detectLandingsAndUpdateCargo(flights, bases);
 }
 
 function renderArcticConnections(bases) {
