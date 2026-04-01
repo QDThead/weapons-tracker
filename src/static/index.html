@@ -811,11 +811,11 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   letter-spacing: -0.01em;
 }
 .psi-tab-bar {
-  display: flex; gap: 4px; margin-bottom: 18px;
+  display: flex; gap: 4px; margin-bottom: 18px; flex-wrap: wrap;
   background: var(--bg); border-radius: 10px;
   padding: 4px; border: 1px solid var(--border);
 }
-.psi-tab-bar .tab { border-radius: 7px; }
+.psi-tab-bar .tab { border-radius: 7px; white-space: nowrap; }
 
 /* Inline stat boxes — unified pattern for KPI counters */
 .stat-box {
@@ -1882,19 +1882,19 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   <!-- ════ SUPPLY CHAIN (PSI) PAGE ════ -->
   <div id="page-supply-chain" class="page" role="tabpanel" aria-labelledby="tab-supply-chain">
 
-    <div class="psi-tab-bar" style="display:flex; align-items:center; gap:0;">
-      <button class="tab active" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
-      <button class="tab" data-psi-tab="psi-globe" onclick="switchPsiTab(this)">3D Supply Map</button>
-      <button class="tab" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
-      <button class="tab" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
-      <button class="tab" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
-      <button class="tab" data-psi-tab="psi-taxonomy" onclick="switchPsiTab(this)">Risk Taxonomy</button>
-      <button class="tab" data-psi-tab="psi-forecasting" onclick="switchPsiTab(this)">Forecasting</button>
-      <button class="tab" data-psi-tab="psi-bom" onclick="switchPsiTab(this)">BOM Explorer</button>
-      <button class="tab" data-psi-tab="psi-dossier" onclick="switchPsiTab(this)">Supplier Dossier</button>
-      <button class="tab" data-psi-tab="psi-alerts" onclick="switchPsiTab(this)">Alerts</button>
-      <button class="tab" data-psi-tab="psi-register" onclick="switchPsiTab(this)">Risk Register</button>
-      <button class="tab" data-psi-tab="psi-feedback" onclick="switchPsiTab(this)">Analyst Feedback</button>
+    <div class="psi-tab-bar" role="tablist" aria-label="Supply Chain sub-navigation" style="display:flex; align-items:center; gap:0; flex-wrap:wrap;">
+      <button class="tab psi-tab-btn active" role="tab" aria-selected="true" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-globe" onclick="switchPsiTab(this)">3D Supply Map</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-taxonomy" onclick="switchPsiTab(this)">Risk Taxonomy</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-forecasting" onclick="switchPsiTab(this)">Forecasting</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-bom" onclick="switchPsiTab(this)">BOM Explorer</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-dossier" onclick="switchPsiTab(this)">Supplier Dossier</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-alerts" onclick="switchPsiTab(this)">Alerts & Sensing</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-register" onclick="switchPsiTab(this)">Risk Register</button>
+      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-feedback" onclick="switchPsiTab(this)">Analyst Feedback</button>
       <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
         <span style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Mineral:</span>
         <select id="psi-global-mineral" onchange="onGlobalMineralChange()" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-family:var(--font-body); font-size:12px; font-weight:600;">
@@ -1930,14 +1930,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           <div class="card" style="padding:18px;">
             <h3 style="margin-bottom:14px;">Canada Risk Dimensions</h3>
             <canvas id="psi-radar-chart" height="280" aria-label="Chart: Canada supply chain risk dimensions radar showing 6 risk factors"></canvas>
-            <div style="margin-top:12px; font-size:11px; color:var(--text-dim); line-height:1.7;">
-              <div><strong style="color:var(--text);">Concentration:</strong> Single-supplier dependency risk</div>
-              <div><strong style="color:var(--text);">Sanctions:</strong> Exposure to sanctioned supply chains</div>
-              <div><strong style="color:var(--text);">Chokepoints:</strong> Maritime transit vulnerability</div>
-              <div><strong style="color:var(--text);">Instability:</strong> Source country political fragility</div>
-              <div><strong style="color:var(--text);">Scarcity:</strong> Material availability constraints</div>
-              <div><strong style="color:var(--text);">Alternatives:</strong> Availability of substitute sources</div>
-            </div>
+            <!-- Radar axis labels are rendered directly on the chart -->
           </div>
           <!-- Top material risks -->
           <div class="card" style="padding:18px;">
@@ -2483,6 +2476,10 @@ function toggleLanguage() {
   document.querySelectorAll('.psi-tab-btn').forEach(function(btn) {
     var key = btn.dataset.psiTab;
     if (psiMap[key]) btn.textContent = psiMap[key];
+  });
+  // Update PSI sub-tab aria-selected states
+  document.querySelectorAll('.psi-tab-btn').forEach(function(btn) {
+    btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false');
   });
   var toggle = document.getElementById('lang-toggle');
   if (toggle) { toggle.textContent = currentLanguage === 'fr' ? 'FR | EN' : 'EN | FR'; }
@@ -6200,9 +6197,9 @@ function onGlobalMineralChange() {
 
 function switchPsiTab(btn) {
   populateGlobalMineralDropdown();
-  document.querySelectorAll('[data-psi-tab]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.psi-tab-btn[data-psi-tab]').forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
   document.querySelectorAll('.psi-sub').forEach(d => d.style.display = 'none');
-  btn.classList.add('active');
+  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
   document.getElementById(btn.dataset.psiTab).style.display = '';
   if (btn.dataset.psiTab === 'psi-graph') { if (!psiGraphSim) loadPsiGraph(); }
   if (btn.dataset.psiTab === 'psi-taxonomy') loadTaxonomyTab();
@@ -7091,6 +7088,29 @@ function toggleEntityDetail(id) {
   el.style.display = el.style.display === 'none' ? '' : 'none';
 }
 
+function renderCompactTaxonomySummary(scores) {
+  if (!scores) return '<div style="font-size:10px; color:var(--text-dim);">No taxonomy data</div>';
+  // Show only top 3 risk categories + link to full taxonomy sub-tab
+  var entries = [];
+  for (var k in scores) {
+    if (scores[k] && typeof scores[k].score === 'number') {
+      entries.push({key: k, score: scores[k].score, level: scores[k].level, name: (TAXONOMY_LABELS[k] || {}).name || k});
+    }
+  }
+  entries.sort(function(a,b) { return b.score - a.score; });
+  var top3 = entries.slice(0, 3);
+  var html = '<div style="font-size:10px; color:var(--text-dim); margin-bottom:4px;">Top risks:</div>';
+  top3.forEach(function(e) {
+    var c = e.score >= 76 ? '#ef4444' : e.score >= 51 ? '#f59e0b' : e.score >= 26 ? '#eab308' : '#10b981';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0;">';
+    html += '<span style="font-size:10px;">' + esc(e.name) + '</span>';
+    html += '<span style="font-family:var(--font-mono); font-size:10px; font-weight:600; color:' + c + ';">' + e.score + '</span>';
+    html += '</div>';
+  });
+  html += '<div style="margin-top:4px; font-size:9px; color:var(--accent); cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-taxonomy]\').click();">Full 13-category scorecard &rarr;</div>';
+  return html;
+}
+
 function renderTaxonomyScorecard(scores, kpis) {
   if (!scores) return '<div style="font-size:10px; color:var(--text-dim);">No taxonomy data</div>';
   var html = '';
@@ -7201,9 +7221,9 @@ function renderMineralDetail(m) {
         });
         miningHtml += '</div>';
       }
-      // Expandable taxonomy scorecard
+      // Collapsed detail — full taxonomy in Risk Taxonomy sub-tab
       miningHtml += '<div id="' + mineId + '" style="display:none; margin-top:6px; border-top:1px solid var(--border); padding-top:6px;">';
-      miningHtml += renderTaxonomyScorecard(mine.taxonomy_scores, mine.kpis);
+      miningHtml += renderCompactTaxonomySummary(mine.taxonomy_scores);
       miningHtml += '</div>';
       miningHtml += '</div>';
     });
@@ -7253,9 +7273,9 @@ function renderMineralDetail(m) {
         });
         procHtml += '</div>';
       }
-      // Expandable taxonomy scorecard
+      // Collapsed detail — full taxonomy in Risk Taxonomy sub-tab
       procHtml += '<div id="' + refId + '" style="display:none; margin-top:6px; border-top:1px solid var(--border); padding-top:6px;">';
-      procHtml += renderTaxonomyScorecard(ref.taxonomy_scores, ref.kpis);
+      procHtml += renderCompactTaxonomySummary(ref.taxonomy_scores);
       procHtml += '</div>';
       procHtml += '</div>';
     });
@@ -7506,8 +7526,7 @@ function renderSufficiencyPlatforms(demand, mineralName, currentRatio) {
   }
   var pctIndirect = Math.round(totalIndirect / (totalIndirect + totalDirect) * 100);
   html += '<div class="suf-insight">'
-    + '<strong>INSIGHT:</strong> ' + pctIndirect + '% of Canada\u2019s cobalt demand flows through foreign OEMs. '
-    + 'The vulnerability is supply chain architecture \u2014 not volume.'
+    + '<strong>INSIGHT:</strong> ' + pctIndirect + '% of Canada\u2019s cobalt demand flows through foreign OEMs.'
     + '</div>';
 
   document.getElementById('sufficiency-platforms').innerHTML = html;
@@ -7758,16 +7777,7 @@ function setupGlobeClickHandler() {
       return;
     }
 
-    // Add risk factors
-    if (mineral) {
-      var m = globeMinerals.find(function(x) { return x.name === mineral; });
-      if (m) {
-        html += '<div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">'
-          + '<div style="font-weight:600; margin-bottom:4px; color:var(--text);">Risk Factors:</div>'
-          + m.risk_factors.map(function(r) { return '<div style="margin:2px 0;">\u2022 ' + esc(r) + '</div>'; }).join('')
-          + '</div>';
-      }
-    }
+    // Risk factors removed from entity popups — mineral-level context is shown in the detail panel and Risk Matrix sub-tab
 
     body.innerHTML = html;
     popup.style.display = '';
@@ -7989,7 +7999,7 @@ function renderMineralOverview(m, container) {
   });
   html += '</div></div>';
 
-  // Right: Canada dependency
+  // Right: Canada dependency (headline only — full detail on 3D Supply Map)
   html += '<div class="card" style="padding:18px;">';
   html += '<h3 style="margin-bottom:14px;">Canada Dependency</h3>';
   if (canada.import_pct) {
@@ -7998,22 +8008,13 @@ function renderMineralOverview(m, container) {
     html += '<div style="font-size:12px; color:var(--text-dim);">import dependent</div>';
     html += '</div>';
   }
-  if (canada.domestic) {
-    html += '<div style="font-size:12px; color:var(--text); line-height:1.6; margin-bottom:12px; padding:10px; background:var(--surface); border-radius:6px;">' + esc(canada.domestic) + '</div>';
-  }
+  html += '<div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">' + (canada.platforms ? canada.platforms.length : 0) + ' CAF platforms dependent</div>';
   if (canada.strategic_note) {
     html += '<div style="font-size:12px; color:var(--text-dim); line-height:1.6; padding:10px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:6px;">';
     html += '<strong style="color:var(--accent2);">Strategic Note:</strong> ' + esc(canada.strategic_note);
     html += '</div>';
   }
-  if (canada.platforms && canada.platforms.length > 0) {
-    html += '<div style="margin-top:12px;">';
-    html += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Dependent CAF Platforms</div>';
-    canada.platforms.forEach(function(p) {
-      html += '<div style="font-size:11px; color:var(--text); padding:4px 0; border-bottom:1px solid var(--border);">' + esc(p) + '</div>';
-    });
-    html += '</div>';
-  }
+  html += '<div style="margin-top:10px;"><button style="font-size:11px; color:var(--accent); background:none; border:1px solid var(--accent); padding:4px 10px; border-radius:5px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-globe]\').click();">View full dependency on 3D Supply Map &rarr;</button></div>';
   html += '</div>';
   html += '</div>';
 
@@ -8029,48 +8030,6 @@ function renderMineralOverview(m, container) {
     });
     html += '</div></div>';
   }
-
-  // ── Supply chain flow summary ──
-  html += '<div class="card" style="padding:18px; margin-bottom:14px;">';
-  html += '<h3 style="margin-bottom:14px;">Supply Chain Flow</h3>';
-  html += '<div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; align-items:start; gap:8px;">';
-
-  // Mining column
-  html += '<div>';
-  html += '<div style="font-size:10px; color:var(--accent3); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Mining</div>';
-  (m.mining || []).forEach(function(entry) {
-    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(16,185,129,0.08); border-radius:4px; color:var(--text);">' + esc(entry.country) + ' <span style="color:var(--text-dim);">' + entry.pct + '%</span></div>';
-  });
-  html += '</div>';
-  html += '<div style="color:var(--text-dim); font-size:18px; padding-top:20px;">&#8594;</div>';
-
-  // Processing column
-  html += '<div>';
-  html += '<div style="font-size:10px; color:var(--accent5); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Processing</div>';
-  (m.processing || []).forEach(function(entry) {
-    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(139,92,246,0.08); border-radius:4px; color:var(--text);">' + esc(entry.country) + ' <span style="color:var(--text-dim);">' + entry.pct + '%</span></div>';
-  });
-  html += '</div>';
-  html += '<div style="color:var(--text-dim); font-size:18px; padding-top:20px;">&#8594;</div>';
-
-  // Components column
-  html += '<div>';
-  html += '<div style="font-size:10px; color:var(--accent4); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Components</div>';
-  (m.components || []).forEach(function(entry) {
-    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(245,158,11,0.08); border-radius:4px; color:var(--text);">' + esc(entry.name) + '</div>';
-  });
-  html += '</div>';
-  html += '<div style="color:var(--text-dim); font-size:18px; padding-top:20px;">&#8594;</div>';
-
-  // Platforms column
-  html += '<div>';
-  html += '<div style="font-size:10px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:8px;">Platforms</div>';
-  (m.platforms || []).forEach(function(entry) {
-    html += '<div style="font-size:11px; padding:4px 8px; margin-bottom:3px; background:rgba(0,212,255,0.08); border-radius:4px; color:var(--text);">' + esc(entry.name) + '</div>';
-  });
-  html += '</div>';
-
-  html += '</div></div>';
 
   // ── Chokepoints ──
   if (m.chokepoints && m.chokepoints.length > 0) {
@@ -8150,7 +8109,7 @@ function renderForecasting(m, container) {
 
   // Price chart
   html += '<div class="card" style="padding:18px;">';
-  html += '<h3 style="margin-bottom:4px;">Cobalt Price Forecast (USD/lb)</h3>';
+  html += '<h3 style="margin-bottom:4px;">' + esc(m.mineral || 'Cobalt') + ' Price Forecast (USD/lb)</h3>';
   html += '<div style="font-size:10px; color:var(--text-dim); margin-bottom:12px;">Source: ' + esc(m.price_source || 'FRED Nickel proxy') + '</div>';
   var prices = m.price_history || [];
   if (prices.length > 0) {
@@ -8210,22 +8169,21 @@ function renderForecasting(m, container) {
   html += '<div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-dim);">Risk-Adjusted Total</span><span style="font-family:var(--font-mono); color:var(--accent2); font-weight:700;">'+(lt.risk_adjusted_transit_days||0)+' days</span></div>';
   html += '</div></div>';
 
-  // Insolvency watch
+  // Insolvency watch (summary — full detail in Supplier Dossier)
   html += '<div class="card" style="padding:18px;">';
   html += '<h3 style="margin-bottom:12px;">Supplier Insolvency Watch</h3>';
   var insolRisks = m.insolvency_risks || [];
   if (insolRisks.length === 0) { html += '<div style="color:var(--text-dim);">No insolvency risks detected</div>'; }
   insolRisks.forEach(function(r){
     var c = r.probability_pct > 30 ? 'var(--accent2)' : r.probability_pct > 15 ? 'var(--accent4)' : 'var(--accent3)';
-    html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">';
-    html += '<div style="flex:1;"><div style="font-weight:600; font-size:13px;">' + esc(r.supplier) + '</div>';
-    html += '<div style="font-size:11px; color:var(--text-dim);">' + esc(r.owner || '') + ' — ' + esc(r.country || '') + '</div>';
-    html += '<div style="font-size:11px; color:var(--text-dim); margin-top:2px;">' + esc(r.reason) + '</div></div>';
-    html += '<div style="text-align:right; min-width:80px;"><div class="stat-num" style="font-size:22px; color:'+c+';">'+r.probability_pct+'%</div>';
-    if (r.z_score != null) { html += '<div style="font-size:10px; color:var(--text-dim);">Z: '+r.z_score+'</div>'; }
-    html += '<div style="font-size:10px; color:var(--text-dim);">'+esc(r.horizon)+'</div></div>';
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">';
+    html += '<div style="font-weight:600; font-size:12px;">' + esc(r.supplier) + '</div>';
+    html += '<div class="stat-num" style="font-size:20px; color:'+c+';">'+r.probability_pct+'%</div>';
     html += '</div>';
   });
+  if (insolRisks.length > 0) {
+    html += '<div style="margin-top:8px;"><button style="font-size:11px; color:var(--accent); background:none; border:1px solid var(--accent); padding:4px 10px; border-radius:5px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-dossier]\').click();">Full financial detail in Supplier Dossier &rarr;</button></div>';
+  }
   html += '</div>';
   html += '</div>';
 
@@ -8474,7 +8432,9 @@ function getAnalystName() {
   return _analystName;
 }
 function alertAcknowledge(btn, alertId) {
-  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'acknowledge', analyst:getAnalystName()})});
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'acknowledge', analyst:getAnalystName()})})
+    .then(function(r){ if (!r.ok) throw new Error('Failed to record action'); })
+    .catch(function(e){ console.error('Alert acknowledge error:', e); });
   var card = btn.closest('.card');
   btn.textContent = '\u2713 Acknowledged'; btn.style.color = 'var(--accent3)'; btn.style.borderColor = 'var(--accent3)'; btn.disabled = true;
   card.style.borderLeftColor = 'var(--accent3)'; card.dataset.acknowledged = 'true';
@@ -8482,11 +8442,15 @@ function alertAcknowledge(btn, alertId) {
 function alertAssign(btn, alertId) {
   var name = prompt('Assign to analyst:');
   if (!name) return;
-  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'assign', analyst:name})});
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'assign', analyst:name})})
+    .then(function(r){ if (!r.ok) throw new Error('Failed to record action'); })
+    .catch(function(e){ console.error('Alert assign error:', e); });
   btn.textContent = '\u2192 ' + name; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.disabled = true;
 }
 function alertEscalate(btn, alertId) {
-  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'escalate', analyst:getAnalystName()})});
+  fetch(API + '/psi/alerts/cobalt/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alert_id:alertId, action:'escalate', analyst:getAnalystName()})})
+    .then(function(r){ if (!r.ok) throw new Error('Failed to record action'); })
+    .catch(function(e){ console.error('Alert escalate error:', e); });
   var card = btn.closest('.card');
   btn.textContent = '\u2B06 Escalated'; btn.style.color = 'var(--accent2)'; btn.style.borderColor = 'var(--accent2)'; btn.style.background = 'rgba(239,68,68,0.15)'; btn.disabled = true;
   card.style.borderLeftWidth = '6px';
@@ -8570,8 +8534,6 @@ function renderAlertsSensing(m, container) {
     html += '<div data-evidence-panel style="display:none; margin-top:8px; padding:10px; background:var(--surface); border-radius:6px; border:1px solid var(--border); font-size:11px;">';
     html += '<div style="text-transform:uppercase; color:var(--text-dim); font-size:10px; font-weight:600; margin-bottom:6px;">Evidence &amp; Sources</div>';
     (a.sources||[]).forEach(function(s){ html += '<div style="padding:2px 0;">\uD83D\uDCC4 '+esc(s)+'</div>'; });
-    if (a.coa) html += '<div style="margin-top:6px; color:var(--accent4);"><strong>COA:</strong> '+esc(a.coa)+'</div>';
-    html += '<div style="margin-top:6px; color:var(--text-dim);">Confidence: '+a.confidence+'% &mdash; '+esc(a.timestamp||'')+'</div>';
     html += '</div></div>';
   });
   container.innerHTML = html;
@@ -8974,7 +8936,7 @@ function renderNarrativeGraph(m, container) {
   html += '<div style="font-size:15px; font-weight:bold; color:var(--text); margin-bottom:8px;">' + esc(m.name) + ' Supply Chain \u2014 Intelligence Summary</div>';
   html += '<div style="font-size:12px; color:var(--text-dim); line-height:1.7;">';
   html += esc(m.name) + ' is a <strong style="color:' + (m.risk_level === 'critical' ? '#ef4444' : '#f59e0b') + ';">' + (m.risk_level || 'high').toUpperCase() + ' RISK</strong> mineral. ';
-  html += esc(topMiner.country || 'DRC') + ' controls ' + (topMiner.pct || 76) + '% of global mining. ';
+  html += esc(topMiner.country) + ' controls ' + topMiner.pct + '% of global mining. ';
   html += 'China controls ' + chinaRefPct + '% of refining. ';
   if (suf && suf.totals) {
     html += 'Canada\'s annual military demand is ' + suf.totals.steady_state_kg + ' kg \u2014 ' + Math.round(suf.totals.indirect_kg / suf.totals.steady_state_kg * 100) + '% flows through foreign OEMs. ';
@@ -8985,7 +8947,7 @@ function renderNarrativeGraph(m, container) {
   // ── TIER 1: MINING ──
   html += renderNarrativeTier(
     '1', 'Mining \u2014 Where It Comes From', '#10b981', '\u26CF',
-    (topMiner.pct || 76) + '% of global ' + esc(m.name) + ' comes from ' + esc(topMiner.country || 'DRC') + '. ' +
+    topMiner.pct + '% of global ' + esc(m.name) + ' comes from ' + esc(topMiner.country) + '. ' +
     'Chinese-owned companies control the majority of production in the DRC, creating a critical adversary dependency at the source.',
     m.mines || [],
     function(mine) {
@@ -10177,11 +10139,11 @@ function scenarioExport(format) {
     fetch(API + '/psi/scenario/export/pdf', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({scenarios: scenarios}),
-    }).then(function(r){return r.blob();}).then(function(blob) {
+    }).then(function(r){ if (!r.ok) throw new Error('PDF export failed'); return r.blob(); }).then(function(blob) {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a'); a.href = url; a.download = 'scenario-briefing.pdf'; a.click();
       URL.revokeObjectURL(url);
-    });
+    }).catch(function(e){ console.error('Scenario PDF export error:', e); });
   }
 }
 

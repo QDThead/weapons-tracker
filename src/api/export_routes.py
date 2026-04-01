@@ -329,16 +329,24 @@ async def export_cobalt_register_csv():
 
 @router.get("/cobalt/alerts/csv")
 async def export_cobalt_alerts_csv():
-    """Export Cobalt watchtower alerts as CSV."""
+    """Export Cobalt watchtower alerts as CSV (seeded + live)."""
     from src.analysis.mineral_supply_chains import get_mineral_by_name
+    from src.analysis.cobalt_alert_engine import get_cached_alerts
 
     mineral = get_mineral_by_name("Cobalt")
     if not mineral:
         raise HTTPException(status_code=404, detail="Cobalt data not found")
-    alerts = mineral.get("watchtower_alerts", [])
+    alerts = list(mineral.get("watchtower_alerts", []))
+    # Merge live GDELT/rule-based alerts if available
+    live = get_cached_alerts() or []
+    seen_ids = {a.get("id") for a in alerts}
+    for la in live:
+        if la.get("id") not in seen_ids:
+            alerts.append(la)
+            seen_ids.add(la.get("id"))
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Title", "Severity", "Category", "Sources", "Confidence", "COA", "Timestamp"])
+    writer.writerow(["ID", "Title", "Severity", "Category", "Sources", "Confidence", "COA", "Timestamp", "Source Type"])
     for a in alerts:
         writer.writerow([
             a.get("id", ""),
@@ -349,6 +357,7 @@ async def export_cobalt_alerts_csv():
             a.get("confidence", ""),
             a.get("coa", ""),
             a.get("timestamp", ""),
+            "LIVE" if a.get("auto_generated") else "SEEDED",
         ])
     output.seek(0)
     return StreamingResponse(

@@ -151,7 +151,9 @@ async def get_material_risk(name: str):
         scarcity = analyzer.score_material_scarcity(name)
 
         material = session.execute(
-            select(SupplyChainMaterial).where(SupplyChainMaterial.name == name)
+            select(SupplyChainMaterial).where(
+                func.lower(SupplyChainMaterial.name) == name.lower()
+            )
         ).scalar_one_or_none()
 
         if not material:

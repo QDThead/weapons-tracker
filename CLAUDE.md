@@ -17,8 +17,8 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,050 lines)
 - **3D Globe:** CesiumJS 1.119 (CDN) with CartoDB Dark Matter tiles, global shipping lanes overlay
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
-- **Codebase:** 69 Python files, ~33,400 total lines
-- **Tests:** 196 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine (111 unit/integration + 85 adversarial)
+- **Codebase:** 74 Python files, ~34,400 total lines
+- **Tests:** 219 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring (134 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
@@ -46,7 +46,11 @@ weapons-tracker/
 │   │   ├── wikipedia_weapons.py     # PSI: Wikipedia weapon infobox parser
 │   │   ├── corporate_graph.py       # PSI: Company ownership graph + per-company lookup
 │   │   ├── procurement_scraper.py   # Open Canada DND procurement contracts
-│   │   ├── osint_feeds.py           # 26 OSINT connector classes (news, forums, treaties)
+│   │   ├── osint_feeds.py           # 26 OSINT connector classes + GLEIF LEI + SEC EDGAR XBRL
+│   │   ├── bgs_minerals.py         # BGS World Mineral Statistics OGC API (cobalt production by country)
+│   │   ├── nrcan_cobalt.py         # NRCan Canadian cobalt facts (production by province)
+│   │   ├── sherritt_cobalt.py      # Sherritt International stock + ops + financials
+│   │   ├── cobalt_players.py       # 15 cobalt supply chain players via Yahoo Finance
 │   │   ├── worldbank_enrichment.py  # Governance + economic indicators (WGI, fragility)
 │   │   ├── sipri_milex.py           # SIPRI Military Expenditure Database
 │   │   ├── cia_factbook.py          # CIA World Factbook military data
@@ -70,7 +74,8 @@ weapons-tracker/
 │   │   ├── cyber_threat_intel.py    # APT groups, breach registry, Tor nodes, IOC aggregation
 │   │   ├── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
 │   │   ├── mineral_supply_chains.py # 30 mineral supply chains (USGS 2025, geo-coords, Canada deps, deep Cobalt data)
-│   │   ├── cobalt_forecasting.py    # Live cobalt forecasting: FRED nickel proxy + linear regression + insolvency scoring
+│   │   ├── cobalt_forecasting.py    # Live cobalt forecasting: IMF PCOBALT primary + FRED nickel fallback + linear regression + insolvency scoring
+│   │   ├── financial_scoring.py    # Altman Z-Score computation from financial filings
 │   │   ├── cobalt_alert_engine.py   # Live Cobalt alert engine: GDELT keyword monitoring + rule-based triggers (30-min scheduler)
 │   │   └── scenario_engine.py      # Multi-variable scenario sandbox engine: layer composition, cascade propagation, impact metrics
 │   ├── api/
@@ -109,7 +114,7 @@ weapons-tracker/
 └── README.md
 ```
 
-## Data Sources (45 active + 2 inactive)
+## Data Sources (52 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -133,6 +138,13 @@ weapons-tracker/
 | 18–43 | 26 OSINT Feeds | `osint_feeds.py` | 15min–Daily | None | Working |
 | - | Maritime (AIS) | `maritime_tracker.py` | Live | API key | Needs key |
 | - | SIPRI Companies | `sipri_companies.py` | Annual | None | Needs URL |
+| 44 | BGS World Minerals | `bgs_minerals.py` | Annual | None | Working |
+| 45 | NRCan Cobalt Facts | `nrcan_cobalt.py` | Annual | None | Working |
+| 46 | Sherritt International | `sherritt_cobalt.py` | Quarterly | None | Working |
+| 47 | Cobalt Players (15 cos.) | `cobalt_players.py` | Hourly | None | Working |
+| 48 | GLEIF LEI Ownership | `osint_feeds.py` | On-demand | None | Working |
+| 49 | SEC EDGAR XBRL | `osint_feeds.py` | Quarterly | None | Working |
+| 50 | IMF Cobalt Prices | `cobalt_forecasting.py` | Monthly | None | Working |
 
 ## Intelligence Features
 
@@ -152,7 +164,7 @@ weapons-tracker/
 | **PSI: Critical Minerals** | critical_minerals.py | 30 defense-critical materials with USGS production data, HHI concentration indices |
 | **PSI: 3D Supply Globe** | mineral_supply_chains.py, globe_routes.py | CesiumJS 3D globe: 30 minerals with 4-tier flow (mine→process→component→platform), shipping routes to 5 Canadian ports, risk-colored sea lanes, entity-level 13-category DND risk taxonomy scorecards |
 | **PSI: Cobalt Deep Dive** | mineral_supply_chains.py | 9 named mines, 9 refineries, 8 defence alloys (Waspaloy/CMSX-4/Stellite), 6 shipping corridors with risk ratings, 13-cat taxonomy scores + KPIs per entity, Canada platform-engine dependencies |
-| **PSI: Live Forecasting** | cobalt_forecasting.py, globe_routes.py | FRED nickel proxy prices (live) × 2.0x ratio → quarterly linear regression → 12-month cobalt price forecast; lead time from shipping routes + chokepoint risk; supplier insolvency from taxonomy financial scores + Z-scores; auto-generated signals |
+| **PSI: Live Forecasting** | cobalt_forecasting.py, globe_routes.py | IMF PCOBALT direct cobalt prices (live, monthly) → quarterly linear regression → 12-month price forecast; FRED nickel as fallback; lead time from shipping routes + chokepoint risk; supplier insolvency from real Altman Z-scores (financial_scoring.py); auto-generated signals |
 | **PSI: BOM Explorer** | index.html | 4-tier Rocks-to-Rockets tree: Mining → Processing → Alloys (8 cobalt alloys with Co%) → CAF Platforms via engines; computed confidence per tier from source counts; HS codes (5 entries) and NSN entries (6 items, illustrative) |
 | **PSI: Supplier Dossier** | mineral_supply_chains.py | Per-entity deep dive: 18 entities (mines + refineries), FOCI badges, Altman Z-Score, UBO ownership chains, recent intelligence, DND contract summary |
 | **PSI: Watchtower Alerts** | cobalt_alert_engine.py, mineral_supply_chains.py | 6 seed alerts + live GDELT keyword monitoring (8 queries) + rule-based triggers (HHI, China refining, paused ops); SEEDED/LIVE badges; Acknowledge/Assign/Escalate persist to DB; Evidence Locker |
@@ -187,7 +199,7 @@ weapons-tracker/
 | **Canada Intel** | Ally vs adversary flows, threat watchlist, Arctic monitor, supply chain, shifting alliances, **defence supply base exposure** (10 suppliers, risk ranking, sector concentration, ownership), **Action Centre** |
 | **Supply Chain** | PSI: 12 sub-tabs (Overview, 3D Supply Map, Knowledge Graph, Risk Matrix, Scenario Sandbox, Risk Taxonomy, **Forecasting**, **BOM Explorer**, **Supplier Dossier**, **Alerts & Sensing**, **Risk Register**, **Analyst Feedback**) — all default to Cobalt |
 | **Data Feeds** | Operations view: 57 feed status cards across 10 sections with freshness, sample data, health indicators |
-| **Compliance** | DMPP 11 compliance matrix: 22 RFI questions, 137 sub-requirements with traceability, evidence, and View buttons |
+| **Compliance** | DMPP 11 compliance matrix: 22 RFI questions, 118 sub-requirements with traceability, evidence, and View buttons |
 
 ## API Endpoints (150+ total)
 
