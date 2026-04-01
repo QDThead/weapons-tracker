@@ -8571,6 +8571,17 @@ async function onRegisterMineralChange() {
     var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
     if (!resp.ok) throw new Error('Not found');
     var m = await resp.json();
+    if (mineral.toLowerCase() === 'cobalt') {
+      try {
+        var statusResp = await fetch(API + '/psi/register/cobalt/status');
+        if (statusResp.ok) {
+          var overrides = await statusResp.json();
+          (m.risk_register || []).forEach(function(r) {
+            if (overrides[r.id]) r.status = overrides[r.id].status;
+          });
+        }
+      } catch(e) { /* overrides unavailable */ }
+    }
     renderRiskRegister(m, container);
   } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Risk register data not yet available for ' + esc(mineral) + '</div>'; }
 }
