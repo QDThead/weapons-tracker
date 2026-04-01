@@ -5097,6 +5097,173 @@ function resetArcticCamera() {
   });
 }
 
+function renderArcticRoutes() {
+  arcticLayerEntities.routes.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.routes = [];
+
+  var routeStyles = {
+    'Northern Sea Route': { color: '#ef4444', width: 3, dash: false },
+    'Northwest Passage': { color: '#3b82f6', width: 3, dash: true },
+    'Transpolar Route': { color: '#a855f7', width: 2, dash: true },
+  };
+
+  ARCTIC_ROUTES.forEach(function(route) {
+    var style = routeStyles[route.name] || { color: '#64748b', width: 2, dash: true };
+    var cesiumColor = Cesium.Color.fromCssColorString(style.color);
+
+    var positions = [];
+    route.points.forEach(function(pt) {
+      positions.push(Cesium.Cartesian3.fromDegrees(pt[1], pt[0]));
+    });
+
+    var material = style.dash
+      ? new Cesium.PolylineDashMaterialProperty({ color: cesiumColor.withAlpha(0.7), dashLength: 14 })
+      : cesiumColor.withAlpha(0.7);
+
+    var routeEntity = arcticCesiumViewer.entities.add({
+      polyline: {
+        positions: positions,
+        width: style.width,
+        material: material,
+        clampToGround: true,
+      },
+      show: arcticLayerVisible.routes,
+    });
+    arcticLayerEntities.routes.push(routeEntity);
+
+    var labelEntity = arcticCesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(route.labelPos[1], route.labelPos[0]),
+      label: {
+        text: route.flag + ' ' + route.name,
+        font: '12px JetBrains Mono, monospace',
+        fillColor: cesiumColor,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 3,
+        outlineColor: Cesium.Color.BLACK,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+      },
+      show: arcticLayerVisible.routes,
+    });
+    arcticLayerEntities.routes.push(labelEntity);
+
+    (route.keyPoints || []).forEach(function(kp) {
+      var kpEntity = arcticCesiumViewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(kp.lon, kp.lat),
+        point: {
+          pixelSize: 5,
+          color: cesiumColor,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text: kp.name,
+          font: '9px JetBrains Mono, monospace',
+          fillColor: cesiumColor.withAlpha(0.7),
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          outlineWidth: 2,
+          outlineColor: Cesium.Color.BLACK,
+          pixelOffset: new Cesium.Cartesian2(8, 0),
+          horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
+        },
+        show: arcticLayerVisible.routes,
+      });
+      arcticLayerEntities.routes.push(kpEntity);
+    });
+  });
+
+  WATERWAY_LABELS.forEach(function(wl) {
+    var wlEntity = arcticCesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(wl.lon, wl.lat),
+      label: {
+        text: wl.name,
+        font: 'italic 10px IBM Plex Sans, sans-serif',
+        fillColor: Cesium.Color.WHITE.withAlpha(0.35),
+        style: Cesium.LabelStyle.FILL,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
+      },
+      show: arcticLayerVisible.routes,
+    });
+    arcticLayerEntities.routes.push(wlEntity);
+  });
+}
+
+function renderArcticADIZ() {
+  arcticLayerEntities.adiz.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.adiz = [];
+
+  var positions = CADIZ_BOUNDARY.map(function(pt) {
+    return Cesium.Cartesian3.fromDegrees(pt[1], pt[0]);
+  });
+
+  var adizEntity = arcticCesiumViewer.entities.add({
+    polygon: {
+      hierarchy: new Cesium.PolygonHierarchy(positions),
+      material: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.08),
+      outline: true,
+      outlineColor: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.4),
+      outlineWidth: 1,
+    },
+    show: arcticLayerVisible.adiz,
+  });
+  arcticLayerEntities.adiz.push(adizEntity);
+
+  var adizLabel = arcticCesiumViewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(-100, 60),
+    label: {
+      text: 'Canadian ADIZ',
+      font: '10px IBM Plex Sans, sans-serif',
+      fillColor: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.5),
+      style: Cesium.LabelStyle.FILL,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+    },
+    show: arcticLayerVisible.adiz,
+  });
+  arcticLayerEntities.adiz.push(adizLabel);
+}
+
+function renderArcticIceEdge() {
+  arcticLayerEntities.ice.forEach(function(e) { arcticCesiumViewer.entities.remove(e); });
+  arcticLayerEntities.ice = [];
+
+  var positions = ICE_EDGE.map(function(pt) {
+    return Cesium.Cartesian3.fromDegrees(pt[1], pt[0]);
+  });
+
+  var iceEntity = arcticCesiumViewer.entities.add({
+    polyline: {
+      positions: positions,
+      width: 1.5,
+      material: new Cesium.PolylineDashMaterialProperty({
+        color: Cesium.Color.WHITE.withAlpha(0.3),
+        dashLength: 12,
+      }),
+      clampToGround: true,
+    },
+    show: arcticLayerVisible.ice,
+  });
+  arcticLayerEntities.ice.push(iceEntity);
+
+  var iceLabel = arcticCesiumViewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(0, 75.5),
+    label: {
+      text: 'Approx. ice edge ~75\u00b0N',
+      font: 'italic 9px IBM Plex Sans, sans-serif',
+      fillColor: Cesium.Color.WHITE.withAlpha(0.3),
+      style: Cesium.LabelStyle.FILL,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+    },
+    show: arcticLayerVisible.ice,
+  });
+  arcticLayerEntities.ice.push(iceLabel);
+}
+
 async function loadArctic() {
   // Fetch assessment + flights + bases in parallel
   const [assessResp, flightsResp, basesResp] = await Promise.all([
@@ -5125,6 +5292,10 @@ async function loadArctic() {
   if (arcticBasesData && arcticBasesData.bases) {
     renderArcticBases(arcticBasesData.bases);
   }
+
+  renderArcticRoutes();
+  renderArcticADIZ();
+  renderArcticIceEdge();
 
   // Render Base Intelligence table
   if (arcticBasesData) {
