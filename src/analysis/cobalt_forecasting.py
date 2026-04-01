@@ -1,7 +1,8 @@
 """Cobalt forecasting engine — live price data + computed predictions.
 
-Fetches FRED nickel prices (cobalt proxy, r=0.85 correlation),
-applies linear regression for 12-month price forecast, and computes
+Fetches cobalt prices from IMF Primary Commodity Price System (PCOBALT).
+Falls back to FRED nickel proxy if IMF is unavailable.
+Applies linear regression for 12-month price forecast, and computes
 lead time and insolvency risks from existing supply chain data.
 """
 from __future__ import annotations
@@ -20,6 +21,58 @@ FRED_NICKEL_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=PNICKUSDM&
 # Cobalt/nickel price ratio — historical average ~1.8-2.2x
 # Cobalt LME ~$28,000-33,000/mt, Nickel ~$15,000-17,000/mt
 COBALT_NICKEL_RATIO = 2.0
+
+IMF_COBALT_URL = "http://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/PCPS/M.W00.PCOBALT"
+
+
+async def fetch_cobalt_prices() -> list[dict]:
+    """Fetch monthly cobalt prices from IMF PCPS (free, no API key).
+
+    Returns list of {date, usd_mt} sorted oldest-first.
+    Falls back to FRED nickel proxy if IMF is unavailable.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(IMF_COBALT_URL)
+            if r.status_code != 200:
+                logger.warning("IMF PCOBALT returned HTTP %s, falling back to nickel proxy", r.status_code)
+                return await _fetch_nickel_as_fallback()
+
+            data = r.json()
+            series = data.get("CompactData", {}).get("DataSet", {}).get("Series", {})
+            obs = series.get("Obs", [])
+            if isinstance(obs, dict):
+                obs = [obs]
+
+            prices = []
+            for o in obs:
+                period = o.get("@TIME_PERIOD", "")
+                value = o.get("@OBS_VALUE")
+                if period and value:
+                    prices.append({
+                        "date": period,
+                        "usd_mt": round(float(value), 2),
+                    })
+
+            prices.sort(key=lambda x: x["date"])
+            if not prices:
+                logger.warning("IMF PCOBALT returned no data, falling back to nickel proxy")
+                return await _fetch_nickel_as_fallback()
+
+            logger.info("Fetched %d months of IMF cobalt prices", len(prices))
+            return prices
+    except Exception as e:
+        logger.warning("IMF cobalt fetch failed: %s, falling back to nickel proxy", e)
+        return await _fetch_nickel_as_fallback()
+
+
+async def _fetch_nickel_as_fallback() -> list[dict]:
+    """Fallback: fetch FRED nickel and apply cobalt/nickel ratio."""
+    nickel = await fetch_nickel_prices()
+    return [
+        {"date": p["date"], "usd_mt": round(p["usd_mt"] * COBALT_NICKEL_RATIO, 2)}
+        for p in nickel
+    ]
 
 
 async def fetch_nickel_prices() -> list[dict]:
@@ -61,14 +114,14 @@ def _linear_regression(xs: list[float], ys: list[float]) -> tuple[float, float]:
     return slope, intercept
 
 
-def _compute_price_forecast(nickel_prices: list[dict]) -> dict:
-    """Compute 12-month cobalt price forecast from nickel proxy."""
-    if not nickel_prices:
-        return {"status": "no_data", "source": "FRED PNICKUSDM unavailable"}
+def _compute_price_forecast(cobalt_prices: list[dict], source: str = "IMF PCOBALT") -> dict:
+    """Compute 12-month cobalt price forecast from price data."""
+    if not cobalt_prices:
+        return {"status": "no_data", "source": f"{source} unavailable"}
 
     # Convert to quarterly averages for cleaner chart
     quarterly: dict[str, list[float]] = {}
-    for p in nickel_prices:
+    for p in cobalt_prices:
         date = p["date"]
         year = date[:4]
         month = int(date[5:7])
@@ -77,17 +130,15 @@ def _compute_price_forecast(nickel_prices: list[dict]) -> dict:
 
     q_prices = []
     for q_label, values in quarterly.items():
-        avg_nickel = sum(values) / len(values)
-        avg_cobalt = avg_nickel * COBALT_NICKEL_RATIO
+        avg = sum(values) / len(values)
         q_prices.append({
             "quarter": q_label,
-            "usd_mt": round(avg_cobalt, 0),
-            "usd_lb": round(avg_cobalt / 2204.62, 2),  # mt to lb
-            "nickel_usd_mt": round(avg_nickel, 0),
+            "usd_mt": round(avg, 0),
+            "usd_lb": round(avg / 2204.62, 2),  # mt to lb
             "type": "actual",
         })
 
-    # Linear regression on cobalt estimates for forecasting
+    # Linear regression on cobalt prices for forecasting
     xs = list(range(len(q_prices)))
     ys = [p["usd_mt"] for p in q_prices]
     slope, intercept = _linear_regression(xs, ys)
@@ -107,7 +158,6 @@ def _compute_price_forecast(nickel_prices: list[dict]) -> dict:
             "quarter": f"Q{fq_num} {fy}",
             "usd_mt": round(predicted, 0),
             "usd_lb": round(predicted / 2204.62, 2),
-            "nickel_usd_mt": round(predicted / COBALT_NICKEL_RATIO, 0),
             "type": "forecast",
         })
 
@@ -126,12 +176,13 @@ def _compute_price_forecast(nickel_prices: list[dict]) -> dict:
             "pct_change": abs(pct_change),
             "direction": "up" if pct_change > 0 else "down",
             "period": "12 months",
-            "methodology": "Linear regression on FRED nickel proxy (r=0.85 correlation)",
+            "methodology": f"Linear regression on {source} monthly data",
         },
         "price_history": all_prices,
-        "source": "FRED PNICKUSDM (live) \u00d7 cobalt/nickel ratio",
+        "source": source,
+        "price_source": source,
         "last_updated": datetime.utcnow().isoformat(),
-        "data_points": len(nickel_prices),
+        "data_points": len(cobalt_prices),
     }
 
 
@@ -274,11 +325,13 @@ async def compute_cobalt_forecast() -> dict:
     if not mineral:
         return {"error": "Cobalt mineral data not found"}
 
-    # Fetch live nickel prices
-    nickel_prices = await fetch_nickel_prices()
+    # Fetch live cobalt prices (IMF PCOBALT, falls back to FRED nickel proxy)
+    cobalt_prices = await fetch_cobalt_prices()
 
     # Compute all forecasts
-    price_data = _compute_price_forecast(nickel_prices)
+    price_data = _compute_price_forecast(
+        cobalt_prices, source="IMF Primary Commodity Prices (PCOBALT)"
+    )
     lead_time = _compute_lead_time(mineral)
     insolvency = _compute_insolvency_risks(mineral)
 
@@ -293,7 +346,7 @@ async def compute_cobalt_forecast() -> dict:
         "mineral": "Cobalt",
         "generated_at": datetime.utcnow().isoformat(),
         "horizon": "12 months",
-        "live_data": len(nickel_prices) > 0,
+        "live_data": len(cobalt_prices) > 0,
         "price_forecast": price_data.get("price_forecast", {}),
         "price_history": price_data.get("price_history", []),
         "price_source": price_data.get("source", ""),
