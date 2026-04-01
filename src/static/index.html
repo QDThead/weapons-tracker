@@ -1212,7 +1212,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   <div id="page-insights" class="page active" role="tabpanel" aria-labelledby="tab-insights">
 
     <!-- Data Freshness Banner -->
-    <div id="freshness-banner" class="card" style="margin-bottom:20px; padding:14px 20px; display:none;">
+    <div id="freshness-banner" class="card" data-val-key="insights.freshness" style="margin-bottom:20px; padding:14px 20px; display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <h2 style="margin:0;">Data Freshness</h2>
         <div id="freshness-items" style="display:flex; gap:20px; flex-wrap:wrap; font-size:13px;"></div>
@@ -1220,7 +1220,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Risk Taxonomy Summary Strip -->
-    <div id="taxonomy-strip" style="margin-bottom:20px;">
+    <div id="taxonomy-strip" data-val-key="insights.taxonomy" style="margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:12px;">
           <h2 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin:0;">Defence Supply Chain Risk Taxonomy</h2>
@@ -1261,7 +1261,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Section 1: SITUATION REPORT -->
-    <div class="briefing-section">
+    <div class="briefing-section" data-val-key="insights.sitrep">
       <div class="briefing-header">
         <span class="section-num">1</span>
         <h2>Situation Report</h2>
@@ -1276,12 +1276,12 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <h2>What's Happening Now</h2>
       </div>
       <div class="grid grid-3">
-        <div class="card" style="border-top:3px solid var(--accent3);">
+        <div class="card" data-val-key="insights.news" style="border-top:3px solid var(--accent3);">
           <h2>Live Defense News <span id="news-count" style="font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
           <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Real-time defence news from 31 languages via GDELT and RSS feeds.</p>
           <div id="live-news-feed" style="max-height:400px;overflow-y:auto;"></div>
         </div>
-        <div class="card" style="border-top:3px solid var(--accent4);">
+        <div class="card" data-val-key="insights.dsca" style="border-top:3px solid var(--accent4);">
           <h2>DSCA Arms Sales</h2>
           <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Congressional notifications under Section 36(b) of the Arms Export Control Act.</p>
           <div id="dsca-sales-feed" style="max-height:370px;overflow-y:auto;"></div>
@@ -1331,7 +1331,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Section 4: ADVERSARY ARMS FLOWS -->
-    <div class="briefing-section">
+    <div class="briefing-section" data-val-key="insights.adversary">
       <div class="briefing-header">
         <span class="section-num">4</span>
         <h2>Adversary Arms Flows</h2>
@@ -1376,7 +1376,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Section 6: SHIFTING ALLIANCES -->
-    <div class="briefing-section">
+    <div class="briefing-section" data-val-key="insights.alliances">
       <div class="briefing-header">
         <span class="section-num">6</span>
         <h2>Shifting Alliances</h2>
@@ -1454,7 +1454,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Arctic Threat Summary — 5 metric cards (below globe) -->
-    <div class="arctic-metrics" id="arctic-metrics">
+    <div class="arctic-metrics" id="arctic-metrics" data-val-key="arctic.kpis">
       <div class="arctic-metric-card" id="amc-nato-force">
         <div class="amc-label">NATO Arctic Force</div>
         <div class="amc-value" id="amc-nato-val">-</div>
@@ -1492,7 +1492,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Global Arms Trade Intelligence (merged from World Map) -->
-    <div class="grid grid-2" style="margin-bottom:20px;">
+    <div class="grid grid-2" data-val-key="arctic.routes" style="margin-bottom:20px;">
       <div class="card">
         <h2>Top Trade Routes by <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></h2>
         <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Highest-volume bilateral arms trade relationships by SIPRI TIV.</p>
@@ -1511,7 +1511,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Arctic Base Intelligence Table -->
-    <div class="card" style="margin-bottom:20px;">
+    <div class="card" data-val-key="arctic.bases" style="margin-bottom:20px;">
       <h2>Arctic Base Intelligence <span style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0;" id="arctic-intel-count"></span></h2>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">All known military installations in the Arctic. Click column headers to sort. Color-coded by alliance. Threat level 1 (friendly) to 5 (highest adversary threat).</p>
       <div style="max-height:600px;overflow-y:auto;">
@@ -1534,7 +1534,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Section 3: Who is arming up? (2-column) -->
-    <div class="grid grid-2" style="margin-bottom:20px;">
+    <div class="grid grid-2" data-val-key="arctic.trade" style="margin-bottom:20px;">
       <div class="card">
         <h2>NATO Arctic Nations — Arms Imports</h2>
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Horizontal bars showing each nation's arms imports (TIV 2015-2025) with trend indicators.</p>
@@ -1548,7 +1548,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Section 4: Northern Sea Route (2-column) -->
-    <div class="grid grid-2" style="margin-bottom:20px;">
+    <div class="grid grid-2" data-val-key="arctic.naval" style="margin-bottom:20px;">
       <div class="card">
         <h2>Naval Assets Near the Northern Sea Route</h2>
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Countries with ship/submarine imports relevant to the Arctic maritime domain.</p>
@@ -1639,7 +1639,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Section 6: Live Arctic Airspace (2-column) -->
-    <div class="grid grid-2">
+    <div class="grid grid-2" data-val-key="arctic.flights">
       <div class="card">
         <h2>Live Arctic Airspace <span id="arctic-airspace-time" style="float:right;font-size:11px;color:var(--text-dim);text-transform:none;letter-spacing:0"></span></h2>
         <div class="legend" style="margin-bottom:8px;">
@@ -1678,7 +1678,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
   <!-- ════ DEALS PAGE ════ -->
   <div id="page-deals" class="page" role="tabpanel" aria-labelledby="tab-deals">
-    <div class="card">
+    <div class="card" data-val-key="deals.transfers">
       <h2>All Arms Transfer Deals</h2>
       <p style="color:var(--text-dim);font-size:12px;margin:0 0 16px;">9,311 SIPRI-verified arms transfers (2000–2025). Search by country, weapon type, or year. <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span> = Trend Indicator Value, SIPRI's standardised volume measure.</p>
       <div class="filters">
@@ -2325,7 +2325,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
   <!-- ════ DATA FEEDS PAGE ════ -->
   <div id="page-data-feeds" class="page" role="tabpanel" aria-labelledby="tab-data-feeds">
-    <div class="feeds-header">
+    <div class="feeds-header" data-val-key="feeds.stats">
       <div>
         <h2>Data Feed Status</h2>
         <div class="feeds-stats">
@@ -2379,7 +2379,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <div id="feeds-content"></div>
+    <div id="feeds-content" data-val-key="feeds.status"></div>
   </div>
 
   <!-- ═══ COMPLIANCE MATRIX ═══ -->
@@ -2405,7 +2405,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
 
     <!-- Compliance cards -->
-    <div id="compliance-content"></div>
+    <div id="compliance-content" data-val-key="compliance.matrix"></div>
 
     <!-- Beyond Contract -->
     <div id="compliance-extras"></div>
