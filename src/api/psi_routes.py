@@ -24,7 +24,9 @@ from src.storage.models import (
     SupplyChainRoute,
     SupplyChainNodeType,
     Country,
+    MitigationAction,
 )
+from src.storage.persistence import PersistenceService
 from src.analysis.supply_chain import SupplyChainAnalyzer
 from src.analysis.supply_chain_graph import SupplyChainGraph
 from src.analysis.scenario_engine import ScenarioEngine
@@ -873,8 +875,6 @@ class CobaltAlertAction(BaseModel):
     action: str
     analyst: str = ""
 
-_cobalt_alert_actions: dict[str, dict] = {}
-
 @router.get("/alerts/cobalt/live")
 async def get_cobalt_live_alerts():
     """Get live-generated Cobalt alerts from GDELT + rule engine."""
@@ -890,18 +890,54 @@ async def get_cobalt_live_alerts():
 @router.post("/alerts/cobalt/action")
 async def cobalt_alert_action(req: CobaltAlertAction):
     """Record an analyst action on a Cobalt watchtower alert."""
-    _cobalt_alert_actions[req.alert_id] = {
-        "alert_id": req.alert_id,
-        "action": req.action,
-        "analyst": req.analyst,
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-    return {"status": "recorded", **_cobalt_alert_actions[req.alert_id]}
+    session = SessionLocal()
+    try:
+        svc = PersistenceService(session)
+        row = svc.upsert_mitigation_action(
+            risk_source="cobalt_alert",
+            risk_entity=req.alert_id,
+            risk_dimension=req.action,
+            risk_score=0.0,
+            coa_action=req.action,
+            coa_priority="high",
+            status=req.action,
+            notes=req.analyst,
+        )
+        return {
+            "status": "recorded",
+            "alert_id": row.risk_entity,
+            "action": row.coa_action,
+            "analyst": row.notes or "",
+            "timestamp": (row.updated_at or row.created_at).isoformat(),
+        }
+    except Exception as e:
+        logger.error("cobalt_alert_action failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        session.close()
 
 @router.get("/alerts/cobalt/actions")
 async def get_cobalt_alert_actions():
     """Get all recorded Cobalt alert actions."""
-    return list(_cobalt_alert_actions.values())
+    session = SessionLocal()
+    try:
+        rows = session.query(MitigationAction).filter_by(
+            risk_source="cobalt_alert",
+        ).all()
+        return [
+            {
+                "alert_id": r.risk_entity,
+                "action": r.coa_action,
+                "analyst": r.notes or "",
+                "timestamp": (r.updated_at or r.created_at).isoformat(),
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error("get_cobalt_alert_actions failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        session.close()
 
 
 class RegisterStatusUpdate(BaseModel):
@@ -909,23 +945,57 @@ class RegisterStatusUpdate(BaseModel):
     new_status: str
     analyst: str = ""
 
-_cobalt_register_status: dict[str, dict] = {}
-
 @router.patch("/register/cobalt/{risk_id}")
 async def update_cobalt_register_status(risk_id: str, update: RegisterStatusUpdate):
     """Update status of a Cobalt risk register entry."""
-    _cobalt_register_status[risk_id] = {
-        "risk_id": risk_id,
-        "status": update.new_status,
-        "analyst": update.analyst,
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-    return {"status": "updated", **_cobalt_register_status[risk_id]}
+    session = SessionLocal()
+    try:
+        svc = PersistenceService(session)
+        row = svc.upsert_mitigation_action(
+            risk_source="cobalt_register",
+            risk_entity=risk_id,
+            risk_dimension="status_override",
+            risk_score=0.0,
+            coa_action=update.new_status,
+            coa_priority="medium",
+            status=update.new_status,
+            notes=update.analyst,
+        )
+        return {
+            "status": "updated",
+            "risk_id": row.risk_entity,
+            "new_status": row.coa_action,
+            "analyst": row.notes or "",
+            "timestamp": (row.updated_at or row.created_at).isoformat(),
+        }
+    except Exception as e:
+        logger.error("update_cobalt_register_status failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        session.close()
 
 @router.get("/register/cobalt/status")
 async def get_cobalt_register_status():
     """Get all Cobalt risk register status overrides."""
-    return _cobalt_register_status
+    session = SessionLocal()
+    try:
+        rows = session.query(MitigationAction).filter_by(
+            risk_source="cobalt_register",
+        ).all()
+        return {
+            r.risk_entity: {
+                "risk_id": r.risk_entity,
+                "status": r.coa_action,
+                "analyst": r.notes or "",
+                "timestamp": (r.updated_at or r.created_at).isoformat(),
+            }
+            for r in rows
+        }
+    except Exception as e:
+        logger.error("get_cobalt_register_status failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        session.close()
 
 
 # ------------------------------------------------------------------
