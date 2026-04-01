@@ -8736,7 +8736,11 @@ function renderAnalystFeedback(m, container) {
   html += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:4px 0;"><span style="color:var(--text-dim);">Current Z-Score Threshold</span><span style="font-family:var(--font-mono); color:var(--accent);">'+(th.current_z||'--')+'</span></div>';
   html += '<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding:4px 0;"><span style="color:var(--text-dim);">RLHF-Adjusted Threshold</span><span style="font-family:var(--font-mono); color:var(--accent3);">'+(th.rlhf_adjusted||'--')+'</span></div>';
   html += '<div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-dim);">Last Retrain</span><span style="font-family:var(--font-mono); color:var(--text);">'+(th.last_retrain||'--')+'</span></div></div>';
-  html += '<div style="margin-top:10px; font-size:10px; color:var(--text-dim);">FP rate &gt;30% raises threshold automatically. &lt;10% lowers it. Manual override available.</div></div>';
+  html += '<div style="margin-top:10px; font-size:10px; color:var(--text-dim);">FP rate &gt;30% raises threshold automatically. &lt;10% lowers it. Manual override available.</div>';
+  if (af._live_stats) {
+    html += '<div style="margin-top:6px; font-size:9px; color:var(--accent3);">Thresholds synced from live ML engine</div>';
+  }
+  html += '</div>';
 
   html += '<div class="card" style="padding:18px;"><h3 style="margin-bottom:12px;">Recent Feedback History</h3>';
   (af.recent || []).forEach(function(r){
