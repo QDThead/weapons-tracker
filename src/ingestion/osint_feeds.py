@@ -5211,3 +5211,189 @@ class UCDPConflictClient:
         except Exception as exc:
             logger.warning("UCDP Conflict fetch failed: %s", exc)
             return {"dataset": "UCDP GED", "live": False, "source": "UCDP (unavailable)"}
+
+
+# ---------------------------------------------------------------------------
+# GLEIF LEI — Corporate Ownership Relationships
+# ---------------------------------------------------------------------------
+
+class GLEIFLEIClient:
+    """Fetches corporate ownership data from the GLEIF LEI API.
+
+    Free API, no authentication. Returns legal entity identity,
+    direct parent, and ultimate parent for FOCI detection.
+    Endpoint: https://api.gleif.org/api/v1/lei-records
+    """
+
+    _cache: dict = {}
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_entity(self, name: str) -> dict:
+        """Look up a company by name and return ownership chain.
+
+        Returns {lei, legal_name, country, direct_parent, ultimate_parent, status}
+        """
+        cache_key = f"gleif_{name.lower().replace(' ', '_')}"
+        cached = _cache_get(self._cache, cache_key)
+        if cached is not None:
+            return cached
+
+        url = "https://api.gleif.org/api/v1/lei-records"
+        params = {"filter[entity.legalName]": name, "page[size]": 1}
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url, params=params)
+                if resp.status_code != 200:
+                    logger.warning("GLEIF API returned HTTP %s for '%s'", resp.status_code, name)
+                    return {"error": f"GLEIF lookup failed for {name}"}
+
+                data = resp.json()
+                records = data.get("data", [])
+                if not records:
+                    return {"error": f"No LEI found for {name}", "source": "GLEIF"}
+
+                record = records[0]
+                attrs = record.get("attributes", {})
+                entity = attrs.get("entity", {})
+                lei = attrs.get("lei", "")
+                legal_name = entity.get("legalName", {}).get("name", name)
+                country = entity.get("legalAddress", {}).get("country", "")
+                status = entity.get("status", "")
+
+                result = {
+                    "lei": lei,
+                    "legal_name": legal_name,
+                    "country": country,
+                    "status": status,
+                    "source": "GLEIF LEI Registry",
+                }
+
+                # Fetch parent relationships
+                if lei:
+                    result["direct_parent"] = await self._fetch_parent(lei, "direct")
+                    result["ultimate_parent"] = await self._fetch_parent(lei, "ultimate")
+
+                _cache_set(self._cache, cache_key, result)
+                return result
+
+        except Exception as e:
+            logger.warning("GLEIF fetch failed for '%s': %s", name, e)
+            return {"error": str(e), "source": "GLEIF"}
+
+    async def _fetch_parent(self, lei: str, level: str) -> dict | None:
+        """Fetch direct or ultimate parent for a given LEI."""
+        url = f"https://api.gleif.org/api/v1/lei-records/{lei}/{level}-parent"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    return None
+                data = resp.json()
+                parent = data.get("data", {})
+                if not parent:
+                    return None
+                attrs = parent.get("attributes", {})
+                return {
+                    "lei": attrs.get("lei", ""),
+                    "legal_name": attrs.get("entity", {}).get("legalName", {}).get("name", ""),
+                    "country": attrs.get("entity", {}).get("legalAddress", {}).get("country", ""),
+                }
+        except Exception:
+            return None
+
+
+# ---------------------------------------------------------------------------
+# SEC EDGAR XBRL — OEM Financial Data
+# ---------------------------------------------------------------------------
+
+class SECEdgarFinancialsClient:
+    """Fetches structured financial data from SEC EDGAR XBRL API.
+
+    Free API, no key required (User-Agent header needed).
+    Returns balance sheet, income statement data for Altman Z-score.
+    """
+
+    _cache: dict = {}
+
+    # CIK numbers for key defence OEMs
+    OEM_CIKS = {
+        "RTX": "0000101829",
+        "GE": "0000040545",
+        "LMT": "0000936468",
+        "VALE": "0000917851",
+    }
+
+    def __init__(self, timeout: float = 30.0):
+        self.timeout = timeout
+
+    async def fetch_company_facts(self, ticker: str) -> dict:
+        """Fetch XBRL company facts for a given ticker.
+
+        Returns key financial metrics for Z-score computation.
+        """
+        cik = self.OEM_CIKS.get(ticker.upper())
+        if not cik:
+            return {"error": f"No CIK mapping for {ticker}"}
+
+        cache_key = f"sec_facts_{ticker}"
+        cached = _cache_get(self._cache, cache_key)
+        if cached is not None:
+            return cached
+
+        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+        headers = {"User-Agent": "WeaponsTracker/1.0 contact@example.com"}
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code != 200:
+                    logger.warning("SEC EDGAR returned HTTP %s for %s", resp.status_code, ticker)
+                    return {"error": f"SEC EDGAR failed for {ticker}"}
+
+                data = resp.json()
+                result = self._extract_financials(ticker, data)
+                _cache_set(self._cache, cache_key, result)
+                return result
+
+        except Exception as e:
+            logger.warning("SEC EDGAR fetch failed for %s: %s", ticker, e)
+            return {"error": str(e)}
+
+    def _extract_financials(self, ticker: str, data: dict) -> dict:
+        """Extract key financial metrics from XBRL company facts."""
+        facts = data.get("facts", {})
+        us_gaap = facts.get("us-gaap", {})
+
+        def _latest_annual(concept: str) -> float | None:
+            entries = us_gaap.get(concept, {}).get("units", {}).get("USD", [])
+            annual = [e for e in entries if e.get("form") == "10-K"]
+            if not annual:
+                return None
+            annual.sort(key=lambda x: x.get("end", ""), reverse=True)
+            return annual[0].get("val")
+
+        total_assets = _latest_annual("Assets")
+        total_liabilities = _latest_annual("Liabilities")
+        revenue = _latest_annual("Revenues") or _latest_annual("RevenueFromContractWithCustomerExcludingAssessedTax")
+        ebit = _latest_annual("OperatingIncomeLoss")
+        retained_earnings = _latest_annual("RetainedEarningsAccumulatedDeficit")
+        current_assets = _latest_annual("AssetsCurrent")
+        current_liabilities = _latest_annual("LiabilitiesCurrent")
+
+        working_capital = None
+        if current_assets is not None and current_liabilities is not None:
+            working_capital = current_assets - current_liabilities
+
+        return {
+            "ticker": ticker,
+            "total_assets_usd_m": round(total_assets / 1e6) if total_assets else None,
+            "total_liabilities_usd_m": round(total_liabilities / 1e6) if total_liabilities else None,
+            "revenue_usd_m": round(revenue / 1e6) if revenue else None,
+            "ebit_usd_m": round(ebit / 1e6) if ebit else None,
+            "retained_earnings_usd_m": round(retained_earnings / 1e6) if retained_earnings else None,
+            "working_capital_usd_m": round(working_capital / 1e6) if working_capital else None,
+            "source": "SEC EDGAR XBRL (10-K)",
+        }
