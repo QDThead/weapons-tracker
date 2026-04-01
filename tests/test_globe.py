@@ -329,7 +329,7 @@ class TestCobaltNewData:
     def test_cobalt_figure_metadata(self):
         """All mines and refineries must have figure_type and figure_source."""
         m = get_mineral_by_name("Cobalt")
-        valid_types = ("design_capacity", "actual_2025", "estimated_2025", "restart_estimate", "estimated", "quota_2026")
+        valid_types = ("design_capacity", "actual_2025", "estimated_2025", "restart_estimate", "estimated", "quota_2026", "combined_kcc_mumi", "company_reported", "reported_2023")
         for mine in m["mines"]:
             assert "figure_type" in mine, f"Mine {mine['name']} missing figure_type"
             assert "figure_source" in mine, f"Mine {mine['name']} missing figure_source"
