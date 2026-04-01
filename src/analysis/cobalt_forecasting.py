@@ -99,6 +99,9 @@ async def fetch_nickel_prices() -> list[dict]:
         return []
 
 
+import math
+
+
 def _linear_regression(xs: list[float], ys: list[float]) -> tuple[float, float]:
     """Simple linear regression returning (slope, intercept)."""
     n = len(xs)
@@ -114,8 +117,91 @@ def _linear_regression(xs: list[float], ys: list[float]) -> tuple[float, float]:
     return slope, intercept
 
 
+def _compute_r_squared(xs: list[float], ys: list[float], slope: float, intercept: float) -> float:
+    """Compute R² (coefficient of determination) for a linear regression."""
+    n = len(ys)
+    if n < 2:
+        return 0.0
+    mean_y = sum(ys) / n
+    ss_tot = sum((y - mean_y) ** 2 for y in ys)
+    if ss_tot == 0:
+        return 1.0
+    ss_res = sum((y - (intercept + slope * x)) ** 2 for x, y in zip(xs, ys))
+    return round(max(0.0, 1.0 - ss_res / ss_tot), 4)
+
+
+def _compute_prediction_intervals(
+    xs: list[float], ys: list[float], slope: float, intercept: float,
+    forecast_xs: list[float], confidence: float = 0.90,
+) -> list[dict]:
+    """Compute prediction intervals for forecast points.
+
+    Uses the standard formula for prediction intervals of a linear regression:
+    y_hat ± t * se * sqrt(1 + 1/n + (x_f - mean_x)^2 / SS_xx)
+
+    Returns list of {x, predicted, lower, upper} dicts.
+    """
+    n = len(xs)
+    if n < 3:
+        # Not enough data for meaningful intervals
+        return [
+            {"x": x_f, "predicted": intercept + slope * x_f, "lower": 0, "upper": 0}
+            for x_f in forecast_xs
+        ]
+
+    mean_x = sum(xs) / n
+    ss_xx = sum((x - mean_x) ** 2 for x in xs)
+    residuals = [y - (intercept + slope * x) for x, y in zip(xs, ys)]
+    mse = sum(r ** 2 for r in residuals) / (n - 2)
+    se = math.sqrt(mse) if mse > 0 else 0
+
+    # t-value approximation for 90% CI (two-tailed) with n-2 df
+    # Using approximation: t ≈ 1.645 + 2.5/df for small samples
+    df = n - 2
+    if confidence >= 0.95:
+        t_val = 1.96 + 3.0 / max(df, 1)
+    else:
+        t_val = 1.645 + 2.5 / max(df, 1)
+
+    results = []
+    for x_f in forecast_xs:
+        y_hat = intercept + slope * x_f
+        margin = t_val * se * math.sqrt(1 + 1 / n + (x_f - mean_x) ** 2 / max(ss_xx, 0.001))
+        results.append({
+            "x": x_f,
+            "predicted": round(y_hat, 0),
+            "lower": round(max(0, y_hat - margin), 0),
+            "upper": round(y_hat + margin, 0),
+        })
+
+    return results
+
+
+def _compute_volatility(ys: list[float], window: int = 4) -> dict:
+    """Compute rolling volatility (standard deviation) over a window."""
+    if len(ys) < window:
+        return {"rolling_std": 0, "annualized_pct": 0, "window": window}
+    recent = ys[-window:]
+    mean_r = sum(recent) / len(recent)
+    if mean_r == 0:
+        return {"rolling_std": 0, "annualized_pct": 0, "window": window}
+    variance = sum((y - mean_r) ** 2 for y in recent) / len(recent)
+    std = math.sqrt(variance)
+    # Annualize: quarterly data × sqrt(4)
+    annualized_pct = round((std / mean_r) * math.sqrt(4) * 100, 1)
+    return {
+        "rolling_std": round(std, 0),
+        "annualized_pct": annualized_pct,
+        "window": window,
+    }
+
+
 def _compute_price_forecast(cobalt_prices: list[dict], source: str = "IMF PCOBALT") -> dict:
-    """Compute 12-month cobalt price forecast from price data."""
+    """Compute 12-month cobalt price forecast with confidence intervals.
+
+    Includes: R², prediction intervals, volatility bands,
+    optimistic/baseline/pessimistic scenarios.
+    """
     if not cobalt_prices:
         return {"status": "no_data", "source": f"{source} unavailable"}
 
@@ -143,22 +229,35 @@ def _compute_price_forecast(cobalt_prices: list[dict], source: str = "IMF PCOBAL
     ys = [p["usd_mt"] for p in q_prices]
     slope, intercept = _linear_regression(xs, ys)
 
-    # Forecast 4 quarters ahead
+    # R² goodness-of-fit
+    r_squared = _compute_r_squared(xs, ys, slope, intercept)
+
+    # Volatility from recent quarters
+    volatility = _compute_volatility(ys)
+
+    # Forecast 4 quarters ahead with prediction intervals
     last_q = q_prices[-1]["quarter"]
     last_year = int(last_q.split()[-1])
     last_qnum = int(last_q[1])
+
+    forecast_xs = [len(q_prices) + i - 1 for i in range(1, 5)]
+    intervals = _compute_prediction_intervals(xs, ys, slope, intercept, forecast_xs)
+
     forecasts = []
-    for i in range(1, 5):
-        fq = last_qnum + i
+    for i, interval in enumerate(intervals):
+        fq = last_qnum + i + 1
         fy = last_year + (fq - 1) // 4
         fq_num = ((fq - 1) % 4) + 1
-        x_val = len(q_prices) + i - 1
-        predicted = max(0, intercept + slope * x_val)
+        predicted = max(0, interval["predicted"])
         forecasts.append({
             "quarter": f"Q{fq_num} {fy}",
             "usd_mt": round(predicted, 0),
             "usd_lb": round(predicted / 2204.62, 2),
             "type": "forecast",
+            "lower_90": round(interval["lower"], 0),
+            "upper_90": round(interval["upper"], 0),
+            "lower_90_lb": round(interval["lower"] / 2204.62, 2),
+            "upper_90_lb": round(interval["upper"] / 2204.62, 2),
         })
 
     all_prices = q_prices + forecasts
@@ -171,19 +270,85 @@ def _compute_price_forecast(cobalt_prices: list[dict], source: str = "IMF PCOBAL
     else:
         pct_change = 0
 
+    # Optimistic / Baseline / Pessimistic scenarios
+    scenarios = _build_forecast_scenarios(q_prices, forecasts, volatility)
+
+    # Confidence rating based on R² and data quantity
+    n_quarters = len(q_prices)
+    if r_squared >= 0.7 and n_quarters >= 8:
+        forecast_confidence = "high"
+        forecast_confidence_pct = min(90, round(r_squared * 85 + n_quarters))
+    elif r_squared >= 0.4 and n_quarters >= 4:
+        forecast_confidence = "medium"
+        forecast_confidence_pct = min(75, round(r_squared * 60 + n_quarters))
+    else:
+        forecast_confidence = "low"
+        forecast_confidence_pct = min(50, round(r_squared * 40 + n_quarters))
+
     return {
         "price_forecast": {
             "pct_change": abs(pct_change),
             "direction": "up" if pct_change > 0 else "down",
             "period": "12 months",
-            "methodology": f"Linear regression on {source} monthly data",
+            "methodology": f"Linear regression on {source} quarterly data with 90% prediction intervals",
+            "r_squared": r_squared,
+            "r_squared_interpretation": _interpret_r_squared(r_squared),
+            "confidence": forecast_confidence,
+            "confidence_pct": forecast_confidence_pct,
+            "data_quarters": n_quarters,
         },
+        "volatility": volatility,
+        "scenarios": scenarios,
         "price_history": all_prices,
         "source": source,
         "price_source": source,
         "last_updated": datetime.utcnow().isoformat(),
         "data_points": len(cobalt_prices),
     }
+
+
+def _interpret_r_squared(r2: float) -> str:
+    """Human-readable interpretation of R² value."""
+    if r2 >= 0.8:
+        return "Strong fit — trend explains most price variation"
+    if r2 >= 0.5:
+        return "Moderate fit — trend captures general direction"
+    if r2 >= 0.2:
+        return "Weak fit — high uncertainty, prices are volatile"
+    return "Very weak fit — linear trend is not predictive, use with caution"
+
+
+def _build_forecast_scenarios(
+    actuals: list[dict], forecasts: list[dict], volatility: dict,
+) -> list[dict]:
+    """Build optimistic / baseline / pessimistic fan chart scenarios."""
+    if not forecasts:
+        return []
+    vol_pct = volatility.get("annualized_pct", 15) / 100
+    if vol_pct < 0.05:
+        vol_pct = 0.15  # floor at 15% for meaningful spread
+
+    scenarios = []
+    for scenario_type, multiplier, label in [
+        ("optimistic", 1.0 + vol_pct, "Demand recovery + supply constraints"),
+        ("baseline", 1.0, "Linear regression trend"),
+        ("pessimistic", 1.0 - vol_pct, "Demand slowdown + oversupply"),
+    ]:
+        points = []
+        for f in forecasts:
+            adjusted = max(0, f["usd_mt"] * multiplier)
+            points.append({
+                "quarter": f["quarter"],
+                "usd_mt": round(adjusted, 0),
+                "usd_lb": round(adjusted / 2204.62, 2),
+            })
+        scenarios.append({
+            "type": scenario_type,
+            "label": label,
+            "multiplier": round(multiplier, 3),
+            "points": points,
+        })
+    return scenarios
 
 
 def _compute_lead_time(mineral: dict) -> dict:
@@ -282,11 +447,12 @@ def _generate_signals(mineral: dict, price_data: dict, lead_time: dict, insolven
     signals = []
 
     pf = price_data.get("price_forecast", {})
+    price_source = price_data.get("source", "Unknown")
     if pf.get("pct_change", 0) > 10:
         signals.append({
-            "text": f"Cobalt price forecast {pf['direction']} {pf['pct_change']}% over next 12 months (nickel proxy trend)",
+            "text": f"Cobalt price forecast {pf['direction']} {pf['pct_change']}% over next 12 months ({price_source})",
             "severity": "high" if pf["pct_change"] > 20 else "medium",
-            "sources": ["FRED PNICKUSDM", "Linear Regression Model"],
+            "sources": [price_source, "Linear Regression Model"],
             "confidence_pct": 75,
         })
 
@@ -351,6 +517,8 @@ async def compute_cobalt_forecast() -> dict:
         "price_history": price_data.get("price_history", []),
         "price_source": price_data.get("source", ""),
         "price_data_points": price_data.get("data_points", 0),
+        "volatility": price_data.get("volatility", {}),
+        "scenarios": price_data.get("scenarios", []),
         "lead_time": lead_time,
         "insolvency_risks": insolvency,
         "supply_adequacy": {

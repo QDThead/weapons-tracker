@@ -525,6 +525,31 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; font-family:var(--font-body); transition:all 0.2s;
 }
 .compliance-filter:hover { border-color:var(--accent); color:var(--text); }
+.demo-note-dot { display:inline-block; width:8px; height:8px; background:var(--accent2); border-radius:50%; vertical-align:middle; cursor:help; position:relative; margin-left:4px; }
+.demo-note-dot .demo-note-tip { display:none; position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(10,14,26,0.97); border:1px solid var(--accent2); border-radius:6px; padding:10px 14px; width:280px; font-size:11px; color:var(--text); text-transform:none; line-height:1.5; z-index:1000; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+.demo-note-dot .demo-note-tip::after { content:''; display:block; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:6px solid var(--accent2); position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); }
+.demo-note-dot:hover .demo-note-tip { display:block; }
+.bom-validate-btn { display:inline-flex; align-items:center; gap:3px; background:none; border:1px solid var(--border); color:var(--text-dim); padding:1px 8px; border-radius:3px; font-size:9px; cursor:pointer; margin-left:8px; font-family:var(--font-body); transition:all 0.2s; }
+.bom-validate-btn:hover { border-color:var(--accent); color:var(--accent); }
+.bom-validate-btn.open { border-color:var(--accent3); color:var(--accent3); }
+.bom-validate-btn .bom-chev { display:inline-block; transition:transform 0.2s; font-size:8px; }
+.bom-validate-btn.open .bom-chev { transform:rotate(180deg); }
+.bom-val-panel { display:none; margin:6px 0 10px 24px; padding:12px 16px; background:rgba(0,212,255,0.03); border:1px solid var(--border); border-left:3px solid var(--accent3); border-radius:4px; font-family:var(--font-body); font-size:11px; line-height:1.7; }
+.bom-val-panel.open { display:block; }
+.bom-val-panel .bvp-title { font-weight:700; color:var(--accent3); margin-bottom:6px; font-size:12px; }
+.bom-val-panel .bvp-src { padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.bom-val-panel .bvp-src:last-child { border-bottom:none; }
+.bom-val-panel .bvp-type { display:inline-block; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:600; margin-right:6px; }
+.bvp-Primary { background:rgba(16,185,129,0.15); color:var(--accent3); }
+.bvp-Cross-validation { background:rgba(139,92,246,0.15); color:var(--accent5); }
+.bvp-Company { background:rgba(0,212,255,0.1); color:var(--accent); }
+.bvp-Trade { background:rgba(245,158,11,0.1); color:var(--accent4); }
+.bvp-Derived { background:rgba(239,68,68,0.1); color:var(--accent2); }
+.bvp-Reference { background:rgba(255,255,255,0.05); color:var(--text-dim); }
+.bvp-Manufacturer { background:rgba(0,212,255,0.1); color:var(--accent); }
+.bvp-Public { background:rgba(16,185,129,0.1); color:var(--accent3); }
+.bom-val-panel .bvp-conf { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-weight:600; }
+.bom-val-panel .bvp-note { margin-top:4px; color:var(--text-dim); font-style:italic; }
 .compliance-filter.active { background:var(--accent); color:#0a0e1a; border-color:var(--accent); font-weight:600; }
 .compliance-card {
   background:var(--surface-glass); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
@@ -923,6 +948,38 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 /* TIV glossary tooltip */
 .tiv-tip { border-bottom: 1px dotted var(--text-dim); cursor: help; }
 
+/* Current Intelligence tabs */
+.ci-tab {
+  background: none; border: none; color: var(--text-dim); font-size: 12px;
+  font-family: var(--font-body); padding: 8px 16px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+}
+.ci-tab:hover { color: var(--text); }
+.ci-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.ci-item {
+  display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.ci-item:last-child { border-bottom: none; }
+.ci-badge {
+  font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+  text-transform: uppercase; white-space: nowrap; letter-spacing: 0.3px;
+  flex-shrink: 0; margin-top: 2px;
+}
+.ci-badge.dnd { background: rgba(0,212,255,0.15); color: var(--accent); }
+.ci-badge.gac { background: rgba(139,92,246,0.15); color: var(--accent5); }
+.ci-badge.nato { background: rgba(16,185,129,0.15); color: var(--accent3); }
+.ci-badge.norad { background: rgba(245,158,11,0.15); color: var(--accent4); }
+.ci-badge.arctic { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.ci-badge.safety { background: rgba(239,68,68,0.12); color: var(--accent2); }
+.ci-badge.sema { background: rgba(239,68,68,0.15); color: var(--accent2); }
+.ci-badge.nddn { background: rgba(139,92,246,0.12); color: var(--accent5); }
+.ci-title { font-size: 13px; color: var(--text); line-height: 1.4; }
+.ci-title a { color: var(--text); text-decoration: none; }
+.ci-title a:hover { color: var(--accent); text-decoration: underline; }
+.ci-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.ci-summary { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+
 /* Sufficiency Analysis */
 .suf-gauge-ring {
   position: relative; width: 160px; height: 85px; margin: 0 auto;
@@ -1107,7 +1164,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 <nav class="nav" role="tablist" aria-label="Dashboard navigation">
   <button class="nav-tab active" data-page="insights" role="tab" id="tab-insights" aria-selected="true" aria-controls="page-insights">Insights</button>
   <button class="nav-tab" data-page="arctic" role="tab" id="tab-arctic" aria-selected="false" aria-controls="page-arctic">Arctic</button>
-  <button class="nav-tab" data-page="deals" role="tab" id="tab-deals" aria-selected="false" aria-controls="page-deals">Deals</button>
+  <button class="nav-tab" data-page="deals" role="tab" id="tab-deals" aria-selected="false" aria-controls="page-deals" style="display:none;">Deals</button>
   <button class="nav-tab" data-page="canada-intel" role="tab" id="tab-canada-intel" aria-selected="false" aria-controls="page-canada-intel">Canada Intel</button>
   <div class="nav-tab-dropdown" style="position:relative; display:inline-block;">
     <button class="nav-tab" data-page="supply-chain" role="tab" id="tab-supply-chain" aria-selected="false" aria-controls="page-supply-chain">Supply Chain &#x25BE;</button>
@@ -1645,6 +1702,32 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
+    <!-- Current Intelligence -->
+    <div class="card" style="margin-bottom:20px;" id="ca-current-intel-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h2 style="margin:0;">Current Intelligence</h2>
+        <span style="font-size:11px;color:var(--accent);font-family:var(--font-mono);" id="ca-intel-updated"></span>
+      </div>
+      <div class="ci-tab-bar" style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">
+        <button class="ci-tab active" data-ci-tab="ci-defence" onclick="switchCITab(this)">Defence Signals</button>
+        <button class="ci-tab" data-ci-tab="ci-arctic" onclick="switchCITab(this)">Arctic OSINT</button>
+        <button class="ci-tab" data-ci-tab="ci-sanctions" onclick="switchCITab(this)">Sanctions &amp; Threats</button>
+        <button class="ci-tab" data-ci-tab="ci-policy" onclick="switchCITab(this)">Policy Watch</button>
+      </div>
+      <div id="ci-defence" class="ci-panel" style="max-height:420px;overflow-y:auto;">
+        <div class="ci-loading" style="color:var(--text-dim);font-size:13px;padding:20px 0;">Loading defence signals...</div>
+      </div>
+      <div id="ci-arctic" class="ci-panel" style="display:none;max-height:420px;overflow-y:auto;">
+        <div class="ci-loading" style="color:var(--text-dim);font-size:13px;padding:20px 0;">Loading Arctic intelligence...</div>
+      </div>
+      <div id="ci-sanctions" class="ci-panel" style="display:none;max-height:420px;overflow-y:auto;">
+        <div class="ci-loading" style="color:var(--text-dim);font-size:13px;padding:20px 0;">Loading sanctions data...</div>
+      </div>
+      <div id="ci-policy" class="ci-panel" style="display:none;max-height:420px;overflow-y:auto;">
+        <div class="ci-loading" style="color:var(--text-dim);font-size:13px;padding:20px 0;">Loading policy watch...</div>
+      </div>
+    </div>
+
     <!-- Section 2: Ally vs Adversary -->
     <div class="bloc-columns">
       <div class="bloc-card allied">
@@ -1668,7 +1751,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div class="table-wrap">
         <table class="threat-table" id="ca-threat-table">
           <thead>
-            <tr><th>Country</th><th>Threat Level</th><th>Arms Exports <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></th><th>Arms Imports <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></th><th>Top Partners</th><th>Trend</th></tr>
+            <tr><th>Country</th><th>Threat Level</th><th>Arms Exports <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></th><th>Arms Imports <span class="tiv-tip" title="Trend Indicator Value — SIPRI's standardised measure of arms transfer volume (not financial value)">TIV</span></th><th>CDN Sanctions</th><th>Top Partners</th><th>Trend</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -1690,6 +1773,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         </div>
       </div>
       <div id="ca-arctic-map" style="height:400px;border-radius:8px;overflow:hidden;" aria-label="Canada Intel Arctic monitoring map showing allied and adversary aircraft in Canadian Arctic region"></div>
+      <div id="ca-arctic-intel-feed" style="margin-top:16px;"></div>
     </div>
 
     <!-- Section 5 & 6 side by side -->
@@ -2315,6 +2399,33 @@ let allTransfers = [];
 let countryTotals = [];
 let flows = [];
 let chartInstances = {};
+
+const intelligenceCache = {
+  _store: {},
+  _ttls: { gc_news: 900000, nato_news: 3600000, norad_news: 21600000,
+            sanctions: 86400000, arctic_osint: 7200000, nddn: 86400000 },
+  set: function(key, data) {
+    this._store[key] = { data: data, ts: Date.now() };
+  },
+  get: function(key) {
+    var entry = this._store[key];
+    if (!entry) return null;
+    var ttl = this._ttls[key] || 3600000;
+    if (Date.now() - entry.ts > ttl) return null;
+    return entry.data;
+  },
+  async fetch(key, endpoint) {
+    var cached = this.get(key);
+    if (cached) return cached;
+    try {
+      var resp = await window.fetch(API + endpoint);
+      if (!resp.ok) return { data: [] };
+      var data = await resp.json();
+      this.set(key, data);
+      return data;
+    } catch(e) { return { data: [] }; }
+  }
+};
 let arcticRefreshTimer = null;  // Arctic tab flight auto-refresh
 let insightsArcticMap = null;
 let insightsArcticMarkers = [];
@@ -2678,32 +2789,67 @@ const THREAT_WATCHLIST = [
 ];
 
 let canadaIntelLoaded = false;
+let canadaIntelLastLoad = 0;
 let arcticMap = null;
 let arcticMarkers = [];
+let _canadaSanctionsData = null;
 
 async function loadCanadaIntel() {
-  if (canadaIntelLoaded) return;
+  const now = Date.now();
+  const REFRESH_TTL = 15 * 60 * 1000;
+  if (canadaIntelLoaded && (now - canadaIntelLastLoad) < REFRESH_TTL) return;
+  const isFirstLoad = !canadaIntelLoaded;
   canadaIntelLoaded = true;
+  canadaIntelLastLoad = now;
 
-  // We already have allTransfers, flows, countryTotals from main loadData
-  // Also fetch Canada's profile and flights
-  const [profileResp, flightsResp, comtradeResp] = await Promise.all([
+  const [profileResp, flightsResp, comtradeResp,
+         gcNewsResp, natoResp, noradResp,
+         sanctionsResp, arcticOsintResp, nddnResp] = await Promise.all([
     fetch(API + '/trends/country/Canada/profile?start_year=2015&end_year=2025'),
     fetch(API + '/tracking/flights/military').catch(() => ({ ok: false })),
     fetch(API + '/dashboard/comtrade/exports?years=2020,2021,2022,2023,2024').catch(() => ({ ok: false })),
+    fetch(API + '/enrichment/gc-defence-news').catch(() => ({ ok: false })),
+    fetch(API + '/enrichment/nato-news').catch(() => ({ ok: false })),
+    fetch(API + '/enrichment/norad-news').catch(() => ({ ok: false })),
+    fetch(API + '/enrichment/canadian-sanctions').catch(() => ({ ok: false })),
+    fetch(API + '/enrichment/arctic-osint').catch(() => ({ ok: false })),
+    fetch(API + '/enrichment/parliament-nddn').catch(() => ({ ok: false })),
   ]);
 
   const profile = profileResp.ok ? await profileResp.json() : {};
   const flights = flightsResp.ok ? await flightsResp.json() : [];
   const comtradeData = comtradeResp.ok ? await comtradeResp.json() : [];
+  const gcNews = gcNewsResp.ok ? await gcNewsResp.json() : { data: [] };
+  const natoNews = natoResp.ok ? await natoResp.json() : { data: [] };
+  const noradNews = noradResp.ok ? await noradResp.json() : { data: [] };
+  const sanctions = sanctionsResp.ok ? await sanctionsResp.json() : { data: [], total_entities: 0, top_countries: {} };
+  const arcticOsint = arcticOsintResp.ok ? await arcticOsintResp.json() : { data: [] };
+  const nddnData = nddnResp.ok ? await nddnResp.json() : { data: [] };
 
-  renderCanadaMetrics(profile, comtradeData);
-  renderBlocCharts();
-  renderThreatWatchlist();
+  _canadaSanctionsData = sanctions;
+  intelligenceCache.set('gc_news', gcNews);
+  intelligenceCache.set('nato_news', natoNews);
+  intelligenceCache.set('norad_news', noradNews);
+  intelligenceCache.set('sanctions', sanctions);
+  intelligenceCache.set('arctic_osint', arcticOsint);
+  intelligenceCache.set('nddn', nddnData);
+
+  if (isFirstLoad) {
+    renderCanadaMetrics(profile, comtradeData);
+    renderBlocCharts();
+    renderCanadaSupplyChain(profile);
+    renderShiftingAlliances();
+    loadSupplierData();
+  }
+
+  renderThreatWatchlist(sanctions);
   renderArcticMonitor(flights);
-  renderCanadaSupplyChain(profile);
-  renderShiftingAlliances();
-  loadSupplierData();
+  renderCurrentIntelligence(gcNews, natoNews, noradNews, sanctions, arcticOsint, nddnData);
+  renderArcticIntelFeed(noradNews, arcticOsint);
+
+  var ts = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  var el = document.getElementById('ca-intel-updated');
+  if (el) el.textContent = 'Updated ' + ts;
 }
 
 function renderCanadaMetrics(profile, comtradeData) {
@@ -2812,20 +2958,25 @@ function renderBlocCharts() {
   }
 }
 
-function renderThreatWatchlist() {
+function renderThreatWatchlist(sanctions) {
   const tbody = document.querySelector('#ca-threat-table tbody');
+  const topCountries = (sanctions && sanctions.top_countries) || {};
+  const countryAliases = {
+    'Russia': ['Russia', 'RU', 'RUS', 'Russian Federation'],
+    'China': ['China', 'CN', 'CHN', "China, People's Republic of"],
+    'Iran': ['Iran', 'IR', 'IRN', 'Iran, Islamic Republic of'],
+    'Myanmar': ['Myanmar', 'MM', 'MMR', 'Burma'],
+  };
+
   const rows = THREAT_WATCHLIST.map(tw => {
-    // Find this country's data
     const ct = countryTotals.find(c => c.country === tw.country) || { exports_tiv: 0, imports_tiv: 0 };
 
-    // Top partners: find from flows
     const exportFlows = flows.filter(f => f.seller === tw.country).sort((a, b) => b.total_tiv - a.total_tiv);
     const importFlows = flows.filter(f => f.buyer === tw.country).sort((a, b) => b.total_tiv - a.total_tiv);
     const topPartners = tw.country === 'Iran' || tw.country === 'Myanmar'
       ? importFlows.slice(0, 3).map(f => f.seller).join(', ')
       : exportFlows.slice(0, 3).map(f => f.buyer).join(', ');
 
-    // Trend from transfers data (compare early vs late period)
     const earlyDeals = allTransfers.filter(t =>
       (t.seller === tw.country || t.buyer === tw.country) &&
       t.order_year >= 2015 && t.order_year <= 2019
@@ -2846,16 +2997,171 @@ function renderThreatWatchlist() {
       trend = `<span style="color:var(--accent2)">NEW</span>`;
     }
 
+    let semaCount = 0;
+    const aliases = countryAliases[tw.country] || [tw.country];
+    aliases.forEach(a => { semaCount += (topCountries[a] || 0); });
+    const semaCell = semaCount > 0
+      ? `<span class="ci-badge sema">${fmtInt(semaCount)} entities</span>`
+      : '<span style="color:var(--text-dim)">—</span>';
+
     return `<tr>
       <td><strong>${tw.country}</strong><br><span style="font-size:11px;color:var(--text-dim)">${tw.note}</span></td>
       <td><span class="threat-flag ${tw.threat}">${tw.threat.toUpperCase()}</span></td>
       <td class="tiv">${fmt(ct.exports_tiv)}</td>
       <td class="tiv">${fmt(ct.imports_tiv)}</td>
+      <td>${semaCell}</td>
       <td>${topPartners || '-'}</td>
       <td>${trend}</td>
     </tr>`;
   });
   tbody.innerHTML = rows.join('');
+}
+
+// ── Current Intelligence Panel ──
+
+function switchCITab(btn) {
+  document.querySelectorAll('.ci-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ci-panel').forEach(p => p.style.display = 'none');
+  btn.classList.add('active');
+  var panel = document.getElementById(btn.dataset.ciTab);
+  if (panel) panel.style.display = '';
+}
+
+function _ciTimeAgo(isoStr) {
+  if (!isoStr) return '';
+  try {
+    var d = new Date(isoStr);
+    var diff = Date.now() - d.getTime();
+    if (diff < 0) diff = 0;
+    var mins = Math.floor(diff / 60000);
+    if (mins < 60) return mins + 'm ago';
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    var days = Math.floor(hrs / 24);
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return days + 'd ago';
+    return d.toLocaleDateString('en-CA', {month:'short',day:'numeric'});
+  } catch(e) { return ''; }
+}
+
+function _ciArticleHtml(item, badgeClass, badgeLabel) {
+  var timeStr = _ciTimeAgo(item.published_at || item.date);
+  var title = esc(item.title || '');
+  var url = item.url || '';
+  var summary = esc((item.summary || item.details || '').substring(0, 200));
+  var titleHtml = url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + title + '</a>' : title;
+  return '<div class="ci-item">' +
+    '<span class="ci-badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+    '<div><div class="ci-title">' + titleHtml + '</div>' +
+    (timeStr ? '<div class="ci-meta">' + timeStr + '</div>' : '') +
+    (summary ? '<div class="ci-summary">' + summary + '</div>' : '') +
+    '</div></div>';
+}
+
+function renderCurrentIntelligence(gcNews, natoNews, noradNews, sanctions, arcticOsint, nddnData) {
+  // Defence Signals tab
+  var defenceItems = [];
+  (gcNews.data || []).forEach(function(a) {
+    var dept = (a.department || '').toLowerCase();
+    var bc = 'dnd', bl = 'DND';
+    if (dept === 'gac' || dept.includes('affairs')) { bc = 'gac'; bl = 'GAC'; }
+    else if (dept.includes('safety') || dept === 'public safety') { bc = 'safety'; bl = 'PUB SAFETY'; }
+    else if (dept.includes('security')) { bc = 'dnd'; bl = 'DEF & SEC'; }
+    defenceItems.push({sort: a.published_at || '', html: _ciArticleHtml(a, bc, bl)});
+  });
+  (natoNews.data || []).forEach(function(a) {
+    defenceItems.push({sort: a.published_at || '', html: _ciArticleHtml(a, 'nato', 'NATO')});
+  });
+  defenceItems.sort(function(a,b){ return b.sort.localeCompare(a.sort); });
+  var defEl = document.getElementById('ci-defence');
+  if (defEl) defEl.innerHTML = defenceItems.length
+    ? defenceItems.slice(0, 30).map(function(i){return i.html;}).join('')
+    : '<div style="color:var(--text-dim);padding:20px 0;font-size:13px;">No defence signals available.</div>';
+
+  // Arctic OSINT tab
+  var arcticItems = [];
+  (noradNews.data || []).forEach(function(a) {
+    arcticItems.push({sort: a.published_at || '', html: _ciArticleHtml(a, 'norad', 'NORAD')});
+  });
+  (arcticOsint.data || []).forEach(function(a) {
+    var src = (a.source || '').toLowerCase();
+    var bl = src.includes('high north') ? 'HNN' : src.includes('barents') ? 'BARENTS' : 'ARCTIC';
+    arcticItems.push({sort: a.published_at || '', html: _ciArticleHtml(a, 'arctic', bl)});
+  });
+  arcticItems.sort(function(a,b){ return b.sort.localeCompare(a.sort); });
+  var arcEl = document.getElementById('ci-arctic');
+  if (arcEl) arcEl.innerHTML = arcticItems.length
+    ? arcticItems.slice(0, 30).map(function(i){return i.html;}).join('')
+    : '<div style="color:var(--text-dim);padding:20px 0;font-size:13px;">No Arctic intelligence available.</div>';
+
+  // Sanctions & Threats tab
+  var sanHtml = '';
+  var totalEnt = sanctions.total_entities || 0;
+  var topC = sanctions.top_countries || {};
+  var topArr = Object.entries(topC).sort(function(a,b){return b[1]-a[1];}).slice(0, 15);
+  sanHtml += '<div style="display:flex;gap:24px;margin-bottom:16px;flex-wrap:wrap;">';
+  sanHtml += '<div style="text-align:center;"><div style="font-size:28px;font-weight:700;color:var(--accent2);font-family:var(--font-mono);">' + fmtInt(totalEnt) + '</div><div style="font-size:11px;color:var(--text-dim);">Sanctioned Entities</div></div>';
+  sanHtml += '<div style="text-align:center;"><div style="font-size:28px;font-weight:700;color:var(--accent4);font-family:var(--font-mono);">' + Object.keys(topC).length + '</div><div style="font-size:11px;color:var(--text-dim);">Countries Targeted</div></div>';
+  sanHtml += '</div>';
+  if (topArr.length) {
+    sanHtml += '<h3 style="font-size:13px;color:var(--text-dim);margin:0 0 8px;font-weight:500;">Top Sanctioned Countries (SEMA/JVCFOA)</h3>';
+    sanHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+    topArr.forEach(function(pair) {
+      sanHtml += '<span class="ci-badge sema" style="font-size:10px;padding:3px 8px;">' + esc(pair[0]) + ': ' + pair[1] + '</span>';
+    });
+    sanHtml += '</div>';
+  }
+  if (sanctions.data && sanctions.data.length) {
+    sanHtml += '<h3 style="font-size:13px;color:var(--text-dim);margin:16px 0 8px;font-weight:500;">Recently Listed Entities</h3>';
+    var recent = sanctions.data.slice(0, 10);
+    recent.forEach(function(e) {
+      sanHtml += '<div class="ci-item"><span class="ci-badge sema">SEMA</span><div>';
+      sanHtml += '<div class="ci-title">' + esc(e.name) + '</div>';
+      var meta = [];
+      if (e.country) meta.push(esc(e.country));
+      if (e.entity_type && e.entity_type !== 'Unknown') meta.push(esc(e.entity_type));
+      if (e.date_listed) meta.push('Listed: ' + esc(e.date_listed));
+      if (meta.length) sanHtml += '<div class="ci-meta">' + meta.join(' · ') + '</div>';
+      sanHtml += '</div></div>';
+    });
+  }
+  var sanEl = document.getElementById('ci-sanctions');
+  if (sanEl) sanEl.innerHTML = sanHtml || '<div style="color:var(--text-dim);padding:20px 0;font-size:13px;">No sanctions data available.</div>';
+
+  // Policy Watch tab
+  var polItems = (nddnData.data || []);
+  var polHtml = '';
+  if (polItems.length) {
+    polItems.slice(0, 20).forEach(function(a) {
+      var typeLabel = (a.activity_type || 'activity').toUpperCase();
+      polHtml += _ciArticleHtml(a, 'nddn', typeLabel);
+    });
+  } else {
+    polHtml = '<div style="color:var(--text-dim);padding:20px 0;font-size:13px;">No NDDN committee activity available.</div>';
+  }
+  var polEl = document.getElementById('ci-policy');
+  if (polEl) polEl.innerHTML = polHtml;
+}
+
+function renderArcticIntelFeed(noradNews, arcticOsint) {
+  var el = document.getElementById('ca-arctic-intel-feed');
+  if (!el) return;
+  var items = [];
+  (noradNews.data || []).filter(function(a){return a.is_arctic_related;}).forEach(function(a) {
+    items.push({sort: a.published_at || '', html: _ciArticleHtml(a, 'norad', 'NORAD')});
+  });
+  (arcticOsint.data || []).filter(function(a){return a.is_security_related;}).forEach(function(a) {
+    var src = (a.source || '').toLowerCase();
+    var bl = src.includes('high north') ? 'HNN' : src.includes('barents') ? 'BARENTS' : 'ARCTIC';
+    items.push({sort: a.published_at || '', html: _ciArticleHtml(a, 'arctic', bl)});
+  });
+  items.sort(function(a,b){ return b.sort.localeCompare(a.sort); });
+  if (items.length) {
+    el.innerHTML = '<h3 style="font-size:13px;color:var(--text-dim);margin:0 0 8px;font-weight:500;">Latest Arctic Intelligence</h3>' +
+      items.slice(0, 5).map(function(i){return i.html;}).join('');
+  } else {
+    el.innerHTML = '';
+  }
 }
 
 function renderArcticMonitor(flights) {
@@ -3104,9 +3410,18 @@ async function loadLiveNews() {
   try {
     const resp = await fetch(API + '/dashboard/news/live');
     const articles = resp.ok ? await resp.json() : [];
+
+    var gcData = await intelligenceCache.fetch('gc_news', '/enrichment/gc-defence-news');
+    (gcData.data || []).forEach(function(a) {
+      articles.push({
+        title: a.title, url: a.url, source: 'GC: ' + (a.department || 'DND'),
+        published_at: a.published_at, summary: a.summary, language: 'English'
+      });
+    });
+    articles.sort(function(a,b){ return (b.published_at||'').localeCompare(a.published_at||''); });
+
     const feed = document.getElementById('live-news-feed');
     const countEl = document.getElementById('news-count');
-    // Count languages
     const langCounts = {};
     articles.forEach(a => { const l = a.language || 'English'; langCounts[l] = (langCounts[l] || 0) + 1; });
     const langCount = Object.keys(langCounts).length;
@@ -4005,6 +4320,28 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/space-launches', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Near-Real-Time', name: 'NIST NVD Critical CVEs', key: 'NIST NVD',
     sampleEndpoint: '/enrichment/critical-cves', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Near-Real-Time', name: 'GC Defence News (DND/GAC/Public Safety)', key: 'GC Defence News',
+    sampleEndpoint: '/enrichment/gc-defence-news', rawResponse: true,
+    renderSample: data => (data.data || []).slice(0, 3).map(a =>
+      '<div class="feed-sample-row"><strong>' + esc(a.title) + '</strong>' +
+      '<br><span class="feed-sample-field">' + esc(a.department || '') + ' · ' + esc((a.published_at || '').substring(0, 10)) + '</span></div>'
+    ).join('') || '<div class="feed-sample-row">No articles</div>' },
+  { section: 'Near-Real-Time', name: 'NATO News (Official RSS)', key: 'NATO News',
+    sampleEndpoint: '/enrichment/nato-news', rawResponse: true,
+    renderSample: data => (data.data || []).slice(0, 3).map(a =>
+      '<div class="feed-sample-row"><strong>' + esc(a.title) + '</strong>' +
+      '<br><span class="feed-sample-field">' + esc((a.published_at || '').substring(0, 10)) + (a.category ? ' · ' + esc(a.category) : '') + '</span></div>'
+    ).join('') || '<div class="feed-sample-row">No articles</div>' },
+  { section: 'Near-Real-Time', name: 'NORAD Press Releases', key: 'NORAD Press',
+    sampleEndpoint: '/enrichment/norad-news', rawResponse: true,
+    renderSample: data => {
+      var items = (data.data || []).slice(0, 3);
+      return items.map(a =>
+        '<div class="feed-sample-row"><strong>' + esc(a.title) + '</strong>' +
+        (a.is_arctic_related ? ' <span style="color:var(--accent4);font-size:10px;">ARCTIC</span>' : '') +
+        '<br><span class="feed-sample-field">' + esc((a.published_at || '').substring(0, 10)) + '</span></div>'
+      ).join('') || '<div class="feed-sample-row">No releases</div>';
+    } },
 
   // ── MONTHLY TRADE DATA ──
   { section: 'Monthly Trade Data', sectionNote: 'monthly updates', name: 'US Census Bureau (HS 93)', key: 'US Census',
@@ -4108,6 +4445,17 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/defence-research', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Enrichment & Governance', name: 'USAspending DoD Contracts', key: 'USAspending DoD',
     sampleEndpoint: '/enrichment/dod-spending', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Enrichment & Governance', name: 'Canadian Sanctions (GAC SEMA/JVCFOA)', key: 'Canadian Sanctions',
+    sampleEndpoint: '/enrichment/canadian-sanctions', rawResponse: true,
+    renderSample: data => {
+      var html = '<div class="feed-sample-row"><strong>' + (data.total_entities || 0) + ' sanctioned entities</strong>, ' +
+        (data.countries_targeted || 0) + ' countries targeted</div>';
+      var top = Object.entries(data.top_countries || {}).slice(0, 5);
+      if (top.length) {
+        html += '<div class="feed-sample-row">' + top.map(p => esc(p[0]) + ': ' + p[1]).join(', ') + '</div>';
+      }
+      return html;
+    } },
 
   // ── CONFLICT & WAR DATA ──
   { section: 'Conflict & War Data', sectionNote: 'real-time / daily', name: 'WarSpotting Equipment Losses', key: 'WarSpotting',
@@ -4233,6 +4581,16 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/geopolitical/think-tank-analysis', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Geopolitical OSINT', name: 'Gov Defence Press Releases (4 feeds)', key: 'Gov Defence',
     sampleEndpoint: '/enrichment/geopolitical/gov-defence-news', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Geopolitical OSINT', name: 'Parliament NDDN Committee', key: 'Parliament NDDN',
+    sampleEndpoint: '/enrichment/parliament-nddn', rawResponse: true,
+    renderSample: data => {
+      var items = (data.data || []).slice(0, 3);
+      return items.map(a =>
+        '<div class="feed-sample-row"><strong>' + esc(a.title) + '</strong>' +
+        '<br><span class="feed-sample-field">' + esc(a.activity_type || '') +
+        (a.date ? ' · ' + esc(a.date) : '') + '</span></div>'
+      ).join('') || '<div class="feed-sample-row">No committee activity</div>';
+    } },
 
   // ── ARCTIC & MARITIME ──
   { section: 'Arctic & Maritime', sectionNote: 'ice / shipping / chokepoints', name: 'NSIDC Arctic Sea Ice (daily)', key: 'NSIDC Ice',
@@ -4249,6 +4607,13 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/arctic/news', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Arctic & Maritime', name: 'CanadaBuys Tenders (2-hourly)', key: 'CanadaBuys',
     sampleEndpoint: '/enrichment/procurement/canadabuys', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Arctic & Maritime', name: 'Arctic OSINT News (3 feeds)', key: 'Arctic OSINT',
+    sampleEndpoint: '/enrichment/arctic-osint', rawResponse: true,
+    renderSample: data => (data.data || []).slice(0, 3).map(a =>
+      '<div class="feed-sample-row"><strong>' + esc(a.title) + '</strong>' +
+      (a.is_security_related ? ' <span style="color:var(--accent4);font-size:10px;">SECURITY</span>' : '') +
+      '<br><span class="feed-sample-field">' + esc(a.source || '') + ' · ' + esc((a.published_at || '').substring(0, 10)) + '</span></div>'
+    ).join('') || '<div class="feed-sample-row">No articles</div>' },
 
   // ── CYBER THREAT INTELLIGENCE (LIVE) ──
   { section: 'Cyber Threat Intelligence', name: 'MITRE ATT&CK STIX Groups (160+)', key: 'MITRE STIX',
@@ -6094,16 +6459,27 @@ function renderArcticNATOSpendingChart(spendingData) {
   });
 }
 
-function renderArcticDefenseNews(newsData) {
-  const articles = newsData.articles || [];
+async function renderArcticDefenseNews(newsData) {
+  const articles = (newsData.articles || []).slice();
   const list = document.getElementById('arctic-news-list');
+
+  var noradData = await intelligenceCache.fetch('norad_news', '/enrichment/norad-news');
+  var arcticData = await intelligenceCache.fetch('arctic_osint', '/enrichment/arctic-osint');
+  (noradData.data || []).filter(function(a){return a.is_arctic_related;}).forEach(function(a) {
+    articles.push({title: a.title, url: a.url, source: 'NORAD', published_at: a.published_at});
+  });
+  (arcticData.data || []).filter(function(a){return a.is_security_related;}).forEach(function(a) {
+    articles.push({title: a.title, url: a.url, source: a.source || 'Arctic OSINT', published_at: a.published_at});
+  });
+
+  articles.sort(function(a,b){ return (b.published_at||'').localeCompare(a.published_at||''); });
 
   if (articles.length === 0) {
     list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:12px;">No Arctic defense news found in current feeds.</div>';
     return;
   }
 
-  list.innerHTML = articles.map(a => `<div class="arctic-news-item">
+  list.innerHTML = articles.slice(0, 20).map(a => `<div class="arctic-news-item">
     <a href="${esc(a.url)}" target="_blank">${esc(a.title)}</a>
     <div class="news-source">${esc(a.source)} ${a.published_at ? ' | ' + new Date(a.published_at).toLocaleDateString() : ''}</div>
   </div>`).join('');
@@ -8353,6 +8729,7 @@ function renderMineralOverview(m, container) {
   var coas = sufficiency.coa || [];
 
   var html = '';
+  var val = m.validation || {};
 
   // ── Header with risk badge ──
   html += '<div class="card" style="padding:18px; margin-bottom:14px; border-left:4px solid ' + riskColor + ';">';
@@ -8366,7 +8743,9 @@ function renderMineralOverview(m, container) {
   var hhiVal = m.hhi_live || m.hhi || '--';
   var hhiSource = m.hhi_source ? ' (' + esc(m.hhi_source) + ')' : '';
   html += '<div style="text-align:center;"><div class="stat-num" style="font-size:28px; color:var(--accent);">' + (typeof hhiVal === 'number' ? hhiVal.toLocaleString() : hhiVal) + '</div><div style="font-size:9px; color:var(--text-dim);">HHI' + hhiSource + '</div></div>';
-  html += '</div></div></div>';
+  html += '</div></div>';
+  html += renderBomValBtn('hhi', val);
+  html += '</div>';
 
   // ── Key stats row ──
   html += '<div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin-bottom:14px;">';
@@ -8392,7 +8771,7 @@ function renderMineralOverview(m, container) {
 
   // Left: Mining & Processing concentration
   html += '<div class="card" style="padding:18px;">';
-  html += '<h3 style="margin-bottom:14px;">Mining &amp; Processing Concentration</h3>';
+  html += '<h3 style="margin-bottom:14px;">Mining &amp; Processing Concentration ' + renderBomValBtn('mining', val) + '</h3>';
   html += '<div style="margin-bottom:14px;">';
   html += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Mining Share by Country</div>';
   (m.mining || []).forEach(function(entry) {
@@ -8422,7 +8801,7 @@ function renderMineralOverview(m, container) {
 
   // Right: Canada dependency (headline only — full detail on 3D Supply Map)
   html += '<div class="card" style="padding:18px;">';
-  html += '<h3 style="margin-bottom:14px;">Canada Dependency</h3>';
+  html += '<h3 style="margin-bottom:14px;">Canada Dependency ' + renderBomValBtn('canada', val) + '</h3>';
   if (canada.import_pct) {
     html += '<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">';
     html += '<div class="stat-num" style="font-size:36px; color:var(--accent4);">' + canada.import_pct + '%</div>';
@@ -8442,7 +8821,7 @@ function renderMineralOverview(m, container) {
   // ── Risk factors ──
   if (riskFactors.length > 0) {
     html += '<div class="card" style="padding:18px; margin-bottom:14px; border-top:3px solid ' + riskColor + ';">';
-    html += '<h3 style="margin-bottom:12px;">Key Risk Factors</h3>';
+    html += '<h3 style="margin-bottom:12px;">Key Risk Factors ' + renderBomValBtn('risk_factors', val) + '</h3>';
     html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
     riskFactors.forEach(function(rf, i) {
       html += '<div style="font-size:12px; color:var(--text); padding:8px 10px; background:var(--surface); border-radius:6px; border-left:3px solid ' + riskColor + ';">';
@@ -8455,7 +8834,7 @@ function renderMineralOverview(m, container) {
   // ── Chokepoints ──
   if (m.chokepoints && m.chokepoints.length > 0) {
     html += '<div class="card" style="padding:18px;">';
-    html += '<h3 style="margin-bottom:12px;">Maritime Chokepoints</h3>';
+    html += '<h3 style="margin-bottom:12px;">Maritime Chokepoints ' + renderBomValBtn('chokepoints', val) + '</h3>';
     html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">';
     m.chokepoints.forEach(function(cp) {
       html += '<div style="padding:10px; background:var(--surface); border-radius:6px; border-left:3px solid var(--accent4);">';
@@ -8492,7 +8871,8 @@ function renderForecasting(m, container) {
   if (m.error) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">' + esc(m.error) + '</div>'; return; }
   var html = '';
 
-  // Live data badge
+  // Live data badge + R² badge
+  var pf = m.price_forecast || {};
   html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">';
   html += '<h3 style="margin:0;">' + esc(m.mineral || 'Cobalt') + ' — Predictive Forecasting (12-18 Month Horizon)</h3>';
   html += '<div style="display:flex; align-items:center; gap:8px;">';
@@ -8501,18 +8881,23 @@ function renderForecasting(m, container) {
   } else {
     html += '<span style="background:rgba(245,158,11,0.15); color:var(--accent4); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; CACHED</span>';
   }
+  if (pf.r_squared !== undefined) {
+    var r2c = pf.r_squared >= 0.7 ? 'var(--accent3)' : pf.r_squared >= 0.4 ? 'var(--accent4)' : 'var(--accent2)';
+    html += '<span style="background:rgba(0,212,255,0.1); color:'+r2c+'; padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;" title="'+esc(pf.r_squared_interpretation||'')+'">R\u00B2 = '+pf.r_squared+'</span>';
+  }
   html += '<span style="font-size:10px; color:var(--text-dim);">' + (m.price_data_points || 0) + ' data points</span>';
   html += '</div></div>';
 
-  // Stat cards
-  var pf = m.price_forecast || {};
+  // Stat cards (5 cards now — added Volatility)
   var lt = m.lead_time || {};
   var topInsol = (m.insolvency_risks || [])[0] || {};
   var sa = m.supply_adequacy || {};
+  var vol = m.volatility || {};
 
-  html += '<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:14px;">';
+  html += '<div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin-bottom:14px;">';
   var stats = [
-    {label:'Price Forecast', value:(pf.direction==='up'?'+':'-')+(pf.pct_change||0)+'%', sub:pf.period||'12 months', color:pf.direction==='up'?'var(--accent2)':'var(--accent3)'},
+    {label:'Price Forecast', value:(pf.direction==='up'?'+':'-')+(pf.pct_change||0)+'%', sub:(pf.confidence||'medium')+' confidence ('+(pf.confidence_pct||0)+'%)', color:pf.direction==='up'?'var(--accent2)':'var(--accent3)'},
+    {label:'Volatility', value:(vol.annualized_pct||0)+'%', sub:'annualized ('+( vol.window||4)+'Q rolling)', color:(vol.annualized_pct||0)>30?'var(--accent2)':(vol.annualized_pct||0)>15?'var(--accent4)':'var(--accent3)'},
     {label:'Lead Time Risk', value:'+'+(lt.days||0)+' days', sub:esc(lt.primary_route||'').substring(0,20), color:(lt.days||0)>15?'var(--accent2)':'var(--accent4)'},
     {label:'Top Insolvency Risk', value:(topInsol.probability_pct||0)+'%', sub:esc(topInsol.supplier||'N/A').split('(')[0].substring(0,20), color:(topInsol.probability_pct||0)>25?'var(--accent2)':'var(--accent4)'},
     {label:'Supply Adequacy', value:(sa.ratio||'--')+'x', sub:esc(sa.verdict||''), color:(sa.ratio||0)>=1?'var(--accent3)':'var(--accent2)'},
@@ -8528,36 +8913,80 @@ function renderForecasting(m, container) {
   // Two columns: chart + signals
   html += '<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px; margin-bottom:14px;">';
 
-  // Price chart
+  // Price chart with confidence intervals
   html += '<div class="card" style="padding:18px;">';
   html += '<h3 style="margin-bottom:4px;">' + esc(m.mineral || 'Cobalt') + ' Price Forecast (USD/lb)</h3>';
-  html += '<div style="font-size:10px; color:var(--text-dim); margin-bottom:12px;">Source: ' + esc(m.price_source || 'FRED Nickel proxy') + '</div>';
+  html += '<div style="font-size:10px; color:var(--text-dim); margin-bottom:12px;">Source: ' + esc(m.price_source || '') + (pf.r_squared !== undefined ? ' &mdash; R\u00B2 = '+pf.r_squared+' ('+esc(pf.r_squared_interpretation||'')+')' : '') + '</div>';
   var prices = m.price_history || [];
   if (prices.length > 0) {
-    var maxP = Math.max.apply(null, prices.map(function(p){return p.usd_lb;}));
-    var minP = Math.min.apply(null, prices.map(function(p){return p.usd_lb;}));
-    html += '<div style="display:flex; align-items:flex-end; gap:3px; height:180px; padding:0 4px;">';
+    // Compute range including confidence interval bounds
+    var allVals = prices.map(function(p){return p.usd_lb;});
+    prices.forEach(function(p){ if (p.upper_90_lb) allVals.push(p.upper_90_lb); if (p.lower_90_lb) allVals.push(p.lower_90_lb); });
+    var maxP = Math.max.apply(null, allVals);
+    var minP = Math.min.apply(null, allVals);
+    var range = maxP - minP || 1;
+    html += '<div style="display:flex; align-items:flex-end; gap:3px; height:200px; padding:0 4px;">';
     prices.forEach(function(p){
-      var range = maxP - minP || 1;
       var h = Math.max(5, Math.round(((p.usd_lb - minP) / range) * 85 + 15));
       var isForecast = p.type === 'forecast';
-      var bg = isForecast ? 'rgba(245,158,11,0.2); border:2px dashed var(--accent4)' : 'var(--accent); opacity:0.8';
-      html += '<div style="flex:1; height:'+h+'%; background:'+bg+'; border-radius:3px 3px 0 0; position:relative; cursor:help;" title="'+esc(p.quarter)+': $'+p.usd_lb+'/lb (Ni: $'+(p.nickel_usd_mt||0).toLocaleString()+'/mt)">';
-      html += '<div style="position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap;">'+p.usd_lb+'</div>';
-      html += '</div>';
+      if (isForecast && p.upper_90_lb && p.lower_90_lb) {
+        // Render confidence interval band behind the bar
+        var hUpper = Math.max(5, Math.round(((p.upper_90_lb - minP) / range) * 85 + 15));
+        var hLower = Math.max(0, Math.round(((p.lower_90_lb - minP) / range) * 85 + 15));
+        html += '<div style="flex:1; position:relative; height:100%;">';
+        // CI band (full height container, positioned from bottom)
+        html += '<div style="position:absolute; bottom:0; left:10%; right:10%; height:'+hUpper+'%; background:rgba(245,158,11,0.08); border:1px dashed rgba(245,158,11,0.25); border-radius:3px;" title="90% CI: $'+p.lower_90_lb+' - $'+p.upper_90_lb+'/lb"></div>';
+        // Lower bound marker
+        html += '<div style="position:absolute; bottom:'+hLower+'%; left:5%; right:5%; height:1px; background:rgba(245,158,11,0.3);"></div>';
+        // Forecast bar
+        html += '<div style="position:absolute; bottom:0; left:15%; right:15%; height:'+h+'%; background:rgba(245,158,11,0.25); border:2px dashed var(--accent4); border-radius:3px 3px 0 0;"></div>';
+        // Value label
+        html += '<div style="position:absolute; bottom:calc('+h+'% + 2px); left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap;">'+p.usd_lb+'</div>';
+        // Upper bound label
+        html += '<div style="position:absolute; bottom:calc('+hUpper+'% + 2px); left:50%; transform:translateX(-50%); font-size:7px; color:var(--accent4); white-space:nowrap; opacity:0.7;">'+p.upper_90_lb+'</div>';
+        html += '</div>';
+      } else {
+        // Actual bar
+        html += '<div style="flex:1; height:'+h+'%; background:var(--accent); opacity:0.8; border-radius:3px 3px 0 0; position:relative; cursor:help;" title="'+esc(p.quarter)+': $'+p.usd_lb+'/lb">';
+        html += '<div style="position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap;">'+p.usd_lb+'</div>';
+        html += '</div>';
+      }
     });
     html += '</div>';
     html += '<div style="display:flex; justify-content:space-between; margin-top:4px; font-size:8px; color:var(--text-dim);">';
     prices.forEach(function(p){ html += '<span>'+esc(p.quarter)+'</span>'; });
     html += '</div>';
-    html += '<div style="display:flex; gap:16px; margin-top:8px; font-size:10px; color:var(--text-dim);">';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);opacity:0.8;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Historical (FRED Nickel × 2.0)</span>';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--accent4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Forecast (Linear Regression)</span>';
+    html += '<div style="display:flex; gap:14px; margin-top:8px; font-size:10px; color:var(--text-dim); flex-wrap:wrap;">';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);opacity:0.8;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Historical</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--accent4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Forecast</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>90% Prediction Interval</span>';
     html += '</div>';
   } else {
-    html += '<div style="color:var(--text-dim); padding:20px; text-align:center;">Price data unavailable — FRED API may be unreachable</div>';
+    html += '<div style="color:var(--text-dim); padding:20px; text-align:center;">Price data unavailable</div>';
   }
   html += '</div>';
+
+  // Signals + Scenarios column
+  html += '<div>';
+
+  // Scenario fan chart (optimistic / baseline / pessimistic)
+  var scenarios = m.scenarios || [];
+  if (scenarios.length > 0) {
+    html += '<div class="card" style="padding:18px; margin-bottom:14px;">';
+    html += '<h3 style="margin-bottom:8px;">Price Scenarios (12-Month)</h3>';
+    var scColors = {optimistic:'var(--accent3)',baseline:'var(--accent4)',pessimistic:'var(--accent2)'};
+    var scIcons = {optimistic:'\u25B2',baseline:'\u25CF',pessimistic:'\u25BC'};
+    scenarios.forEach(function(sc){
+      var lastPt = sc.points[sc.points.length-1] || {};
+      html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">';
+      html += '<div><span style="color:'+( scColors[sc.type]||'var(--text)')+'; margin-right:6px;">'+(scIcons[sc.type]||'')+'</span>';
+      html += '<span style="font-weight:600; text-transform:capitalize;">'+esc(sc.type)+'</span>';
+      html += '<span style="color:var(--text-dim); margin-left:6px; font-size:10px;">'+esc(sc.label)+'</span></div>';
+      html += '<div style="font-family:var(--font-mono); color:'+(scColors[sc.type]||'var(--text)')+';">$'+(lastPt.usd_lb||0)+'/lb</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
 
   // Signals
   html += '<div class="card" style="padding:18px;">';
@@ -8576,7 +9005,8 @@ function renderForecasting(m, container) {
     html += '</div>';
   });
   html += '</div>';
-  html += '</div>';
+  html += '</div>'; // end right column
+  html += '</div>'; // end 2-col grid
 
   // Lead time detail
   html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">';
@@ -8590,7 +9020,7 @@ function renderForecasting(m, container) {
   html += '<div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-dim);">Risk-Adjusted Total</span><span style="font-family:var(--font-mono); color:var(--accent2); font-weight:700;">'+(lt.risk_adjusted_transit_days||0)+' days</span></div>';
   html += '</div></div>';
 
-  // Insolvency watch (summary — full detail in Supplier Dossier)
+  // Insolvency watch
   html += '<div class="card" style="padding:18px;">';
   html += '<h3 style="margin-bottom:12px;">Supplier Insolvency Watch</h3>';
   var insolRisks = m.insolvency_risks || [];
@@ -8608,10 +9038,19 @@ function renderForecasting(m, container) {
   html += '</div>';
   html += '</div>';
 
-  // Footer: methodology
-  html += '<div style="font-size:10px; color:var(--text-dim); padding:8px 0; border-top:1px solid var(--border); display:flex; justify-content:space-between;">';
-  html += '<span>Methodology: ' + esc(pf.methodology || 'Linear regression on proxy data') + '</span>';
+  // Footer: methodology + model quality
+  html += '<div style="font-size:10px; color:var(--text-dim); padding:8px 0; border-top:1px solid var(--border);">';
+  html += '<div style="display:flex; justify-content:space-between; margin-bottom:4px;">';
+  html += '<span>Methodology: ' + esc(pf.methodology || 'Linear regression') + '</span>';
   if (m.generated_at) html += '<span>Generated: ' + esc(m.generated_at.substring(0,16).replace('T',' ')) + ' UTC</span>';
+  html += '</div>';
+  if (pf.r_squared !== undefined) {
+    html += '<div style="display:flex; gap:16px;">';
+    html += '<span>R\u00B2 = '+pf.r_squared+' ('+esc(pf.r_squared_interpretation||'')+')</span>';
+    html += '<span>Forecast Confidence: '+(pf.confidence_pct||0)+'% ('+esc(pf.confidence||'')+')</span>';
+    html += '<span>Data: '+(pf.data_quarters||0)+' quarters</span>';
+    html += '</div>';
+  }
   html += '</div>';
 
   container.innerHTML = html;
@@ -8628,6 +9067,39 @@ async function onBomMineralChange() {
     var m = await resp.json();
     renderBomExplorer(m, container);
   } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">BOM data not yet available for ' + esc(mineral) + '</div>'; }
+}
+var _bomValId = 0;
+function toggleBomVal(id) {
+  var panel = document.getElementById('bvp-' + id);
+  var btn = document.getElementById('bvb-' + id);
+  if (panel) panel.classList.toggle('open');
+  if (btn) btn.classList.toggle('open');
+}
+function renderBomValBtn(tierKey, validation) {
+  if (!validation || !validation[tierKey]) return '';
+  var id = ++_bomValId;
+  var v = validation[tierKey];
+  var typeClass = function(t) {
+    var tc = (t||'').replace(/\s+/g, '-');
+    return 'bvp-type bvp-' + tc;
+  };
+  var html = '<button class="bom-validate-btn" id="bvb-'+id+'" onclick="toggleBomVal('+id+')"><span class="bom-chev">&#9660;</span> Sources &amp; Validation</button>';
+  html += '<div class="bom-val-panel" id="bvp-'+id+'">';
+  html += '<div class="bvp-title">' + esc(v.title || '') + '</div>';
+  (v.sources || []).forEach(function(s) {
+    html += '<div class="bvp-src">';
+    html += '<span class="' + typeClass(s.type) + '">' + esc(s.type) + '</span>';
+    html += '<strong>' + esc(s.name) + '</strong>';
+    if (s.date) html += ' <span style="color:var(--text-dim);">(' + esc(s.date) + ')</span>';
+    if (s.url) html += ' <a href="' + esc(s.url) + '" target="_blank" style="color:var(--accent); font-size:9px; margin-left:4px;">link &#8599;</a>';
+    if (s.note) html += '<div style="color:var(--text-dim); padding-left:4px; font-size:10px;">' + esc(s.note) + '</div>';
+    html += '</div>';
+  });
+  if (v.confidence) html += '<div class="bvp-conf">Confidence: ' + esc(v.confidence) + '</div>';
+  if (v.hhi_note) html += '<div class="bvp-note">' + esc(v.hhi_note) + '</div>';
+  if (v.note) html += '<div class="bvp-note">' + esc(v.note) + '</div>';
+  html += '</div>';
+  return html;
 }
 function renderBomExplorer(m, container) {
   if (!m.mining || m.mining.length === 0) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">BOM data not yet available for ' + esc(m.name) + '</div>'; return; }
@@ -8667,7 +9139,8 @@ function renderBomExplorer(m, container) {
   html += '<div class="card" style="padding:18px;">';
   html += '<div style="font-family:var(--font-mono); font-size:12px; line-height:2.4; color:var(--text);">';
 
-  html += '<div><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span></div>';
+  var val = m.validation || {};
+  html += '<div><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span>' + renderBomValBtn('mining', val) + '</div>';
   var hsCodes = m.hs_codes || {};
   var hsKeys = Object.keys(hsCodes);
   if (hsKeys.length > 0) {
@@ -8682,22 +9155,28 @@ function renderBomExplorer(m, container) {
     html += '<div style="padding-left:24px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
 
-  html += '<div style="padding-left:24px; margin-top:4px;"><span style="color:'+tierColors[2]+';">&#9679;</span> <strong style="color:'+tierColors[2]+';">Refined '+esc(m.name)+' Metal</strong> <span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[2]+'</span></div>';
+  html += '<div style="padding-left:24px; margin-top:4px;"><span style="color:'+tierColors[2]+';">&#9679;</span> <strong style="color:'+tierColors[2]+';">Refined '+esc(m.name)+' Metal</strong> <span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[2]+'</span>' + renderBomValBtn('processing', val) + '</div>';
   (m.processing || []).forEach(function(entry){
     html += '<div style="padding-left:48px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
 
   var alloys = m.alloys || [];
   var demand = (m.sufficiency || {}).demand || [];
+  var alloysValShown = false;
+  var platformsValShown = false;
   if (alloys.length > 0) {
     alloys.forEach(function(alloy){
       var coPct = alloy.cobalt_pct || alloy.co_pct || 0;
-      html += '<div style="padding-left:48px; margin-top:4px;"><span style="color:'+tierColors[3]+';">&#9679;</span> <strong style="color:'+tierColors[3]+';">' + esc(alloy.name) + '</strong> <span style="color:var(--text-dim);">— ' + coPct + '% Co, ' + esc(alloy.type || '') + '</span> <span style="background:rgba(245,158,11,0.1); color:var(--accent4); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[3]+'</span></div>';
+      var alloyValHtml = '';
+      if (!alloysValShown) { alloyValHtml = renderBomValBtn('alloys', val); alloysValShown = true; }
+      html += '<div style="padding-left:48px; margin-top:4px;"><span style="color:'+tierColors[3]+';">&#9679;</span> <strong style="color:'+tierColors[3]+';">' + esc(alloy.name) + '</strong> <span style="color:var(--text-dim);">— ' + coPct + '% Co, ' + esc(alloy.type || '') + '</span> <span style="background:rgba(245,158,11,0.1); color:var(--accent4); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[3]+'</span>' + alloyValHtml + '</div>';
       var linkedPlatforms = demand.filter(function(d){ return d.alloy === alloy.name; });
       linkedPlatforms.forEach(function(lp){
+        var platValHtml = '';
+        if (!platformsValShown) { platValHtml = renderBomValBtn('platforms', val); platformsValShown = true; }
         html += '<div style="padding-left:72px;"><span style="color:'+tierColors[4]+';">&#9679;</span> ' + esc(lp.engine || '') + ' <span style="color:var(--text-dim);">&#8594;</span> <strong style="color:'+tierColors[4]+';">' + esc(lp.platform) + '</strong>';
         if (lp.fleet_size) html += ' <span style="color:var(--accent2); font-size:10px;">[' + lp.fleet_size + ']</span>';
-        html += '</div>';
+        html += platValHtml + '</div>';
       });
       if (linkedPlatforms.length === 0 && alloy.use) {
         html += '<div style="padding-left:72px; color:var(--text-dim); font-size:11px;"><span style="color:'+tierColors[4]+';">&#9679;</span> ' + esc(alloy.use) + '</div>';
@@ -8721,7 +9200,7 @@ function renderBomExplorer(m, container) {
   var nsns = m.nsn_entries || [];
   if (nsns.length > 0) {
     html += '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">';
-    html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px;">NATO Stock Numbers (NSN Group ' + esc(m.nsn_group || '') + ') <span style="text-transform:none; color:var(--accent4); font-size:9px;">(illustrative — actual NSNs from NMCRL)</span></div>';
+    html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px;">NATO Stock Numbers (NSN Group ' + esc(m.nsn_group || '') + ') <span class="demo-note-dot"><span class="demo-note-tip"><strong style="color:var(--accent2);">Demo Note:</strong> These NSNs are illustrative placeholders. At deployment, real NATO Stock Numbers are ingested from NMCRL via the NSN column on SupplyChainNode (13-digit, indexed). The architecture is ready &mdash; DND provides the catalogue, PSI imports it automatically.</span></span></div>';
     nsns.forEach(function(n) {
       var tColor = tierColors[n.tier] || 'var(--text)';
       html += '<div style="font-size:11px; padding:2px 0;"><span style="color:' + tColor + ';">&#9679;</span> <span style="font-family:var(--font-mono); color:var(--accent);">' + esc(n.nsn) + '</span> — ' + esc(n.item) + '</div>';
@@ -11053,7 +11532,7 @@ var COMPLIANCE_DATA = [
     requirement:'Provide a high-level description of the proposed solution, its architecture, and how it achieves the objectives of a Defence Supply Chain Control Tower.',
     subs:[
       {item:'Rocks to Rockets visibility',status:'compliant',component:'supply_chain_graph.py',note:'BOM explosion traces raw materials → components → subsystems → weapon platforms'},
-      {item:'Sense-Make Sense-Decide-Act workflow',status:'compliant',component:'insights_routes.py, mitigation_playbook.py',note:'Automated sensing (57 feeds) → analysis (risk taxonomy) → COA generation → action tracking'},
+      {item:'Sense-Make Sense-Decide-Act workflow',status:'compliant',component:'insights_routes.py, mitigation_playbook.py',note:'Automated sensing (56 active feeds) → analysis (risk taxonomy) → COA generation → action tracking'},
       {item:'National security-grade architecture',status:'compliant',component:'Dockerfile, deploy/azure/',note:'Azure Canada deployment, single-tenant, data sovereignty compliant'},
     ]},
   { q:'Q2', title:'Supply Chain Illumination & Network Mapping', status:'compliant',
@@ -11145,14 +11624,14 @@ var COMPLIANCE_DATA = [
     requirement:'Describe the user interface and visualization capabilities.',
     subs:[
       {item:'10-second rule for threat identification',status:'compliant',component:'index.html (Insights tab)',note:'Insights landing page: situation report with 6 threat indicators visible immediately',tab:'insights'},
-      {item:'Strategic geospatial view',status:'compliant',component:'index.html (World Map, Arctic)',note:'Leaflet maps with trade arcs, country bubbles, Arctic base positions',tab:'world-map'},
+      {item:'Strategic geospatial view',status:'compliant',component:'index.html (Arctic)',note:'CesiumJS 3D globe with 8 toggleable layers: bases, routes, flights, ADIZ, ice edge, networks, weapon ranges, trade flows',tab:'arctic'},
       {item:'Tactical risk-impact matrix',status:'compliant',component:'index.html (Supply Chain)',note:'PSI risk matrix scatter plot, radar charts, scenario sandbox',tab:'supply-chain'},
       {item:'Operational supplier dossier',status:'compliant',component:'index.html (Canada Intel)',note:'Supplier risk ranking, sector concentration, ownership breakdown',tab:'canada-intel'},
       {item:'Role-based dashboards',status:'compliant',component:'security_routes.py',note:'3 roles defined (viewer, analyst, admin) with RBAC framework'},
       {item:'Mobile-responsive design',status:'compliant',component:'index.html CSS',note:'Breakpoints at 1200px and 768px',tab:'insights'},
-      {item:'WCAG 2.1 AA accessibility',status:'compliant',component:'index.html',note:'Full ARIA: role=tablist/tab/tabpanel on all 10 tabs, aria-label on 6 maps and 24 charts, status dots with role=img and aria-label'},
-      {item:'English/French bilingual interface',status:'compliant',component:'index.html',note:'EN|FR toggle switches all 10 nav tab labels between English and French'},
-      {item:'10-tab intelligence dashboard',status:'exceeds',component:'index.html',note:'Insights, Overview, World Map, Arctic, Live Flights, Deals, Canada Intel, Supply Chain, Data Feeds, Compliance — exceeds requirements',tab:'insights'},
+      {item:'WCAG 2.1 AA accessibility',status:'compliant',component:'index.html',note:'Full ARIA: role=tablist/tab/tabpanel on all 7 tabs, aria-label on maps and charts, status dots with role=img and aria-label'},
+      {item:'English/French bilingual interface',status:'compliant',component:'index.html',note:'EN|FR toggle switches all 7 nav tab labels between English and French'},
+      {item:'7-tab intelligence dashboard',status:'exceeds',component:'index.html',note:'Insights, Arctic, Deals, Canada Intel, Supply Chain, Data Feeds, Compliance — consolidated from 10 tabs, exceeds requirements',tab:'insights'},
     ]},
   { q:'Q11', title:'Automated Sensing & Alert Capabilities', status:'compliant',
     requirement:'Explain the automated sensing and alert capabilities of your solution.',
@@ -11256,11 +11735,11 @@ var COMPLIANCE_DATA = [
 
 var COMPLIANCE_EXTRAS = [
   {name:'Arctic Security Assessment', desc:'Force balance analysis with 25 Arctic bases, 3 shipping routes (NSR, NWP, Transpolar), Russian/Chinese threat assessment, weapon timeline, and live airspace monitoring.', component:'arctic_routes.py', tab:'arctic'},
-  {name:'Live Military Flight Tracking', desc:'Real-time ADS-B monitoring via 3 sources (adsb.lol, adsb.fi, airplanes.live). Multi-source dedup, position history tracking, freight estimation for transport aircraft. Integrated into Arctic 3D globe.', component:'flight_tracker.py', tab:'arctic'},
+  {name:'Live Military Flight Tracking', desc:'Real-time ADS-B monitoring via 4 sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One). Multi-source dedup, position history tracking, freight estimation for transport aircraft. Integrated into Arctic 3D globe.', component:'flight_tracker.py', tab:'arctic'},
   {name:'Buyer-Side Mirror Intelligence', desc:'Novel technique querying what buyer countries report importing to circumvent Russia/China data opacity. Exposes hidden arms flows not visible in seller-reported data.', component:'comtrade.py', tab:'insights'},
   {name:'Cyber Threat Intelligence Aggregator', desc:'Unified CTI platform: 13 APT groups, Tor exit nodes, CISA KEV, NVD critical CVEs, DIB breach registry, supplier cyber risk scoring, and IOC aggregation.', component:'cyber_threat_intel.py', tab:'data-feeds'},
   {name:'57 Active OSINT Data Feeds', desc:'Far exceeds typical OSINT coverage: 24 connector files ingesting from SIPRI, World Bank, NATO, UN, GDELT, DSCA, 5 national trade databases, 26 OSINT classes, and more.', component:'src/ingestion/', tab:'data-feeds'},
-  {name:'PDF Intelligence Briefing Generator', desc:'One-click 7-page PDF export: executive summary, threat matrix, Arctic assessment, supplier risks, and recommendations. Production-ready with fpdf2.', component:'briefing_generator.py', tab:'/briefing/pdf'},
+  {name:'PDF Intelligence Briefing Generator', desc:'One-click 8-page PDF export: executive summary, threat matrix, Arctic assessment, supplier risks, cobalt supply chain intelligence, and recommendations. Production-ready with fpdf2.', component:'briefing_generator.py', tab:'/briefing/pdf'},
   {name:'Shifting Alliance Detection', desc:'Automatically detects countries changing primary arms supplier, with geopolitical context and historical trend analysis.', component:'insights_routes.py', tab:'insights'},
   {name:'Nuclear Arsenal Tracking', desc:'FAS nuclear warhead estimates for all 9 nuclear states with deployed/reserve/retired breakdown.', component:'enrichment_routes.py', tab:'data-feeds'},
   {name:'Satellite & Space Infrastructure', desc:'Celestrak military satellite tracking, space launch monitoring, submarine cable mapping, and internet infrastructure analysis.', component:'enrichment_routes.py', tab:'data-feeds'},
@@ -11280,13 +11759,13 @@ function getSubTab(s) {
   var c = (s.component || '').toLowerCase();
   if (c === '—' || c === '' || c.includes('dockerfile') || c.includes('deploy/') || c.includes('requirements')) return null;
   if (c.includes('arctic')) return 'arctic';
-  if (c.includes('flight_tracker') || c.includes('flight_patterns')) return 'live-flights';
+  if (c.includes('flight_tracker') || c.includes('flight_patterns')) return 'arctic';
   if (c.includes('supply_chain') || c.includes('psi') || c.includes('risk_taxonomy') || c.includes('corporate_graph') || c.includes('wikidata') || c.includes('critical_mineral')) return 'supply-chain';
   if (c.includes('supplier') || c.includes('mitigation') || c.includes('procurement')) return 'canada-intel';
   if (c.includes('insights') || c.includes('confidence') || c.includes('forecasting')) return 'insights';
   if (c.includes('briefing')) return '/briefing/pdf';
   if (c.includes('ingestion') || c.includes('scheduler') || c.includes('enrichment') || c.includes('cyber_threat') || c.includes('osint')) return 'data-feeds';
-  if (c.includes('comtrade') || c.includes('census') || c.includes('hmrc') || c.includes('eurostat') || c.includes('statcan')) return 'world-map';
+  if (c.includes('comtrade') || c.includes('census') || c.includes('hmrc') || c.includes('eurostat') || c.includes('statcan')) return 'data-feeds';
   if (c.includes('sanctions')) return 'insights';
   if (c.includes('ml_engine') || c.includes('ml_routes')) return 'insights';
   if (c.includes('gdelt') || c.includes('defense_news') || c.includes('dsca')) return 'data-feeds';

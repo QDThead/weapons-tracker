@@ -30,24 +30,33 @@ async def get_mineral(name: str):
     if not mineral:
         raise HTTPException(status_code=404, detail=f"Mineral '{name}' not found")
 
-    # Enrich cobalt with triangulation confidence
+    # Enrich cobalt with live triangulation confidence
     if name.lower() == "cobalt":
         try:
             from src.analysis.confidence import compute_cobalt_hhi
             from src.ingestion.bgs_minerals import BGSCobaltClient
 
             bgs = BGSCobaltClient()
-            bgs_data = bgs._fallback_data()
+            bgs_data = await bgs.fetch_cobalt_production()
+
+            # Use most recent year's data for HHI
+            if bgs_data:
+                latest_year = max(d["year"] for d in bgs_data)
+                latest = [d for d in bgs_data if d["year"] == latest_year]
+            else:
+                latest = []
 
             country_production = {}
-            for entry in bgs_data:
+            for entry in latest:
                 country_production[entry["country"]] = entry["production_tonnes"]
 
+            is_fallback = any("fallback" in d.get("source", "") for d in bgs_data[:1])
             mineral["hhi_live"] = compute_cobalt_hhi(country_production)
-            mineral["hhi_source"] = "BGS World Mineral Statistics"
+            mineral["hhi_source"] = "BGS World Mineral Statistics" + (" (fallback)" if is_fallback else " (live API)")
+            mineral["hhi_year"] = latest_year if bgs_data else None
             mineral["confidence_triangulation"] = "active"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Cobalt HHI enrichment failed: %s", e)
 
     return mineral
 
