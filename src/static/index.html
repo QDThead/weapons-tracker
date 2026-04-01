@@ -5298,14 +5298,23 @@ function renderArcticFlights(flights) {
       }
     }
 
-    // Aircraft point entity
+    // Aircraft icon entity (SVG plane rotated by heading)
+    var hexColor = isTransport ? '#10b981' : isTanker ? '#8b5cf6' : (nationColors[f.nation] || '#64748b');
+    var svgSize = isTransport ? 24 : 20;
+    var rotation = f.heading || 0;
+    var planeSvg = 'data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgSize + '" height="' + svgSize + '" viewBox="0 0 24 24">' +
+      '<g transform="rotate(' + rotation + ' 12 12)">' +
+      '<path d="M12 2 L14 8 L20 10 L14 11 L14 18 L17 20 L17 21 L12 19 L7 21 L7 20 L10 18 L10 11 L4 10 L10 8 Z" ' +
+      'fill="' + hexColor + '" stroke="#000" stroke-width="0.5" opacity="0.9"/>' +
+      '</g></svg>'
+    );
     var entity = arcticCesiumViewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(f.longitude, f.latitude, altMeters),
-      point: {
-        pixelSize: pixelSize,
-        color: dotColor.withAlpha(0.85),
-        outlineColor: dotColor,
-        outlineWidth: 1,
+      billboard: {
+        image: planeSvg,
+        width: svgSize,
+        height: svgSize,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
       label: {
