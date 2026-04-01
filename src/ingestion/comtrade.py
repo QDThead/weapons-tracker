@@ -73,6 +73,14 @@ COMTRADE_COUNTRY_CODES = {
     "Bangladesh": 50,
     "Nigeria": 566,
     "Serbia": 688,
+    "DRC": 180,
+    "Belgium": 56,
+    "Finland": 246,
+    "Cuba": 192,
+    "Morocco": 504,
+    "Zambia": 894,
+    "Madagascar": 450,
+    "South Africa": 710,
 }
 
 
@@ -360,7 +368,7 @@ HS_DEFENSE_MATERIALS: dict[str, dict[str, str]] = {
 
 # Top mineral-producing countries for material flow queries (UN M49 codes)
 MATERIAL_SOURCE_COUNTRIES: dict[str, list[int]] = {
-    "cobalt": [180, 643, 36, 586, 104],    # DRC, Russia, Australia, Philippines, Myanmar
+    "cobalt": [180, 156, 643, 36, 586, 104, 246, 56, 124, 192],  # DRC, China, Russia, Australia, Philippines, Myanmar, Finland, Belgium, Canada, Cuba
     "lithium": [36, 152, 156, 32, 76],      # Australia, Chile, China, Argentina, Brazil
     "rare_earth": [156, 104, 36, 699, 840], # China, Myanmar, Australia, India, USA
     "titanium": [156, 392, 643, 398, 804],  # China, Japan, Russia, Kazakhstan, Ukraine
@@ -372,6 +380,24 @@ MATERIAL_SOURCE_COUNTRIES: dict[str, list[int]] = {
     "gallium": [156, 392, 410, 643, 276],   # China, Japan, S. Korea, Russia, Germany
     "germanium": [156, 56, 643, 124, 840],  # China, Belgium, Russia, Canada, USA
 }
+
+
+# Cobalt bilateral trade corridors for targeted queries
+# Uses buyer-side mirror for DRC (DRC under-reports; query importers instead)
+COBALT_BILATERAL_CORRIDORS: list[dict] = [
+    {"reporter": 156, "partner": 180, "flow": "M", "label": "DRC->China (buyer-side)"},
+    {"reporter": 56,  "partner": 180, "flow": "M", "label": "DRC->Belgium (buyer-side)"},
+    {"reporter": 246, "partner": 180, "flow": "M", "label": "DRC->Finland (buyer-side)"},
+    {"reporter": 392, "partner": 180, "flow": "M", "label": "DRC->Japan (buyer-side)"},
+    {"reporter": 156, "partner": 0,   "flow": "X", "label": "China exports (world)"},
+    {"reporter": 246, "partner": 0,   "flow": "X", "label": "Finland exports (world)"},
+    {"reporter": 124, "partner": 0,   "flow": "X", "label": "Canada exports (world)"},
+    {"reporter": 56,  "partner": 0,   "flow": "X", "label": "Belgium exports (world)"},
+    {"reporter": 392, "partner": 0,   "flow": "X", "label": "Japan exports (world)"},
+    {"reporter": 124, "partner": 0,   "flow": "M", "label": "Canada imports (world)"},
+]
+
+COBALT_HS_CODES = ["2605", "810520", "810590", "282200"]
 
 
 class ComtradeMaterialsClient(ComtradeClient):
@@ -420,6 +446,36 @@ class ComtradeMaterialsClient(ComtradeClient):
             material, ",".join(hs_codes), len(source_codes),
         )
         return await self.fetch(query)
+
+    async def fetch_cobalt_bilateral_flows(
+        self,
+        years: list[int] | None = None,
+    ) -> list[ComtradeRecord]:
+        """Fetch bilateral cobalt trade flows for key corridors.
+
+        Uses buyer-side mirror for DRC corridors (DRC under-reports exports).
+        Queries 4 cobalt HS codes across 10 defined corridors.
+        """
+        query_years = years or [2022, 2023]
+        all_records: list[ComtradeRecord] = []
+
+        for corridor in COBALT_BILATERAL_CORRIDORS:
+            query = ComtradeQuery(
+                reporter_codes=[corridor["reporter"]],
+                partner_codes=[corridor["partner"]] if corridor["partner"] != 0 else [0],
+                years=query_years,
+                flow_codes=[corridor["flow"]],
+                hs_codes=COBALT_HS_CODES,
+            )
+            logger.info("Cobalt bilateral query: %s", corridor["label"])
+            try:
+                records = await self.fetch(query)
+                all_records.extend(records)
+            except Exception:
+                logger.warning("Failed cobalt corridor query: %s", corridor["label"], exc_info=True)
+
+        logger.info("Cobalt bilateral: %d records from %d corridors", len(all_records), len(COBALT_BILATERAL_CORRIDORS))
+        return all_records
 
     async def fetch_material_imports_by_country(
         self,
