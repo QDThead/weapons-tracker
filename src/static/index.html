@@ -3044,6 +3044,13 @@ async function loadCanadaIntel() {
   var ts = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   var el = document.getElementById('ca-intel-updated');
   if (el) el.textContent = 'Updated ' + ts;
+
+  // Attach validation panels to dynamically rendered Canada Intel sections
+  var caPage = document.getElementById('page-canada-intel');
+  if (caPage) {
+    validationManager.attach(caPage.querySelector('.bloc-columns'), 'canada.flows');
+    validationManager.attach(caPage.querySelector('#ca-threat-table').closest('.card'), 'canada.threats');
+  }
 }
 
 function renderCanadaMetrics(profile, comtradeData) {
@@ -3728,6 +3735,9 @@ async function loadActionCentre() {
         </div>
       </div>`;
     }).join('');
+    // Attach validation panel to Action Centre
+    var acEl = document.getElementById('action-centre');
+    if (acEl) validationManager.attach(acEl, 'canada.actions');
   } catch (e) {
     console.error('Failed to load Action Centre:', e);
   }
@@ -7990,6 +8000,7 @@ function selectMineralDetail(name) {
 
   renderMineralDetail(m);
   document.getElementById('globe-detail-panel').style.display = '';
+  validationManager.attach(document.getElementById('globe-detail-panel'), 'supply.globe');
 
   // Populate shipping route menu if routes exist
   var routeMenu = document.getElementById('globe-route-menu');
@@ -8923,7 +8934,6 @@ function renderMineralOverview(m, container) {
   var coas = sufficiency.coa || [];
 
   var html = '';
-  var val = m.validation || {};
 
   // ── Header with risk badge ──
   html += '<div class="card" style="padding:18px; margin-bottom:14px; border-left:4px solid ' + riskColor + ';">';
@@ -8938,7 +8948,6 @@ function renderMineralOverview(m, container) {
   var hhiSource = m.hhi_source ? ' (' + esc(m.hhi_source) + ')' : '';
   html += '<div style="text-align:center;"><div class="stat-num" style="font-size:28px; color:var(--accent);">' + (typeof hhiVal === 'number' ? hhiVal.toLocaleString() : hhiVal) + '</div><div style="font-size:9px; color:var(--text-dim);">HHI' + hhiSource + '</div></div>';
   html += '</div></div>';
-  html += renderBomValBtn('hhi', val);
   html += '</div>';
 
   // ── Key stats row ──
@@ -8965,7 +8974,7 @@ function renderMineralOverview(m, container) {
 
   // Left: Mining & Processing concentration
   html += '<div class="card" style="padding:18px;">';
-  html += '<h3 style="margin-bottom:14px;">Mining &amp; Processing Concentration ' + renderBomValBtn('mining', val) + '</h3>';
+  html += '<h3 style="margin-bottom:14px;">Mining &amp; Processing Concentration</h3>';
   html += '<div style="margin-bottom:14px;">';
   html += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Mining Share by Country</div>';
   (m.mining || []).forEach(function(entry) {
@@ -8995,7 +9004,7 @@ function renderMineralOverview(m, container) {
 
   // Right: Canada dependency (headline only — full detail on 3D Supply Map)
   html += '<div class="card" style="padding:18px;">';
-  html += '<h3 style="margin-bottom:14px;">Canada Dependency ' + renderBomValBtn('canada', val) + '</h3>';
+  html += '<h3 style="margin-bottom:14px;">Canada Dependency</h3>';
   if (canada.import_pct) {
     html += '<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">';
     html += '<div class="stat-num" style="font-size:36px; color:var(--accent4);">' + canada.import_pct + '%</div>';
@@ -9015,7 +9024,7 @@ function renderMineralOverview(m, container) {
   // ── Risk factors ──
   if (riskFactors.length > 0) {
     html += '<div class="card" style="padding:18px; margin-bottom:14px; border-top:3px solid ' + riskColor + ';">';
-    html += '<h3 style="margin-bottom:12px;">Key Risk Factors ' + renderBomValBtn('risk_factors', val) + '</h3>';
+    html += '<h3 style="margin-bottom:12px;">Key Risk Factors</h3>';
     html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
     riskFactors.forEach(function(rf, i) {
       html += '<div style="font-size:12px; color:var(--text); padding:8px 10px; background:var(--surface); border-radius:6px; border-left:3px solid ' + riskColor + ';">';
@@ -9028,7 +9037,7 @@ function renderMineralOverview(m, container) {
   // ── Chokepoints ──
   if (m.chokepoints && m.chokepoints.length > 0) {
     html += '<div class="card" style="padding:18px;">';
-    html += '<h3 style="margin-bottom:12px;">Maritime Chokepoints ' + renderBomValBtn('chokepoints', val) + '</h3>';
+    html += '<h3 style="margin-bottom:12px;">Maritime Chokepoints</h3>';
     html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">';
     m.chokepoints.forEach(function(cp) {
       html += '<div style="padding:10px; background:var(--surface); border-radius:6px; border-left:3px solid var(--accent4);">';
@@ -9043,6 +9052,7 @@ function renderMineralOverview(m, container) {
   }
 
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.overview');
 }
 
 // ═══════════════════════════════════════════════════
@@ -9248,6 +9258,7 @@ function renderForecasting(m, container) {
   html += '</div>';
 
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.forecasting');
 }
 
 async function onBomMineralChange() {
@@ -9261,39 +9272,6 @@ async function onBomMineralChange() {
     var m = await resp.json();
     renderBomExplorer(m, container);
   } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">BOM data not yet available for ' + esc(mineral) + '</div>'; }
-}
-var _bomValId = 0;
-function toggleBomVal(id) {
-  var panel = document.getElementById('bvp-' + id);
-  var btn = document.getElementById('bvb-' + id);
-  if (panel) panel.classList.toggle('open');
-  if (btn) btn.classList.toggle('open');
-}
-function renderBomValBtn(tierKey, validation) {
-  if (!validation || !validation[tierKey]) return '';
-  var id = ++_bomValId;
-  var v = validation[tierKey];
-  var typeClass = function(t) {
-    var tc = (t||'').replace(/\s+/g, '-');
-    return 'bvp-type bvp-' + tc;
-  };
-  var html = '<button class="bom-validate-btn" id="bvb-'+id+'" onclick="toggleBomVal('+id+')"><span class="bom-chev">&#9660;</span> Sources &amp; Validation</button>';
-  html += '<div class="bom-val-panel" id="bvp-'+id+'">';
-  html += '<div class="bvp-title">' + esc(v.title || '') + '</div>';
-  (v.sources || []).forEach(function(s) {
-    html += '<div class="bvp-src">';
-    html += '<span class="' + typeClass(s.type) + '">' + esc(s.type) + '</span>';
-    html += '<strong>' + esc(s.name) + '</strong>';
-    if (s.date) html += ' <span style="color:var(--text-dim);">(' + esc(s.date) + ')</span>';
-    if (s.url) html += ' <a href="' + esc(s.url) + '" target="_blank" style="color:var(--accent); font-size:9px; margin-left:4px;">link &#8599;</a>';
-    if (s.note) html += '<div style="color:var(--text-dim); padding-left:4px; font-size:10px;">' + esc(s.note) + '</div>';
-    html += '</div>';
-  });
-  if (v.confidence) html += '<div class="bvp-conf">Confidence: ' + esc(v.confidence) + '</div>';
-  if (v.hhi_note) html += '<div class="bvp-note">' + esc(v.hhi_note) + '</div>';
-  if (v.note) html += '<div class="bvp-note">' + esc(v.note) + '</div>';
-  html += '</div>';
-  return html;
 }
 function renderBomExplorer(m, container) {
   if (!m.mining || m.mining.length === 0) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">BOM data not yet available for ' + esc(m.name) + '</div>'; return; }
@@ -9333,8 +9311,7 @@ function renderBomExplorer(m, container) {
   html += '<div class="card" style="padding:18px;">';
   html += '<div style="font-family:var(--font-mono); font-size:12px; line-height:2.4; color:var(--text);">';
 
-  var val = m.validation || {};
-  html += '<div><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span>' + renderBomValBtn('mining', val) + '</div>';
+  html += '<div data-tier="mining"><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span></div>';
   var hsCodes = m.hs_codes || {};
   var hsKeys = Object.keys(hsCodes);
   if (hsKeys.length > 0) {
@@ -9349,28 +9326,28 @@ function renderBomExplorer(m, container) {
     html += '<div style="padding-left:24px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
 
-  html += '<div style="padding-left:24px; margin-top:4px;"><span style="color:'+tierColors[2]+';">&#9679;</span> <strong style="color:'+tierColors[2]+';">Refined '+esc(m.name)+' Metal</strong> <span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[2]+'</span>' + renderBomValBtn('processing', val) + '</div>';
+  html += '<div data-tier="processing" style="padding-left:24px; margin-top:4px;"><span style="color:'+tierColors[2]+';">&#9679;</span> <strong style="color:'+tierColors[2]+';">Refined '+esc(m.name)+' Metal</strong> <span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[2]+'</span></div>';
   (m.processing || []).forEach(function(entry){
     html += '<div style="padding-left:48px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
 
   var alloys = m.alloys || [];
   var demand = (m.sufficiency || {}).demand || [];
-  var alloysValShown = false;
-  var platformsValShown = false;
+  var alloysShown = false;
+  var platformsShown = false;
   if (alloys.length > 0) {
     alloys.forEach(function(alloy){
       var coPct = alloy.cobalt_pct || alloy.co_pct || 0;
-      var alloyValHtml = '';
-      if (!alloysValShown) { alloyValHtml = renderBomValBtn('alloys', val); alloysValShown = true; }
-      html += '<div style="padding-left:48px; margin-top:4px;"><span style="color:'+tierColors[3]+';">&#9679;</span> <strong style="color:'+tierColors[3]+';">' + esc(alloy.name) + '</strong> <span style="color:var(--text-dim);">— ' + coPct + '% Co, ' + esc(alloy.type || '') + '</span> <span style="background:rgba(245,158,11,0.1); color:var(--accent4); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[3]+'</span>' + alloyValHtml + '</div>';
+      var alloyTierAttr = '';
+      if (!alloysShown) { alloyTierAttr = ' data-tier="alloys"'; alloysShown = true; }
+      html += '<div' + alloyTierAttr + ' style="padding-left:48px; margin-top:4px;"><span style="color:'+tierColors[3]+';">&#9679;</span> <strong style="color:'+tierColors[3]+';">' + esc(alloy.name) + '</strong> <span style="color:var(--text-dim);">— ' + coPct + '% Co, ' + esc(alloy.type || '') + '</span> <span style="background:rgba(245,158,11,0.1); color:var(--accent4); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[3]+'</span></div>';
       var linkedPlatforms = demand.filter(function(d){ return d.alloy === alloy.name; });
       linkedPlatforms.forEach(function(lp){
-        var platValHtml = '';
-        if (!platformsValShown) { platValHtml = renderBomValBtn('platforms', val); platformsValShown = true; }
-        html += '<div style="padding-left:72px;"><span style="color:'+tierColors[4]+';">&#9679;</span> ' + esc(lp.engine || '') + ' <span style="color:var(--text-dim);">&#8594;</span> <strong style="color:'+tierColors[4]+';">' + esc(lp.platform) + '</strong>';
+        var platTierAttr = '';
+        if (!platformsShown) { platTierAttr = ' data-tier="platforms"'; platformsShown = true; }
+        html += '<div' + platTierAttr + ' style="padding-left:72px;"><span style="color:'+tierColors[4]+';">&#9679;</span> ' + esc(lp.engine || '') + ' <span style="color:var(--text-dim);">&#8594;</span> <strong style="color:'+tierColors[4]+';">' + esc(lp.platform) + '</strong>';
         if (lp.fleet_size) html += ' <span style="color:var(--accent2); font-size:10px;">[' + lp.fleet_size + ']</span>';
-        html += platValHtml + '</div>';
+        html += '</div>';
       });
       if (linkedPlatforms.length === 0 && alloy.use) {
         html += '<div style="padding-left:72px; color:var(--text-dim); font-size:11px;"><span style="color:'+tierColors[4]+';">&#9679;</span> ' + esc(alloy.use) + '</div>';
@@ -9403,6 +9380,11 @@ function renderBomExplorer(m, container) {
   }
   html += '</div>';
   container.innerHTML = html;
+  // Attach per-tier validation panels via new system
+  container.querySelectorAll('[data-tier]').forEach(function(sec) {
+    var tier = sec.getAttribute('data-tier');
+    if (tier) validationManager.attach(sec, 'supply.bom.' + tier);
+  });
 }
 
 async function onDossierMineralChange() {
@@ -9433,6 +9415,7 @@ function renderDossier(m, container) {
   window._dossierEntities = entities;
   window._dossierMineral = m;
   renderDossierEntity();
+  validationManager.attach(container, 'supply.dossier');
 }
 
 function renderDossierEntity() {
@@ -9637,6 +9620,7 @@ function renderAlertsSensing(m, container) {
     html += '</div></div>';
   });
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.alerts');
 }
 
 async function onRegisterMineralChange() {
@@ -9715,6 +9699,7 @@ function renderRiskRegister(m, container) {
   });
   html += '</tbody></table></div>';
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.register');
 }
 
 function toggleRegisterRow(idx) {
@@ -9846,6 +9831,7 @@ function renderAnalystFeedback(m, container) {
   });
   html += '</div></div>';
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.feedback');
 }
 
 async function loadPsiGraph() {
@@ -9881,6 +9867,7 @@ async function loadPsiGraph() {
     if (!resp.ok) throw new Error('Failed');
     var data = await resp.json();
     renderPsiForceGraph(data, container);
+    validationManager.attach(container, 'supply.graph');
   } catch (e) {
     container.innerHTML = '<div style="color:var(--accent2); text-align:center; padding:40px;">Failed to load graph: ' + esc(e.message) + '</div>';
   }
@@ -10017,6 +10004,7 @@ async function loadMineralGraph(mineralName, container) {
 
     renderNarrativeGraph(m, container);
     document.getElementById('psi-graph-layered-legend').style.display = 'none';
+    validationManager.attach(container, 'supply.graph');
 
   } catch (e) {
     container.innerHTML = '<div style="color:var(--accent2); text-align:center; padding:40px;">Failed to load: ' + esc(e.message) + '</div>';
@@ -10680,6 +10668,7 @@ function renderMineralRiskMatrix(m, container) {
   if (cn.length>0) html += cn.length + ' Chinese-controlled.';
   html += '</div>';
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.risks');
 
   // Render Chart.js scatter
   setTimeout(function() {
@@ -10794,6 +10783,8 @@ function initScenarioSandbox() {
   });
   renderLayers();
   renderHistoryPanel();
+  var scenarioContainer = document.getElementById('psi-scenarios');
+  if (scenarioContainer) validationManager.attach(scenarioContainer, 'supply.scenarios');
 }
 
 function loadPreset(name) {
@@ -11265,6 +11256,8 @@ async function loadTaxonomyTab() {
     renderTaxonomyBarChart(data.categories);
     renderTaxonomyAccordion(data.categories);
     renderWeightSliders(data.categories);
+    var taxContainer = document.getElementById('psi-taxonomy');
+    if (taxContainer) validationManager.attach(taxContainer, 'supply.taxonomy');
   } catch (e) {
     console.error('Failed to load taxonomy tab:', e);
   }
@@ -11431,6 +11424,7 @@ function renderMineralTaxonomy(m, container) {
   }
 
   container.innerHTML = html;
+  validationManager.attach(container, 'supply.taxonomy');
 }
 
 function renderTaxonomyBarChart(categories) {
@@ -11565,6 +11559,10 @@ async function loadSupplierData() {
     renderSupplierRiskChart(supRes);
     renderSectorChart(concRes);
     renderOwnershipChart(ownRes);
+    // Attach validation panel to supplier section
+    var supSection = document.querySelector('#page-canada-intel [style*="Defence Supply Base"]');
+    if (!supSection) supSection = document.getElementById('ca-supplier-kpis');
+    if (supSection) validationManager.attach(supSection.closest('div[style*="margin-top"]') || supSection.parentElement, 'canada.suppliers');
   } catch (e) {
     console.error('Failed to load supplier data:', e);
   }
