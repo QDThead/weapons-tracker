@@ -878,13 +878,16 @@ class CobaltAlertAction(BaseModel):
 @router.get("/alerts/cobalt/live")
 async def get_cobalt_live_alerts():
     """Get live-generated Cobalt alerts from GDELT + rule engine."""
-    from src.analysis.cobalt_alert_engine import run_cobalt_alert_engine
+    from src.analysis.cobalt_alert_engine import get_cached_alerts, run_cobalt_alert_engine
+    cached, ts = get_cached_alerts()
+    if cached and ts and (datetime.utcnow() - ts).total_seconds() < 1800:
+        return {"alerts": cached, "count": len(cached), "generated_at": ts.isoformat(), "cached": True}
     try:
         alerts = await run_cobalt_alert_engine()
-        return {"alerts": alerts, "count": len(alerts), "generated_at": datetime.utcnow().isoformat()}
+        return {"alerts": alerts, "count": len(alerts), "generated_at": datetime.utcnow().isoformat(), "cached": False}
     except Exception as e:
         logger.error("Cobalt live alerts failed: %s", e)
-        return {"alerts": [], "count": 0, "error": "Live alert generation unavailable"}
+        return {"alerts": cached or [], "count": len(cached or []), "error": "Live generation failed, showing cached"}
 
 
 @router.post("/alerts/cobalt/action")

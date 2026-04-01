@@ -11,6 +11,9 @@ from src.analysis.mineral_supply_chains import get_mineral_by_name
 
 logger = logging.getLogger(__name__)
 
+_cached_alerts: list[dict] = []
+_cache_timestamp: datetime | None = None
+
 COBALT_GDELT_QUERIES = [
     "cobalt DRC Congo mining",
     "cobalt export ban quota restriction",
@@ -153,6 +156,7 @@ def _suggest_coa(title: str) -> str:
 
 async def run_cobalt_alert_engine() -> list[dict]:
     """Main entry point — run both GDELT and rule-based alert generation."""
+    global _cached_alerts, _cache_timestamp
     gdelt_alerts = await generate_gdelt_alerts()
     rule_alerts = generate_rule_alerts()
 
@@ -167,4 +171,11 @@ async def run_cobalt_alert_engine() -> list[dict]:
 
     logger.info("Cobalt Alert Engine: %d total (%d GDELT, %d rules, %d deduped)",
                 len(all_alerts), len(gdelt_alerts), len(rule_alerts), len(deduped))
+    _cached_alerts = deduped
+    _cache_timestamp = datetime.utcnow()
     return deduped
+
+
+def get_cached_alerts() -> tuple[list[dict], datetime | None]:
+    """Return cached alerts from the last scheduled run."""
+    return _cached_alerts, _cache_timestamp
