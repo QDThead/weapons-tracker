@@ -197,3 +197,148 @@ def _count_sources(risk_source: str, dimension: str, session: Session) -> list[t
         active_sources = [("Platform assessment", None)]
 
     return active_sources
+
+
+# --- Cobalt Production Triangulation ---
+
+class SourceDataPoint:
+    """A single production data point from one source."""
+    __slots__ = ("name", "value_t", "year", "tier")
+
+    def __init__(self, name: str, value_t: float, year: int, tier: str = "live"):
+        self.name = name
+        self.value_t = value_t
+        self.year = year
+        self.tier = tier
+
+
+def triangulate_cobalt_production(
+    country: str,
+    sources: list[SourceDataPoint],
+) -> dict:
+    """Cross-check cobalt production figures from multiple independent sources.
+
+    Compares pairwise, detects discrepancies, and computes a confidence-weighted
+    best estimate.
+
+    Args:
+        country: Country name (for labeling).
+        sources: List of production data points from independent sources.
+
+    Returns:
+        dict with production_t, source_count, triangulated, confidence_score,
+        confidence_level, label, sources, discrepancies.
+    """
+    if not sources:
+        return {
+            "country": country,
+            "production_t": 0,
+            "source_count": 0,
+            "triangulated": False,
+            "confidence_score": 0,
+            "confidence_level": "low",
+            "label": "No data",
+            "sources": [],
+            "discrepancies": [],
+        }
+
+    source_count = len(sources)
+    discrepancies: list[dict] = []
+
+    # Pairwise comparison
+    for i in range(source_count):
+        for j in range(i + 1, source_count):
+            a, b = sources[i], sources[j]
+            if a.value_t == 0 and b.value_t == 0:
+                continue
+            avg = (a.value_t + b.value_t) / 2
+            if avg == 0:
+                continue
+            delta_pct = abs(a.value_t - b.value_t) / avg * 100
+            year_gap = abs(a.year - b.year)
+
+            if delta_pct <= 10:
+                continue  # Within tolerance
+
+            severity = "info"
+            if delta_pct > 50:
+                severity = "critical"
+            elif delta_pct > 25:
+                severity = "warning"
+
+            note = f"{a.name} reports {a.value_t:,.0f}t ({a.year}) vs {b.name} reports {b.value_t:,.0f}t ({b.year})"
+            if year_gap > 0:
+                note += f" — {year_gap}-year gap may explain divergence"
+
+            discrepancies.append({
+                "source_a": a.name,
+                "source_b": b.name,
+                "value_a": a.value_t,
+                "value_b": b.value_t,
+                "delta_pct": round(delta_pct, 1),
+                "year_gap": year_gap,
+                "severity": severity,
+                "note": note,
+            })
+
+    # Best estimate: median of most recent same-year group, else all values
+    max_year = max(s.year for s in sources)
+    recent = [s for s in sources if s.year == max_year]
+    if not recent:
+        recent = sources
+    values = sorted(s.value_t for s in recent)
+    mid = len(values) // 2
+    production_t = values[mid] if len(values) % 2 == 1 else (values[mid - 1] + values[mid]) / 2
+
+    # Confidence scoring
+    triangulated = source_count >= 3
+    has_critical_disc = any(d["severity"] == "critical" for d in discrepancies)
+
+    if triangulated and not has_critical_disc:
+        confidence_level = "high"
+        confidence_score = min(80 + source_count * 5, 95)
+    elif source_count >= 2 and not has_critical_disc:
+        confidence_level = "medium"
+        confidence_score = 60 + source_count * 5
+    elif source_count >= 2 and has_critical_disc:
+        confidence_level = "medium"
+        confidence_score = 45
+    else:
+        confidence_level = "low" if source_count == 0 else "medium"
+        confidence_score = 25 + source_count * 10
+
+    confidence_score = min(confidence_score, 95)
+
+    if triangulated:
+        label = f"Triangulated ({source_count} sources)"
+    elif source_count >= 2:
+        label = f"Corroborated ({source_count} sources)"
+    else:
+        label = "Single source"
+
+    return {
+        "country": country,
+        "production_t": production_t,
+        "source_count": source_count,
+        "triangulated": triangulated,
+        "confidence_score": confidence_score,
+        "confidence_level": confidence_level,
+        "label": label,
+        "sources": [{"name": s.name, "value_t": s.value_t, "year": s.year, "tier": s.tier} for s in sources],
+        "discrepancies": discrepancies,
+    }
+
+
+def compute_cobalt_hhi(country_production: dict[str, float]) -> int:
+    """Compute Herfindahl-Hirschman Index from country production shares.
+
+    Args:
+        country_production: Mapping of country name to production in tonnes.
+
+    Returns:
+        HHI value (0-10000). Above 2500 = highly concentrated.
+    """
+    total = sum(country_production.values())
+    if total == 0:
+        return 0
+    return round(sum((v / total * 100) ** 2 for v in country_production.values()))
