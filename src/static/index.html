@@ -2469,12 +2469,20 @@ const FRENCH_LABELS = {
   'compliance': 'Conformit\u00e9'
 };
 
+var PSI_FR_TABS = {'psi-overview':'Aperçu','psi-globe':'Carte 3D','psi-graph':'Graphe','psi-risks':'Matrice de risque','psi-scenarios':'Scénarios','psi-taxonomy':'Taxonomie','psi-forecasting':'Prévisions','psi-bom':'Nomenclature','psi-dossier':'Dossier','psi-alerts':'Alertes','psi-register':'Registre','psi-feedback':'Rétroaction'};
+var PSI_EN_TABS = {'psi-overview':'Overview','psi-globe':'3D Supply Map','psi-graph':'Knowledge Graph','psi-risks':'Risk Matrix','psi-scenarios':'Scenario Sandbox','psi-taxonomy':'Risk Taxonomy','psi-forecasting':'Forecasting','psi-bom':'BOM Explorer','psi-dossier':'Supplier Dossier','psi-alerts':'Alerts & Sensing','psi-register':'Risk Register','psi-feedback':'Analyst Feedback'};
+
 function toggleLanguage() {
   currentLanguage = currentLanguage === 'en' ? 'fr' : 'en';
   const labels = currentLanguage === 'fr' ? FRENCH_LABELS : ENGLISH_LABELS;
   document.querySelectorAll('.nav-tab[data-page]').forEach(function(tab) {
     var page = tab.getAttribute('data-page');
     if (labels[page]) { tab.textContent = labels[page]; }
+  });
+  var psiMap = currentLanguage === 'fr' ? PSI_FR_TABS : PSI_EN_TABS;
+  document.querySelectorAll('.psi-tab-btn').forEach(function(btn) {
+    var key = btn.dataset.psiTab;
+    if (psiMap[key]) btn.textContent = psiMap[key];
   });
   var toggle = document.getElementById('lang-toggle');
   if (toggle) { toggle.textContent = currentLanguage === 'fr' ? 'FR | EN' : 'EN | FR'; }
@@ -8554,10 +8562,10 @@ function renderAlertsSensing(m, container) {
     }
     var btnStyle = 'background:var(--surface); border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);';
     html += '<div style="margin-top:8px; display:flex; gap:6px;">';
-    html += '<button style="'+btnStyle+'" onclick="alertAcknowledge(this,\'' + esc(a.id) + '\')">Acknowledge</button>';
-    html += '<button style="'+btnStyle+'" onclick="alertAssign(this,\'' + esc(a.id) + '\')">Assign</button>';
-    html += '<button style="'+btnStyle+'" onclick="alertEscalate(this,\'' + esc(a.id) + '\')">Escalate</button>';
-    html += '<button style="'+btnStyle+'" onclick="alertEvidence(this)">Evidence Locker</button>';
+    html += '<button role="button" aria-label="Acknowledge alert: '+esc(a.title).substring(0,40)+'" style="'+btnStyle+'" onclick="alertAcknowledge(this,\''+esc(a.id)+'\')">Acknowledge</button>';
+    html += '<button role="button" aria-label="Assign alert: '+esc(a.title).substring(0,40)+'" style="'+btnStyle+'" onclick="alertAssign(this,\''+esc(a.id)+'\')">Assign</button>';
+    html += '<button role="button" aria-label="Escalate alert: '+esc(a.title).substring(0,40)+'" style="'+btnStyle+'" onclick="alertEscalate(this,\''+esc(a.id)+'\')">Escalate</button>';
+    html += '<button role="button" aria-label="Evidence locker for: '+esc(a.title).substring(0,40)+'" style="'+btnStyle+'" onclick="alertEvidence(this)">Evidence Locker</button>';
     html += '</div>';
     html += '<div data-evidence-panel style="display:none; margin-top:8px; padding:10px; background:var(--surface); border-radius:6px; border:1px solid var(--border); font-size:11px;">';
     html += '<div style="text-transform:uppercase; color:var(--text-dim); font-size:10px; font-weight:600; margin-bottom:6px;">Evidence &amp; Sources</div>';
@@ -8616,7 +8624,7 @@ function renderRiskRegister(m, container) {
 
   rr.forEach(function(r, i){
     var isOverdue = r.due_date < now && r.status !== 'closed' && r.status !== 'mitigated';
-    html += '<tr style="border-bottom:1px solid var(--border); cursor:pointer;" onclick="toggleRegisterRow('+i+')">';
+    html += '<tr role="button" tabindex="0" aria-expanded="false" aria-controls="register-detail-'+i+'" style="border-bottom:1px solid var(--border); cursor:pointer;" onclick="toggleRegisterRow('+i+')" onkeydown="if(event.key===\'Enter\')toggleRegisterRow('+i+')">';
     html += '<td style="padding:8px; color:var(--text-dim); font-family:var(--font-mono);">'+esc(r.id)+'</td>';
     html += '<td style="padding:8px; max-width:300px;">'+esc(r.risk)+'</td>';
     html += '<td style="padding:8px;"><span style="color:'+(sevColors[r.severity]||'var(--text)')+';">'+esc(r.category)+'</span></td>';
@@ -8649,7 +8657,12 @@ function renderRiskRegister(m, container) {
 
 function toggleRegisterRow(idx) {
   var row = document.getElementById('register-detail-' + idx);
-  if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+  var trigger = row ? row.previousElementSibling : null;
+  if (row) {
+    var show = row.style.display === 'none';
+    row.style.display = show ? '' : 'none';
+    if (trigger) trigger.setAttribute('aria-expanded', show ? 'true' : 'false');
+  }
 }
 
 function updateRegisterStatus(btn, idx, newStatus, riskId) {
@@ -9567,7 +9580,7 @@ function renderMineralRiskMatrix(m, container) {
   html += '<div class="card" style="padding:14px; margin-bottom:14px;">';
   html += '<h3 style="margin-bottom:12px;">' + esc(m.name) + ' — Risk \u00D7 Impact Matrix</h3>';
   html += '<div style="position:relative; height:400px;">';
-  html += '<canvas id="mineral-risk-scatter" style="width:100%; height:100%;"></canvas>';
+  html += '<canvas id="mineral-risk-scatter" role="img" aria-label="Risk probability versus operational impact scatter chart for '+esc(m.name)+' supply chain entities" style="width:100%; height:100%;"></canvas>';
   html += '<div style="position:absolute; top:8px; right:12px; font-size:10px; color:var(--accent2); font-weight:600; opacity:0.6;">MITIGATE NOW</div>';
   html += '<div style="position:absolute; top:8px; left:60px; font-size:10px; color:var(--accent4); font-weight:600; opacity:0.6;">MONITOR</div>';
   html += '<div style="position:absolute; bottom:28px; right:12px; font-size:10px; color:var(--accent); font-weight:600; opacity:0.6;">TRANSFER</div>';
