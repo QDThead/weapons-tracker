@@ -8701,6 +8701,22 @@ async function onFeedbackMineralChange() {
     var resp = await fetch(API + '/globe/minerals/' + encodeURIComponent(mineral));
     if (!resp.ok) throw new Error('Not found');
     var m = await resp.json();
+    try {
+      var mlResp = await fetch(API + '/ml/thresholds');
+      if (mlResp.ok) {
+        var ml = await mlResp.json();
+        if (m.analyst_feedback) {
+          if (ml.feedback_count > 0) {
+            m.analyst_feedback.fp_rate = Math.round(ml.false_positive_rate * 100);
+            m.analyst_feedback.accuracy = Math.round((1 - ml.false_positive_rate) * 100);
+          }
+          m.analyst_feedback.threshold = m.analyst_feedback.threshold || {};
+          m.analyst_feedback.threshold.current_z = ml.z_score_threshold;
+          m.analyst_feedback.threshold.rlhf_adjusted = ml.adjusted_threshold;
+          m.analyst_feedback._live_stats = true;
+        }
+      }
+    } catch(e) { /* ML stats unavailable */ }
     renderAnalystFeedback(m, container);
   } catch (e) { container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">Analyst feedback data not yet available for ' + esc(mineral) + '</div>'; }
 }
@@ -8715,6 +8731,8 @@ function renderAnalystFeedback(m, container) {
   html += '<div class="card" style="text-align:center; padding:16px;"><div style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">False Positive Rate</div><div class="stat-num" style="font-size:32px; color:'+fpColor+';">'+af.fp_rate+'%</div><div style="font-size:10px; color:var(--text-dim);">trending '+(af.fp_trend==='down'?'&#8595; down':'&#8593; up')+'</div></div>';
   html += '<div class="card" style="text-align:center; padding:16px;"><div style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">Pending Review</div><div class="stat-num" style="font-size:32px; color:var(--accent);">'+(af.pending||[]).length+'</div><div style="font-size:10px; color:var(--text-dim);">awaiting analyst</div></div>';
   html += '</div>';
+  var statsBadge = af._live_stats ? '<span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:2px 6px; border-radius:3px; font-size:9px;">LIVE ML DATA</span>' : '<span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:2px 6px; border-radius:3px; font-size:9px;">BASELINE DATA</span>';
+  html += '<div style="text-align:center; margin-top:6px; margin-bottom:10px;">' + statsBadge + '</div>';
 
   html += '<div class="card" style="padding:18px; margin-bottom:14px;"><h3 style="margin-bottom:12px;">Pending Adjudication</h3>';
   (af.pending || []).forEach(function(p){
