@@ -4273,12 +4273,13 @@ function genericSample(data) {
 
 const FEED_DEFINITIONS = [
   // ── LIVE FEEDS ──
-  { section: 'Live Feeds', sectionNote: 'real-time / minutes', name: 'Military Flights (ADS-B)', key: 'adsb.lol',
+  { section: 'Live Feeds', sectionNote: 'real-time / minutes', name: 'Military Flights (3 ADS-B sources)', key: 'adsb.lol + adsb.fi + airplanes.live',
     sampleEndpoint: '/tracking/flights/military', sampleLimit: 3,
     renderSample: items => items.slice(0, 3).map(f =>
       '<div class="feed-sample-row"><span class="feed-sample-field">Callsign:</span> <span class="feed-sample-value">' + esc(f.callsign || '---') + '</span> &middot; ' +
       '<span class="feed-sample-field">Type:</span> <span class="feed-sample-value">' + esc(f.aircraft_description || f.aircraft_type || '-') + '</span> &middot; ' +
-      '<span class="feed-sample-field">Alt:</span> <span class="feed-sample-value">' + (f.altitude_ft ? f.altitude_ft.toLocaleString() + ' ft' : '-') + '</span></div>'
+      '<span class="feed-sample-field">Alt:</span> <span class="feed-sample-value">' + (f.altitude_ft ? f.altitude_ft.toLocaleString() + ' ft' : '-') + '</span>' +
+      (f.sources && f.sources.length > 0 ? ' &middot; <span class="feed-sample-field">Src:</span> <span class="feed-sample-value">' + esc(f.sources.join(', ')) + '</span>' : '') + '</div>'
     ).join('') },
   { section: 'Live Feeds', name: 'Defense News RSS (4 feeds)', key: 'Defense RSS',
     sampleEndpoint: '/dashboard/news/live', sampleLimit: 3,
@@ -4349,6 +4350,9 @@ const FEED_DEFINITIONS = [
     sampleEndpoint: '/enrichment/commodities', rawResponse: true, renderSample: data => genericSample(data) },
   { section: 'Monthly Trade Data', name: 'Exchange Rates (CAD-based)', key: 'Exchange Rates',
     sampleEndpoint: '/enrichment/exchange-rates', rawResponse: true, renderSample: data => genericSample(data) },
+  { section: 'Monthly Trade Data', name: 'UN Comtrade Cobalt Bilateral', key: 'Comtrade Cobalt',
+    sampleEndpoint: '/globe/minerals/cobalt', rawResponse: true,
+    renderSample: data => data && data.hhi_live ? '<div class="feed-sample-row"><span class="feed-sample-field">Live HHI:</span> <span class="feed-sample-value">' + data.hhi_live + '</span> &middot; <span class="feed-sample-field">Source:</span> <span class="feed-sample-value">' + esc(data.hhi_source || 'BGS') + '</span></div>' : genericSample(data) },
 
   // ── ANNUAL INTELLIGENCE ──
   { section: 'Annual Intelligence', sectionNote: 'yearly releases', name: 'SIPRI Arms Transfers', key: 'SIPRI Arms',
@@ -11382,7 +11386,7 @@ var COMPLIANCE_DATA = [
 
 var COMPLIANCE_EXTRAS = [
   {name:'Arctic Security Assessment', desc:'Force balance analysis with 25 Arctic bases, 3 shipping routes (NSR, NWP, Transpolar), Russian/Chinese threat assessment, weapon timeline, and live airspace monitoring.', component:'arctic_routes.py', tab:'arctic'},
-  {name:'Live Military Flight Tracking', desc:'Real-time ADS-B monitoring of military aircraft worldwide via adsb.lol. Auto-refreshes every 30 seconds with aircraft classification and route analysis.', component:'flight_tracker.py', tab:'live-flights'},
+  {name:'Live Military Flight Tracking', desc:'Real-time ADS-B monitoring via 3 sources (adsb.lol, adsb.fi, airplanes.live). Multi-source dedup, position history tracking, freight estimation for transport aircraft. Integrated into Arctic 3D globe.', component:'flight_tracker.py', tab:'arctic'},
   {name:'Buyer-Side Mirror Intelligence', desc:'Novel technique querying what buyer countries report importing to circumvent Russia/China data opacity. Exposes hidden arms flows not visible in seller-reported data.', component:'comtrade.py', tab:'insights'},
   {name:'Cyber Threat Intelligence Aggregator', desc:'Unified CTI platform: 13 APT groups, Tor exit nodes, CISA KEV, NVD critical CVEs, DIB breach registry, supplier cyber risk scoring, and IOC aggregation.', component:'cyber_threat_intel.py', tab:'data-feeds'},
   {name:'57 Active OSINT Data Feeds', desc:'Far exceeds typical OSINT coverage: 24 connector files ingesting from SIPRI, World Bank, NATO, UN, GDELT, DSCA, 5 national trade databases, 26 OSINT classes, and more.', component:'src/ingestion/', tab:'data-feeds'},
