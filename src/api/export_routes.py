@@ -9,7 +9,7 @@ import csv
 import io
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from starlette.responses import StreamingResponse
 import openpyxl
 
@@ -288,3 +288,71 @@ async def export_taxonomy_csv():
         return {"error": str(e)}
     finally:
         session.close()
+
+
+# ── Cobalt Risk Register ────────────────────────────────────────────────────
+
+@router.get("/cobalt/register/csv")
+async def export_cobalt_register_csv():
+    """Export Cobalt risk register as CSV."""
+    from src.analysis.mineral_supply_chains import get_mineral_by_name
+
+    mineral = get_mineral_by_name("Cobalt")
+    if not mineral:
+        raise HTTPException(status_code=404, detail="Cobalt data not found")
+    rr = mineral.get("risk_register", [])
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Risk", "Category", "Severity", "Status", "Owner", "Due Date", "COA IDs", "COAs", "Evidence"])
+    for r in rr:
+        writer.writerow([
+            r.get("id", ""),
+            r.get("risk", ""),
+            r.get("category", ""),
+            r.get("severity", ""),
+            r.get("status", ""),
+            r.get("owner", ""),
+            r.get("due_date", ""),
+            ";".join(r.get("coa_ids", [])),
+            ";".join(r.get("coas", [])),
+            ";".join(r.get("evidence", [])),
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=cobalt_risk_register.csv"},
+    )
+
+
+# ── Cobalt Watchtower Alerts ────────────────────────────────────────────────
+
+@router.get("/cobalt/alerts/csv")
+async def export_cobalt_alerts_csv():
+    """Export Cobalt watchtower alerts as CSV."""
+    from src.analysis.mineral_supply_chains import get_mineral_by_name
+
+    mineral = get_mineral_by_name("Cobalt")
+    if not mineral:
+        raise HTTPException(status_code=404, detail="Cobalt data not found")
+    alerts = mineral.get("watchtower_alerts", [])
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Title", "Severity", "Category", "Sources", "Confidence", "COA", "Timestamp"])
+    for a in alerts:
+        writer.writerow([
+            a.get("id", ""),
+            a.get("title", ""),
+            a.get("severity", ""),
+            a.get("category", ""),
+            ";".join(a.get("sources", [])),
+            a.get("confidence", ""),
+            a.get("coa", ""),
+            a.get("timestamp", ""),
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=cobalt_alerts.csv"},
+    )
