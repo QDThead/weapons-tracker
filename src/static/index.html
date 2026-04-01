@@ -4936,24 +4936,30 @@ function initArcticGlobe() {
       creditContainer: document.createElement('div'),
     });
 
-    arcticCesiumViewer.scene.imageryLayers.addImageryProvider(
-      new Cesium.UrlTemplateImageryProvider({
-        url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png',
-        subdomains: 'abcd',
-        maximumLevel: 6,
-        credit: 'CartoDB Dark Matter',
+    // Realistic satellite imagery (Esri World Imagery — free, no key)
+    var imageryLayer = arcticCesiumViewer.scene.imageryLayers.addImageryProvider(
+      new Cesium.ArcGisMapServerImageryProvider({
+        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+        credit: 'Esri World Imagery',
       })
     );
+    // Darken satellite imagery to keep military aesthetic
+    imageryLayer.brightness = 0.6;
+    imageryLayer.contrast = 1.3;
+    imageryLayer.saturation = 0.4;
 
     var scene = arcticCesiumViewer.scene;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e1a');
     scene.globe.baseColor = Cesium.Color.fromCssColorString('#111827');
-    scene.globe.showGroundAtmosphere = false;
+    scene.globe.showGroundAtmosphere = true;
     scene.globe.enableLighting = false;
     if (scene.skyBox) scene.skyBox.show = false;
     if (scene.sun) scene.sun.show = false;
     if (scene.moon) scene.moon.show = false;
-    if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
+    if (scene.skyAtmosphere) scene.skyAtmosphere.show = true;
+    scene.skyAtmosphere.hueShift = -0.05;
+    scene.skyAtmosphere.saturationShift = -0.7;
+    scene.skyAtmosphere.brightnessShift = -0.3;
 
     // Canadian perspective looking north toward Russia
     arcticCesiumViewer.camera.setView({
