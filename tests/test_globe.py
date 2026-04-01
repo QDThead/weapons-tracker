@@ -219,10 +219,10 @@ class TestCobaltSufficiency:
 
     def test_totals_structure(self):
         totals = get_mineral_by_name("Cobalt")["sufficiency"]["totals"]
-        assert totals["steady_state_kg"] == 298
+        assert totals["steady_state_kg"] == 307
         assert totals["f35_ramp_kg"] == 740
         assert totals["direct_kg"] == 138
-        assert totals["indirect_kg"] == 160
+        assert totals["indirect_kg"] == 169
         assert totals["direct_kg"] + totals["indirect_kg"] == totals["steady_state_kg"]
 
     def test_demand_kg_sums_match_totals(self):
