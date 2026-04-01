@@ -6710,7 +6710,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 14),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []) },
+          properties: { type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1 },
         });
       });
     } else {
@@ -6749,7 +6749,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []) },
+          properties: { type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1 },
         });
       });
     } else {
@@ -7139,7 +7139,7 @@ function renderTaxonomyScorecard(scores, kpis) {
       + (s.source_count ? '<span style="font-size:7px; color:var(--text-muted); margin-left:4px;" title="' + esc((s.sources||[]).join(', ')) + '">(' + s.source_count + ' src)</span>' : '')
       + '</div>'
       + '<div style="background:rgba(255,255,255,0.04); border-radius:2px; height:4px; margin:1px 0;">'
-      + '<div style="width:' + s.score + '%; height:100%; background:' + c + '; border-radius:2px;"></div>'
+      + '<div style="width:' + s.score + '%; height:100%; background:' + c + '; opacity:' + ((s.sources && s.sources.length >= 3) ? '1.0' : (s.sources && s.sources.length >= 2) ? '0.85' : '0.6') + '; border-radius:2px;"></div>'
       + '</div>'
       + '<div style="font-size:8px; color:var(--text-muted); margin-bottom:2px;">' + esc(s.rationale) + '</div>'
       + '</div>';
@@ -7718,6 +7718,18 @@ function setupGlobeClickHandler() {
         });
         html += '</div>';
       }
+      // FOCI + Z-Score badges from dossier
+      var fociAssess = props.foci_assessment ? props.foci_assessment.getValue() : '';
+      var zScoreVal = props.z_score ? props.z_score.getValue() : -1;
+      if (fociAssess) {
+        var confColor = fociAssess === 'CRITICAL' ? '#ef4444' : fociAssess === 'HIGH' ? '#f59e0b' : fociAssess === 'LOW-MODERATE' ? '#eab308' : '#10b981';
+        html += '<div style="margin-top:6px;"><span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + confColor + '22; color:' + confColor + ';">FOCI: ' + esc(fociAssess) + '</span>';
+        if (zScoreVal >= 0) {
+          var zColor = zScoreVal > 2.99 ? '#10b981' : zScoreVal > 1.81 ? '#f59e0b' : '#ef4444';
+          html += ' <span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + zColor + '22; color:' + zColor + ';">Z: ' + zScoreVal.toFixed(1) + '</span>';
+        }
+        html += '</div>';
+      }
       // Risk taxonomy
       var risksJson = props.risks ? props.risks.getValue() : '[]';
       try {
@@ -7944,7 +7956,9 @@ function renderMineralOverview(m, container) {
   html += '</div>';
   html += '<div style="display:flex; align-items:center; gap:14px;">';
   html += '<div style="background:' + riskColor + '22; color:' + riskColor + '; padding:6px 14px; border-radius:6px; font-weight:700; font-size:13px; text-transform:uppercase;">' + esc(m.risk_level || 'unknown') + ' RISK</div>';
-  html += '<div style="text-align:center;"><div class="stat-num" style="font-size:28px; color:var(--accent);">' + (m.hhi || '--') + '</div><div style="font-size:9px; color:var(--text-dim);">HHI</div></div>';
+  var hhiVal = m.hhi_live || m.hhi || '--';
+  var hhiSource = m.hhi_source ? ' (' + esc(m.hhi_source) + ')' : '';
+  html += '<div style="text-align:center;"><div class="stat-num" style="font-size:28px; color:var(--accent);">' + (typeof hhiVal === 'number' ? hhiVal.toLocaleString() : hhiVal) + '</div><div style="font-size:9px; color:var(--text-dim);">HHI' + hhiSource + '</div></div>';
   html += '</div></div></div>';
 
   // ── Key stats row ──
@@ -8252,7 +8266,8 @@ function renderBomExplorer(m, container) {
   if (hsKeys.length > 0) {
     html += '<div style="padding-left:24px; margin-bottom:4px;">';
     hsKeys.forEach(function(hs) {
-      html += '<span style="background:rgba(0,212,255,0.08); color:var(--accent); padding:1px 6px; border-radius:3px; font-size:9px; margin-right:6px;">HS ' + esc(hs) + ': ' + esc(hsCodes[hs]) + '</span>';
+      var tradeVal = (m.hs_trade_values && m.hs_trade_values[hs]) ? ' — $' + formatDollar(m.hs_trade_values[hs]) : '';
+      html += '<span style="background:rgba(0,212,255,0.08); color:var(--accent); padding:1px 6px; border-radius:3px; font-size:9px; margin-right:6px;">HS ' + esc(hs) + ': ' + esc(hsCodes[hs]) + tradeVal + '</span>';
     });
     html += '</div>';
   }
@@ -8360,7 +8375,12 @@ function renderDossierEntity() {
   html += '<div style="font-size:11px; color:var(--text-dim);">' + esc(e.owner || '') + ' — ' + esc(e.country) + '</div>';
   var fociScore = ts.foci ? ts.foci.score : 0;
   var fociColor = fociScore >= 80 ? 'var(--accent2)' : fociScore >= 50 ? 'var(--accent4)' : 'var(--accent3)';
-  html += '<div style="margin-top:6px;"><span style="background:'+fociColor+'22; color:'+fociColor+'; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600;">FOCI: '+(ts.foci ? ts.foci.level.toUpperCase() : 'N/A')+'</span></div>';
+  html += '<div style="margin-top:6px;"><span style="background:'+fociColor+'22; color:'+fociColor+'; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600;">FOCI: '+(ts.foci ? ts.foci.level.toUpperCase() : 'N/A')+'</span>';
+  if (d.foci_assessment) {
+    var fc2 = d.foci_assessment === 'CRITICAL' ? '#ef4444' : d.foci_assessment === 'HIGH' ? '#f59e0b' : d.foci_assessment === 'LOW-MODERATE' ? '#eab308' : '#10b981';
+    html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + fc2 + '22; color:' + fc2 + '; margin-left:8px;">FOCI: ' + esc(d.foci_assessment) + ' (' + (d.foci_score || '?') + '/100)</span>';
+  }
+  html += '</div>';
   flags.forEach(function(f){ html += ' <span style="background:rgba(239,68,68,0.1); color:var(--accent2); padding:2px 6px; border-radius:3px; font-size:9px; margin-top:4px; display:inline-block;">'+esc(f)+'</span>'; });
   html += '</div>';
 
