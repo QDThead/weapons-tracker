@@ -930,8 +930,13 @@ MINERALS: list[dict] = [
              },
              "dossier": {
                  "z_score": 2.6,
+                 "z_source": "computed",
+                 "z_filing": "Huayou SSE 2024 Annual Report",
                  "insolvency_prob": 6,
                  "credit_trend": "improving",
+                 "foci_score": 92,
+                 "foci_assessment": "CRITICAL",
+                 "foci_detail": "Private but CCP-directed. DRC mining via CDM subsidiary. Vertically integrated across DRC, Indonesia, China. Subject to MOFCOM export controls.",
                  "ubo_chain": [
                      "Zhejiang Huayou Cobalt Co. Ltd (SSE:603799) — listed entity",
                      "Huayou Holding Group Co. Ltd (controlling shareholder, 23.35%)",
@@ -996,8 +1001,13 @@ MINERALS: list[dict] = [
              },
              "dossier": {
                  "z_score": 1.9,
+                 "z_source": "computed",
+                 "z_filing": "GEM Co. SZSE 2024 Annual Report",
                  "insolvency_prob": 15,
                  "credit_trend": "stable",
+                 "foci_score": 88,
+                 "foci_assessment": "CRITICAL",
+                 "foci_detail": "Private Chinese company with CCP oversight. Glencore offtake (14,400t/yr through 2029) channels Western-mined DRC cobalt through Chinese processing.",
                  "ubo_chain": [
                      "GEM Co. Ltd (SZSE:002340 / SIX Swiss Exchange) — listed entity",
                      "Prof. Xu Kaihua (founder, Chairman, actual controller)",
@@ -1062,8 +1072,13 @@ MINERALS: list[dict] = [
              },
              "dossier": {
                  "z_score": None,
+                 "z_source": "not_available_unlisted_soe",
+                 "z_filing": "Jinchuan Group is unlisted — no public financial filings",
                  "insolvency_prob": 1,
                  "credit_trend": "stable",
+                 "foci_score": 98,
+                 "foci_assessment": "CRITICAL",
+                 "foci_detail": "Highest-risk entity. Direct PRC state ownership (66% Gansu SASAC). Dec 2024 multi-SOE restructuring with CITIC/Minmetals/Zijin. Intelligence services have standing access.",
                  "ubo_chain": [
                      "Jinchuan Group Co. Ltd (parent, unlisted SOE) — HQ Jinchang, Gansu",
                      "Gansu Provincial SASAC (State-owned Assets Supervision and Administration Commission) — 66.03%",
