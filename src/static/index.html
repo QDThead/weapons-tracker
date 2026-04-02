@@ -209,6 +209,70 @@ header::after {
 /* PSI sub-pages */
 .psi-sub { }
 
+/* ── Supply Chain Overview Redesign ── */
+.ov-hero {
+  position:relative; padding:28px 32px; border-radius:14px; margin-bottom:20px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(139,92,246,0.04) 50%, rgba(239,68,68,0.05) 100%);
+  border:1px solid rgba(0,212,255,0.15);
+  overflow:hidden;
+}
+.ov-hero::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, #00d4ff 0%, #8b5cf6 40%, #ef4444 70%, #f59e0b 100%);
+  animation: ov-gradient-shift 6s ease infinite;
+}
+@keyframes ov-gradient-shift {
+  0%,100% { background-position:0% 50%; }
+  50% { background-position:100% 50%; }
+}
+.ov-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+.ov-hero-title { font-family:var(--font-display); font-size:26px; font-weight:700; color:#fff; margin:0 0 4px 0; }
+.ov-hero-sub { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
+.ov-badge-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.ov-badge { padding:3px 10px; border-radius:5px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+.ov-badge-live { background:rgba(16,185,129,0.15); color:var(--accent3); }
+.ov-badge-deep { background:rgba(0,212,255,0.15); color:var(--accent); }
+.ov-badge-risk { background:rgba(239,68,68,0.15); color:var(--accent2); }
+.ov-hero-stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.ov-stat { text-align:center; padding:12px 8px; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid rgba(255,255,255,0.04); }
+.ov-stat-val { font-family:var(--font-mono); font-size:28px; font-weight:700; line-height:1; }
+.ov-stat-label { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px; }
+.ov-conc-bar { display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:12px; }
+.ov-conc-name { width:68px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ov-conc-track { flex:1; height:20px; background:rgba(255,255,255,0.04); border-radius:4px; overflow:hidden; }
+.ov-conc-fill { height:100%; border-radius:4px; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; font-size:10px; font-weight:600; color:#fff; min-width:28px; }
+.ov-section-title { font-family:var(--font-display); font-size:15px; font-weight:600; color:var(--text); margin:0 0 14px 0; display:flex; align-items:center; gap:10px; }
+.ov-section-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg, rgba(0,212,255,0.2), transparent); }
+
+/* Minerals heatmap grid */
+.ov-heatmap { display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; margin-bottom:20px; }
+.ov-mineral-cell {
+  padding:12px 10px; border-radius:8px; cursor:pointer; text-align:center; position:relative;
+  background:var(--surface-glass); border:1px solid var(--border); transition: all 0.2s;
+}
+.ov-mineral-cell:hover { border-color:var(--accent); box-shadow:0 0 12px rgba(0,212,255,0.15); transform:translateY(-2px); }
+.ov-mineral-cell.risk-critical { border-left:3px solid var(--accent2); }
+.ov-mineral-cell.risk-high { border-left:3px solid var(--accent4); }
+.ov-mineral-cell.risk-medium { border-left:3px solid var(--accent); }
+.ov-mineral-cell.risk-low { border-left:3px solid var(--accent3); }
+.ov-mineral-cell.has-deep-data { box-shadow:inset 0 0 0 1px rgba(0,212,255,0.2); }
+.ov-mineral-cell .ov-cell-name { font-size:11px; font-weight:600; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ov-mineral-cell .ov-cell-hhi { font-family:var(--font-mono); font-size:16px; font-weight:700; }
+.ov-mineral-cell .ov-cell-meta { font-size:9px; color:var(--text-dim); margin-top:3px; }
+.ov-mineral-cell .ov-cell-china { font-size:9px; font-weight:600; }
+.ov-mineral-cell .ov-deep-dot { position:absolute; top:6px; right:6px; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px rgba(0,212,255,0.5); }
+.ov-mineral-cell .ov-readiness { position:absolute; bottom:4px; right:6px; font-size:8px; color:var(--text-dim); }
+
+/* Intel feed */
+.ov-intel-feed { max-height:280px; overflow-y:auto; }
+.ov-intel-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.ov-intel-item:last-child { border-bottom:none; }
+.ov-intel-sev { width:4px; border-radius:2px; flex-shrink:0; }
+.ov-intel-body { flex:1; min-width:0; }
+.ov-intel-title { font-size:12px; color:#fff; font-weight:500; margin-bottom:3px; }
+.ov-intel-meta { font-size:10px; color:var(--text-dim); }
+.ov-intel-src { font-size:9px; padding:1px 6px; border-radius:3px; background:rgba(255,255,255,0.06); color:var(--text-dim); }
+
 /* Network */
 #network { width: 100%; height: 500px; }
 #network svg { width: 100%; height: 100%; }
@@ -1893,56 +1957,36 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- PSI Overview -->
+    <!-- PSI Overview (Redesigned: Cobalt hero + 30-mineral heatmap + intel feed) -->
     <div id="psi-overview" class="psi-sub">
-      <!-- Global overview (hidden when mineral selected) -->
-      <div id="psi-overview-global">
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:18px;">
-          <div class="card" style="text-align:center; padding:20px;">
-            <div class="stat-label">Global Risk Score</div>
-            <div id="psi-global-score" class="stat-num" style="font-size:42px; color:var(--accent4);">--</div>
-            <div style="font-size:11px; color:var(--text-dim);">composite (0-100)</div>
-          </div>
-          <div class="card" style="text-align:center; padding:20px;">
-            <div class="stat-label">Active Alerts</div>
-            <div id="psi-alert-count" class="stat-num" style="font-size:42px; color:var(--accent2);">--</div>
-            <div style="font-size:11px; color:var(--text-dim);">supply chain disruptions</div>
-          </div>
-          <div class="card" style="text-align:center; padding:20px;">
-            <div class="stat-label">Graph Nodes</div>
-            <div id="psi-node-count" class="stat-num" style="font-size:42px; color:var(--accent);">--</div>
-            <div style="font-size:11px; color:var(--text-dim);">materials + components + platforms</div>
-          </div>
+      <div id="psi-overview-content">
+        <!-- Cobalt Hero Briefing (populated by JS) -->
+        <div id="ov-hero-container"></div>
+        <!-- 30 Minerals at a Glance -->
+        <div id="ov-heatmap-section" style="margin-bottom:20px;">
+          <h3 class="ov-section-title">30 Defence-Critical Minerals</h3>
+          <div id="ov-heatmap" class="ov-heatmap"></div>
         </div>
-
-        <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px;">
-          <!-- Risk dimensions -->
+        <!-- Two-column: Intel Feed + Risk Dimensions -->
+        <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px; margin-bottom:20px;">
           <div class="card" style="padding:18px;">
-            <h3 style="margin-bottom:14px;">Canada Risk Dimensions</h3>
-            <canvas id="psi-radar-chart" height="280" aria-label="Chart: Canada supply chain risk dimensions radar showing 6 risk factors"></canvas>
-            <!-- Radar axis labels are rendered directly on the chart -->
+            <h3 class="ov-section-title">Intelligence Feed</h3>
+            <div id="ov-intel-feed" class="ov-intel-feed">
+              <div style="color:var(--text-dim); text-align:center; padding:20px;">Loading alerts...</div>
+            </div>
           </div>
-          <!-- Top material risks -->
           <div class="card" style="padding:18px;">
-            <h3 style="margin-bottom:14px;">Critical Material Risks</h3>
-            <div id="psi-material-list" style="max-height:350px; overflow-y:auto;"></div>
+            <h3 class="ov-section-title">Canada Risk Dimensions</h3>
+            <canvas id="psi-radar-chart" height="260" aria-label="Chart: Canada supply chain risk dimensions radar showing 6 risk factors"></canvas>
           </div>
         </div>
-
-        <!-- Active alerts -->
-        <div class="card" style="padding:18px; margin-top:14px;">
-          <h3 style="margin-bottom:14px;">Active Supply Chain Alerts</h3>
-          <div id="psi-alerts-list"></div>
-        </div>
-
-        <!-- Chokepoints -->
-        <div class="card" style="padding:18px; margin-top:14px;">
-          <h3 style="margin-bottom:14px;">Strategic Chokepoint Status</h3>
+        <!-- Strategic Chokepoints -->
+        <div class="card" style="padding:18px;">
+          <h3 class="ov-section-title">Strategic Chokepoint Status</h3>
           <div id="psi-chokepoints-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;"></div>
         </div>
       </div>
-
-      <!-- Mineral-specific overview (shown when mineral selected) -->
+      <!-- Mineral-specific overview (shown when non-Cobalt mineral selected) -->
       <div id="psi-overview-mineral" style="display:none;"></div>
     </div>
 
@@ -8776,46 +8820,158 @@ async function loadSupplyChain() {
   if (psiLoaded) return;
   psiLoaded = true;
 
-  const [overviewRes, alertsRes, chokepointsRes] = await Promise.allSettled([
-    fetch(API + '/psi/overview').then(r => r.ok ? r.json() : null),
-    fetch(API + '/psi/alerts?severity_min=1').then(r => r.ok ? r.json() : null),
-    fetch(API + '/psi/chokepoints').then(r => r.ok ? r.json() : null),
+  var [overviewRes, alertsRes, chokepointsRes, mineralsRes, cobaltRes] = await Promise.allSettled([
+    fetch(API + '/psi/overview').then(function(r) { return r.ok ? r.json() : null; }),
+    fetch(API + '/psi/alerts?severity_min=1').then(function(r) { return r.ok ? r.json() : null; }),
+    fetch(API + '/psi/chokepoints').then(function(r) { return r.ok ? r.json() : null; }),
+    fetch(API + '/globe/minerals').then(function(r) { return r.ok ? r.json() : []; }),
+    fetch(API + '/globe/minerals/Cobalt').then(function(r) { return r.ok ? r.json() : null; }),
   ]);
 
-  const overview = overviewRes.status === 'fulfilled' ? overviewRes.value : null;
-  const alerts = alertsRes.status === 'fulfilled' ? alertsRes.value : [];
-  const chokepoints = chokepointsRes.status === 'fulfilled' ? chokepointsRes.value : [];
+  var overview = overviewRes.status === 'fulfilled' ? overviewRes.value : null;
+  var alerts = alertsRes.status === 'fulfilled' ? alertsRes.value : [];
+  var chokepoints = chokepointsRes.status === 'fulfilled' ? chokepointsRes.value : [];
+  var allMinerals = mineralsRes.status === 'fulfilled' ? mineralsRes.value : [];
+  var cobaltData = cobaltRes.status === 'fulfilled' ? cobaltRes.value : null;
 
-  if (overview) renderPsiOverview(overview);
-  if (alerts) renderPsiAlerts(alerts);
+  // Render new overview components
+  if (cobaltData) renderCobaltHero(cobaltData);
+  if (allMinerals.length) renderMineralsHeatmap(allMinerals);
+  if (overview) renderPsiRadarChart(overview);
+  renderIntelFeed(alerts, overview);
   if (chokepoints) renderPsiChokepoints(chokepoints);
   renderPsiRiskMatrix(alerts || []);
 
-  // If a mineral is already selected, show its overview instead of global
-  var mineral = getGlobalMineral();
-  if (mineral) onOverviewMineralChange();
+  // Default mineral dropdown to Cobalt
+  var select = document.getElementById('psi-global-mineral');
+  if (select && !select.value) {
+    for (var i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === 'Cobalt') { select.selectedIndex = i; break; }
+    }
+  }
 }
 
-function renderPsiOverview(data) {
-  document.getElementById('psi-global-score').textContent = Math.round(data.global_risk_score || 0);
-  document.getElementById('psi-alert-count').textContent = (data.active_alerts || []).length;
-  document.getElementById('psi-node-count').textContent = data.graph_stats ? data.graph_stats.nodes : 0;
+function renderCobaltHero(m) {
+  var container = document.getElementById('ov-hero-container');
+  if (!container) return;
+  var riskColor = m.risk_level === 'critical' ? 'var(--accent2)' : m.risk_level === 'high' ? 'var(--accent4)' : 'var(--accent3)';
+  var topMiner = m.mining && m.mining[0] ? m.mining[0] : {};
+  var topProcessor = m.processing && m.processing[0] ? m.processing[0] : {};
+  var mineCount = m.mines ? m.mines.length : 0;
+  var refCount = m.refineries ? m.refineries.length : 0;
+  var platformCount = m.platforms ? m.platforms.length : 0;
+  var hhiVal = m.hhi_live || m.hhi || '--';
+  var canada = m.canada || {};
 
-  // Color global score
-  const score = data.global_risk_score || 0;
-  const scoreEl = document.getElementById('psi-global-score');
-  scoreEl.style.color = score > 70 ? 'var(--accent2)' : score > 40 ? 'var(--accent4)' : 'var(--accent3)';
+  var html = '<div class="ov-hero">';
 
-  // Radar chart for risk dimensions
-  const dims = data.risk_dimensions || {};
-  const labels = Object.keys(dims).map(k => k.replace(/_/g, ' '));
-  const values = Object.values(dims);
-  const ctx = document.getElementById('psi-radar-chart').getContext('2d');
+  // Badge row
+  html += '<div class="ov-badge-row">';
+  html += '<span class="ov-badge ov-badge-deep">FULL INTELLIGENCE</span>';
+  html += '<span class="ov-badge ov-badge-risk">' + esc(m.risk_level || 'unknown').toUpperCase() + ' RISK</span>';
+  if (m.hhi_source) html += '<span class="ov-badge ov-badge-live">LIVE HHI</span>';
+  html += '</div>';
+
+  html += '<div class="ov-hero-grid">';
+
+  // Left column: title + stats
+  html += '<div>';
+  html += '<h2 class="ov-hero-title">Cobalt Supply Chain</h2>';
+  html += '<div class="ov-hero-sub">DRC dominance, Chinese refining chokepoint, 9 tracked mines, 9 refineries — the most monitored mineral in this platform.</div>';
+
+  // Key stats
+  html += '<div class="ov-hero-stats">';
+  var heroStats = [
+    { val: typeof hhiVal === 'number' ? hhiVal.toLocaleString() : hhiVal, label: 'HHI Concentration', color: 'var(--accent2)' },
+    { val: mineCount + ' / ' + refCount, label: 'Mines / Refineries', color: 'var(--accent)' },
+    { val: platformCount, label: 'CAF Platforms', color: 'var(--accent4)' },
+    { val: (topMiner.pct || 0) + '%', label: 'Top Miner (' + esc(topMiner.country || '?') + ')', color: 'var(--accent2)' },
+    { val: (topProcessor.pct || 0) + '%', label: 'Top Processor (' + esc(topProcessor.country || '?') + ')', color: 'var(--accent5)' },
+    { val: (canada.import_pct || '--') + '%', label: 'Canada Import Dep.', color: 'var(--accent4)' },
+  ];
+  heroStats.forEach(function(s) {
+    html += '<div class="ov-stat"><div class="ov-stat-val" style="color:' + s.color + ';">' + s.val + '</div><div class="ov-stat-label">' + s.label + '</div></div>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  // Right column: concentration bars
+  html += '<div>';
+  html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Mining Concentration</div>';
+  (m.mining || []).slice(0, 6).forEach(function(entry) {
+    var w = Math.max(entry.pct, 3);
+    var barColor = (entry.country === 'China' || entry.country === 'Russia') ? 'var(--accent2)' : entry.country === 'DRC' ? 'var(--accent4)' : 'var(--accent3)';
+    html += '<div class="ov-conc-bar"><div class="ov-conc-name">' + esc(entry.country) + '</div>';
+    html += '<div class="ov-conc-track"><div class="ov-conc-fill" style="width:' + w + '%;background:' + barColor + ';">' + entry.pct + '%</div></div></div>';
+  });
+  html += '<div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:12px 0 8px 0;">Refining Concentration</div>';
+  (m.processing || []).slice(0, 5).forEach(function(entry) {
+    var w = Math.max(entry.pct, 3);
+    var barColor = (entry.country === 'China' || entry.country === 'Russia') ? 'var(--accent2)' : 'var(--accent3)';
+    html += '<div class="ov-conc-bar"><div class="ov-conc-name">' + esc(entry.country) + '</div>';
+    html += '<div class="ov-conc-track"><div class="ov-conc-fill" style="width:' + w + '%;background:' + barColor + ';">' + entry.pct + '%</div></div></div>';
+  });
+  html += '</div>';
+  html += '</div>'; // end hero-grid
+
+  // Action bar
+  html += '<div style="display:flex; gap:8px; margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">';
+  html += '<button style="font-size:11px; color:var(--accent); background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-globe]\').click();">3D Supply Map</button>';
+  html += '<button style="font-size:11px; color:var(--accent4); background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-forecasting]\').click();">Forecasting</button>';
+  html += '<button style="font-size:11px; color:var(--accent3); background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-bom]\').click();">BOM Explorer</button>';
+  html += '<button style="font-size:11px; color:var(--accent5); background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-dossier]\').click();">Supplier Dossiers</button>';
+  html += '<button style="font-size:11px; color:var(--accent2); background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-alerts]\').click();">Alerts &amp; Sensing</button>';
+  html += '</div>';
+
+  html += '</div>'; // end ov-hero
+  container.innerHTML = html;
+  validationManager.attach(container, 'supply.overview');
+}
+
+function renderMineralsHeatmap(minerals) {
+  var container = document.getElementById('ov-heatmap');
+  if (!container) return;
+  // Sort: critical first, then high, medium, low
+  var riskOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  var sorted = minerals.slice().sort(function(a, b) {
+    return (riskOrder[a.risk_level] || 3) - (riskOrder[b.risk_level] || 3);
+  });
+  container.innerHTML = sorted.map(function(m) {
+    var hasDeep = m.mines && m.mines.length > 0;
+    var chinaMinePct = 0;
+    (m.mining || []).forEach(function(e) { if (e.country === 'China') chinaMinePct = e.pct; });
+    var chinaProcPct = 0;
+    (m.processing || []).forEach(function(e) { if (e.country === 'China') chinaProcPct = e.pct; });
+    var chinaMax = Math.max(chinaMinePct, chinaProcPct);
+    var chinaColor = chinaMax >= 60 ? 'var(--accent2)' : chinaMax >= 30 ? 'var(--accent4)' : 'var(--text-dim)';
+    var riskClass = 'risk-' + (m.risk_level || 'low');
+    var hhiVal = m.hhi_live || m.hhi || 0;
+    var hhiColor = hhiVal >= 5000 ? 'var(--accent2)' : hhiVal >= 2500 ? 'var(--accent4)' : 'var(--accent3)';
+    var readiness = hasDeep ? 'FULL' : (m.mining && m.mining.length > 2 ? 'BASIC' : 'SEED');
+    var readinessColor = hasDeep ? 'var(--accent3)' : readiness === 'BASIC' ? 'var(--text-dim)' : 'rgba(255,255,255,0.2)';
+    return '<div class="ov-mineral-cell ' + riskClass + (hasDeep ? ' has-deep-data' : '') + '" onclick="document.getElementById(\'psi-global-mineral\').value=\'' + esc(m.name) + '\';onOverviewMineralChange();" title="' + esc(m.name) + ' — HHI: ' + hhiVal + ', China: ' + chinaMax + '%">' +
+      (hasDeep ? '<div class="ov-deep-dot"></div>' : '') +
+      '<div class="ov-cell-name">' + esc(m.name) + '</div>' +
+      '<div class="ov-cell-hhi" style="color:' + hhiColor + ';">' + (typeof hhiVal === 'number' ? hhiVal.toLocaleString() : hhiVal) + '</div>' +
+      '<div class="ov-cell-meta">HHI</div>' +
+      (chinaMax > 0 ? '<div class="ov-cell-china" style="color:' + chinaColor + ';">CN ' + chinaMax + '%</div>' : '') +
+      '<div class="ov-readiness" style="color:' + readinessColor + ';">' + readiness + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPsiRadarChart(data) {
+  var dims = data.risk_dimensions || {};
+  var labels = Object.keys(dims).map(function(k) { return k.replace(/_/g, ' '); });
+  var values = Object.values(dims);
+  var el = document.getElementById('psi-radar-chart');
+  if (!el) return;
+  var ctx = el.getContext('2d');
   if (psiRadarChart) psiRadarChart.destroy();
   psiRadarChart = new Chart(ctx, {
     type: 'radar',
     data: {
-      labels,
+      labels: labels,
       datasets: [{
         label: 'Canada Risk',
         data: values,
@@ -8829,23 +8985,48 @@ function renderPsiOverview(data) {
       plugins: { legend: { display: false } },
     },
   });
+}
 
-  // Material risk list
-  const matEl = document.getElementById('psi-material-list');
-  const mats = data.top_material_risks || [];
-  matEl.innerHTML = mats.map(m => {
-    const color = m.scarcity_score > 70 ? 'var(--accent2)' : m.scarcity_score > 40 ? 'var(--accent4)' : 'var(--accent3)';
-    const stars = '★'.repeat(m.strategic_importance) + '☆'.repeat(5 - m.strategic_importance);
-    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
-      <div>
-        <div style="font-weight:600;">${esc(m.name)}</div>
-        <div style="font-size:11px; color:var(--text-dim);">${esc(m.category)} — CI: ${(m.concentration_index).toFixed(2)}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:18px; font-weight:700; color:${color};">${Math.round(m.scarcity_score)}</div>
-        <div style="font-size:10px; color:var(--accent4);">${stars}</div>
-      </div>
-    </div>`;
+function renderIntelFeed(alerts, overview) {
+  var container = document.getElementById('ov-intel-feed');
+  if (!container) return;
+  var items = [];
+  // Add PSI alerts
+  (alerts || []).forEach(function(a) {
+    items.push({ title: a.title, detail: a.description || a.type.replace(/_/g, ' '), severity: a.severity, source: 'PSI Alert', date: a.created_at });
+  });
+  // Add overview active alerts
+  if (overview && overview.active_alerts) {
+    overview.active_alerts.forEach(function(a) {
+      items.push({ title: a.title, detail: a.description || '', severity: a.severity, source: 'Supply Chain', date: a.created_at });
+    });
+  }
+  // Deduplicate by title
+  var seen = {};
+  items = items.filter(function(it) {
+    if (seen[it.title]) return false;
+    seen[it.title] = true;
+    return true;
+  });
+  // Sort by severity desc
+  items.sort(function(a, b) { return (b.severity || 0) - (a.severity || 0); });
+
+  if (!items.length) {
+    container.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:20px;">No active supply chain alerts. All systems nominal.</div>';
+    return;
+  }
+
+  var sevColors = { 5: '#ef4444', 4: '#f97316', 3: '#f59e0b', 2: '#00d4ff', 1: '#10b981' };
+  container.innerHTML = items.slice(0, 12).map(function(it) {
+    var color = sevColors[it.severity] || '#64748b';
+    return '<div class="ov-intel-item">' +
+      '<div class="ov-intel-sev" style="background:' + color + ';"></div>' +
+      '<div class="ov-intel-body">' +
+        '<div class="ov-intel-title">' + esc(it.title) + '</div>' +
+        '<div class="ov-intel-meta">' + esc((it.detail || '').slice(0, 120)) + '</div>' +
+        '<div style="margin-top:3px;"><span class="ov-intel-src">' + esc(it.source) + '</span></div>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -8886,14 +9067,16 @@ var overviewMineralChart = null;
 
 async function onOverviewMineralChange() {
   var mineral = getGlobalMineral();
-  var globalDiv = document.getElementById('psi-overview-global');
+  var contentDiv = document.getElementById('psi-overview-content');
   var mineralDiv = document.getElementById('psi-overview-mineral');
-  if (!mineral) {
-    globalDiv.style.display = '';
+  // Show default dashboard for Cobalt or no selection
+  if (!mineral || mineral === 'Cobalt') {
+    contentDiv.style.display = '';
     mineralDiv.style.display = 'none';
     return;
   }
-  globalDiv.style.display = 'none';
+  // Other minerals: show detail view
+  contentDiv.style.display = 'none';
   mineralDiv.style.display = '';
   mineralDiv.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:40px;">Loading ' + esc(mineral) + ' overview...</div>';
   try {
