@@ -106,6 +106,25 @@ async def ingest_sipri_transfers():
             except Exception as e:
                 logger.warning("[scheduler] SIPRI fetch failed for %s: %s", country_name, e)
 
+        # Also fetch imports for adversary and watchlist nations
+        import_countries = ["Russia", "China", "India", "Iran", "DPRK", "Saudi Arabia",
+                            "Egypt", "UAE", "Pakistan", "Algeria", "Myanmar"]
+        for country_name in import_countries:
+            code = SIPRI_COUNTRY_CODES.get(country_name)
+            if not code:
+                continue
+            try:
+                query = SIPRIQuery(
+                    buyer_country_codes=[code],
+                    low_year=2000,
+                    high_year=2025,
+                )
+                records = await client.fetch_transfers(query)
+                all_records.extend(records)
+                logger.info("[scheduler] SIPRI: fetched %d records for %s imports", len(records), country_name)
+            except Exception as e:
+                logger.warning("[scheduler] SIPRI import fetch failed for %s: %s", country_name, e)
+
         session = SessionLocal()
         try:
             svc = PersistenceService(session)
