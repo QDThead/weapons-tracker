@@ -275,15 +275,20 @@ def _compute_price_forecast(cobalt_prices: list[dict], source: str = "IMF PCOBAL
 
     # Confidence rating based on R² and data quantity
     n_quarters = len(q_prices)
-    if r_squared >= 0.7 and n_quarters >= 8:
+    # Conservative confidence: R² must be >0.3 to contribute meaningfully.
+    # Data sufficiency penalty: fewer than 6 quarters caps confidence severely.
+    r2_component = max(0, (r_squared - 0.3)) * 100  # 0-70 range
+    data_component = min(15, n_quarters * 1.5)       # 0-15 range
+    raw_score = r2_component + data_component
+    # Scale down sharply when we have fewer than 6 quarters of data
+    data_penalty = min(1.0, n_quarters / 6.0)
+    forecast_confidence_pct = int(min(85, raw_score * data_penalty))
+    if forecast_confidence_pct >= 60:
         forecast_confidence = "high"
-        forecast_confidence_pct = min(90, round(r_squared * 85 + n_quarters))
-    elif r_squared >= 0.4 and n_quarters >= 4:
+    elif forecast_confidence_pct >= 35:
         forecast_confidence = "medium"
-        forecast_confidence_pct = min(75, round(r_squared * 60 + n_quarters))
     else:
         forecast_confidence = "low"
-        forecast_confidence_pct = min(50, round(r_squared * 40 + n_quarters))
 
     return {
         "price_forecast": {

@@ -432,7 +432,7 @@ class ScenarioEngine:
                 base = base * min(duration / 365, 1.0)
             not_happening *= (1.0 - base)
         raw_likelihood = 1.0 - not_happening
-        likelihood = round(min(raw_likelihood * 2, 1.0), 2)  # Scale up to make single layers meaningful
+        likelihood = round(raw_likelihood, 2)
 
         # Risk score: composite
         supply_factor = min(supply_reduction_pct / 100, 1.0)
@@ -456,6 +456,7 @@ class ScenarioEngine:
             "risk_score": risk_score,
             "risk_rating": risk_rating,
             "likelihood": likelihood,
+            "likelihood_method": "combined_independent",
             "supply_reduction_pct": round(supply_reduction_pct, 1),
             "lead_time_increase_days": round(lead_time_days),
         }

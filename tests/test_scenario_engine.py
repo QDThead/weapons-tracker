@@ -222,3 +222,43 @@ class TestCOAGeneration:
         result = self.engine.run(layers=[], demand_surge_pct=0, time_horizon_months=12)
         layer_coa_ids = [c["id"] for c in result["coa"] if c["id"].startswith("COA-S") or c["id"].startswith("COA-R") or c["id"].startswith("COA-F")]
         assert len(layer_coa_ids) == 0
+
+
+class TestLikelihoodScaling:
+    """Verify likelihood uses raw probability without artificial scaling."""
+
+    def setup_method(self):
+        self.engine = ScenarioEngine("Cobalt")
+
+    def test_single_sanctions_layer_likelihood(self):
+        """Single sanctions layer at base 0.60 should produce ~0.60 likelihood, not ~0.96."""
+        result = self.engine.run(
+            layers=[{"type": "sanctions_expansion", "params": {"country": "China"}}],
+            demand_surge_pct=0,
+            time_horizon_months=12,
+        )
+        likelihood = result["impact"]["likelihood"]
+        assert likelihood <= 0.70, f"Likelihood {likelihood} too high — 2x scaling still active?"
+        assert likelihood >= 0.50, f"Likelihood {likelihood} too low"
+
+    def test_two_layer_compound_likelihood(self):
+        """Two layers should compound: 1 - (1-0.6)(1-0.7) = 0.88."""
+        result = self.engine.run(
+            layers=[
+                {"type": "sanctions_expansion", "params": {"country": "China"}},
+                {"type": "material_shortage", "params": {"pct": 50}},
+            ],
+            demand_surge_pct=0,
+            time_horizon_months=12,
+        )
+        likelihood = result["impact"]["likelihood"]
+        assert 0.80 <= likelihood <= 0.95, f"Expected ~0.88, got {likelihood}"
+
+    def test_likelihood_method_field_present(self):
+        """Response should include likelihood_method field."""
+        result = self.engine.run(
+            layers=[{"type": "sanctions_expansion", "params": {"country": "China"}}],
+            demand_surge_pct=0,
+            time_horizon_months=12,
+        )
+        assert result["impact"].get("likelihood_method") == "combined_independent"
