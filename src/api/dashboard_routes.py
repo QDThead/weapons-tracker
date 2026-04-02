@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from dataclasses import asdict
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 
 from src.storage.database import SessionLocal
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
@@ -185,8 +185,7 @@ def _parse_years(years: str) -> list[int]:
 
 
 # Simple in-memory cache for Comtrade data (annual data, TTL = 1 hour)
-_comtrade_cache: dict[str, tuple[float, list]] = {}
-_COMTRADE_TTL = 3600
+_comtrade_cache = TTLCache(ttl_seconds=3600, max_size=200)
 
 
 @router.get("/comtrade/exports")
@@ -196,8 +195,8 @@ async def get_comtrade_exports(
     """Get real USD arms export values from UN Comtrade (top exporters). Cached for 1 hour."""
     cache_key = f"exports:{years}"
     cached = _comtrade_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _COMTRADE_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.comtrade import ComtradeClient
@@ -217,7 +216,7 @@ async def get_comtrade_exports(
             }
             for r in records
         ]
-        _comtrade_cache[cache_key] = (time.time(), result)
+        _comtrade_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Comtrade exports fetch failed: %s", e)
@@ -232,8 +231,8 @@ async def get_comtrade_country(
     """Get UN Comtrade arms trade data for a specific country (exports + imports)."""
     cache_key = f"country:{country_name}:{years}"
     cached = _comtrade_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _COMTRADE_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.comtrade import ComtradeClient
@@ -268,7 +267,7 @@ async def get_comtrade_country(
                 for r in imports
             ],
         }
-        _comtrade_cache[cache_key] = (time.time(), result)
+        _comtrade_cache.set(cache_key, result)
         return result
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid request parameters")
@@ -279,8 +278,7 @@ async def get_comtrade_country(
 
 # ── Adversary Trade Buyer-Side Mirror ──
 
-_buyer_mirror_cache: dict[str, tuple[float, dict]] = {}
-_BUYER_MIRROR_TTL = 3600  # 1 hour
+_buyer_mirror_cache = TTLCache(ttl_seconds=3600, max_size=50)
 
 
 @router.get("/adversary-trade/buyer-mirror")
@@ -305,8 +303,8 @@ async def get_buyer_side_mirror(
     """
     cache_key = f"buyer_mirror:{seller}:{years}"
     cached = _buyer_mirror_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _BUYER_MIRROR_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     year_list = _parse_years(years)
 
@@ -379,7 +377,7 @@ async def get_buyer_side_mirror(
             "buyers": buyers_sorted,
         }
 
-        _buyer_mirror_cache[cache_key] = (time.time(), result)
+        _buyer_mirror_cache.set(cache_key, result)
         return result
 
     except HTTPException:
@@ -393,8 +391,7 @@ async def get_buyer_side_mirror(
 
 # ── Defense News RSS ──
 
-_news_cache: dict[str, tuple[float, list]] = {}
-_NEWS_TTL = 900  # 15 minutes
+_news_cache = TTLCache(ttl_seconds=900, max_size=100)
 
 
 @router.get("/news/live")
@@ -402,8 +399,8 @@ async def get_live_defense_news():
     """Get live defense news from RSS feeds. Cached for 15 minutes."""
     cache_key = "rss_news"
     cached = _news_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _NEWS_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.defense_news_rss import DefenseNewsRSSClient
@@ -453,7 +450,7 @@ async def get_live_defense_news():
         merged.sort(key=lambda x: x.get("published_at") or "", reverse=True)
         result = merged[:50]
 
-        _news_cache[cache_key] = (time.time(), result)
+        _news_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("RSS news fetch failed: %s", e)
@@ -462,8 +459,7 @@ async def get_live_defense_news():
 
 # ── DSCA Arms Sales ──
 
-_dsca_cache: dict[str, tuple[float, list]] = {}
-_DSCA_TTL = 3600  # 1 hour
+_dsca_cache = TTLCache(ttl_seconds=3600, max_size=50)
 
 
 @router.get("/dsca/recent")
@@ -471,8 +467,8 @@ async def get_recent_dsca_sales(count: int = Query(20, ge=1, le=50)):
     """Get recent US arms sale notifications from the Federal Register. Cached 1 hour."""
     cache_key = f"dsca:{count}"
     cached = _dsca_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _DSCA_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.dsca_sales import DSCASalesClient
@@ -490,7 +486,7 @@ async def get_recent_dsca_sales(count: int = Query(20, ge=1, le=50)):
             }
             for s in sales
         ]
-        _dsca_cache[cache_key] = (time.time(), result)
+        _dsca_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("DSCA fetch failed: %s", e)
@@ -499,8 +495,7 @@ async def get_recent_dsca_sales(count: int = Query(20, ge=1, le=50)):
 
 # ── US Census Monthly Trade ──
 
-_census_cache: dict[str, tuple[float, list]] = {}
-_CENSUS_TTL = 3600  # 1 hour
+_census_cache = TTLCache(ttl_seconds=3600, max_size=50)
 
 
 @router.get("/census/monthly")
@@ -508,8 +503,8 @@ async def get_us_monthly_arms_trade():
     """Get monthly US arms trade data (HS 93) from Census Bureau. Cached 1 hour."""
     cache_key = "census_monthly"
     cached = _census_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _CENSUS_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.census_trade import CensusTradeClient
@@ -539,7 +534,7 @@ async def get_us_monthly_arms_trade():
         result["latest_month"] = max(result["months"].keys()) if result["months"] else None
         result["total_records"] = len(exports)
 
-        _census_cache[cache_key] = (time.time(), result)
+        _census_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Census trade fetch failed: %s", e)
@@ -548,8 +543,7 @@ async def get_us_monthly_arms_trade():
 
 # ── NATO Defence Expenditure ──
 
-_nato_cache: dict[str, tuple[float, list]] = {}
-_NATO_TTL = 86400  # 24 hours (annual data)
+_nato_cache = TTLCache(ttl_seconds=86400, max_size=50)
 
 
 @router.get("/nato/spending")
@@ -566,8 +560,8 @@ async def get_nato_spending(
     """
     cache_key = f"nato:{country}:{year}:{include_aggregates}"
     cached = _nato_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _NATO_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.nato_spending import NATOSpendingClient
@@ -599,7 +593,7 @@ async def get_nato_spending(
             for r in filtered
         ]
 
-        _nato_cache[cache_key] = (time.time(), result)
+        _nato_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("NATO spending fetch failed: %s", e)
@@ -608,8 +602,7 @@ async def get_nato_spending(
 
 # ── UK HMRC Arms Trade ──
 
-_hmrc_cache: dict[str, tuple[float, list | dict]] = {}
-_HMRC_TTL = 3600  # 1 hour
+_hmrc_cache = TTLCache(ttl_seconds=3600, max_size=50)
 
 
 @router.get("/uk-trade/monthly")
@@ -622,8 +615,8 @@ async def get_uk_monthly_arms_trade(
     """Get monthly UK arms trade data (HS 93) from HMRC Trade Info. Cached 1 hour."""
     cache_key = f"hmrc_monthly:{months}"
     cached = _hmrc_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _HMRC_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.uk_hmrc_trade import UKHMRCTradeClient
@@ -662,7 +655,7 @@ async def get_uk_monthly_arms_trade(
             "total_records": len(records),
         }
 
-        _hmrc_cache[cache_key] = (time.time(), result)
+        _hmrc_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("HMRC UK trade fetch failed: %s", e)
@@ -671,8 +664,7 @@ async def get_uk_monthly_arms_trade(
 
 # ── Eurostat EU Arms Trade ──
 
-_eurostat_cache: dict[str, tuple[float, dict]] = {}
-_EUROSTAT_TTL = 3600  # 1 hour
+_eurostat_cache = TTLCache(ttl_seconds=3600, max_size=50)
 
 
 @router.get("/eu-trade/monthly")
@@ -696,8 +688,8 @@ async def get_eu_monthly_arms_trade(
     """Get monthly EU arms trade data (HS 93) from Eurostat Comext. Cached 1 hour."""
     cache_key = f"eurostat:{reporters}:{start}:{end}"
     cached = _eurostat_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _EUROSTAT_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.eurostat_trade import EurostatTradeClient
@@ -756,7 +748,7 @@ async def get_eu_monthly_arms_trade(
             "total_records": len(records),
         }
 
-        _eurostat_cache[cache_key] = (time.time(), result)
+        _eurostat_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Eurostat EU trade fetch failed: %s", e)
@@ -771,8 +763,7 @@ async def get_eu_monthly_arms_trade(
 
 # ── Statistics Canada Arms Trade ──
 
-_statcan_cache: dict[str, tuple[float, dict]] = {}
-_STATCAN_TTL = 86400  # 24 hours (large bulk download, monthly updates)
+_statcan_cache = TTLCache(ttl_seconds=86400, max_size=50)
 
 
 @router.get("/canada-trade/monthly")
@@ -791,8 +782,8 @@ async def get_canada_monthly_arms_trade(
 
     cache_key = f"statcan:{year}"
     cached = _statcan_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _STATCAN_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.statcan_trade import StatCanTradeClient
@@ -831,7 +822,7 @@ async def get_canada_monthly_arms_trade(
             "total_records": len(records),
         }
 
-        _statcan_cache[cache_key] = (time.time(), result)
+        _statcan_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("StatCan Canada trade fetch failed: %s", e)
@@ -846,8 +837,7 @@ async def get_canada_monthly_arms_trade(
 
 # ── Russian / Chinese Military Flight Pattern Analysis ──
 
-_flight_analysis_cache: dict[str, tuple[float, dict]] = {}
-_FLIGHT_ANALYSIS_TTL = 300  # 5 minutes
+_flight_analysis_cache = TTLCache(ttl_seconds=300, max_size=20)
 
 
 @router.get("/flights/analysis")
@@ -862,8 +852,8 @@ async def get_flight_pattern_analysis():
     """
     cache_key = "flight_analysis"
     cached = _flight_analysis_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _FLIGHT_ANALYSIS_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.flight_tracker import FlightTrackerClient
@@ -877,7 +867,7 @@ async def get_flight_pattern_analysis():
 
         result = asdict(analysis)
 
-        _flight_analysis_cache[cache_key] = (time.time(), result)
+        _flight_analysis_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Flight pattern analysis failed: %s", e)
@@ -886,8 +876,7 @@ async def get_flight_pattern_analysis():
 
 # ── Arms Sanctions & Embargoes ──
 
-_sanctions_cache: dict[str, tuple[float, list | dict]] = {}
-_SANCTIONS_TTL = 3600  # 1 hour for live SDN/EU data; embargo list is instant
+_sanctions_cache = TTLCache(ttl_seconds=3600, max_size=100)
 
 
 @router.get("/sanctions/embargoes")
@@ -937,8 +926,8 @@ async def get_ofac_sdn_defense_entities():
     """
     cache_key = "ofac_sdn"
     cached = _sanctions_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _SANCTIONS_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.sanctions import SanctionsClient
@@ -954,7 +943,7 @@ async def get_ofac_sdn_defense_entities():
             }
             for e in entities
         ]
-        _sanctions_cache[cache_key] = (time.time(), result)
+        _sanctions_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("OFAC SDN fetch failed: %s", e)
@@ -970,8 +959,8 @@ async def get_eu_sanctions_defense_entities():
     """
     cache_key = "eu_sanctions"
     cached = _sanctions_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _SANCTIONS_TTL:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     try:
         from src.ingestion.sanctions import SanctionsClient
@@ -987,7 +976,7 @@ async def get_eu_sanctions_defense_entities():
             }
             for e in entries
         ]
-        _sanctions_cache[cache_key] = (time.time(), result)
+        _sanctions_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("EU sanctions fetch failed: %s", e)
