@@ -8842,6 +8842,13 @@ async function loadSupplyChain() {
   if (chokepoints) renderPsiChokepoints(chokepoints);
   renderPsiRiskMatrix(alerts || []);
 
+  // Attach source validation panels to overview cards
+  validationManager.attach(document.getElementById('ov-hero-container'), 'supply.overview');
+  validationManager.attach(document.getElementById('ov-heatmap-section'), 'supply.hhi');
+  validationManager.attach(document.getElementById('ov-intel-feed').closest('.card'), 'supply.alerts');
+  validationManager.attach(document.getElementById('psi-radar-chart').closest('.card'), 'supply.risk_factors');
+  validationManager.attach(document.getElementById('psi-chokepoints-list').closest('.card'), 'supply.chokepoints');
+
   // Default mineral dropdown to Cobalt
   var select = document.getElementById('psi-global-mineral');
   if (select && !select.value) {
