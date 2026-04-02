@@ -33,7 +33,7 @@ async def generate_gdelt_alerts() -> list[dict]:
     connector = GDELTArmsNewsClient()
     alerts: list[dict] = []
 
-    for query in COBALT_GDELT_QUERIES[:4]:
+    for query in COBALT_GDELT_QUERIES:
         try:
             articles = await connector.search_articles(
                 query=query, timespan="1440", max_records=5
@@ -196,6 +196,31 @@ def _suggest_coa(title: str) -> str:
     return "Monitor situation; assess impact on Canadian defence supply chain"
 
 
+def _apply_aging(alert: dict) -> dict | None:
+    """Apply age-based severity demotion to an alert.
+
+    Returns None if alert should be excluded (>90 days old).
+    """
+    ts_str = alert.get("timestamp", "")
+    try:
+        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return alert  # Can't parse — keep as-is
+
+    age_days = (datetime.now(timezone.utc) - ts).days
+
+    if age_days > 90:
+        return None
+    elif age_days > 30:
+        alert = {**alert, "severity": min(alert.get("severity", 1), 1), "aged": True}
+    elif age_days > 7:
+        alert = {**alert, "severity": max(1, alert.get("severity", 1) - 1), "aged": True}
+
+    return alert
+
+
 async def run_cobalt_alert_engine() -> list[dict]:
     """Main entry point — run both GDELT and rule-based alert generation."""
     global _cached_alerts, _cache_timestamp
@@ -211,11 +236,17 @@ async def run_cobalt_alert_engine() -> list[dict]:
             seen.add(key)
             deduped.append(a)
 
-    logger.info("Cobalt Alert Engine: %d total (%d GDELT, %d rules, %d deduped)",
-                len(all_alerts), len(gdelt_alerts), len(rule_alerts), len(deduped))
-    _cached_alerts = deduped
-    _cache_timestamp = datetime.utcnow()
-    return deduped
+    aged: list[dict] = []
+    for a in deduped:
+        result = _apply_aging(a)
+        if result is not None:
+            aged.append(result)
+
+    logger.info("Cobalt Alert Engine: %d total (%d GDELT, %d rules, %d deduped, %d after aging)",
+                len(all_alerts), len(gdelt_alerts), len(rule_alerts), len(deduped), len(aged))
+    _cached_alerts = aged
+    _cache_timestamp = datetime.now(timezone.utc)
+    return aged
 
 
 def get_cached_alerts() -> tuple[list[dict], datetime | None]:
