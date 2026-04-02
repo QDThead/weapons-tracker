@@ -27,13 +27,11 @@ COMEXT_SDMX_BASE = (
     "/data/DS-045409"
 )
 
-# Top EU arms-exporting countries (ISO 2-letter codes used by Comext)
-DEFAULT_REPORTERS = ["DE", "FR", "IT", "ES", "NL", "SE"]
-
-# All EU reporters available for broader queries
-ALL_EU_REPORTERS = [
-    "DE", "FR", "IT", "ES", "NL", "SE", "PL", "BE", "CZ", "FI",
-    "AT", "GR", "RO", "BG", "PT", "HU", "DK",
+# All 27 EU member states (ISO 2-letter codes used by Comext)
+DEFAULT_REPORTERS = [
+    "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+    "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
+    "PL", "PT", "RO", "SK", "SI", "ES", "SE",
 ]
 
 # Flow codes

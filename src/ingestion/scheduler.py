@@ -56,7 +56,7 @@ async def ingest_gdelt_news():
     """Fetch and store latest arms trade news."""
     try:
         client = GDELTArmsNewsClient()
-        articles = await client.fetch_latest_arms_news(timespan_minutes=30, max_per_query=25)
+        articles = await client.fetch_latest_arms_news(timespan_minutes=30, max_per_query=100)
 
         session = SessionLocal()
         try:
