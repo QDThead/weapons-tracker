@@ -2393,6 +2393,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
     <!-- Summary Stats -->
     <div class="compliance-summary" id="compliance-summary"></div>
+    <div id="compliance-freshness" style="padding:8px 16px;font-size:0.82rem;font-family:var(--font-mono);"></div>
 
     <!-- Filter tabs -->
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
@@ -12047,6 +12048,23 @@ function renderCompliance() {
       '<div class="cs-num" style="color:var(--accent5);">' + COMPLIANCE_EXTRAS.length + '</div>' +
       '<div class="cs-label">Beyond Contract</div>' +
     '</div>';
+
+  // Cobalt data freshness
+  fetch('/validation/health').then(function(r) { return r.json(); }).then(function(health) {
+    var freshRow = document.getElementById('compliance-freshness');
+    if (!freshRow) return;
+    var keys = ['imf_cobalt', 'bgs_minerals', 'gdelt_news', 'comtrade'];
+    var labels = {'imf_cobalt':'IMF PCOBALT', 'bgs_minerals':'BGS Minerals', 'gdelt_news':'GDELT News', 'comtrade':'UN Comtrade'};
+    var html = '<span style="color:var(--text-dim);margin-right:12px;">Cobalt Data Freshness:</span>';
+    keys.forEach(function(k) {
+      var h = health[k] || {};
+      var ts = h.last_fetch || h.last_updated || 'N/A';
+      if (ts && ts.length > 10) ts = ts.substring(0, 10);
+      var color = h.status === 'ok' ? 'var(--accent3)' : 'var(--accent4)';
+      html += '<span style="margin-right:16px;"><span style="color:' + color + ';">\u25CF</span> ' + (labels[k]||k) + ' <span style="color:var(--text-dim);">(' + esc(ts) + ')</span></span>';
+    });
+    freshRow.innerHTML = html;
+  }).catch(function() {});
 
   // Render question cards
   var content = document.getElementById('compliance-content');
