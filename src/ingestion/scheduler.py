@@ -4,13 +4,28 @@ Runs each data connector on its natural update cadence and persists
 results to the database.
 
 Schedule:
-  - GDELT arms news:       every 15 minutes
-  - Military flights:      every 5 minutes
-  - Maritime vessels:       every 5 minutes
-  - SIPRI transfers:       daily (checks for new annual data)
-  - World Bank indicators: daily
-  - SIPRI Top 100:         daily
-  - PSI supply chain seed: weekly (refreshes BOM + material data)
+  - Military flights:       every 5 minutes
+  - GDELT arms news:        every 15 minutes
+  - Cobalt alert engine:    every 30 minutes
+  - Defense News RSS:       every 30 minutes
+  - GC Defence News:        every 30 minutes
+  - NATO News:              hourly
+  - Arctic OSINT:           every 2 hours
+  - NORAD News:             every 6 hours
+  - Taxonomy scoring:       every 6 hours
+  - SIPRI transfers:        daily 2 AM
+  - World Bank indicators:  daily 3 AM
+  - Cobalt feeds (7 src):   daily 5 AM
+  - Canadian Sanctions:     daily 6 AM
+  - OFAC SDN:               daily 6:30 AM
+  - Parliament NDDN:        daily 8 AM
+  - Trade data (4 nations): weekly Monday 2-3 AM
+  - CIA Factbook:           weekly Monday 3 AM
+  - DND procurement:        weekly Sunday 2 AM
+  - Supplier enrichment:    weekly Sunday 3 AM
+  - PSI supply chain:       weekly Sunday 4 AM
+  - Supplier scoring:       weekly Sunday 5 AM
+  - Comtrade cobalt:        monthly 1st 6 AM
 """
 
 from __future__ import annotations
@@ -327,6 +342,84 @@ async def ingest_parliament_nddn():
         logger.error("[scheduler] Parliament NDDN ingestion failed: %s", e)
 
 
+async def ingest_census_trade():
+    """Fetch US Census monthly arms trade (HS Chapter 93)."""
+    try:
+        from src.ingestion.census_trade import CensusTradeClient
+        client = CensusTradeClient()
+        exports = await client.fetch_us_exports()
+        imports = await client.fetch_us_imports()
+        logger.info("[scheduler] US Census Trade: %d export + %d import records", len(exports), len(imports))
+    except Exception as e:
+        logger.error("[scheduler] US Census Trade ingestion failed: %s", e)
+
+
+async def ingest_uk_hmrc_trade():
+    """Fetch UK HMRC monthly arms trade (OData API)."""
+    try:
+        from src.ingestion.uk_hmrc_trade import UKHMRCTradeClient
+        client = UKHMRCTradeClient()
+        records = await client.fetch_uk_arms_trade()
+        logger.info("[scheduler] UK HMRC Trade: fetched %d records", len(records))
+    except Exception as e:
+        logger.error("[scheduler] UK HMRC Trade ingestion failed: %s", e)
+
+
+async def ingest_eurostat_trade():
+    """Fetch Eurostat EU monthly arms trade (Comext SDMX)."""
+    try:
+        from src.ingestion.eurostat_trade import EurostatTradeClient
+        client = EurostatTradeClient()
+        records = await client.fetch_eu_arms_trade()
+        logger.info("[scheduler] Eurostat Trade: fetched %d records", len(records))
+    except Exception as e:
+        logger.error("[scheduler] Eurostat Trade ingestion failed: %s", e)
+
+
+async def ingest_statcan_trade():
+    """Fetch Statistics Canada monthly arms trade (CIMT)."""
+    try:
+        from src.ingestion.statcan_trade import StatCanTradeClient
+        client = StatCanTradeClient()
+        records = await client.fetch_canada_arms_trade()
+        logger.info("[scheduler] StatCan Trade: fetched %d records", len(records))
+    except Exception as e:
+        logger.error("[scheduler] StatCan Trade ingestion failed: %s", e)
+
+
+async def ingest_defense_news_rss():
+    """Fetch defense news from 4 RSS feeds."""
+    try:
+        from src.ingestion.defense_news_rss import DefenseNewsRSSClient
+        client = DefenseNewsRSSClient()
+        articles = await client.fetch_all_feeds()
+        logger.info("[scheduler] Defense News RSS: fetched %d articles", len(articles))
+    except Exception as e:
+        logger.error("[scheduler] Defense News RSS ingestion failed: %s", e)
+
+
+async def ingest_sanctions_ofac():
+    """Fetch OFAC SDN sanctions list."""
+    try:
+        from src.ingestion.sanctions import SanctionsClient
+        client = SanctionsClient()
+        entries = await client.fetch_ofac_sdn_list()
+        logger.info("[scheduler] OFAC SDN: fetched %d entries", len(entries))
+    except Exception as e:
+        logger.error("[scheduler] OFAC SDN ingestion failed: %s", e)
+
+
+async def ingest_cia_factbook():
+    """Fetch CIA World Factbook military data for key nations."""
+    try:
+        from src.ingestion.cia_factbook import CIAFactbookClient
+        client = CIAFactbookClient()
+        records = await client.fetch_military_data()
+        logger.info("[scheduler] CIA Factbook: fetched %d country records", len(records))
+    except Exception as e:
+        logger.error("[scheduler] CIA Factbook ingestion failed: %s", e)
+
+
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the ingestion scheduler."""
     scheduler = AsyncIOScheduler()
@@ -501,6 +594,71 @@ def create_scheduler() -> AsyncIOScheduler:
         trigger=CronTrigger(day=1, hour=6, minute=0),
         id="comtrade_cobalt",
         name="Comtrade cobalt bilateral flows",
+        max_instances=1,
+    )
+
+    # ── Trade data feeds (weekly Monday, staggered to avoid concurrent load) ──
+
+    scheduler.add_job(
+        ingest_census_trade,
+        trigger=CronTrigger(day_of_week="mon", hour=2, minute=0),
+        id="census_trade",
+        name="US Census monthly arms trade",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_uk_hmrc_trade,
+        trigger=CronTrigger(day_of_week="mon", hour=2, minute=15),
+        id="uk_hmrc_trade",
+        name="UK HMRC monthly arms trade",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_eurostat_trade,
+        trigger=CronTrigger(day_of_week="mon", hour=2, minute=30),
+        id="eurostat_trade",
+        name="Eurostat EU monthly arms trade",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_statcan_trade,
+        trigger=CronTrigger(day_of_week="mon", hour=2, minute=45),
+        id="statcan_trade",
+        name="Statistics Canada monthly arms trade",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_defense_news_rss,
+        trigger=IntervalTrigger(minutes=30),
+        id="defense_news_rss",
+        name="Defense News RSS (4 feeds)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_sanctions_ofac,
+        trigger=CronTrigger(hour=6, minute=30),
+        id="ofac_sdn",
+        name="OFAC SDN sanctions list",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        ingest_cia_factbook,
+        trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
+        id="cia_factbook",
+        name="CIA World Factbook military data",
+        replace_existing=True,
         max_instances=1,
     )
 
