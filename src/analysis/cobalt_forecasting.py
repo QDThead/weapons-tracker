@@ -526,6 +526,9 @@ def _store_forecast_snapshot(
         ],
     }
     existing.append(snapshot)
+    # Keep only last 1000 snapshots to prevent unbounded growth
+    if len(existing) > 1000:
+        existing = existing[-1000:]
 
     with open(path, "w") as f:
         json.dump(existing, f, indent=2)

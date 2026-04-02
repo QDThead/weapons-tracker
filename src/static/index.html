@@ -149,7 +149,7 @@ header::after {
 .nav-tab-dropdown { position: relative; display: inline-block; }
 .nav-dropdown-menu {
   display: none; position: absolute; top: 100%; left: 0; z-index: 50;
-  background: var(--surface-glass); backdrop-filter: blur(16px);
+  background: var(--surface-glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border: 1px solid var(--border); border-radius: 8px;
   min-width: 220px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   padding-top: 4px;
@@ -1086,7 +1086,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .suf-preset:hover { color: var(--text); }
 .suf-preset.active { color: var(--accent); font-weight: 600; }
 .suf-coa-card {
-  background: var(--surface-glass); backdrop-filter: blur(16px);
+  background: var(--surface-glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border: 1px solid var(--border); border-radius: 8px; padding: 10px;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
@@ -1141,6 +1141,24 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   .ca-metrics { grid-template-columns: 1fr; }
   .arctic-metrics { grid-template-columns: 1fr; }
   .arctic-full { grid-template-columns: 1fr; }
+}
+/* Keyboard focus states — WCAG 2.1 AA */
+.btn-primary:focus-visible,
+.bom-validate-btn:focus-visible,
+.feeds-refresh-btn:focus-visible,
+.compliance-filter:focus-visible,
+.cc-view-btn:focus-visible,
+.extra-view-btn:focus-visible,
+.nav-tab:focus-visible,
+.psi-tab-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.news-item a:focus-visible,
+.arctic-news-item a:focus-visible,
+.ins-country-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 </style>
 </head>

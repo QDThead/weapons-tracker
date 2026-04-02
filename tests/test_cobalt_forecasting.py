@@ -88,3 +88,19 @@ class TestForecastSnapshot:
             with open(path) as f:
                 data = json.load(f)
             assert len(data) == 2
+
+
+class TestForecastSnapshotCap:
+    def test_snapshot_capped_at_1000(self):
+        from src.analysis.cobalt_forecasting import _store_forecast_snapshot
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "forecast_history.json")
+            existing = [{"snapshot_date": f"2026-01-{i % 28 + 1:02d}", "price_forecast": {}, "predictions": []} for i in range(999)]
+            with open(path, "w") as f:
+                json.dump(existing, f)
+            forecast = {"price_forecast": {"r_squared": 0.5}, "price_history": []}
+            _store_forecast_snapshot(forecast, path=path)
+            _store_forecast_snapshot(forecast, path=path)
+            with open(path) as f:
+                data = json.load(f)
+            assert len(data) == 1000
