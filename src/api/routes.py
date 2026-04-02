@@ -6,6 +6,8 @@ trade indicators, arms trade news, and live delivery tracking.
 
 from __future__ import annotations
 
+import os
+
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
@@ -23,6 +25,13 @@ router = APIRouter(tags=["Core"])
 @router.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@router.get("/config/map-key")
+async def get_map_key():
+    """Return the Google Maps API key for frontend globe rendering."""
+    key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+    return {"key": key}
 
 
 # --- Arms Transfers (SIPRI) ---

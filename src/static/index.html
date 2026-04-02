@@ -551,11 +551,11 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .bom-val-panel .bvp-conf { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-weight:600; }
 .bom-val-panel .bvp-note { margin-top:4px; color:var(--text-dim); font-style:italic; }
 /* --- Universal Source Validation Panels --- */
-.val-trigger{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.04);transition:background 0.2s;}
+.val-trigger{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-top:1px solid rgba(0,212,255,0.15);margin-top:12px;background:rgba(0,212,255,0.04);border-radius:0 0 8px 8px;transition:background 0.2s;}
 .val-trigger:hover{background:rgba(0,212,255,0.03);}
 .val-trigger .val-chev{color:rgba(0,212,255,0.6);font-size:11px;transition:transform 0.2s;}
 .val-trigger.open .val-chev{transform:rotate(90deg);}
-.val-trigger .val-label{color:rgba(0,212,255,0.6);font-size:11px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;}
+.val-trigger .val-label{color:rgba(0,212,255,0.8);font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
 .val-trigger .val-badge{font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:auto;}
 .val-badge-HIGH{background:rgba(16,185,129,0.12);color:rgba(16,185,129,0.8);}
 .val-badge-MEDIUM{background:rgba(245,158,11,0.12);color:rgba(245,158,11,0.8);}
@@ -1312,46 +1312,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- Section 3: NORTHERN APPROACHES -->
-    <div class="briefing-section">
-      <div class="briefing-header">
-        <span class="section-num">3</span>
-        <h2>Northern Approaches</h2>
-      </div>
-      <div class="card">
-        <div class="briefing-context threat" id="arctic-context">
-          Canada's Arctic sovereignty depends on monitoring military activity across the polar region.
-          Russian and Chinese military flights near Canadian airspace and the CADIZ (Canadian Air Defence Identification Zone) are tracked here in near real-time.
-          Increased adversary presence signals potential escalation or intelligence-gathering operations.
-        </div>
-        <div class="arctic-full">
-          <div id="insights-arctic-map" style="height:450px;border-radius:8px;overflow:hidden;" aria-label="Arctic military flight activity map showing Russian and Chinese aircraft near Canadian airspace"></div>
-          <div class="arctic-stats-panel">
-            <div class="arctic-kpi">
-              <div class="num warn" id="ins-arctic-russian">-</div>
-              <div class="desc">Russian military aircraft scanned</div>
-            </div>
-            <div class="arctic-kpi">
-              <div class="num warn" id="ins-arctic-chinese">-</div>
-              <div class="desc">Chinese military aircraft scanned</div>
-            </div>
-            <div class="arctic-kpi">
-              <div class="num ok" id="ins-arctic-allied">-</div>
-              <div class="desc">Allied military aircraft in Arctic</div>
-            </div>
-            <div class="arctic-kpi">
-              <div class="num neutral" id="ins-arctic-suspicious">-</div>
-              <div class="desc">Suspicious route detections</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 4: ADVERSARY ARMS FLOWS -->
+    <!-- Section 3: ADVERSARY ARMS FLOWS -->
     <div class="briefing-section" data-val-key="insights.adversary">
       <div class="briefing-header">
-        <span class="section-num">4</span>
+        <span class="section-num">3</span>
         <h2>Adversary Arms Flows</h2>
       </div>
       <div class="grid grid-2">
@@ -1372,10 +1336,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- Section 5: CANADA'S POSITION -->
+    <!-- Section 4: CANADA'S POSITION -->
     <div class="briefing-section">
       <div class="briefing-header">
-        <span class="section-num">5</span>
+        <span class="section-num">4</span>
         <h2>Canada's Position</h2>
       </div>
       <div class="grid grid-2">
@@ -1393,10 +1357,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- Section 6: SHIFTING ALLIANCES -->
+    <!-- Section 5: SHIFTING ALLIANCES -->
     <div class="briefing-section" data-val-key="insights.alliances">
       <div class="briefing-header">
-        <span class="section-num">6</span>
+        <span class="section-num">5</span>
         <h2>Shifting Alliances</h2>
       </div>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Detected countries changing their primary arms supplier — a leading indicator of geopolitical realignment.</p>
@@ -1418,10 +1382,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       </div>
     </div>
 
-    <!-- Section 7: WHAT TO WATCH -->
+    <!-- Section 6: WHAT TO WATCH -->
     <div class="briefing-section">
       <div class="briefing-header">
-        <span class="section-num">7</span>
+        <span class="section-num">6</span>
         <h2>What to Watch</h2>
       </div>
       <div class="grid grid-2">
@@ -2474,8 +2438,6 @@ const intelligenceCache = {
   }
 };
 let arcticRefreshTimer = null;  // Arctic tab flight auto-refresh
-let insightsArcticMap = null;
-let insightsArcticMarkers = [];
 
 // ── Language toggle (EN / FR) ──────────────────────────────────────
 let currentLanguage = 'en';
@@ -2704,16 +2666,20 @@ var validationManager = (function() {
 
   return {
     init: async function() {
+      console.log('[ValidationManager] init started');
       try {
         var resp = await fetch('/validation/sources');
+        console.log('[ValidationManager] /validation/sources status:', resp.status);
         if (resp.ok) {
           var data = await resp.json();
           _registry = data.registry || {};
+          console.log('[ValidationManager] registry loaded, keys:', Object.keys(_registry).length);
         }
-      } catch (e) { _registry = {}; }
+      } catch (e) { console.error('[ValidationManager] init error:', e); _registry = {}; }
       await _fetchHealth();
       if (_healthInterval) clearInterval(_healthInterval);
       _healthInterval = setInterval(_fetchHealth, 60000);
+      console.log('[ValidationManager] init complete');
     },
     toggle: function(id) {
       var trigger = document.getElementById('vt-' + id);
@@ -2724,16 +2690,19 @@ var validationManager = (function() {
     attach: function(element, key) {
       if (!element || !key) return;
       var entry = _resolve(key);
-      if (!entry) return;
+      if (!entry) { console.warn('[ValidationManager] no registry entry for key:', key); return; }
       if (element.querySelector('.val-trigger')) return;
       var wrapper = document.createElement('div');
       wrapper.innerHTML = _renderPanel(entry);
       while (wrapper.firstChild) {
         element.appendChild(wrapper.firstChild);
       }
+      console.log('[ValidationManager] attached panel for:', key);
     },
     attachAll: function() {
-      document.querySelectorAll('[data-val-key]').forEach(function(el) {
+      var elements = document.querySelectorAll('[data-val-key]');
+      console.log('[ValidationManager] attachAll: found', elements.length, 'elements with data-val-key');
+      elements.forEach(function(el) {
         var key = el.getAttribute('data-val-key');
         if (key) validationManager.attach(el, key);
       });
@@ -2926,50 +2895,56 @@ async function loadComtrade() {
 
     // Bar chart: top exporters by total USD
     const sorted = Object.entries(byCountry).sort((a, b) => b[1] - a[1]);
-    destroyChart('comtrade-chart');
-    chartInstances['comtrade-chart'] = new Chart(document.getElementById('comtrade-chart'), {
-      type: 'bar',
-      data: {
-        labels: sorted.map(([c]) => c),
-        datasets: [{
-          label: 'Arms Exports (USD)',
-          data: sorted.map(([, v]) => v / 1e9),
-          backgroundColor: '#10b98188',
-          borderColor: '#10b981',
-          borderWidth: 1,
-        }],
-      },
-      options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { x: { title: { display: true, text: 'USD (billions)' } } },
-      },
-    });
+    var comtradeEl = document.getElementById('comtrade-chart');
+    if (comtradeEl) {
+      destroyChart('comtrade-chart');
+      chartInstances['comtrade-chart'] = new Chart(comtradeEl, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(([c]) => c),
+          datasets: [{
+            label: 'Arms Exports (USD)',
+            data: sorted.map(([, v]) => v / 1e9),
+            backgroundColor: '#10b98188',
+            borderColor: '#10b981',
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { title: { display: true, text: 'USD (billions)' } } },
+        },
+      });
+    }
 
     // Trend chart: top 5 exporters over time
     const top5 = sorted.slice(0, 5).map(([c]) => c);
     const years = [2020, 2021, 2022, 2023];
     const trendColors = ['#00d4ff', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
-    destroyChart('comtrade-trend-chart');
-    chartInstances['comtrade-trend-chart'] = new Chart(document.getElementById('comtrade-trend-chart'), {
-      type: 'line',
-      data: {
-        labels: years,
-        datasets: top5.map((country, i) => ({
-          label: country,
-          data: years.map(y => (byCountryYear[country + '|' + y] || 0) / 1e9),
-          borderColor: trendColors[i],
-          backgroundColor: trendColors[i],
-          pointRadius: 4,
-          tension: 0.3,
-        })),
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: { y: { title: { display: true, text: 'USD (billions)' } } },
-        plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } },
-      },
-    });
+    var comtradeTrendEl = document.getElementById('comtrade-trend-chart');
+    if (comtradeTrendEl) {
+      destroyChart('comtrade-trend-chart');
+      chartInstances['comtrade-trend-chart'] = new Chart(comtradeTrendEl, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: top5.map((country, i) => ({
+            label: country,
+            data: years.map(y => (byCountryYear[country + '|' + y] || 0) / 1e9),
+            borderColor: trendColors[i],
+            backgroundColor: trendColors[i],
+            pointRadius: 4,
+            tension: 0.3,
+          })),
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { title: { display: true, text: 'USD (billions)' } } },
+          plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } },
+        },
+      });
+    }
   } catch (e) {
     console.error('Comtrade load error:', e);
   }
@@ -3871,7 +3846,6 @@ async function loadInsights() {
     const sitReport = insightsData.situation_report || {};
     renderInsightsAlerts(insightsData.canada_alerts || []);
     renderSitRep(sitReport, flightData, natoData, embargoes);
-    renderNorthernApproaches(flightData);
     renderAdversaryFlows(russiaMirror, chinaMirror);
     renderCanadaTradePosition(canadaTrade, natoData);
     renderShiftingAlliancesNew(insightsData.supplier_shifts || [], insightsData.emerging_relationships || [], insightsData.fading_relationships || []);
@@ -4010,89 +3984,7 @@ function renderSitRep(sitReport, flightData, natoData, embargoes) {
   ).join('');
 }
 
-// ── Section 3: Northern Approaches ──
-function renderNorthernApproaches(flightData) {
-  // Init Leaflet map
-  if (!insightsArcticMap) {
-    insightsArcticMap = L.map('insights-arctic-map', { zoomControl: true, attributionControl: false }).setView([72, -80], 3);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(insightsArcticMap);
-
-    // Draw CADIZ polygon
-    L.polygon([
-      [90, -141], [90, -50], [55, -50], [55, -80], [48, -80], [42, -67], [42, -141]
-    ], { color: '#ef4444', weight: 1, fillColor: '#ef4444', fillOpacity: 0.05, dashArray: '8 4' }).addTo(insightsArcticMap);
-
-    // Draw 60N line
-    L.polyline([[60, -180], [60, 180]], { color: '#f59e0b', weight: 1, dashArray: '4 8', opacity: 0.5 }).addTo(insightsArcticMap)
-      .bindTooltip('60\u00b0N Latitude', { sticky: true });
-  }
-
-  // Clear old markers
-  insightsArcticMarkers.forEach(m => insightsArcticMap.removeLayer(m));
-  insightsArcticMarkers = [];
-
-  if (!flightData) {
-    document.getElementById('ins-arctic-russian').textContent = '-';
-    document.getElementById('ins-arctic-chinese').textContent = '-';
-    document.getElementById('ins-arctic-allied').textContent = '-';
-    document.getElementById('ins-arctic-suspicious').textContent = '-';
-    return;
-  }
-
-  let russianCount = 0;
-  let chineseCount = 0;
-  let alliedCount = 0;
-  let suspicious = 0;
-
-  const russianFlights = (flightData.russian_military || []).filter(f => f.latitude > 55);
-  const chineseFlights = (flightData.chinese_military || []).filter(f => f.latitude > 55);
-
-  russianCount = russianFlights.length;
-  chineseCount = chineseFlights.length;
-
-  // Count allied from flight data
-  if (flightData.allied_arctic) {
-    alliedCount = flightData.allied_arctic.length || 0;
-  } else if (flightData.total_scanned != null) {
-    alliedCount = (flightData.total_scanned || 0) - russianCount - chineseCount;
-    if (alliedCount < 0) alliedCount = 0;
-  }
-
-  suspicious = flightData.suspicious_routes || 0;
-
-  // Plot Russian aircraft
-  russianFlights.forEach(f => {
-    const icon = L.divIcon({
-      className: '',
-      html: '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + (f.heading || 0) + 'deg)">' +
-        '<polygon points="10,2 4,18 10,14 16,18" fill="#ef4444" opacity="0.9"/></svg>',
-      iconSize: [18, 18], iconAnchor: [9, 9],
-    });
-    const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(insightsArcticMap);
-    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#ef4444">RUSSIAN</span>', { sticky: true });
-    insightsArcticMarkers.push(marker);
-  });
-
-  // Plot Chinese aircraft
-  chineseFlights.forEach(f => {
-    const icon = L.divIcon({
-      className: '',
-      html: '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + (f.heading || 0) + 'deg)">' +
-        '<polygon points="10,2 4,18 10,14 16,18" fill="#f59e0b" opacity="0.9"/></svg>',
-      iconSize: [18, 18], iconAnchor: [9, 9],
-    });
-    const marker = L.marker([f.latitude, f.longitude], { icon }).addTo(insightsArcticMap);
-    marker.bindTooltip('<b>' + esc(f.callsign || 'Unknown') + '</b><br>' + esc(f.aircraft_description || f.aircraft_type || '') + '<br><span style="color:#f59e0b">CHINESE</span>', { sticky: true });
-    insightsArcticMarkers.push(marker);
-  });
-
-  document.getElementById('ins-arctic-russian').textContent = russianCount;
-  document.getElementById('ins-arctic-chinese').textContent = chineseCount;
-  document.getElementById('ins-arctic-allied').textContent = alliedCount;
-  document.getElementById('ins-arctic-suspicious').textContent = suspicious;
-}
-
-// ── Section 4: Adversary Arms Flows ──
+// ── Section 3: Adversary Arms Flows ──
 function renderAdversaryFlows(russiaMirror, chinaMirror) {
   function renderBuyerList(containerId, mirror) {
     const container = document.getElementById(containerId);
@@ -4128,7 +4020,7 @@ function renderAdversaryFlows(russiaMirror, chinaMirror) {
   renderBuyerList('ins-china-buyers', chinaMirror);
 }
 
-// ── Section 5: Canada's Position ──
+// ── Section 4: Canada's Position ──
 function renderCanadaTradePosition(canadaTrade, natoData) {
   // Left: Canada monthly trade chart
   destroyChart('ins-canada-monthly-chart');
@@ -4256,7 +4148,7 @@ function renderCanadaTradePosition(canadaTrade, natoData) {
   }
 }
 
-// ── Section 6: Shifting Alliances ──
+// ── Section 5: Shifting Alliances ──
 function renderShiftingAlliancesNew(shifts, emerging, fading) {
   // Shifts with context
   const shiftsContainer = document.getElementById('ins-shifts');
@@ -4325,7 +4217,7 @@ function renderShiftingAlliancesNew(shifts, emerging, fading) {
   }
 }
 
-// ── Section 7: What to Watch ──
+// ── Section 6: What to Watch ──
 function renderWhatToWatch(hotspots, weapons) {
   // Left: Countries arming up (growth bars)
   const hsContainer = document.getElementById('ins-hotspots');
@@ -5316,6 +5208,7 @@ function initArcticGlobe() {
       requestRenderMode: true,
       maximumRenderTimeChange: Infinity,
       creditContainer: document.createElement('div'),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     });
 
     // Realistic satellite imagery (Esri World Imagery WMTS tiles — free, no Ion/key)
@@ -7234,7 +7127,17 @@ async function initCesiumGlobe() {
   globeInitialized = true;
 
   try {
-    // Initialize CesiumJS — no Ion token needed, using basic dark globe
+    // Fetch Google Maps API key for photorealistic 3D tiles
+    var googleMapKey = '';
+    try {
+      var keyResp = await fetch(API + '/config/map-key');
+      if (keyResp.ok) {
+        var keyData = await keyResp.json();
+        googleMapKey = keyData.key || '';
+      }
+    } catch (e) { /* fall back to dark tiles */ }
+
+    // Initialize CesiumJS
     cesiumViewer = new Cesium.Viewer('cesium-globe', {
       baseLayer: false,
       geocoder: false,
@@ -7250,19 +7153,35 @@ async function initCesiumGlobe() {
       requestRenderMode: true,
       maximumRenderTimeChange: Infinity,
       creditContainer: document.createElement('div'),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     });
 
-    // Dark base imagery — OpenStreetMap with dark styling
-    cesiumViewer.scene.imageryLayers.addImageryProvider(
-      new Cesium.UrlTemplateImageryProvider({
-        url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png',
-        subdomains: 'abcd',
-        maximumLevel: 6,
-        credit: 'CartoDB Dark Matter',
-      })
-    );
+    // Load Google Photorealistic 3D Tiles if key available, else fall back to dark tiles
+    if (googleMapKey) {
+      try {
+        var tileset = await Cesium.createGooglePhotorealistic3DTileset(googleMapKey);
+        cesiumViewer.scene.primitives.add(tileset);
+        // Hide the globe surface so 3D tiles are fully visible
+        cesiumViewer.scene.globe.show = false;
+      } catch (e) {
+        console.warn('Google 3D Tiles failed, falling back to dark tiles:', e);
+        googleMapKey = '';
+      }
+    }
 
-    // Dark globe styling
+    if (!googleMapKey) {
+      // Fallback: dark CartoDB tiles
+      cesiumViewer.scene.imageryLayers.addImageryProvider(
+        new Cesium.UrlTemplateImageryProvider({
+          url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png',
+          subdomains: 'abcd',
+          maximumLevel: 6,
+          credit: 'CartoDB Dark Matter',
+        })
+      );
+    }
+
+    // Globe styling
     var scene = cesiumViewer.scene;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e1a');
     scene.globe.baseColor = Cesium.Color.fromCssColorString('#111827');
@@ -7626,26 +7545,8 @@ var shippingLanesLoaded = false;
 function loadShippingLanes() {
   if (shippingLanesLoaded || !cesiumViewer) return;
   shippingLanesLoaded = true;
-  // Load global shipping lanes from newzealandpaul/Shipping-Lanes (LineStrings, no polygons)
-  fetch('https://raw.githubusercontent.com/newzealandpaul/Shipping-Lanes/main/Shipping_Lanes_v1.geojson')
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(data) {
-      if (!data) return;
-      Cesium.GeoJsonDataSource.load(data, {
-        stroke: Cesium.Color.fromCssColorString('#00d4ff').withAlpha(0.07),
-        strokeWidth: 1,
-        clampToGround: true,
-      }).then(function(ds) {
-        // Make all entities polylines only (no polygons, no fills)
-        ds.entities.values.forEach(function(entity) {
-          if (entity.polygon) entity.polygon.show = false;
-          if (entity.billboard) entity.billboard.show = false;
-          if (entity.label) entity.label.show = false;
-        });
-        cesiumViewer.dataSources.add(ds);
-      });
-    })
-    .catch(function() { /* shipping lanes are optional */ });
+  // Shipping lanes GeoJSON source (newzealandpaul/Shipping-Lanes) is no longer available.
+  // Sea routes are rendered via the pre-computed SEA_ROUTES waypoints instead.
 }
 
 // Find the best matching sea route for a source country → Canadian port
