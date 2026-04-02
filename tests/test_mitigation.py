@@ -101,6 +101,10 @@ def test_generate_coas_from_supplier_risks():
     init_db()
     session = SessionLocal()
     try:
+        # Clean up any leftover actions from prior runs (DB state leak)
+        session.query(MitigationAction).filter_by(risk_entity="TestSupplier").delete()
+        session.commit()
+
         # Seed a supplier with risk scores
         from src.storage.models import DefenceSupplier, SupplierRiskScore, SupplierSector, OwnershipType, RiskDimension
         svc = PersistenceService(session)

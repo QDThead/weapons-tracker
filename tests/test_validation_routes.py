@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
-def _get_client():
-    from src.main import app
-    return TestClient(app)
+@pytest.fixture()
+def client():
+    """Create a fresh test client that won't conflict with other test files."""
+    from src.api.validation_routes import router
+    test_app = FastAPI()
+    test_app.include_router(router)
+    return TestClient(test_app)
 
 
-def test_get_validation_sources():
+def test_get_validation_sources(client):
     """GET /validation/sources returns full registry."""
-    client = _get_client()
     resp = client.get("/validation/sources")
     assert resp.status_code == 200
     data = resp.json()
@@ -25,9 +30,8 @@ def test_get_validation_sources():
         assert "confidence" in entry
 
 
-def test_get_validation_health():
+def test_get_validation_health(client):
     """GET /validation/health returns health data per connector."""
-    client = _get_client()
     resp = client.get("/validation/health")
     assert resp.status_code == 200
     data = resp.json()
@@ -42,9 +46,8 @@ def test_get_validation_health():
         assert health["health"] in ("OK", "STALE", "ERROR", "UNKNOWN")
 
 
-def test_validation_sources_contains_arctic():
+def test_validation_sources_contains_arctic(client):
     """Registry contains arctic keys from seed data."""
-    client = _get_client()
     resp = client.get("/validation/sources")
     data = resp.json()
     assert "arctic" in data["registry"]
