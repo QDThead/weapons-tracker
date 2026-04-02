@@ -7,19 +7,19 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (150+ API endpoints)
+- **API Framework:** FastAPI + Uvicorn (155+ API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~11,670 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~12,000 lines)
 - **3D Globes:** CesiumJS 1.119 (CDN) — Arctic globe (Esri satellite imagery, 8 layers) + Supply Chain globe (CartoDB dark tiles)
 - **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
 - **Codebase:** 94 Python files, ~38,350 total lines
 - **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
-- **Tests:** 295 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights (210 unit/integration + 85 adversarial)
+- **Tests:** 310 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds (225 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
@@ -55,7 +55,7 @@ weapons-tracker/
 │   │   ├── worldbank_enrichment.py  # Governance + economic indicators (WGI, fragility)
 │   │   ├── sipri_milex.py           # SIPRI Military Expenditure Database
 │   │   ├── cia_factbook.py          # CIA World Factbook military data
-│   │   └── scheduler.py              # APScheduler ingestion pipeline
+│   │   └── scheduler.py              # APScheduler ingestion pipeline (25 scheduled jobs)
 │   ├── storage/
 │   │   ├── models.py                 # SQLAlchemy models (18 tables)
 │   │   ├── database.py               # DB connection + session management
@@ -74,6 +74,7 @@ weapons-tracker/
 │   │   ├── ml_engine.py             # Anomaly detection + adaptive RLHF threshold adjustment
 │   │   ├── cyber_threat_intel.py    # APT groups, breach registry, Tor nodes, IOC aggregation
 │   │   ├── briefing_generator.py    # PDF intelligence briefing (fpdf2, 7-page export)
+│   │   ├── source_registry.py       # Universal source validation registry (50 hierarchical keys, 8 source types)
 │   │   ├── mineral_supply_chains.py # 30 mineral supply chains (USGS 2025, geo-coords, Canada deps, deep Cobalt data)
 │   │   ├── cobalt_forecasting.py    # Live cobalt forecasting: IMF PCOBALT primary + FRED nickel fallback + linear regression + insolvency scoring
 │   │   ├── financial_scoring.py    # Altman Z-Score computation from financial filings
@@ -91,6 +92,7 @@ weapons-tracker/
 │   │   ├── briefing_routes.py       # PDF briefing endpoint (GET /briefing/pdf)
 │   │   ├── security_routes.py       # Auth, RBAC, audit log (/security/*)
 │   │   ├── ml_routes.py             # Anomaly detection + feedback + thresholds (/ml/*)
+│   │   ├── validation_routes.py      # Universal source validation (/validation/sources, /validation/health)
 │   │   ├── enrichment_routes.py     # 40+ data enrichment endpoints (/enrichment/*)
 │   │   ├── export_routes.py         # CSV/Excel data export (/export/*)
 │   │   ├── cyber_routes.py          # Cyber threat intelligence (/cyber/*)
@@ -104,7 +106,7 @@ weapons-tracker/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 196 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine adversarial)
+├── tests/                            # 310 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine, source validation, scheduler feeds)
 ├── docs/superpowers/                 # Design specs and implementation plans
 ├── Dockerfile                        # Container image definition
 ├── docker-compose.yml                # Multi-service local orchestration
@@ -191,6 +193,7 @@ weapons-tracker/
 | **CSV/Excel Export** | export_routes.py | Transfers, suppliers, news, taxonomy, **Cobalt risk register**, **Cobalt alerts** as CSV or Excel download |
 | **PDF Intelligence Briefing** | briefing_generator.py, briefing_routes.py | One-click **8-page** PDF export (fpdf2): executive summary, threat matrix, Arctic assessment, supplier risks, **Cobalt supply chain intelligence**, recommendations |
 | **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
+| **Universal Source Validation** | source_registry.py, validation_routes.py, index.html | Every card, table, stat box across all 7 tabs has expandable "Sources & Validation" panel showing source citations, type badges, live data health (last fetch, records, cache status), and confidence assessment. 50 hierarchical registry keys with inheritance. |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
 ## Dashboard UI (7 tabs, EN/FR bilingual)
@@ -305,6 +308,10 @@ weapons-tracker/
 - `GET /globe/minerals` — All 30 mineral supply chains with geo-coordinates, Canada dependencies
 - `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, shipping routes, taxonomy scores, 18 dossiers, live HHI)
 - `GET /globe/minerals/{name}/forecast` — Live computed forecast (FRED nickel proxy, linear regression, insolvency, lead time)
+
+### Validation (src/api/validation_routes.py)
+- `GET /validation/sources` — Full source registry (50 keys, hierarchical inheritance, cached 1hr)
+- `GET /validation/health` — Live connector health (last fetch, records, cache status, cached 60s)
 
 ### Enrichment (src/api/enrichment_routes.py)
 - `GET /enrichment/sources` — All 53 active source status and metadata
