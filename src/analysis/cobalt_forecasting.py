@@ -7,7 +7,9 @@ lead time and insolvency risks from existing supply chain data.
 """
 from __future__ import annotations
 
+import json
 import logging
+import os
 from datetime import datetime
 
 import httpx
@@ -490,6 +492,45 @@ def _generate_signals(mineral: dict, price_data: dict, lead_time: dict, insolven
     return signals
 
 
+FORECAST_HISTORY_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    "data", "cobalt_forecast_history.json"
+)
+
+
+def _store_forecast_snapshot(
+    forecast: dict,
+    path: str | None = None,
+) -> None:
+    """Save a forecast snapshot for future backtesting.
+
+    Appends to a JSON array file. Each entry has a snapshot_date
+    and the forecast predictions for comparison against actuals.
+    """
+    path = path or FORECAST_HISTORY_PATH
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    existing: list[dict] = []
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                existing = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            existing = []
+
+    snapshot = {
+        "snapshot_date": datetime.utcnow().isoformat(),
+        "price_forecast": forecast.get("price_forecast", {}),
+        "predictions": [
+            p for p in forecast.get("price_history", []) if p.get("type") == "forecast"
+        ],
+    }
+    existing.append(snapshot)
+
+    with open(path, "w") as f:
+        json.dump(existing, f, indent=2)
+
+
 async def compute_cobalt_forecast() -> dict:
     """Main entry point — compute full Cobalt forecast from live data."""
     mineral = get_mineral_by_name("Cobalt")
@@ -513,7 +554,7 @@ async def compute_cobalt_forecast() -> dict:
     # Generate signals
     signals = _generate_signals(mineral, price_data, lead_time, insolvency)
 
-    return {
+    result = {
         "mineral": "Cobalt",
         "generated_at": datetime.utcnow().isoformat(),
         "horizon": "12 months",
@@ -534,3 +575,11 @@ async def compute_cobalt_forecast() -> dict:
         },
         "signals": signals,
     }
+
+    # Store snapshot for future backtesting
+    try:
+        _store_forecast_snapshot(result)
+    except Exception:
+        logger.warning("Failed to store forecast snapshot", exc_info=True)
+
+    return result
