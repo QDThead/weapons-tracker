@@ -12,9 +12,13 @@ Reference: https://pubs.usgs.gov/periodicals/mcs2025/
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import logging
+import re
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 import httpx
 
@@ -114,6 +118,274 @@ class CriticalMineralsClient:
             "Fetched %d/%d USGS mineral summaries",
             len(results),
             len(materials),
+        )
+        return results
+
+    # ---- USGS MCS URL slug mapping (30 minerals) ----
+    MINERAL_SLUGS: ClassVar[dict[str, str]] = {
+        "Cobalt": "cobalt",
+        "Lithium": "lithium",
+        "Rare Earth Elements": "rare-earths",
+        "Titanium": "titanium",
+        "Tungsten": "tungsten",
+        "Chromium": "chromium",
+        "Manganese": "manganese",
+        "Nickel": "nickel",
+        "Tantalum": "tantalum",
+        "Niobium": "niobium",
+        "Beryllium": "beryllium",
+        "Germanium": "germanium",
+        "Gallium": "gallium",
+        "Copper": "copper",
+        "Uranium": "uranium",
+        "Vanadium": "vanadium",
+        "Antimony": "antimony",
+        "Rhenium": "rhenium",
+        "Indium": "indium",
+        "Hafnium": "hafnium",
+        "Platinum Group Metals": "platinum",
+        "Zirconium": "zirconium",
+        "Molybdenum": "molybdenum",
+        "Magnesium": "magnesium",
+        "Silicon": "silicon",
+        "Graphite": "graphite",
+        "Tin": "tin",
+        "Lead": "lead",
+        "Bismuth": "bismuth",
+        "Fluorite": "fluorspar",
+    }
+
+    # ---- CSV / PDF production data fetchers ----
+
+    async def fetch_mineral_csv(self, mineral: str) -> list[dict] | None:
+        """Fetch production CSV for a mineral from USGS MCS 2025.
+
+        Tries two known URL patterns. Returns parsed production records
+        or None if neither URL yields a valid CSV.
+        """
+        slug = self.MINERAL_SLUGS.get(mineral)
+        if slug is None:
+            logger.warning("No USGS slug mapping for mineral: %s", mineral)
+            return None
+
+        urls = [
+            f"{self.base_url}mcs2025-{slug}-production.csv",
+            (
+                "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/"
+                f"production/atoms/files/mcs2025-{slug}.csv"
+            ),
+        ]
+
+        client = await self._get_client()
+        for url in urls:
+            try:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    text = resp.text
+                    records = self._parse_usgs_csv(text, mineral)
+                    if records:
+                        logger.info(
+                            "Parsed %d CSV records for %s from %s",
+                            len(records),
+                            mineral,
+                            url,
+                        )
+                        return records
+            except httpx.HTTPError as exc:
+                logger.debug("CSV fetch failed for %s at %s: %s", mineral, url, exc)
+        return None
+
+    @staticmethod
+    def _parse_usgs_csv(text: str, mineral: str) -> list[dict]:
+        """Parse a USGS MCS production CSV into structured records.
+
+        Finds year columns via regex, strips USGS footnote markers
+        (e, p, r, W, —), and skips world/total aggregation rows.
+        Returns list of dicts with keys: country, year, production_t.
+        """
+        _FOOTNOTE_RE = re.compile(r"[eprW,—\s]+$")
+        _SKIP_ROWS = {"world", "total", "world total", "grand total", "other countries"}
+
+        reader = csv.reader(io.StringIO(text))
+        records: list[dict] = []
+
+        # Find header row containing year columns
+        header: list[str] = []
+        year_indices: list[tuple[int, int]] = []  # (col_index, year)
+        for row in reader:
+            year_cols = [
+                (i, int(cell.strip()))
+                for i, cell in enumerate(row)
+                if re.fullmatch(r"20\d{2}", cell.strip())
+            ]
+            if year_cols:
+                header = row
+                year_indices = year_cols
+                break
+
+        if not year_indices:
+            return records
+
+        # Parse data rows
+        for row in reader:
+            if len(row) < 2:
+                continue
+            country = row[0].strip()
+            if not country or country.lower() in _SKIP_ROWS:
+                continue
+            # Skip rows that look like footnotes or section headers
+            if country.startswith(("e ", "p ", "—", "Source", "Note")):
+                continue
+
+            for col_idx, year in year_indices:
+                if col_idx >= len(row):
+                    continue
+                raw = row[col_idx].strip()
+                # Strip USGS footnote markers
+                cleaned = _FOOTNOTE_RE.sub("", raw).strip()
+                # Remove thousands separators
+                cleaned = cleaned.replace(",", "")
+                if not cleaned or cleaned in ("—", "--", "W", "XX", "NA", ""):
+                    continue
+                try:
+                    production = float(cleaned)
+                    records.append({
+                        "country": country,
+                        "year": year,
+                        "production_t": production,
+                    })
+                except ValueError:
+                    continue
+
+        return records
+
+    async def fetch_mineral_pdf(self, mineral: str) -> list[dict] | None:
+        """Fetch and parse production data from a USGS MCS PDF.
+
+        Uses pdfplumber to extract tables from the downloaded PDF.
+        Returns parsed production records or None on failure.
+        """
+        try:
+            import pdfplumber
+        except ImportError:
+            logger.warning(
+                "pdfplumber not installed; PDF parsing unavailable for %s",
+                mineral,
+            )
+            return None
+
+        slug = self.MINERAL_SLUGS.get(mineral)
+        if slug is None:
+            return None
+
+        url = f"{self.base_url}mcs2025-{slug}.pdf"
+        client = await self._get_client()
+        try:
+            resp = await client.get(url)
+            if resp.status_code != 200:
+                logger.debug("PDF fetch returned %d for %s", resp.status_code, mineral)
+                return None
+        except httpx.HTTPError as exc:
+            logger.debug("PDF fetch failed for %s: %s", mineral, exc)
+            return None
+
+        _FOOTNOTE_RE = re.compile(r"[eprW,—\s]+$")
+        _SKIP_ROWS = {"world", "total", "world total", "grand total", "other countries"}
+        records: list[dict] = []
+
+        try:
+            with pdfplumber.open(io.BytesIO(resp.content)) as pdf:
+                for page in pdf.pages:
+                    tables = page.extract_tables()
+                    if not tables:
+                        continue
+                    for table in tables:
+                        if not table or len(table) < 2:
+                            continue
+                        # Find header row with year columns
+                        header_row = table[0]
+                        year_indices: list[tuple[int, int]] = []
+                        for i, cell in enumerate(header_row or []):
+                            if cell and re.fullmatch(r"20\d{2}", cell.strip()):
+                                year_indices.append((i, int(cell.strip())))
+                        if not year_indices:
+                            continue
+
+                        for row in table[1:]:
+                            if not row or len(row) < 2:
+                                continue
+                            country = (row[0] or "").strip()
+                            if not country or country.lower() in _SKIP_ROWS:
+                                continue
+                            for col_idx, year in year_indices:
+                                if col_idx >= len(row):
+                                    continue
+                                raw = (row[col_idx] or "").strip()
+                                cleaned = _FOOTNOTE_RE.sub("", raw).strip()
+                                cleaned = cleaned.replace(",", "")
+                                if not cleaned or cleaned in (
+                                    "—", "--", "W", "XX", "NA", "",
+                                ):
+                                    continue
+                                try:
+                                    production = float(cleaned)
+                                    records.append({
+                                        "country": country,
+                                        "year": year,
+                                        "production_t": production,
+                                    })
+                                except ValueError:
+                                    continue
+        except Exception as exc:
+            logger.warning("PDF parse error for %s: %s", mineral, exc)
+            return None
+
+        if records:
+            logger.info(
+                "Parsed %d PDF records for %s", len(records), mineral
+            )
+        return records if records else None
+
+    async def fetch_live_production(self, mineral: str) -> list[dict]:
+        """Fetch live production data for a mineral: CSV first, PDF fallback.
+
+        Returns list of production records with a ``source`` key indicating
+        provenance. Returns empty list if neither source yields data
+        (caller should use seeded fallback).
+        """
+        # Try CSV first (faster, more reliable parsing)
+        csv_records = await self.fetch_mineral_csv(mineral)
+        if csv_records:
+            for rec in csv_records:
+                rec["source"] = "usgs_csv"
+            return csv_records
+
+        # Fall back to PDF extraction
+        pdf_records = await self.fetch_mineral_pdf(mineral)
+        if pdf_records:
+            for rec in pdf_records:
+                rec["source"] = "usgs_pdf"
+            return pdf_records
+
+        logger.debug("No live production data for %s; caller should use seed", mineral)
+        return []
+
+    async def fetch_all_live_production(self) -> dict[str, list[dict]]:
+        """Fetch live USGS production data for all 30 tracked minerals.
+
+        Returns a dict mapping mineral name to production records.
+        Only minerals where live data was successfully retrieved are included;
+        minerals with no data are omitted (caller uses seeded fallback).
+        """
+        results: dict[str, list[dict]] = {}
+        for mineral_name in self.MINERAL_SLUGS:
+            records = await self.fetch_live_production(mineral_name)
+            if records:
+                results[mineral_name] = records
+        logger.info(
+            "Live USGS production data: %d/%d minerals retrieved",
+            len(results),
+            len(self.MINERAL_SLUGS),
         )
         return results
 
