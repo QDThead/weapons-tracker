@@ -7,27 +7,24 @@ indicators, and supplier-level cyber risk assessment into a unified threat pictu
 from __future__ import annotations
 
 import logging
-import time
 from datetime import datetime, timezone
 
 import httpx
 
+from src.utils.cache import TTLCache
+
 logger = logging.getLogger(__name__)
 
 # 6-hour cache TTL (matches enrichment pattern for cyber feeds)
-_CYBER_CACHE: dict[str, tuple[float, dict | list]] = {}
-_CYBER_TTL = 21600  # 6 hours
+_CYBER_CACHE = TTLCache(ttl_seconds=21600, max_size=50)
 
 
 def _check_cache(key: str) -> dict | list | None:
-    cached = _CYBER_CACHE.get(key)
-    if cached and time.time() - cached[0] < _CYBER_TTL:
-        return cached[1]
-    return None
+    return _CYBER_CACHE.get(key)
 
 
 def _set_cache(key: str, data: dict | list) -> None:
-    _CYBER_CACHE[key] = (time.time(), data)
+    _CYBER_CACHE.set(key, data)
 
 
 class CyberThreatIntelligence:

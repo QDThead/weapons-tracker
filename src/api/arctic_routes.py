@@ -23,16 +23,16 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 
 from src.storage.database import SessionLocal
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/arctic", tags=["Arctic"])
 
-# 5-minute cache for assessment, 1-hour cache for bases and current intel
-_arctic_cache: dict[str, tuple[float, dict | list]] = {}
-_ARCTIC_TTL = 300
-_BASES_TTL = 3600
-_CURRENT_TTL = 3600  # 1-hour cache for /arctic/current
+# 5-minute cache for assessment/flights, 1-hour caches for bases and current intel
+_arctic_cache = TTLCache(ttl_seconds=300, max_size=50)
+_arctic_bases_cache = TTLCache(ttl_seconds=3600, max_size=10)
+_arctic_current_cache = TTLCache(ttl_seconds=3600, max_size=10)
 
 
 # ---------------------------------------------------------------------------
@@ -443,9 +443,9 @@ async def get_arctic_bases():
     Cached for 1 hour.
     """
     cache_key = "arctic_bases"
-    cached = _arctic_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _BASES_TTL:
-        return cached[1]
+    cached = _arctic_bases_cache.get(cache_key)
+    if cached:
+        return cached
 
     # Query DB for arms imports by country since 2020
     country_imports: dict[str, float] = {}
@@ -532,7 +532,7 @@ async def get_arctic_bases():
         "timestamp": time.time(),
     }
 
-    _arctic_cache[cache_key] = (time.time(), result)
+    _arctic_bases_cache.set(cache_key, result)
     return result
 
 ARCTIC_NATO_NATIONS = [
@@ -576,8 +576,8 @@ async def get_arctic_assessment():
     """
     cache_key = "arctic_assessment"
     cached = _arctic_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _ARCTIC_TTL:
-        return cached[1]
+    if cached:
+        return cached
 
     session = SessionLocal()
     try:
@@ -588,7 +588,7 @@ async def get_arctic_assessment():
             "weapon_accumulation_timeline": _compute_timeline(session),
             "russia_weakness_signals": _compute_russia_weakness(session),
         }
-        _arctic_cache[cache_key] = (time.time(), result)
+        _arctic_cache.set(cache_key, result)
         return result
     finally:
         session.close()
@@ -603,8 +603,8 @@ async def get_arctic_flights():
     """
     cache_key = "arctic_flights"
     cached = _arctic_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _ARCTIC_TTL:
-        return cached[1]
+    if cached:
+        return cached
 
     try:
         from src.ingestion.flight_tracker import FlightTrackerClient
@@ -672,7 +672,7 @@ async def get_arctic_flights():
             "flights": classified,
             "timestamp": time.time(),
         }
-        _arctic_cache[cache_key] = (time.time(), result)
+        _arctic_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Arctic flights fetch failed: %s", e)
@@ -1398,9 +1398,9 @@ async def get_arctic_current_intelligence():
     Cached for 1 hour (external API calls make first load slow).
     """
     cache_key = "arctic_current"
-    cached = _arctic_cache.get(cache_key)
-    if cached and time.time() - cached[0] < _CURRENT_TTL:
-        return cached[1]
+    cached = _arctic_current_cache.get(cache_key)
+    if cached:
+        return cached
 
     logger.info("Building Arctic current intelligence (not cached)...")
 
@@ -1456,7 +1456,7 @@ async def get_arctic_current_intelligence():
         "generated_at": datetime.utcnow().isoformat(),
     }
 
-    _arctic_cache[cache_key] = (time.time(), result)
+    _arctic_current_cache.set(cache_key, result)
     logger.info("Arctic current intelligence built and cached.")
     return result
 

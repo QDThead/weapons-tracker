@@ -6,37 +6,21 @@ and triggers on-demand COA generation.
 from __future__ import annotations
 
 import logging
-import time
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from src.storage.database import SessionLocal
 from src.storage.models import MitigationAction
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/mitigation", tags=["Mitigation"])
 
-_cache: dict[str, tuple[float, dict]] = {}
-_TTL = 300  # 5 minutes
+_cache = TTLCache(ttl_seconds=300, max_size=100)
 
 PRIORITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-
-
-def _check_cache(key: str) -> dict | None:
-    cached = _cache.get(key)
-    if cached and time.time() - cached[0] < _TTL:
-        return cached[1]
-    return None
-
-
-def _set_cache(key: str, data: dict) -> None:
-    _cache[key] = (time.time(), data)
-
-
-def _clear_cache():
-    _cache.clear()
 
 
 class StatusUpdate(BaseModel):
@@ -52,7 +36,7 @@ async def get_actions(
 ):
     """All mitigation actions with summary stats."""
     cache_key = f"actions:{status}:{priority}:{source}"
-    cached = _check_cache(cache_key)
+    cached = _cache.get(cache_key)
     if cached:
         return cached
 
@@ -112,7 +96,7 @@ async def get_actions(
             "by_priority": by_priority,
             "by_status": by_status,
         }
-        _set_cache(cache_key, result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("get_actions failed: %s", e)
@@ -135,7 +119,7 @@ async def update_action(action_id: int, update: StatusUpdate):
             action.notes = update.notes
         action.updated_at = __import__("datetime").datetime.utcnow()
         session.commit()
-        _clear_cache()
+        _cache.clear()
         return {
             "id": action.id,
             "status": action.status,
@@ -183,7 +167,7 @@ async def generate_coas():
     try:
         playbook = MitigationPlaybook(session)
         result = playbook.generate_all_coas()
-        _clear_cache()
+        _cache.clear()
         return result
     except Exception as e:
         logger.error("generate_coas failed: %s", e)

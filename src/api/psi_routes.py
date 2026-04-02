@@ -30,27 +30,16 @@ from src.storage.persistence import PersistenceService
 from src.analysis.supply_chain import SupplyChainAnalyzer
 from src.analysis.supply_chain_graph import SupplyChainGraph
 from src.analysis.scenario_engine import ScenarioEngine
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/psi", tags=["Supply Chain"])
 
-# Cache following existing dashboard_routes.py pattern
-_psi_cache: dict[str, tuple[float, dict | list]] = {}
-_PSI_TTL = 300         # 5 minutes for risk scores
-_PSI_GRAPH_TTL = 3600  # 1 hour for knowledge graph
-_PSI_TAXONOMY_TTL = 3600  # 1 hour for taxonomy scores
-
-
-def _check_cache(key: str, ttl: int) -> dict | list | None:
-    cached = _psi_cache.get(key)
-    if cached and time.time() - cached[0] < ttl:
-        return cached[1]
-    return None
-
-
-def _set_cache(key: str, data: dict | list) -> None:
-    _psi_cache[key] = (time.time(), data)
+# 5-minute cache for risk scores; 1-hour caches for graph and taxonomy
+_psi_cache = TTLCache(ttl_seconds=300, max_size=200)
+_psi_graph_cache = TTLCache(ttl_seconds=3600, max_size=50)
+_psi_taxonomy_cache = TTLCache(ttl_seconds=3600, max_size=50)
 
 
 # ------------------------------------------------------------------
@@ -84,7 +73,7 @@ class ScenarioExportRequest(BaseModel):
 @router.get("/overview")
 async def get_supply_chain_overview():
     """Global supply chain risk dashboard summary."""
-    cached = _check_cache("overview", _PSI_TTL)
+    cached = _psi_cache.get("overview")
     if cached:
         return cached
 
@@ -92,7 +81,7 @@ async def get_supply_chain_overview():
     try:
         analyzer = SupplyChainAnalyzer(session)
         result = analyzer.get_overview()
-        _set_cache("overview", result)
+        _psi_cache.set("overview", result)
         return result
     except Exception as e:
         logger.error("PSI overview failed: %s", e)
@@ -105,7 +94,7 @@ async def get_supply_chain_overview():
 async def get_country_risk(country: str):
     """6-dimension risk assessment for a country."""
     cache_key = f"risk:{country}"
-    cached = _check_cache(cache_key, _PSI_TTL)
+    cached = _psi_cache.get(cache_key)
     if cached:
         return cached
 
@@ -128,7 +117,7 @@ async def get_country_risk(country: str):
                 for m in mitigations
             ],
         }
-        _set_cache(cache_key, result)
+        _psi_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("PSI risk for %s failed: %s", country, e)
@@ -141,7 +130,7 @@ async def get_country_risk(country: str):
 async def get_material_risk(name: str):
     """Risk assessment for a specific critical material."""
     cache_key = f"material:{name}"
-    cached = _check_cache(cache_key, _PSI_GRAPH_TTL)
+    cached = _psi_graph_cache.get(cache_key)
     if cached:
         return cached
 
@@ -207,7 +196,7 @@ async def get_material_risk(name: str):
             "top_producers": producers,
             "dependent_platforms": dependent_platforms,
         }
-        _set_cache(cache_key, result)
+        _psi_graph_cache.set(cache_key, result)
         return result
     except HTTPException:
         raise
@@ -222,7 +211,7 @@ async def get_material_risk(name: str):
 async def get_platform_vulnerability(weapon: str):
     """BOM tree and risk analysis for a weapon platform."""
     cache_key = f"platform:{weapon}"
-    cached = _check_cache(cache_key, _PSI_TTL)
+    cached = _psi_cache.get(cache_key)
     if cached:
         return cached
 
@@ -252,7 +241,7 @@ async def get_platform_vulnerability(weapon: str):
             "total_components": _count_bom_nodes(bom),
             "sole_source_count": _count_sole_source(bom),
         }
-        _set_cache(cache_key, result)
+        _psi_cache.set(cache_key, result)
         return result
     except HTTPException:
         raise
@@ -426,7 +415,7 @@ async def get_knowledge_graph(
 ):
     """Knowledge graph data for D3.js visualization."""
     cache_key = f"graph:{node_type}:{risk_min}:{country}"
-    cached = _check_cache(cache_key, _PSI_GRAPH_TTL)
+    cached = _psi_graph_cache.get(cache_key)
     if cached:
         return cached
 
@@ -439,7 +428,7 @@ async def get_knowledge_graph(
             risk_min=risk_min,
             country_filter=country,
         )
-        _set_cache(cache_key, result)
+        _psi_graph_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("PSI graph failed: %s", e)
@@ -452,7 +441,7 @@ async def get_knowledge_graph(
 async def get_supplier_profile(name: str):
     """Supplier company profile with risk factors and alternatives."""
     cache_key = f"supplier:{name}"
-    cached = _check_cache(cache_key, _PSI_GRAPH_TTL)
+    cached = _psi_graph_cache.get(cache_key)
     if cached:
         return cached
 
@@ -511,7 +500,7 @@ async def get_supplier_profile(name: str):
             ],
             "alternatives": alternatives[:10],
         }
-        _set_cache(cache_key, result)
+        _psi_graph_cache.set(cache_key, result)
         return result
     except HTTPException:
         raise
@@ -529,7 +518,7 @@ async def get_supply_chain_alerts(
 ):
     """Active supply chain disruption alerts."""
     cache_key = f"alerts:{severity_min}:{is_active}"
-    cached = _check_cache(cache_key, _PSI_TTL)
+    cached = _psi_cache.get(cache_key)
     if cached:
         return cached
 
@@ -556,7 +545,7 @@ async def get_supply_chain_alerts(
             }
             for a in alerts
         ]
-        _set_cache(cache_key, result)
+        _psi_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("PSI alerts failed: %s", e)
@@ -568,7 +557,7 @@ async def get_supply_chain_alerts(
 @router.get("/chokepoints")
 async def get_chokepoint_status():
     """Strategic chokepoint status with risk levels and affected routes."""
-    cached = _check_cache("chokepoints", _PSI_TTL)
+    cached = _psi_cache.get("chokepoints")
     if cached:
         return cached
 
@@ -617,7 +606,7 @@ async def get_chokepoint_status():
             key=lambda x: x["risk_factor"],
             reverse=True,
         )
-        _set_cache("chokepoints", result)
+        _psi_cache.set("chokepoints", result)
         return result
     except Exception as e:
         logger.error("PSI chokepoints failed: %s", e)
@@ -634,7 +623,7 @@ async def get_disruption_propagation(
 ):
     """Disruption cascade analysis showing affected platforms."""
     cache_key = f"propagation:{disruption_type}:{entity}:{severity}"
-    cached = _check_cache(cache_key, _PSI_TTL)
+    cached = _psi_cache.get(cache_key)
     if cached:
         return cached
 
@@ -663,7 +652,7 @@ async def get_disruption_propagation(
             ],
             "by_type": _group_by_type(affected),
         }
-        _set_cache(cache_key, result)
+        _psi_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("PSI propagation failed: %s", e)
@@ -675,7 +664,7 @@ async def get_disruption_propagation(
 @router.get("/forecasts")
 async def get_forecasts():
     """Predictive analytics — 12-18 month supply chain risk forecasts."""
-    cached = _check_cache("forecasts", _PSI_GRAPH_TTL)
+    cached = _psi_graph_cache.get("forecasts")
     if cached:
         return cached
 
@@ -684,7 +673,7 @@ async def get_forecasts():
     try:
         forecaster = SupplyChainForecaster(session)
         result = forecaster.generate_all_forecasts()
-        _set_cache("forecasts", result)
+        _psi_graph_cache.set("forecasts", result)
         return result
     except Exception as e:
         logger.error("Forecasting failed: %s", e)
@@ -696,7 +685,7 @@ async def get_forecasts():
 @router.get("/taxonomy")
 async def get_taxonomy():
     """All 13 DND risk taxonomy categories with composite scores."""
-    cached = _check_cache("taxonomy", _PSI_TAXONOMY_TTL)
+    cached = _psi_taxonomy_cache.get("taxonomy")
     if cached:
         return cached
 
@@ -744,7 +733,7 @@ async def get_taxonomy():
                 "triangulated_pct": round(tri_count / max(len(cats), 1) * 100),
             },
         }
-        _set_cache("taxonomy", result)
+        _psi_taxonomy_cache.set("taxonomy", result)
         return result
     except Exception as e:
         logger.error("get_taxonomy failed: %s", e)
@@ -756,7 +745,7 @@ async def get_taxonomy():
 @router.get("/taxonomy/summary")
 async def get_taxonomy_summary():
     """Dashboard-ready 13-card summary for Insights page."""
-    cached = _check_cache("taxonomy_summary", _PSI_TAXONOMY_TTL)
+    cached = _psi_taxonomy_cache.get("taxonomy_summary")
     if cached:
         return cached
 
@@ -794,7 +783,7 @@ async def get_taxonomy_summary():
             "global_composite": round(global_score, 1),
             "categories": category_cards,
         }
-        _set_cache("taxonomy_summary", result)
+        _psi_taxonomy_cache.set("taxonomy_summary", result)
         return result
     except Exception as e:
         logger.error("get_taxonomy_summary failed: %s", e)
@@ -814,7 +803,7 @@ async def get_taxonomy_category(category_id: int):
         raise HTTPException(status_code=404, detail="Resource not found")
 
     cache_key = f"taxonomy_cat_{category_id}"
-    cached = _check_cache(cache_key, _PSI_TAXONOMY_TTL)
+    cached = _psi_taxonomy_cache.get(cache_key)
     if cached:
         return cached
 
@@ -861,7 +850,7 @@ async def get_taxonomy_category(category_id: int):
             "data_source": cat["subcategories"][0]["data_source"] if cat["subcategories"] else "seeded",
             "subcategories": subcategory_dicts,
         }
-        _set_cache(cache_key, result)
+        _psi_taxonomy_cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("get_taxonomy_category failed: %s", e)

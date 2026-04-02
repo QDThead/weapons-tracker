@@ -7,7 +7,6 @@ ownership breakdown, and alert data for the DND intelligence dashboard.
 from __future__ import annotations
 
 import logging
-import time
 from collections import defaultdict
 
 from fastapi import APIRouter, HTTPException
@@ -21,25 +20,13 @@ from src.storage.models import (
     OwnershipType,
     ContractStatus,
 )
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dashboard", tags=["Suppliers"])
 
-# In-memory cache: key -> (timestamp, data)
-_cache: dict[str, tuple[float, dict | list]] = {}
-_TTL = 300  # 5 minutes
-
-
-def _check_cache(key: str) -> dict | list | None:
-    cached = _cache.get(key)
-    if cached and time.time() - cached[0] < _TTL:
-        return cached[1]
-    return None
-
-
-def _set_cache(key: str, data: dict | list) -> None:
-    _cache[key] = (time.time(), data)
+_cache = TTLCache(ttl_seconds=300, max_size=100)
 
 
 def _build_risk_scores_with_confidence(risk_scores, session) -> list[dict]:
@@ -71,7 +58,7 @@ def _build_risk_scores_with_confidence(risk_scores, session) -> list[dict]:
 @router.get("/suppliers")
 async def get_suppliers():
     """All defence suppliers sorted by composite risk score descending."""
-    cached = _check_cache("suppliers")
+    cached = _cache.get("suppliers")
     if cached:
         return cached
 
@@ -140,7 +127,7 @@ async def get_suppliers():
             "avg_risk_score": round(total_score / scored_count) if scored_count else 0,
             "suppliers": supplier_data,
         }
-        _set_cache("suppliers", result)
+        _cache.set("suppliers", result)
         return result
     except Exception as e:
         logger.error("get_suppliers failed: %s", e)
@@ -156,7 +143,7 @@ async def get_suppliers():
 @router.get("/suppliers/concentration")
 async def get_concentration():
     """Sector-level supplier counts and sole-source flags."""
-    cached = _check_cache("suppliers:concentration")
+    cached = _cache.get("suppliers:concentration")
     if cached:
         return cached
 
@@ -198,7 +185,7 @@ async def get_concentration():
             "sectors": sectors,
             "total_sectors": len(sectors),
         }
-        _set_cache("suppliers:concentration", result)
+        _cache.set("suppliers:concentration", result)
         return result
     except Exception as e:
         logger.error("get_concentration failed: %s", e)
@@ -214,7 +201,7 @@ async def get_concentration():
 @router.get("/suppliers/risk-matrix")
 async def get_risk_matrix():
     """Scatter plot data: x=total contract value (CAD), y=composite risk score."""
-    cached = _check_cache("suppliers:risk-matrix")
+    cached = _cache.get("suppliers:risk-matrix")
     if cached:
         return cached
 
@@ -244,7 +231,7 @@ async def get_risk_matrix():
             "x_label": "Total Contract Value (CAD)",
             "y_label": "Composite Risk Score (0-100)",
         }
-        _set_cache("suppliers:risk-matrix", result)
+        _cache.set("suppliers:risk-matrix", result)
         return result
     except Exception as e:
         logger.error("get_risk_matrix failed: %s", e)
@@ -260,7 +247,7 @@ async def get_risk_matrix():
 @router.get("/suppliers/ownership")
 async def get_ownership():
     """Ownership breakdown and foreign supplier list."""
-    cached = _check_cache("suppliers:ownership")
+    cached = _cache.get("suppliers:ownership")
     if cached:
         return cached
 
@@ -297,7 +284,7 @@ async def get_ownership():
             "foreign_suppliers": foreign_suppliers,
             "foreign_count": len(foreign_suppliers),
         }
-        _set_cache("suppliers:ownership", result)
+        _cache.set("suppliers:ownership", result)
         return result
     except Exception as e:
         logger.error("get_ownership failed: %s", e)
@@ -313,7 +300,7 @@ async def get_ownership():
 @router.get("/suppliers/alerts")
 async def get_supplier_alerts():
     """Supplier risk alerts: risk scores above 70, sorted by severity."""
-    cached = _check_cache("suppliers:alerts")
+    cached = _cache.get("suppliers:alerts")
     if cached:
         return cached
 
@@ -343,7 +330,7 @@ async def get_supplier_alerts():
         alerts.sort(key=lambda a: a["score"], reverse=True)
 
         result = {"alerts": alerts, "total_alerts": len(alerts)}
-        _set_cache("suppliers:alerts", result)
+        _cache.set("suppliers:alerts", result)
         return result
     except Exception as e:
         logger.error("get_supplier_alerts failed: %s", e)
@@ -360,7 +347,7 @@ async def get_supplier_alerts():
 async def get_supplier_profile(name: str):
     """Single supplier detail with contracts and risk scores."""
     cache_key = f"suppliers:profile:{name}"
-    cached = _check_cache(cache_key)
+    cached = _cache.get(cache_key)
     if cached:
         return cached
 
@@ -412,7 +399,7 @@ async def get_supplier_profile(name: str):
             ],
             "risk_scores": _build_risk_scores_with_confidence(risk_scores, session),
         }
-        _set_cache(cache_key, result)
+        _cache.set(cache_key, result)
         return result
     except HTTPException:
         raise

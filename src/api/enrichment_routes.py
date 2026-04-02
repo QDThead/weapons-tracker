@@ -6,23 +6,19 @@ and other enrichment sources for the PSI risk engine.
 from __future__ import annotations
 
 import logging
-import time
 
 from fastapi import APIRouter, HTTPException
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/enrichment", tags=["Data Enrichment"])
 
-_cache: dict[str, tuple[float, dict | list]] = {}
-_TTL = 3600  # 1 hour
+_cache = TTLCache(ttl_seconds=3600, max_size=300)
 
 
 def _check(key):
-    c = _cache.get(key)
-    if c and time.time() - c[0] < _TTL:
-        return c[1]
-    return None
+    return _cache.get(key)
 
 
 @router.get("/governance")
@@ -47,7 +43,7 @@ async def get_governance_indicators(countries: str = "CAN,USA,RUS,CHN,GBR,DEU,FR
                 result["countries"][r.country_iso3] = {"name": r.country_name, "year": r.year}
             result["countries"][r.country_iso3][r.indicator] = round(r.value, 2)
         result["total_records"] = len(records)
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Governance indicators fetch failed: %s", e)
@@ -75,7 +71,7 @@ async def get_economic_indicators(countries: str = "CAN,USA,RUS,CHN"):
                 result["countries"][r.country_iso3] = {"name": r.country_name, "year": r.year}
             result["countries"][r.country_iso3][r.indicator] = r.value
         result["total_records"] = len(records)
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Economic indicators fetch failed: %s", e)
@@ -95,7 +91,7 @@ async def get_exchange_rates():
         result = await client.fetch_exchange_rates()
         result["source"] = "exchangerate-api.com"
         result["use_case"] = "Currency risk assessment for defence procurement"
-        _cache["fx"] = (time.time(), result)
+        _cache.set("fx", result)
         return result
     except Exception as e:
         logger.error("Exchange rates fetch failed: %s", e)
@@ -156,7 +152,7 @@ async def get_milex(countries: str = ""):
             "total_countries": len(summary),
             "total_records_parsed": len(all_records),
         }
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.exception("SIPRI MILEX fetch failed")
@@ -198,7 +194,7 @@ async def get_factbook_military():
             "total_countries": len(countries),
             "countries": countries,
         }
-        _cache["factbook"] = (time.time(), result)
+        _cache.set("factbook", result)
         return result
     except Exception as e:
         logger.exception("CIA Factbook fetch failed")
@@ -216,7 +212,7 @@ async def get_commodity_prices():
     try:
         client = FREDCommodityClient()
         result = await client.fetch_commodity_prices()
-        _cache["commodities"] = (time.time(), result)
+        _cache.set("commodities", result)
         return result
     except Exception as e:
         logger.error("FRED commodity fetch failed: %s", e)
@@ -241,7 +237,7 @@ async def get_cyber_threats():
             "total": len(vulns),
             "vulnerabilities": vulns,
         }
-        _cache["cisa_kev"] = (time.time(), result)
+        _cache.set("cisa_kev", result)
         return result
     except Exception as e:
         logger.error("CISA KEV fetch failed: %s", e)
@@ -268,7 +264,7 @@ async def get_active_disasters():
             "total": len(events),
             "events": events,
         }
-        _cache["gdacs_disasters"] = (time.time(), result)
+        _cache.set("gdacs_disasters", result)
         return result
     except Exception as e:
         logger.error("GDACS disasters fetch failed: %s", e)
@@ -292,7 +288,7 @@ async def get_military_satellites():
             "total": len(sats),
             "satellites": sats,
         }
-        _cache["celestrak_sats"] = (time.time(), result)
+        _cache.set("celestrak_sats", result)
         return result
     except Exception as e:
         logger.error("Celestrak satellites fetch failed: %s", e)
@@ -310,7 +306,7 @@ async def get_missile_data():
     try:
         client = CSISMissileClient()
         result = await client.fetch_missile_data()
-        _cache["csis_missiles"] = (time.time(), result)
+        _cache.set("csis_missiles", result)
         return result
     except Exception as e:
         logger.error("CSIS missiles fetch failed: %s", e)
@@ -335,7 +331,7 @@ async def get_un_sanctions():
             "total": len(entries),
             "entries": entries,
         }
-        _cache["un_sanctions"] = (time.time(), result)
+        _cache.set("un_sanctions", result)
         return result
     except Exception as e:
         logger.error("UN Sanctions fetch failed: %s", e)
@@ -360,7 +356,7 @@ async def get_earthquakes():
             "total": len(quakes),
             "earthquakes": quakes,
         }
-        _cache["usgs_earthquakes"] = (time.time(), result)
+        _cache.set("usgs_earthquakes", result)
         return result
     except Exception as e:
         logger.error("USGS Earthquake fetch failed: %s", e)
@@ -385,7 +381,7 @@ async def get_threat_groups():
             "total": len(groups),
             "threat_groups": groups,
         }
-        _cache["mitre_attack"] = (time.time(), result)
+        _cache.set("mitre_attack", result)
         return result
     except Exception as e:
         logger.error("MITRE ATT&CK fetch failed: %s", e)
@@ -407,7 +403,7 @@ async def get_economic_outlook():
         result["url"] = "https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH"
         result["indicator_name"] = "Real GDP Growth (annual % change)"
         result["periods"] = ["2024", "2025", "2026"]
-        _cache["imf_weo"] = (time.time(), result)
+        _cache.set("imf_weo", result)
         return result
     except Exception as e:
         logger.error("IMF WEO fetch failed: %s", e)
@@ -432,7 +428,7 @@ async def get_natural_events():
             "total": len(events),
             "events": events,
         }
-        _cache["nasa_eonet"] = (time.time(), result)
+        _cache.set("nasa_eonet", result)
         return result
     except Exception as e:
         logger.error("NASA EONET fetch failed: %s", e)
@@ -457,7 +453,7 @@ async def get_chokepoints_traffic():
             "total": len(chokepoints),
             "chokepoints": chokepoints,
         }
-        _cache["portwatch_chokepoints"] = (time.time(), result)
+        _cache.set("portwatch_chokepoints", result)
         return result
     except Exception as e:
         logger.error("PortWatch chokepoint fetch failed: %s", e)
@@ -483,7 +479,7 @@ async def get_arctic_aircraft():
             "total": len(aircraft),
             "aircraft": aircraft,
         }
-        _cache["opensky_arctic"] = (time.time(), result)
+        _cache.set("opensky_arctic", result)
         return result
     except Exception as e:
         logger.error("OpenSky Arctic aircraft fetch failed: %s", e)
@@ -510,7 +506,7 @@ async def get_displacement():
             "total": len(records),
             "displacement": records,
         }
-        _cache["unhcr_displacement"] = (time.time(), result)
+        _cache.set("unhcr_displacement", result)
         return result
     except Exception as e:
         logger.error("UNHCR displacement fetch failed: %s", e)
@@ -536,7 +532,7 @@ async def get_space_launches():
             "total": len(launches),
             "launches": launches,
         }
-        _cache["space_launches"] = (time.time(), result)
+        _cache.set("space_launches", result)
         return result
     except Exception as e:
         logger.error("Space Devs launch fetch failed: %s", e)
@@ -562,7 +558,7 @@ async def get_submarine_cables():
             "total": len(cables),
             "cables": cables,
         }
-        _cache["submarine_cables"] = (time.time(), result)
+        _cache.set("submarine_cables", result)
         return result
     except Exception as e:
         logger.error("Submarine cable fetch failed: %s", e)
@@ -584,7 +580,7 @@ async def get_internet_infrastructure():
             "Internet infrastructure metrics (ASN counts, routed prefixes) are indicators of "
             "cyber domain resilience and internet shutdown risk during conflict escalation."
         )
-        _cache["ripe_internet"] = (time.time(), result)
+        _cache.set("ripe_internet", result)
         return result
     except Exception as e:
         logger.error("RIPE Stat fetch failed: %s", e)
@@ -610,7 +606,7 @@ async def get_dod_contracts():
             "total": len(contracts),
             "contracts": contracts,
         }
-        _cache["dod_contracts"] = (time.time(), result)
+        _cache.set("dod_contracts", result)
         return result
     except Exception as e:
         logger.error("USASpending DoD contracts fetch failed: %s", e)
@@ -635,7 +631,7 @@ async def get_mineral_deposits():
             "These minerals are essential inputs for advanced weapons platforms, "
             "electronics, and propulsion systems."
         )
-        _cache["usgs_mineral_deposits"] = (time.time(), result)
+        _cache.set("usgs_mineral_deposits", result)
         return result
     except Exception as e:
         logger.error("USGS Mineral deposits fetch failed: %s", e)
@@ -662,7 +658,7 @@ async def get_conflict_deaths():
             "total": len(records),
             "records": records,
         }
-        _cache["wb_conflict_deaths"] = (time.time(), result)
+        _cache.set("wb_conflict_deaths", result)
         return result
     except Exception as e:
         logger.error("World Bank Conflict Deaths fetch failed: %s", e)
@@ -687,7 +683,7 @@ async def get_us_fiscal():
             "US national debt level and trajectory are macro indicators of defence budget "
             "sustainability and dollar-denominated arms financing capacity. Updated daily."
         ))
-        _cache["treasury_fiscal"] = (time.time(), result)
+        _cache.set("treasury_fiscal", result)
         return result
     except Exception as e:
         logger.error("Treasury Fiscal fetch failed: %s", e)
@@ -716,7 +712,7 @@ async def get_defence_research():
             "total": len(works),
             "works": works,
         }
-        _cache["openalex_research"] = (time.time(), result)
+        _cache.set("openalex_research", result)
         return result
     except Exception as e:
         logger.error("OpenAlex research fetch failed: %s", e)
@@ -740,7 +736,7 @@ async def get_connectivity():
             "Active RIPE Atlas probe counts per country. Sudden drops indicate internet "
             "shutdowns or major infrastructure disruptions — a grey-zone warfare indicator."
         ))
-        _cache["ripe_atlas_connectivity"] = (time.time(), result)
+        _cache.set("ripe_atlas_connectivity", result)
         return result
     except Exception as e:
         logger.error("RIPE Atlas connectivity fetch failed: %s", e)
@@ -766,7 +762,7 @@ async def get_critical_cves():
             "total": len(cves),
             "cves": cves,
         }
-        _cache["nvd_critical_cves"] = (time.time(), result)
+        _cache.set("nvd_critical_cves", result)
         return result
     except Exception as e:
         logger.error("NVD CVE fetch failed: %s", e)
@@ -792,7 +788,7 @@ async def get_severe_weather():
             "total": len(alerts),
             "alerts": alerts,
         }
-        _cache["noaa_severe_weather"] = (time.time(), result)
+        _cache.set("noaa_severe_weather", result)
         return result
     except Exception as e:
         logger.error("NOAA Weather fetch failed: %s", e)
@@ -824,7 +820,7 @@ async def get_nuclear_arsenals():
             "global_deployed_strategic": total_deployed,
             "arsenals": arsenals,
         }
-        _cache["fas_nuclear_arsenals"] = (time.time(), result)
+        _cache.set("fas_nuclear_arsenals", result)
         return result
     except Exception as e:
         logger.error("FAS Nuclear fetch failed: %s", e)
@@ -850,7 +846,7 @@ async def get_armed_forces():
             "total_countries": len(forces),
             "countries": forces,
         }
-        _cache["wb_armed_forces"] = (time.time(), result)
+        _cache.set("wb_armed_forces", result)
         return result
     except Exception as e:
         logger.error("World Bank Armed Forces fetch failed: %s", e)
@@ -874,7 +870,7 @@ async def get_unroca_transfers():
     try:
         client = UNROCAClient()
         result = await client.fetch_key_countries()
-        _cache["unroca_key"] = (time.time(), result)
+        _cache.set("unroca_key", result)
         return result
     except Exception as e:
         logger.error("UNROCA key-countries fetch failed: %s", e)
@@ -904,7 +900,7 @@ async def get_unroca_country(country: str):
     try:
         client = UNROCAClient()
         result = await client.fetch_country_transfers(country)
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("UNROCA country fetch failed (%s): %s", country, e)
@@ -928,7 +924,7 @@ async def get_unroca_country_list():
             "total": len(countries),
             "countries": countries,
         }
-        _cache["unroca_countries"] = (time.time(), result)
+        _cache.set("unroca_countries", result)
         return result
     except Exception as e:
         logger.error("UNROCA country list fetch failed: %s", e)
@@ -946,7 +942,7 @@ async def get_opensanctions():
         from src.ingestion.osint_feeds import OpenSanctionsClient
         client = OpenSanctionsClient()
         data = await client.fetch_sanctions_stats()
-        _cache["opensanctions"] = (time.time(), data)
+        _cache.set("opensanctions", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch OpenSanctions data")
@@ -962,7 +958,7 @@ async def get_military_bases():
         from src.ingestion.osint_feeds import USMilitaryBasesClient
         client = USMilitaryBasesClient()
         data = await client.fetch_bases()
-        _cache["military_bases"] = (time.time(), data)
+        _cache.set("military_bases", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch military bases data")
@@ -978,7 +974,7 @@ async def get_dod_spending():
         from src.ingestion.osint_feeds import USASpendingDefenceClient
         client = USASpendingDefenceClient()
         data = await client.fetch_dod_spending()
-        _cache["dod_spending"] = (time.time(), data)
+        _cache.set("dod_spending", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch DoD spending data")
@@ -998,7 +994,7 @@ async def get_equipment_losses():
         client = WarSpottingClient()
         data = await client.fetch_recent_losses()
         result = {"source": "WarSpotting.net", "records": len(data), "data": data}
-        _cache["warspotting"] = (time.time(), result)
+        _cache.set("warspotting", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch equipment losses")
@@ -1014,7 +1010,7 @@ async def get_russian_casualties():
         from src.ingestion.osint_feeds import RussianCasualtiesClient
         client = RussianCasualtiesClient()
         data = await client.fetch_daily_losses()
-        _cache["ru_casualties"] = (time.time(), data)
+        _cache.set("ru_casualties", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch Russian casualties")
@@ -1032,7 +1028,7 @@ async def get_fire_detections(country: str = "UKR", days: int = 2):
         client = NASAFIRMSClient()
         data = await client.fetch_conflict_fires(country=country, days=days)
         result = {"source": "NASA FIRMS VIIRS", "country": country, "records": len(data), "data": data[:200]}
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch fire detections")
@@ -1049,7 +1045,7 @@ async def get_gdelt_conflict_events(timespan: str = "24h"):
         client = GDELTConflictClient()
         data = await client.fetch_conflict_events(timespan=timespan)
         result = {"source": "GDELT DOC 2.0", "records": len(data), "data": data}
-        _cache[f"gdelt_conflict_{timespan}"] = (time.time(), result)
+        _cache.set(f"gdelt_conflict_{timespan}", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch GDELT conflict events")
@@ -1069,7 +1065,7 @@ async def get_cobalt_prices():
         client = IMFCobaltPriceClient()
         data = await client.fetch_cobalt_prices()
         result = {"source": "IMF PCPS", "records": len(data), "data": data[:60]}
-        _cache["cobalt_prices"] = (time.time(), result)
+        _cache.set("cobalt_prices", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt prices")
@@ -1086,7 +1082,7 @@ async def get_drc_mines():
         client = IPISDRCMinesClient()
         data = await client.fetch_drc_mines()
         result = {"source": "IPIS Research", "records": len(data), "data": data[:50]}
-        _cache["drc_mines"] = (time.time(), result)
+        _cache.set("drc_mines", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch DRC mine data")
@@ -1103,7 +1099,7 @@ async def get_cobalt_production():
         client = USGSCobaltDataClient()
         data = await client.fetch_cobalt_production()
         result = {"source": "USGS MCS 2025", "records": len(data), "data": data}
-        _cache["cobalt_production"] = (time.time(), result)
+        _cache.set("cobalt_production", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt production data")
@@ -1120,7 +1116,7 @@ async def get_cobalt_refiners():
         client = RMICobaltRefinersClient()
         data = await client.fetch_refiners()
         result = {"source": "RMI Cobalt Refiners List", "records": len(data), "data": data}
-        _cache["cobalt_refiners"] = (time.time(), result)
+        _cache.set("cobalt_refiners", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt refiner data")
@@ -1137,7 +1133,7 @@ async def get_cobalt_sec_filings():
         client = SECEdgarCobaltClient()
         data = await client.fetch_cobalt_filings()
         result = {"source": "SEC EDGAR", "records": len(data), "data": data}
-        _cache["cobalt_sec"] = (time.time(), result)
+        _cache.set("cobalt_sec", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch SEC filings")
@@ -1154,7 +1150,7 @@ async def get_cobalt_market():
         client = CobaltInstituteClient()
         data = await client.fetch_market_data()
         result = data
-        _cache["cobalt_market"] = (time.time(), result)
+        _cache.set("cobalt_market", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt market data")
@@ -1171,7 +1167,7 @@ async def get_cmoc_production():
         client = CMOCProductionClient()
         data = await client.fetch_production()
         result = data
-        _cache["cmoc_production"] = (time.time(), result)
+        _cache.set("cmoc_production", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch CMOC production data")
@@ -1188,7 +1184,7 @@ async def get_glencore_production():
         client = GlencoreProductionClient()
         data = await client.fetch_production()
         result = data
-        _cache["glencore_production"] = (time.time(), result)
+        _cache.set("glencore_production", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch Glencore production data")
@@ -1716,7 +1712,7 @@ async def get_metal_prices():
         client = FREDDefenceMetalsClient()
         data = await client.fetch_metal_prices()
         result = {"source": "FRED", "records": len(data), "data": data}
-        _cache["fred_metals"] = (time.time(), result)
+        _cache.set("fred_metals", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch metal prices")
@@ -1733,7 +1729,7 @@ async def get_risk_indicators():
         client = FREDRiskIndicatorsClient()
         data = await client.fetch_risk_indicators()
         result = {"source": "FRED", "records": len(data), "data": data}
-        _cache["fred_risk"] = (time.time(), result)
+        _cache.set("fred_risk", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch risk indicators")
@@ -1749,7 +1745,7 @@ async def get_fx_rates():
         from src.ingestion.osint_feeds import FrankfurterFXClient
         client = FrankfurterFXClient()
         data = await client.fetch_rates()
-        _cache["fx_rates"] = (time.time(), data)
+        _cache.set("fx_rates", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch exchange rates")
@@ -1768,7 +1764,7 @@ async def get_un_voting():
         from src.ingestion.osint_feeds import UNVotingClient
         client = UNVotingClient()
         data = await client.fetch_voting_summary()
-        _cache["un_voting"] = (time.time(), data)
+        _cache.set("un_voting", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch UN voting data")
@@ -1784,7 +1780,7 @@ async def get_democracy_index():
         from src.ingestion.osint_feeds import VDemDemocracyClient
         client = VDemDemocracyClient()
         data = await client.fetch_democracy_scores()
-        _cache["vdem"] = (time.time(), data)
+        _cache.set("vdem", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch V-Dem data")
@@ -1801,7 +1797,7 @@ async def get_think_tank_analysis():
         client = ThinkTankRSSClient()
         data = await client.fetch_latest()
         result = {"source": "Think Tank RSS (6 feeds)", "records": len(data), "data": data}
-        _cache["think_tanks"] = (time.time(), result)
+        _cache.set("think_tanks", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch think tank analysis")
@@ -1818,7 +1814,7 @@ async def get_gov_defence_news():
         client = GovDefenceNewsClient()
         data = await client.fetch_latest()
         result = {"source": "Government Defence News (4 feeds)", "records": len(data), "data": data}
-        _cache["gov_defence_news"] = (time.time(), result)
+        _cache.set("gov_defence_news", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch government defence news")
@@ -1838,7 +1834,7 @@ async def get_mitre_stix_groups():
         client = MITREAttackSTIXClient()
         data = await client.fetch_threat_groups()
         result = {"source": "MITRE ATT&CK STIX 2.1", "records": len(data), "data": data[:50]}
-        _cache["mitre_stix"] = (time.time(), result)
+        _cache.set("mitre_stix", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch MITRE STIX data")
@@ -1855,7 +1851,7 @@ async def get_malpedia_actors():
         client = MalpediaActorsClient()
         data = await client.fetch_actors()
         result = {"source": "Malpedia (Fraunhofer FKIE)", "records": len(data), "data": data[:50]}
-        _cache["malpedia_actors"] = (time.time(), result)
+        _cache.set("malpedia_actors", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch Malpedia data")
@@ -1872,7 +1868,7 @@ async def get_apt_crossref():
         client = ThaiCERTAPTClient()
         data = await client.fetch_apt_galaxy()
         result = {"source": "ThaiCERT ETDA MISP Galaxy", "records": len(data), "data": data[:50]}
-        _cache["thaicert_apt"] = (time.time(), result)
+        _cache.set("thaicert_apt", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch APT cross-reference data")
@@ -1888,7 +1884,7 @@ async def get_cisa_kev_live():
         from src.ingestion.osint_feeds import CISAKEVLiveClient
         client = CISAKEVLiveClient()
         data = await client.fetch_kev_catalog()
-        _cache["cisa_kev_live"] = (time.time(), data)
+        _cache.set("cisa_kev_live", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch CISA KEV data")
@@ -1905,7 +1901,7 @@ async def get_breach_news():
         client = DataBreachesRSSClient()
         data = await client.fetch_latest()
         result = {"source": "DataBreaches.net", "records": len(data), "data": data}
-        _cache["databreaches"] = (time.time(), result)
+        _cache.set("databreaches", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch breach news")
@@ -1922,7 +1918,7 @@ async def get_displacement():
         client = IDMCDisplacementClient()
         data = await client.fetch_displacement()
         result = {"source": "IDMC", "records": len(data), "data": data}
-        _cache["idmc"] = (time.time(), result)
+        _cache.set("idmc", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch displacement data")
@@ -1938,7 +1934,7 @@ async def get_ucdp_conflict():
         from src.ingestion.osint_feeds import UCDPConflictClient
         client = UCDPConflictClient()
         data = await client.fetch_conflict_summary()
-        _cache["ucdp_conflict"] = (time.time(), data)
+        _cache.set("ucdp_conflict", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch UCDP conflict data")
@@ -1958,7 +1954,7 @@ async def get_arctic_sea_ice():
         client = NSIDCSeaIceClient()
         data = await client.fetch_ice_extent()
         result = {"source": "NSIDC Sea Ice Index v4", "records": len(data), "data": data}
-        _cache["nsidc_ice"] = (time.time(), result)
+        _cache.set("nsidc_ice", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch sea ice data")
@@ -1975,7 +1971,7 @@ async def get_chokepoint_traffic():
         client = PortWatchChokepointsClient()
         data = await client.fetch_chokepoints()
         result = {"source": "IMF PortWatch", "records": len(data), "data": data}
-        _cache["portwatch_choke"] = (time.time(), result)
+        _cache.set("portwatch_choke", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch chokepoint data")
@@ -1993,7 +1989,7 @@ async def get_port_activity(country: str = ""):
         client = PortWatchPortsClient()
         data = await client.fetch_ports(country_iso3=country)
         result = {"source": "IMF PortWatch", "records": len(data), "data": data}
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch port data")
@@ -2009,7 +2005,7 @@ async def get_canal_transits():
         from src.ingestion.osint_feeds import HDXCanalTransitsClient
         client = HDXCanalTransitsClient()
         data = await client.fetch_transits()
-        _cache["hdx_canals"] = (time.time(), data)
+        _cache.set("hdx_canals", data)
         return data
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch canal transit data")
@@ -2026,7 +2022,7 @@ async def get_icebreaker_fleet():
         client = WikidataIcebreakerClient()
         data = await client.fetch_icebreakers()
         result = {"source": "Wikidata SPARQL", "records": len(data), "data": data}
-        _cache["icebreakers"] = (time.time(), result)
+        _cache.set("icebreakers", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch icebreaker data")
@@ -2043,7 +2039,7 @@ async def get_arctic_news():
         client = ArcticInstituteRSSClient()
         data = await client.fetch_latest()
         result = {"source": "The Arctic Institute", "records": len(data), "data": data}
-        _cache["arctic_institute"] = (time.time(), result)
+        _cache.set("arctic_institute", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch Arctic news")
@@ -2060,7 +2056,7 @@ async def get_canadabuys_tenders():
         client = CanadaBuysTendersClient()
         data = await client.fetch_new_tenders()
         result = {"source": "CanadaBuys", "records": len(data), "data": data}
-        _cache["canadabuys"] = (time.time(), result)
+        _cache.set("canadabuys", result)
         return result
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch CanadaBuys tenders")
@@ -2084,7 +2080,7 @@ async def get_gc_defence_news():
             "records": len(articles),
             "data": [a.to_dict() for a in articles],
         }
-        _cache["gc_defence_news"] = (time.time(), result)
+        _cache.set("gc_defence_news", result)
         return result
     except Exception as e:
         logger.error("GC Defence News fetch failed: %s", e)
@@ -2106,7 +2102,7 @@ async def get_nato_news():
             "records": len(articles),
             "data": [a.to_dict() for a in articles],
         }
-        _cache["nato_news"] = (time.time(), result)
+        _cache.set("nato_news", result)
         return result
     except Exception as e:
         logger.error("NATO News fetch failed: %s", e)
@@ -2130,7 +2126,7 @@ async def get_norad_news():
             "arctic_related": sum(1 for r in releases if r.is_arctic_related),
             "data": [r.to_dict() for r in releases],
         }
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("NORAD News fetch failed: %s", e)
@@ -2159,7 +2155,7 @@ async def get_canadian_sanctions():
             "top_countries": dict(sorted(countries.items(), key=lambda x: -x[1])[:20]),
             "data": [e.to_dict() for e in entries[:200]],
         }
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Canadian Sanctions fetch failed: %s", e)
@@ -2183,7 +2179,7 @@ async def get_arctic_osint_news():
             "security_related": sum(1 for a in articles if a.is_security_related),
             "data": [a.to_dict() for a in articles],
         }
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Arctic OSINT fetch failed: %s", e)
@@ -2210,7 +2206,7 @@ async def get_parliament_nddn():
             "by_type": by_type,
             "data": [a.to_dict() for a in activities],
         }
-        _cache[cache_key] = (time.time(), result)
+        _cache.set(cache_key, result)
         return result
     except Exception as e:
         logger.error("Parliament NDDN fetch failed: %s", e)
