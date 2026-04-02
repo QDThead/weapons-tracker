@@ -3,7 +3,7 @@
 **Prepared by:** Quantum Data Technologies Ltd.
 **Date:** March 27, 2026
 **Platform:** PSI Control Tower v1.0
-**Status:** 113 API Endpoints | 45 Active Data Sources | 50 Automated Tests
+**Status:** 155+ API Endpoints | 57 Active Data Sources | 310 Automated Tests
 
 ---
 
@@ -11,26 +11,26 @@
 
 | # | DND Requirement | What We Promised in Bid | What We Deliver Now | Status |
 |---|----------------|------------------------|--------------------| -------|
-| **Q1** | **High-Level Solution** — Architecture, OODA loop, TRL 9 | TRL 9 COTS platform automating Sense → Make Sense → Decide → Act | Full OODA loop: 45 OSINT sources (Sense), 13-cat risk taxonomy + supplier scoring (Make Sense), 41-entry COA playbook with Action Centre (Decide/Act) | **GOOD** |
+| **Q1** | **High-Level Solution** — Architecture, OODA loop, TRL 9 | TRL 9 COTS platform automating Sense → Make Sense → Decide → Act | Full OODA loop: 57 active OSINT sources (Sense), 13-cat risk taxonomy + supplier scoring (Make Sense), 191-entry COA playbook with Action Centre (Decide/Act) | **GOOD** |
 | **Q2** | **Supply Chain Illumination** — Multi-layer knowledge graph | Dynamic Multi-Layer Knowledge Graph: Corporate (Who), Physical (Where), Risk (What If) | Knowledge graph (90 nodes, 96 edges), Wikidata corporate ownership, BOM explosion, 7 commodity prices, CSIS missile/defence systems | **GOOD** |
 | **Q3** | **Depth of Visibility** — N-tier mapping, confidence by tier | Tier 1: 99%, Tier 2: 85-95%, Tier 3: 70-85%, Tier 4+: 60-75% | 4-tier BOM explosion, confidence scoring (HIGH/MEDIUM/LOW) on every assessment, source triangulation indicators | **GOOD** |
 | **Q4** | **Item-Based Illumination** — BOM logic, NSN, Rock→Rocket | Item-Centric Data Model tracing Raw Material → Component → Finished System | 20 weapon platform BOMs, 30 critical materials, material-to-platform tracing, 7 FRED commodity prices | **GOOD** |
 | **Q5** | **Risk Taxonomy (Annex B)** — All 13 categories, all sub-categories | All 13 categories and all sub-categories with dedicated PSI modules | 13 categories, 121 sub-categories, live/hybrid/seeded scoring, Insights strip, accordion drill-down, weight customization | **EXCELLENT** |
 | **Q6** | **Foreign Language** — 100+ languages, disinformation detection | GenAI "Global Ear" in 100+ languages, Trust & Verification scoring | 31 languages via GDELT, language badges with flags, translation indicators. 100+ via production PSI platform | **GOOD** |
-| **Q7** | **Data Feeds** — 30,000+ sources, DND internal + external | 30,000+ pre-integrated external sources, DND internal feeds | 45 active OSINT sources (live, verified). 30K+ available via production PSI platform. Architecture documented for DND internal feeds | **GOOD** |
+| **Q7** | **Data Feeds** — 30,000+ sources, DND internal + external | 30,000+ pre-integrated external sources, DND internal feeds | 57 active OSINT sources (live, verified). 30K+ available via production PSI platform. Architecture documented for DND internal feeds | **GOOD** |
 | **Q8** | **Data Integrity** — Triangulation, confidence, Glass Box | Zero Trust / Glass Box: Triangulation Protocol, Drift Detection | Confidence levels (H/M/L) on every score, source counting, triangulation detection, audit logging | **GOOD** |
-| **Q9** | **Customization** — Custom KPIs, new feeds, dynamic ontology | Universal Ingestion Layer, Dynamic Ontology, Custom KPI Builder | Risk weight sliders (0-3x per category), modular connector architecture, 113 REST API endpoints | **GOOD** |
-| **Q10** | **Visualization & UI** — COP, Risk-Impact Matrix, 10-second rule | Strategic COP, Tactical Risk-Impact, Operational Dossier, 10-Second Rule | 9-tab dashboard, Leaflet maps, D3.js knowledge graph, Chart.js charts, taxonomy strip on landing page, Action Centre, live UTC clock | **GOOD** |
+| **Q9** | **Customization** — Custom KPIs, new feeds, dynamic ontology | Universal Ingestion Layer, Dynamic Ontology, Custom KPI Builder | Risk weight sliders (0-3x per category), modular connector architecture, 155+ REST API endpoints | **GOOD** |
+| **Q10** | **Visualization & UI** — COP, Risk-Impact Matrix, 10-second rule | Strategic COP, Tactical Risk-Impact, Operational Dossier, 10-Second Rule | 7-tab dashboard, CesiumJS 3D globes (Arctic + Supply Chain), D3.js knowledge graph, Chart.js charts, taxonomy strip on landing page, Action Centre, live UTC clock | **GOOD** |
 | **Q11** | **Automated Sensing & Alerts** — Watchtower, smart filter | Continuous Monitoring Engine: Watchtower, Smart Filter, 6 alert categories | 725 CISA KEV cyber alerts, GDACS disaster alerts, USGS earthquake alerts, supplier risk alerts, PSI alerts, COA recommendations | **GOOD** |
 | **Q12** | **Predictive Analytics** — Now/Next/Future, lead time prediction | Quantum ML Engine: lead time, price, insolvency prediction | 6 forecast types (arms trade, supplier risk, materials, NATO, taxonomy, concentration), IMF GDP projections, FRED commodity trends | **GOOD** |
-| **Q13** | **Decision Support** — COA generation, playbook, risk register | Mitigation Recommendation Engine: 150+ SOPs, playbook logic, risk register | 41-entry COA playbook, 129+ active recommendations, status lifecycle (Open/In Progress/Resolved), Action Centre, inline COAs on alerts | **GOOD** |
+| **Q13** | **Decision Support** — COA generation, playbook, risk register | Mitigation Recommendation Engine: 150+ SOPs, playbook logic, risk register | 191-entry COA playbook, 191-entry playbook with active recommendations, status lifecycle (Open/In Progress/Resolved), Action Centre, inline COAs on alerts | **GOOD** |
 | **Q14** | **Data Sovereignty** — Azure Canada, Canadian law | Azure Canada Central/East, PIPEDA compliant, no US routing | Dockerfile, docker-compose.yml, Azure Canada deploy script, PSI_DATA_SOVEREIGNTY=canada environment variable | **GOOD** |
 | **Q15** | **Security** — PBMM, RBAC, encryption, zero trust | Defense-grade: dedicated instance, RBAC, AES-256, mTLS | API key auth, 3 RBAC roles (admin/analyst/viewer), audit logging, security posture endpoint, PBMM/ITSG-33 documentation | **GOOD** |
 | **Q16** | **AI/ML Trainability** — RLHF, anomaly detection, custom models | Learning system: RLHF, anomaly detection, custom model API | Z-score anomaly detection, RLHF feedback loop, 6 ML capabilities documented, MITRE ATT&CK threat groups | **GOOD** |
 | **Q17** | **Support Model** — Tiered support structure | Task-Based SOW: Tier 1 Help Desk, Tier 2 Analyst, Tier 3 SME | N/A — Business/contract question | **N/A** |
 | **Q18** | **Intellectual Property** — IP terms and licensing | Canada's default IP policy accepted | N/A — Business/contract question | **N/A** |
 | **Q19** | **Accessibility** — Standard browsers, SSO, training | Standard GC workstations, SAML/OAuth, 5 training modules | Works in any browser, zero-install, API docs at /docs, auth framework ready | **GOOD** |
-| **Q20** | **Data Access & Export** — PDF/CSV/JSON, API, no lock-in | Full export: PDF, CSV, Excel, JSON. RESTful API. No vendor lock-in | 113 REST API endpoints (JSON), one-click PDF briefing (7 pages), OpenAPI/Swagger docs | **GOOD** |
+| **Q20** | **Data Access & Export** — PDF/CSV/JSON, API, no lock-in | Full export: PDF, CSV, Excel, JSON. RESTful API. No vendor lock-in | 155+ REST API endpoints (JSON), one-click PDF briefing (8 pages), OpenAPI/Swagger docs | **GOOD** |
 | **Q21** | **Pricing** — Cost breakdown, teaming structure | $2.56M Year 1, $2.16M Year 2+, $11.2M 5-year TCO | N/A — Business question | **N/A** |
 | **Q22** | **Additional Aspects** — 90-day IOC, Canadian benefit | 90-day IOC, quarterly releases, Canadian industrial benefit | Demo operational now, Canadian company (QDT), continuous development, 20 over-delivery features | **GOOD** |
 
@@ -93,7 +93,7 @@
 | 30 | Trade policy, regulatory, country risk | External | Daily | World Bank governance (5 dims), IMF GDP forecasts (29 countries) | Annual | **LIVE** |
 | 31 | Arms embargo tracking | External | Daily | SIPRI + OFAC + EU + UN sanctions overlay | Weekly | **LIVE** |
 | | **MILITARY INTELLIGENCE** | | | | | |
-| 32 | Military flight tracking | External | Real-time | adsb.lol + OpenSky Network (Arctic) | 5 min / Real-time | **LIVE** |
+| 32 | Military flight tracking | External | Real-time | adsb.lol + adsb.fi + Airplanes.live + ADSB One (4 sources) | 5 min / Real-time | **LIVE** |
 | 33 | Military expenditure | External | Annual | SIPRI MILEX (174 countries, 1949-2024) + NATO spending | Annual | **LIVE** |
 | 34 | Armed forces personnel | External | Annual | World Bank MS.MIL.TOTL.P1 (16 countries) + CIA Factbook | Annual | **LIVE** |
 | 35 | Nuclear arsenals | External | Annual | FAS nuclear warhead estimates (9 states) | Annual | **LIVE** |
@@ -125,7 +125,7 @@
 | **Geopolitical** | 2 feeds | 2 live | WB governance, IMF projections |
 | **Military Intelligence** | 9 feeds | 9 live | Flights, MILEX, personnel, nuclear, missiles, satellites, launches, transfers, companies |
 | **Additional OSINT** | — | 5 live (bonus) | Exchange rates, DoD procurement, minerals, internet, research |
-| **TOTAL** | **40 feeds** | **39 live + 4 deferred + 2 partial** | **97% of external feeds operational** |
+| **TOTAL** | **45 feeds** | **43 live + 4 deferred + 2 partial** | **97% of external feeds operational** |
 
 ---
 
@@ -158,9 +158,9 @@ These 20 features were NOT requested in the RFI but are included at no additiona
 |---|---------|-------------|
 | 1 | Arctic security assessment with 25 mapped military bases | Direct Arctic sovereignty monitoring |
 | 2 | 3 Arctic shipping routes (NSR, NWP, Transpolar) with ownership | Northern approaches threat visualization |
-| 3 | Live worldwide military flight tracking (529 unique aircraft) | Real-time airspace awareness |
+| 3 | Live worldwide military flight tracking (4 ADS-B sources, parallel fetch) | Real-time airspace awareness |
 | 4 | Russian/Chinese flight pattern analysis | Adversary activity detection |
-| 5 | Arms trade flow network visualization (D3.js interactive) | Visual intelligence for briefings |
+| 5 | Arms trade flow visualization (CesiumJS globe arcs, Arctic + Supply Chain globes) | Visual intelligence for briefings |
 | 6 | Adversary buyer-side mirror (Russia/China opacity workaround) | Circumvents adversary data blocking |
 | 7 | Canada NATO spending rank vs 32 allies (2% GDP target) | Benchmarking Canada's position |
 | 8 | Geopolitical alliance shift detection | Early warning of changing alliances |
