@@ -3188,7 +3188,7 @@ class CMOCProductionClient:
                 "ubo": "Luoyang Mining Group -> State Council of the PRC",
                 "catl_stake_kisanfu": "23.75%",
             },
-            "source": "CMOC 2024 Annual Results / Q3 2025 Interim Report",
+            "source": "CMOC 2024 Annual Results / Q3 2025 Interim Report (fallback)",
             "ir_url": "https://en.cmoc.com/html/InvestorMedia/Performance/",
         }
         _cache_set(self._cache, "cmoc", data)
@@ -3254,7 +3254,7 @@ class GlencoreProductionClient:
                 "drc_export_quota_2026_t": 22800,
                 "note": "DRC operations quota-constrained; prioritizing copper over cobalt in 2026",
             },
-            "source": "Glencore FY 2025 Production Report",
+            "source": "Glencore FY 2025 Production Report (fallback)",
             "report_url": "https://www.glencore.com/publications",
         }
         _cache_set(self._cache, "glencore", data)
