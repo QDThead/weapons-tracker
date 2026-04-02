@@ -34,6 +34,34 @@ async def get_map_key():
     return {"key": key}
 
 
+@router.get("/feeds/health")
+async def get_feeds_health():
+    """Return health state of all scheduled data feeds."""
+    from src.ingestion.scheduler import feed_health
+    feeds = {}
+    ok = degraded = failed = 0
+    for name, state in feed_health.items():
+        feeds[name] = {
+            "status": state.status,
+            "last_success": state.last_success,
+            "last_failure": state.last_failure,
+            "failure_count": state.failure_count,
+            "last_error": state.last_error,
+            "retry_count": state.retry_count,
+            "timeout_s": state.timeout_s,
+        }
+        if state.status == "ok":
+            ok += 1
+        elif state.status == "degraded":
+            degraded += 1
+        else:
+            failed += 1
+    return {
+        "feeds": feeds,
+        "summary": {"total": len(feeds), "ok": ok, "degraded": degraded, "failed": failed},
+    }
+
+
 # --- Arms Transfers (SIPRI) ---
 
 
