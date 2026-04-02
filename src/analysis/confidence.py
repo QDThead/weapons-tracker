@@ -6,6 +6,7 @@ data source type and number of independent corroborating sources.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -281,6 +282,19 @@ def triangulate_cobalt_production(
                 "note": note,
             })
 
+    # Temporal decay — down-weight old sources
+    current_year = datetime.now().year
+    freshness_penalties = []
+    for s in sources:
+        age = current_year - s.year
+        if age <= 2:
+            freshness_penalties.append(1.0)
+        elif age <= 5:
+            freshness_penalties.append(0.5)
+        else:
+            freshness_penalties.append(0.25)
+    avg_freshness = sum(freshness_penalties) / len(freshness_penalties) if freshness_penalties else 1.0
+
     # Best estimate: median of most recent same-year group, else all values
     max_year = max(s.year for s in sources)
     recent = [s for s in sources if s.year == max_year]
@@ -308,6 +322,11 @@ def triangulate_cobalt_production(
         confidence_score = 25 + source_count * 10
 
     confidence_score = min(confidence_score, 95)
+
+    # Apply freshness penalty
+    confidence_score = round(confidence_score * avg_freshness)
+    if avg_freshness < 0.7:
+        confidence_level = "low" if confidence_level == "medium" else confidence_level
 
     if triangulated:
         label = f"Triangulated ({source_count} sources)"

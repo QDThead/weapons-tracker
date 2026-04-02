@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from datetime import datetime
 from src.analysis.confidence import (
     triangulate_cobalt_production,
     compute_cobalt_hhi,
@@ -101,3 +102,39 @@ class TestHHI:
     def test_zero_production(self):
         hhi = compute_cobalt_hhi({})
         assert hhi == 0
+
+
+class TestTemporalDecay:
+    """Verify old sources are down-weighted in triangulation."""
+
+    def test_recent_sources_full_weight(self):
+        """Sources from current or last year should not be penalized."""
+        current_year = datetime.now().year
+        sources = [
+            SourceDataPoint("USGS MCS", 170000, current_year, "live"),
+            SourceDataPoint("BGS WMS", 168000, current_year, "live"),
+            SourceDataPoint("NRCan", 165000, current_year - 1, "live"),
+        ]
+        result = triangulate_cobalt_production("DRC", sources)
+        assert result["confidence_score"] >= 80  # No penalty
+
+    def test_old_sources_reduce_confidence(self):
+        """Sources >2 years old should reduce confidence score."""
+        current_year = datetime.now().year
+        sources = [
+            SourceDataPoint("USGS MCS", 170000, current_year - 3, "live"),
+            SourceDataPoint("BGS WMS", 168000, current_year - 4, "live"),
+            SourceDataPoint("NRCan", 165000, current_year - 5, "live"),
+        ]
+        result = triangulate_cobalt_production("DRC", sources)
+        assert result["confidence_score"] < 80
+
+    def test_very_old_sources_heavy_penalty(self):
+        """Sources >5 years old should get heavy penalty."""
+        current_year = datetime.now().year
+        sources = [
+            SourceDataPoint("Old Source A", 170000, current_year - 6, "live"),
+            SourceDataPoint("Old Source B", 168000, current_year - 7, "live"),
+        ]
+        result = triangulate_cobalt_production("DRC", sources)
+        assert result["confidence_score"] < 60
