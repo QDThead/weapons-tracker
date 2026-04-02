@@ -264,7 +264,12 @@ async def score_taxonomy():
 
 
 async def refresh_cobalt_feeds():
-    """Refresh all cobalt-specific data feeds (BGS, NRCan, USGS, Sherritt, Glencore, CMOC)."""
+    """Refresh all cobalt-specific data feeds with fallback detection.
+
+    Each cobalt connector returns a 'source' field that includes
+    '(fallback)' when live fetch fails. We detect this and log
+    at ERROR level so ops monitoring can alert.
+    """
     try:
         from src.ingestion.bgs_minerals import BGSCobaltClient
         from src.ingestion.nrcan_cobalt import NRCanCobaltClient
@@ -275,22 +280,54 @@ async def refresh_cobalt_feeds():
         )
 
         results = {}
+        fallbacks = []
+
+        # BGS World Mineral Statistics
         bgs = await BGSCobaltClient().fetch_cobalt_production()
         results["bgs"] = len(bgs)
+        if bgs and "fallback" in str(bgs[0].get("source", "")).lower():
+            fallbacks.append("BGS")
+
+        # NRCan Canadian Cobalt
         nrcan = await NRCanCobaltClient().fetch_canada_cobalt_stats()
-        results["nrcan"] = "ok" if nrcan.get("production_tonnes") else "fallback"
+        results["nrcan"] = "ok" if nrcan.get("production_tonnes") else "empty"
+        if "fallback" in str(nrcan.get("source", "")).lower():
+            fallbacks.append("NRCan")
+
+        # USGS Cobalt Data
         usgs = await USGSCobaltDataClient().fetch_cobalt_production()
         results["usgs"] = len(usgs)
+
+        # Sherritt stock + operations
         sherritt = await SherrittCobaltClient().fetch_stock_data()
         results["sherritt_price"] = sherritt.get("price_cad", "n/a")
+        if "fallback" in str(sherritt.get("source", "")).lower():
+            fallbacks.append("Sherritt")
+
+        # Glencore production
         glencore = await GlencoreProductionClient().fetch_production()
-        results["glencore"] = "ok" if glencore else "fallback"
+        results["glencore"] = "ok" if glencore else "empty"
+        if glencore and "fallback" in str(glencore.get("source", "")).lower():
+            fallbacks.append("Glencore")
+
+        # CMOC production
         cmoc = await CMOCProductionClient().fetch_production()
-        results["cmoc"] = "ok" if cmoc else "fallback"
+        results["cmoc"] = "ok" if cmoc else "empty"
+        if cmoc and "fallback" in str(cmoc.get("source", "")).lower():
+            fallbacks.append("CMOC")
+
+        # IMF Cobalt Prices
         imf = await IMFCobaltPriceClient().fetch_cobalt_prices()
         results["imf_prices"] = len(imf)
 
         logger.info("[scheduler] Cobalt feeds refreshed: %s", results)
+
+        if fallbacks:
+            logger.error(
+                "[scheduler] COBALT FALLBACK ALERT: %d/%d feeds returned stale fallback data: %s. "
+                "Live API fetch may be failing — investigate immediately.",
+                len(fallbacks), 7, ", ".join(fallbacks),
+            )
     except Exception as e:
         logger.error("[scheduler] Cobalt feed refresh failed: %s", e)
 
@@ -602,7 +639,10 @@ def create_scheduler() -> AsyncIOScheduler:
         from src.ingestion.comtrade import ComtradeMaterialsClient
         key = os.getenv("UN_COMTRADE_API_KEY")
         if not key:
-            logger.warning("UN_COMTRADE_API_KEY not set — skipping cobalt bilateral queries")
+            logger.error(
+                "[scheduler] UN_COMTRADE_API_KEY not set — Comtrade cobalt bilateral "
+                "queries DISABLED. Set the env var to enable (free registration at comtradeplus.un.org)."
+            )
             return
         client = ComtradeMaterialsClient(subscription_key=key)
         records = await client.fetch_cobalt_bilateral_flows()
