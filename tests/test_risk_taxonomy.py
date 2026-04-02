@@ -75,7 +75,7 @@ def test_seed_definitions_complete():
 
 
 from fastapi.testclient import TestClient
-from src.api.routes import app
+from src.main import app
 from src.api.psi_routes import router as psi_router
 
 # Register PSI routes on app (main.py does this at startup)

@@ -215,7 +215,6 @@ class TrendAnalyzer:
         )
 
         # Top export partners
-        buyer_alias = self.session.query(Country).subquery()
         top_export_partners = (
             self.session.query(
                 Country.name,

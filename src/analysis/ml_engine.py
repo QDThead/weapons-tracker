@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import statistics
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -89,7 +89,7 @@ class AnomalyDetector:
                     "severity": "high" if z_score > 2 else "medium",
                     "detail": f"Risk score {s.risk_score_composite:.0f} is {z_score:.1f} standard deviations above mean ({mean:.0f})",
                     "z_score": round(z_score, 2),
-                    "detected_at": datetime.utcnow().isoformat(),
+                    "detected_at": datetime.now(timezone.utc).isoformat(),
                 })
 
         # Check for risk dimension spikes
@@ -111,7 +111,7 @@ class AnomalyDetector:
                         "severity": "high",
                         "detail": f"{dim.value.replace('_', ' ').title()} score {ds.score:.0f} is {z:.1f}σ above dimension mean ({dim_mean:.0f})",
                         "z_score": round(z, 2),
-                        "detected_at": datetime.utcnow().isoformat(),
+                        "detected_at": datetime.now(timezone.utc).isoformat(),
                     })
 
         anomalies.sort(key=lambda a: a["z_score"], reverse=True)
@@ -135,7 +135,7 @@ class FeedbackEngine:
         """
         # Store as audit log entry
         entry = AuditLog(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             user="Analyst",
             action=f"feedback:{verdict}",
             resource=f"{assessment_type}:{entity}",

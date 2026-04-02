@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 import httpx
 
@@ -62,7 +63,6 @@ class CensusTradeClient:
             List of monthly export records by country.
         """
         if not months:
-            from datetime import datetime, timedelta
             now = datetime.now()
             months = []
             for i in range(2, 8):  # 2-7 months ago (data has ~2 month lag)
@@ -86,7 +86,6 @@ class CensusTradeClient:
     ) -> list[CensusTradeRecord]:
         """Fetch US arms imports by partner country."""
         if not months:
-            from datetime import datetime, timedelta
             now = datetime.now()
             months = []
             for i in range(2, 8):

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, date
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
 
 from sqlalchemy import (
     Boolean, Column, Integer, String, Float, Date, DateTime, Text,
@@ -111,8 +110,8 @@ class ArmsTransfer(Base):
     source = Column(String(50), default="sipri")
     source_id = Column(String(255))
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     seller = relationship("Country", foreign_keys=[seller_id], back_populates="exports")
     buyer = relationship("Country", foreign_keys=[buyer_id], back_populates="imports")
@@ -188,7 +187,7 @@ class ArmsTradeNews(Base):
     weapon_keywords = Column(Text)
     tone_score = Column(Float)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     seller_country = relationship("Country", foreign_keys=[seller_country_id])
     buyer_country = relationship("Country", foreign_keys=[buyer_country_id])
@@ -217,7 +216,7 @@ class DeliveryTracking(Base):
 
     departure_time = Column(DateTime)
     arrival_time = Column(DateTime)
-    detected_at = Column(DateTime, default=datetime.utcnow)
+    detected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     confidence = Column(String(20))  # "low", "medium", "high"
     notes = Column(Text)
@@ -284,8 +283,8 @@ class SupplyChainMaterial(Base):
     defense_applications = Column(Text)
     notes = Column(Text)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     nodes = relationship("SupplyChainNode", back_populates="material")
 
@@ -411,7 +410,7 @@ class SupplyChainAlert(Base):
     affected_country_id = Column(Integer, ForeignKey("countries.id"))
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     resolved_at = Column(DateTime)
 
     affected_node = relationship("SupplyChainNode")
@@ -487,8 +486,8 @@ class DefenceSupplier(Base):
     employee_count = Column(Integer)
     risk_score_composite = Column(Float)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     contracts = relationship("SupplierContract", back_populates="supplier")
     risk_scores = relationship("SupplierRiskScore", back_populates="supplier")
@@ -517,7 +516,7 @@ class SupplierContract(Base):
     sector = Column(SQLEnum(SupplierSector))
     is_sole_source = Column(Boolean, default=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     supplier = relationship("DefenceSupplier", back_populates="contracts")
 
@@ -539,7 +538,7 @@ class SupplierRiskScore(Base):
     dimension = Column(SQLEnum(RiskDimension), nullable=False)
     score = Column(Float, nullable=False)
     rationale = Column(Text)
-    scored_at = Column(DateTime, default=datetime.utcnow)
+    scored_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     supplier = relationship("DefenceSupplier", back_populates="risk_scores")
 
@@ -567,7 +566,7 @@ class RiskTaxonomyScore(Base):
     psi_module = Column(String(100))
     rationale = Column(Text)
     last_event = Column(Text)
-    scored_at = Column(DateTime, default=datetime.utcnow)
+    scored_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         UniqueConstraint("subcategory_key", name="uq_taxonomy_subcat"),
@@ -593,8 +592,8 @@ class MitigationAction(Base):
     coa_responsible = Column(String(100))
     status = Column(String(15), nullable=False, default="open")
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("ix_mitigation_status", "status"),
@@ -609,7 +608,7 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     user = Column(String(100), nullable=False)
     action = Column(String(50), nullable=False)
     resource = Column(String(200), nullable=False)

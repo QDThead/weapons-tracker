@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 
@@ -99,9 +100,6 @@ async def fetch_nickel_prices() -> list[dict]:
     except Exception as e:
         logger.warning("FRED nickel fetch failed: %s", e)
         return []
-
-
-import math
 
 
 def _linear_regression(xs: list[float], ys: list[float]) -> tuple[float, float]:
@@ -309,7 +307,7 @@ def _compute_price_forecast(cobalt_prices: list[dict], source: str = "IMF PCOBAL
         "price_history": all_prices,
         "source": source,
         "price_source": source,
-        "last_updated": datetime.utcnow().isoformat(),
+        "last_updated": datetime.now(timezone.utc).isoformat(),
         "data_points": len(cobalt_prices),
     }
 
@@ -519,7 +517,7 @@ def _store_forecast_snapshot(
             existing = []
 
     snapshot = {
-        "snapshot_date": datetime.utcnow().isoformat(),
+        "snapshot_date": datetime.now(timezone.utc).isoformat(),
         "price_forecast": forecast.get("price_forecast", {}),
         "predictions": [
             p for p in forecast.get("price_history", []) if p.get("type") == "forecast"
@@ -559,7 +557,7 @@ async def compute_cobalt_forecast() -> dict:
 
     result = {
         "mineral": "Cobalt",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "horizon": "12 months",
         "live_data": len(cobalt_prices) > 0,
         "price_forecast": price_data.get("price_forecast", {}),

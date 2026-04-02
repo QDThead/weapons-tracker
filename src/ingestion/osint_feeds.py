@@ -1997,7 +1997,7 @@ class TreasuryFiscalClient:
 
         except Exception as exc:
             logger.warning("Treasury Fiscal fetch failed: %s", exc)
-            return {"error": str(exc)}
+            return {"error": "Treasury Fiscal data unavailable"}
 
 
 # ---------------------------------------------------------------------------
@@ -2633,7 +2633,7 @@ class IMFCobaltPriceClient:
         if cached is not None:
             return cached
 
-        url = "http://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/PCPS/M.W00.PCOBALT"
+        url = "https://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/PCPS/M.W00.PCOBALT"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 resp = await client.get(url)
@@ -3191,7 +3191,7 @@ class CMOCProductionClient:
             "source": "CMOC 2024 Annual Results / Q3 2025 Interim Report (fallback)",
             "ir_url": "https://en.cmoc.com/html/InvestorMedia/Performance/",
         }
-        _cache_set(self._cache, "cmoc", data)
+        _cache_set(self._cache, "cmoc_production", data)
         return data
 
 
@@ -3257,7 +3257,7 @@ class GlencoreProductionClient:
             "source": "Glencore FY 2025 Production Report (fallback)",
             "report_url": "https://www.glencore.com/publications",
         }
-        _cache_set(self._cache, "glencore", data)
+        _cache_set(self._cache, "glencore_production", data)
         return data
 
 
@@ -3766,13 +3766,13 @@ class WarSpottingClient:
         if cached is not None:
             return cached
 
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         results: list[dict] = []
         headers = {"User-Agent": "WeaponsTracker/1.0 (defence-research)"}
         try:
             async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
                 for d in range(days):
-                    date_str = (datetime.utcnow() - timedelta(days=d)).strftime("%Y-%m-%d")
+                    date_str = (datetime.now(timezone.utc) - timedelta(days=d)).strftime("%Y-%m-%d")
                     resp = await client.get(f"https://ukr.warspotting.net/api/losses/russia/{date_str}")
                     if resp.status_code != 200:
                         continue
@@ -4093,7 +4093,7 @@ class UNVotingClient:
 
         except Exception as exc:
             logger.warning("UN Voting Data fetch failed: %s", exc)
-            return {"error": str(exc), "source": "Harvard Dataverse (unavailable)"}
+            return {"error": "UN voting data unavailable", "source": "Harvard Dataverse (unavailable)"}
 
 
 class VDemDemocracyClient:
@@ -4160,7 +4160,7 @@ class VDemDemocracyClient:
 
         except Exception as exc:
             logger.warning("V-Dem fetch failed: %s", exc)
-            return {"error": str(exc), "source": "V-Dem (unavailable)"}
+            return {"error": "V-Dem data unavailable", "source": "V-Dem (unavailable)"}
 
 
 class ThinkTankRSSClient:
@@ -5281,7 +5281,7 @@ class GLEIFLEIClient:
 
         except Exception as e:
             logger.warning("GLEIF fetch failed for '%s': %s", name, e)
-            return {"error": str(e), "source": "GLEIF"}
+            return {"error": "GLEIF lookup failed", "source": "GLEIF"}
 
     async def _fetch_parent(self, lei: str, level: str) -> dict | None:
         """Fetch direct or ultimate parent for a given LEI."""
@@ -5360,7 +5360,7 @@ class SECEdgarFinancialsClient:
 
         except Exception as e:
             logger.warning("SEC EDGAR fetch failed for %s: %s", ticker, e)
-            return {"error": str(e)}
+            return {"error": "SEC EDGAR fetch failed"}
 
     def _extract_financials(self, ticker: str, data: dict) -> dict:
         """Extract key financial metrics from XBRL company facts."""

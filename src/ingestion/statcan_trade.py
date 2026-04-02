@@ -18,6 +18,7 @@ import logging
 import time
 import zipfile
 from dataclasses import dataclass
+from datetime import datetime
 
 import httpx
 
@@ -391,7 +392,6 @@ class StatCanTradeClient:
             List of StatCanTradeRecord (exports + imports combined).
         """
         if year is None:
-            from datetime import datetime
             year = datetime.now().year
 
         cache_key = f"statcan_{year}"

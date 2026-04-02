@@ -6,6 +6,7 @@ and triggers on-demand COA generation.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -117,7 +118,7 @@ async def update_action(action_id: int, update: StatusUpdate):
             action.status = update.status
         if update.notes is not None:
             action.notes = update.notes
-        action.updated_at = __import__("datetime").datetime.utcnow()
+        action.updated_at = datetime.now(timezone.utc)
         session.commit()
         _cache.clear()
         return {
@@ -137,7 +138,7 @@ async def update_action(action_id: int, update: StatusUpdate):
 
 @router.get("/playbook")
 async def get_playbook():
-    """Return the full COA playbook reference (41 entries)."""
+    """Return the full COA playbook reference (191 entries)."""
     from src.analysis.mitigation_playbook import PLAYBOOK
 
     entries = []

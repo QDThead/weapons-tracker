@@ -944,7 +944,8 @@ async def get_opensanctions():
         data = await client.fetch_sanctions_stats()
         _cache.set("opensanctions", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("OpenSanctions fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch OpenSanctions data")
 
 
@@ -960,7 +961,8 @@ async def get_military_bases():
         data = await client.fetch_bases()
         _cache.set("military_bases", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("Military bases fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch military bases data")
 
 
@@ -976,7 +978,8 @@ async def get_dod_spending():
         data = await client.fetch_dod_spending()
         _cache.set("dod_spending", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("DoD spending fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch DoD spending data")
 
 
@@ -996,7 +999,8 @@ async def get_equipment_losses():
         result = {"source": "WarSpotting.net", "records": len(data), "data": data}
         _cache.set("warspotting", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Equipment losses fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch equipment losses")
 
 
@@ -1012,7 +1016,8 @@ async def get_russian_casualties():
         data = await client.fetch_daily_losses()
         _cache.set("ru_casualties", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("Russian casualties fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch Russian casualties")
 
 
@@ -1030,7 +1035,8 @@ async def get_fire_detections(country: str = "UKR", days: int = 2):
         result = {"source": "NASA FIRMS VIIRS", "country": country, "records": len(data), "data": data[:200]}
         _cache.set(cache_key, result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Fire detections fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch fire detections")
 
 
@@ -1047,7 +1053,8 @@ async def get_gdelt_conflict_events(timespan: str = "24h"):
         result = {"source": "GDELT DOC 2.0", "records": len(data), "data": data}
         _cache.set(f"gdelt_conflict_{timespan}", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("GDELT conflict events fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch GDELT conflict events")
 
 
@@ -1067,7 +1074,8 @@ async def get_cobalt_prices():
         result = {"source": "IMF PCPS", "records": len(data), "data": data[:60]}
         _cache.set("cobalt_prices", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Cobalt prices fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt prices")
 
 
@@ -1084,7 +1092,8 @@ async def get_drc_mines():
         result = {"source": "IPIS Research", "records": len(data), "data": data[:50]}
         _cache.set("drc_mines", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("DRC mine data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch DRC mine data")
 
 
@@ -1101,7 +1110,8 @@ async def get_cobalt_production():
         result = {"source": "USGS MCS 2025", "records": len(data), "data": data}
         _cache.set("cobalt_production", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Cobalt production fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt production data")
 
 
@@ -1118,7 +1128,8 @@ async def get_cobalt_refiners():
         result = {"source": "RMI Cobalt Refiners List", "records": len(data), "data": data}
         _cache.set("cobalt_refiners", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Cobalt refiner fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt refiner data")
 
 
@@ -1135,7 +1146,8 @@ async def get_cobalt_sec_filings():
         result = {"source": "SEC EDGAR", "records": len(data), "data": data}
         _cache.set("cobalt_sec", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("SEC filings fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch SEC filings")
 
 
@@ -1152,7 +1164,8 @@ async def get_cobalt_market():
         result = data
         _cache.set("cobalt_market", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Cobalt market data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch cobalt market data")
 
 
@@ -1169,7 +1182,8 @@ async def get_cmoc_production():
         result = data
         _cache.set("cmoc_production", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("CMOC production fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch CMOC production data")
 
 
@@ -1186,7 +1200,8 @@ async def get_glencore_production():
         result = data
         _cache.set("glencore_production", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Glencore production fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch Glencore production data")
 
 
@@ -1714,7 +1729,8 @@ async def get_metal_prices():
         result = {"source": "FRED", "records": len(data), "data": data}
         _cache.set("fred_metals", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Metal prices fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch metal prices")
 
 
@@ -1731,7 +1747,8 @@ async def get_risk_indicators():
         result = {"source": "FRED", "records": len(data), "data": data}
         _cache.set("fred_risk", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Risk indicators fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch risk indicators")
 
 
@@ -1747,7 +1764,8 @@ async def get_fx_rates():
         data = await client.fetch_rates()
         _cache.set("fx_rates", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("Exchange rates fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch exchange rates")
 
 
@@ -1766,7 +1784,8 @@ async def get_un_voting():
         data = await client.fetch_voting_summary()
         _cache.set("un_voting", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("UN voting data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch UN voting data")
 
 
@@ -1782,7 +1801,8 @@ async def get_democracy_index():
         data = await client.fetch_democracy_scores()
         _cache.set("vdem", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("V-Dem data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch V-Dem data")
 
 
@@ -1799,7 +1819,8 @@ async def get_think_tank_analysis():
         result = {"source": "Think Tank RSS (6 feeds)", "records": len(data), "data": data}
         _cache.set("think_tanks", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Think tank analysis fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch think tank analysis")
 
 
@@ -1816,7 +1837,8 @@ async def get_gov_defence_news():
         result = {"source": "Government Defence News (4 feeds)", "records": len(data), "data": data}
         _cache.set("gov_defence_news", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Government defence news fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch government defence news")
 
 
@@ -1836,7 +1858,8 @@ async def get_mitre_stix_groups():
         result = {"source": "MITRE ATT&CK STIX 2.1", "records": len(data), "data": data[:50]}
         _cache.set("mitre_stix", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("MITRE STIX data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch MITRE STIX data")
 
 
@@ -1853,7 +1876,8 @@ async def get_malpedia_actors():
         result = {"source": "Malpedia (Fraunhofer FKIE)", "records": len(data), "data": data[:50]}
         _cache.set("malpedia_actors", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Malpedia data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch Malpedia data")
 
 
@@ -1870,7 +1894,8 @@ async def get_apt_crossref():
         result = {"source": "ThaiCERT ETDA MISP Galaxy", "records": len(data), "data": data[:50]}
         _cache.set("thaicert_apt", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("APT cross-reference data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch APT cross-reference data")
 
 
@@ -1886,7 +1911,8 @@ async def get_cisa_kev_live():
         data = await client.fetch_kev_catalog()
         _cache.set("cisa_kev_live", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("CISA KEV data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch CISA KEV data")
 
 
@@ -1903,7 +1929,8 @@ async def get_breach_news():
         result = {"source": "DataBreaches.net", "records": len(data), "data": data}
         _cache.set("databreaches", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Breach news fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch breach news")
 
 
@@ -1920,7 +1947,8 @@ async def get_displacement():
         result = {"source": "IDMC", "records": len(data), "data": data}
         _cache.set("idmc", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Displacement data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch displacement data")
 
 
@@ -1936,7 +1964,8 @@ async def get_ucdp_conflict():
         data = await client.fetch_conflict_summary()
         _cache.set("ucdp_conflict", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("UCDP conflict data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch UCDP conflict data")
 
 
@@ -1956,7 +1985,8 @@ async def get_arctic_sea_ice():
         result = {"source": "NSIDC Sea Ice Index v4", "records": len(data), "data": data}
         _cache.set("nsidc_ice", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Sea ice data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch sea ice data")
 
 
@@ -1973,7 +2003,8 @@ async def get_chokepoint_traffic():
         result = {"source": "IMF PortWatch", "records": len(data), "data": data}
         _cache.set("portwatch_choke", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Chokepoint data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch chokepoint data")
 
 
@@ -1991,7 +2022,8 @@ async def get_port_activity(country: str = ""):
         result = {"source": "IMF PortWatch", "records": len(data), "data": data}
         _cache.set(cache_key, result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Port data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch port data")
 
 
@@ -2007,7 +2039,8 @@ async def get_canal_transits():
         data = await client.fetch_transits()
         _cache.set("hdx_canals", data)
         return data
-    except Exception:
+    except Exception as e:
+        logger.error("Canal transit data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch canal transit data")
 
 
@@ -2024,7 +2057,8 @@ async def get_icebreaker_fleet():
         result = {"source": "Wikidata SPARQL", "records": len(data), "data": data}
         _cache.set("icebreakers", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Icebreaker data fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch icebreaker data")
 
 
@@ -2041,7 +2075,8 @@ async def get_arctic_news():
         result = {"source": "The Arctic Institute", "records": len(data), "data": data}
         _cache.set("arctic_institute", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("Arctic news fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch Arctic news")
 
 
@@ -2058,7 +2093,8 @@ async def get_canadabuys_tenders():
         result = {"source": "CanadaBuys", "records": len(data), "data": data}
         _cache.set("canadabuys", result)
         return result
-    except Exception:
+    except Exception as e:
+        logger.error("CanadaBuys tenders fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch CanadaBuys tenders")
 
 

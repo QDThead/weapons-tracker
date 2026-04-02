@@ -6,7 +6,7 @@ Addresses DND Q13: Decision Support & Mitigation Capabilities.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -1093,7 +1093,7 @@ class MitigationPlaybook:
             existing.coa_priority = priority
             existing.coa_timeline = coa.get("timeline")
             existing.coa_responsible = coa.get("responsible")
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
             return True
         else:
             self.session.add(MitigationAction(
@@ -1112,8 +1112,6 @@ class MitigationPlaybook:
     def generate_all_coas(self) -> dict:
         """Generate COAs from all risk sources. Returns counts."""
         generated = 0
-        updated = 0
-        skipped = 0
 
         # 1. Supplier risk scores
         supplier_risks = self.session.query(SupplierRiskScore).filter(
@@ -1167,5 +1165,5 @@ class MitigationPlaybook:
                 generated += 1
 
         self.session.commit()
-        logger.info("COA generation: %d generated/updated, %d skipped", generated, skipped)
-        return {"generated": generated, "updated": updated, "skipped_resolved": skipped}
+        logger.info("COA generation: %d generated/updated", generated)
+        return {"generated": generated}

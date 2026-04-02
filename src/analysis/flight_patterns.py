@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.ingestion.flight_tracker import MilitaryFlightRecord
 
@@ -182,7 +182,7 @@ class FlightPatternAnalyzer:
         ]
 
         result = FlightAnalysisResult(
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             total_military_scanned=len(flights),
             russian_military=russian,
             chinese_military=chinese,

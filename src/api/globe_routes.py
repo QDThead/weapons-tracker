@@ -25,7 +25,6 @@ async def list_minerals():
 @router.get("/minerals/{name}")
 async def get_mineral(name: str):
     """Get single mineral supply chain with enriched cobalt data."""
-    from src.analysis.mineral_supply_chains import get_mineral_by_name
     mineral = get_mineral_by_name(name)
     if not mineral:
         raise HTTPException(status_code=404, detail=f"Mineral '{name}' not found")

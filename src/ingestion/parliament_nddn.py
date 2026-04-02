@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, asdict
+from datetime import datetime
 
 import httpx
 
@@ -252,7 +253,6 @@ class ParliamentNDDNClient:
             raw = date_match.group(1) or date_match.group(2)
             if raw and "-" in raw:
                 return raw
-            from datetime import datetime
             for fmt in ("%B %d, %Y", "%B %d %Y"):
                 try:
                     return datetime.strptime(raw.strip().replace(",", ","), fmt).strftime("%Y-%m-%d")

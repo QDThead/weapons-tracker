@@ -9,7 +9,8 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import datetime
+from collections import deque
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -167,9 +168,9 @@ async def get_material_risk(name: str):
         if mat_node:
             # Walk edges upward to find platforms
             visited: set[int] = set()
-            queue = [mat_node.id]
+            queue = deque([mat_node.id])
             while queue:
-                nid = queue.pop(0)
+                nid = queue.popleft()
                 if nid in visited:
                     continue
                 visited.add(nid)
@@ -724,7 +725,7 @@ async def get_taxonomy():
             "hybrid_count": sum(1 for c in cats if c["data_source"] == "hybrid"),
             "seeded_count": sum(1 for c in cats if c["data_source"] == "seeded"),
             "total_subcategories": 121,
-            "last_scored": session.query(func.max(RiskTaxonomyScore.scored_at)).scalar().isoformat() if session.query(func.max(RiskTaxonomyScore.scored_at)).scalar() else None,
+            "last_scored": (last_ts.isoformat() if (last_ts := session.query(func.max(RiskTaxonomyScore.scored_at)).scalar()) else None),
             "confidence_summary": {
                 "high_count": high_count,
                 "medium_count": med_count,
@@ -871,11 +872,11 @@ async def get_cobalt_live_alerts():
     """Get live-generated Cobalt alerts from GDELT + rule engine."""
     from src.analysis.cobalt_alert_engine import get_cached_alerts, run_cobalt_alert_engine
     cached, ts = get_cached_alerts()
-    if cached and ts and (datetime.utcnow() - ts).total_seconds() < 1800:
+    if cached and ts and (datetime.now(timezone.utc) - ts).total_seconds() < 1800:
         return {"alerts": cached, "count": len(cached), "generated_at": ts.isoformat(), "cached": True}
     try:
         alerts = await run_cobalt_alert_engine()
-        return {"alerts": alerts, "count": len(alerts), "generated_at": datetime.utcnow().isoformat(), "cached": False}
+        return {"alerts": alerts, "count": len(alerts), "generated_at": datetime.now(timezone.utc).isoformat(), "cached": False}
     except Exception as e:
         logger.error("Cobalt live alerts failed: %s", e)
         return {"alerts": cached or [], "count": len(cached or []), "error": "Live generation failed, showing cached"}

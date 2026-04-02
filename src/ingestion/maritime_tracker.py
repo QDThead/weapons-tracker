@@ -14,7 +14,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable
 
 import websockets
@@ -111,9 +111,9 @@ class MaritimeTrackerClient:
             await ws.send(subscribe_msg)
             logger.info("Subscribed to AIS stream")
 
-            end_time = asyncio.get_event_loop().time() + duration_seconds
+            end_time = asyncio.get_running_loop().time() + duration_seconds
 
-            while asyncio.get_event_loop().time() < end_time:
+            while asyncio.get_running_loop().time() < end_time:
                 try:
                     msg = await asyncio.wait_for(ws.recv(), timeout=30)
                     data = json.loads(msg)
@@ -198,5 +198,5 @@ class MaritimeTrackerClient:
             is_military=ship_type in MILITARY_SHIP_TYPES,
             is_roro_cargo=ship_type in RORO_CARGO_TYPES,
             chokepoint=chokepoint,
-            seen_at=datetime.utcnow(),
+            seen_at=datetime.now(timezone.utc),
         )

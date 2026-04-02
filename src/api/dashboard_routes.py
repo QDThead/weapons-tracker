@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import asdict
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
@@ -777,7 +778,6 @@ async def get_canada_monthly_arms_trade(
 ):
     """Get monthly Canadian arms trade data (HS 93) from Statistics Canada CIMT. Cached 24 hours."""
     if year == 0:
-        from datetime import datetime
         year = datetime.now().year
 
     cache_key = f"statcan:{year}"

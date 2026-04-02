@@ -6,7 +6,7 @@ trade indicators, arms trade news, and live delivery tracking.
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Query
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from src.ingestion.sipri_transfers import SIPRITransfersClient, SIPRIQuery, SIPRI_COUNTRY_CODES
@@ -15,16 +15,12 @@ from src.ingestion.worldbank import WorldBankClient
 from src.ingestion.gdelt_news import GDELTArmsNewsClient
 from src.ingestion.flight_tracker import FlightTrackerClient
 
-app = FastAPI(
-    title="Weapons Tracker API",
-    description="Global weapons sales and trade tracking across countries using OSINT data sources.",
-    version="0.1.0",
-)
+router = APIRouter(tags=["Core"])
 
 # --- Health ---
 
 
-@app.get("/health")
+@router.get("/health")
 async def health():
     return {"status": "ok"}
 
@@ -47,7 +43,7 @@ class TransferOut(BaseModel):
     comments: str
 
 
-@app.get("/transfers/exports/{country}", response_model=list[TransferOut])
+@router.get("/transfers/exports/{country}", response_model=list[TransferOut])
 async def get_country_exports(
     country: str,
     low_year: int = Query(2000, ge=1950, le=2025),
@@ -70,7 +66,7 @@ async def get_country_exports(
     ]
 
 
-@app.get("/transfers/imports/{country}", response_model=list[TransferOut])
+@router.get("/transfers/imports/{country}", response_model=list[TransferOut])
 async def get_country_imports(
     country: str,
     low_year: int = Query(2000, ge=1950, le=2025),
@@ -93,7 +89,7 @@ async def get_country_imports(
     ]
 
 
-@app.get("/transfers/bilateral/{seller}/{buyer}", response_model=list[TransferOut])
+@router.get("/transfers/bilateral/{seller}/{buyer}", response_model=list[TransferOut])
 async def get_bilateral_transfers(
     seller: str,
     buyer: str,
@@ -117,7 +113,7 @@ async def get_bilateral_transfers(
     ]
 
 
-@app.get("/transfers/countries")
+@router.get("/transfers/countries")
 async def list_available_countries():
     """List countries available for SIPRI queries."""
     return {"countries": list(SIPRI_COUNTRY_CODES.keys())}
@@ -135,7 +131,7 @@ class IndicatorOut(BaseModel):
     military_expenditure_pct_gdp: float | None
 
 
-@app.get("/indicators/{country_iso3}", response_model=list[IndicatorOut])
+@router.get("/indicators/{country_iso3}", response_model=list[IndicatorOut])
 async def get_trade_indicators(
     country_iso3: str,
     start_year: int = Query(2000, ge=1960, le=2025),
@@ -155,7 +151,7 @@ async def get_trade_indicators(
     ]
 
 
-@app.get("/indicators/top/importers", response_model=list[IndicatorOut])
+@router.get("/indicators/top/importers", response_model=list[IndicatorOut])
 async def get_top_importers(year: int = Query(2024, ge=1960, le=2025)):
     """Get the top arms importing countries for a given year."""
     client = WorldBankClient()
@@ -171,7 +167,7 @@ async def get_top_importers(year: int = Query(2024, ge=1960, le=2025)):
     ]
 
 
-@app.get("/indicators/top/exporters", response_model=list[IndicatorOut])
+@router.get("/indicators/top/exporters", response_model=list[IndicatorOut])
 async def get_top_exporters(year: int = Query(2024, ge=1960, le=2025)):
     """Get the top arms exporting countries for a given year."""
     client = WorldBankClient()
@@ -200,7 +196,7 @@ class NewsOut(BaseModel):
     tone: float | None
 
 
-@app.get("/news/latest", response_model=list[NewsOut])
+@router.get("/news/latest", response_model=list[NewsOut])
 async def get_latest_arms_news(
     hours: int = Query(24, ge=1, le=168),
 ):
@@ -218,7 +214,7 @@ async def get_latest_arms_news(
     ]
 
 
-@app.get("/news/country/{country}", response_model=list[NewsOut])
+@router.get("/news/country/{country}", response_model=list[NewsOut])
 async def get_country_arms_news(
     country: str,
     hours: int = Query(72, ge=1, le=168),
@@ -256,7 +252,7 @@ class FlightOut(BaseModel):
     sources: list[str] = []
 
 
-@app.get("/tracking/flights/military", response_model=list[FlightOut])
+@router.get("/tracking/flights/military", response_model=list[FlightOut])
 async def get_military_flights():
     """Get all currently visible military aircraft."""
     client = FlightTrackerClient()
@@ -279,7 +275,7 @@ async def get_military_flights():
     ]
 
 
-@app.get("/tracking/flights/transports", response_model=list[FlightOut])
+@router.get("/tracking/flights/transports", response_model=list[FlightOut])
 async def get_transport_flights():
     """Get military transport aircraft (likely weapons/equipment carriers)."""
     client = FlightTrackerClient()

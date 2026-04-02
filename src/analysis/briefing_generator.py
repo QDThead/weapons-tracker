@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fpdf import FPDF
 
@@ -21,6 +21,8 @@ from src.storage.models import (
     SupplierSector, ContractStatus,
 )
 from src.analysis.confidence import compute_confidence
+from src.analysis.mineral_supply_chains import get_mineral_by_name
+from src.analysis.risk_taxonomy import TAXONOMY_DEFINITIONS
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +114,7 @@ class BriefingGenerator:
 
     def generate_pdf(self) -> bytes:
         """Generate a full intelligence briefing PDF. Returns bytes."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         generated_at = now.strftime("%Y-%m-%d %H:%M UTC")
 
         pdf = BriefingPDF(generated_at)
@@ -182,7 +184,6 @@ class BriefingGenerator:
         pdf.add_page()
         pdf.section_title(2, "Defence Supply Chain Risk Taxonomy (Annex B)")
 
-        from src.analysis.risk_taxonomy import TAXONOMY_DEFINITIONS
         tax_rows = []
         for cat_id, cat in TAXONOMY_DEFINITIONS.items():
             rows = self.session.query(RiskTaxonomyScore).filter_by(category_id=cat_id).all()
@@ -358,8 +359,6 @@ class BriefingGenerator:
 
     def _add_cobalt_section(self, pdf: BriefingPDF):
         """Add Cobalt supply chain intelligence section."""
-        from src.analysis.mineral_supply_chains import get_mineral_by_name
-
         mineral = get_mineral_by_name("Cobalt")
         if not mineral:
             return

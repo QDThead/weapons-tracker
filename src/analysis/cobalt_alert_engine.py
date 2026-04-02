@@ -52,7 +52,7 @@ async def generate_gdelt_alerts() -> list[dict]:
                     "sources": [article.source or "GDELT"],
                     "confidence": min(90, max(40, 50 + int(abs(tone) * 3))),
                     "coa": _suggest_coa(article.title),
-                    "timestamp": (article.published_at or datetime.utcnow()).isoformat(),
+                    "timestamp": (article.published_at or datetime.now(timezone.utc)).isoformat(),
                     "source_url": article.url,
                     "auto_generated": True,
                 })
@@ -82,7 +82,7 @@ def generate_rule_alerts() -> list[dict]:
             "sources": ["USGS MCS 2025", "PSI Concentration Index"],
             "confidence": 95,
             "coa": "Diversify sourcing to Australian, Philippine, and Canadian deposits",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "auto_generated": True,
         })
 
@@ -98,7 +98,7 @@ def generate_rule_alerts() -> list[dict]:
             "sources": ["USGS MCS 2025", "CRU Group Cobalt Market Report"],
             "confidence": 95,
             "coa": "Support Finnish/Norwegian refinery expansion; DPSA allied allocation",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "auto_generated": True,
         })
 
@@ -114,7 +114,7 @@ def generate_rule_alerts() -> list[dict]:
                 "sources": [f"{ref.get('owner', 'Unknown')} Operations Report", "PSI Supply Chain Monitor"],
                 "confidence": 90,
                 "coa": f"Assess alternative refineries; monitor {ref.get('owner', 'operator')} restart timeline",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "auto_generated": True,
             })
 

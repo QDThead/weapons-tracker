@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 WIKIDATA_SPARQL_URL = "https://query.wikidata.org/sparql"
 WIKIDATA_USER_AGENT = "WeaponsTracker/1.0 (https://github.com/QDThead/weapons-tracker; bill@qdt.ai)"
 OPENCORPORATES_URL = "https://api.opencorporates.com/v0.4/companies/search"
-SEC_EDGAR_SEARCH_URL = "https://efts.sec.gov/LATEST/search-index"
 
 
 @dataclass

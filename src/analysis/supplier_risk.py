@@ -8,7 +8,7 @@ and contract performance. Persists dimension scores and composite to DB.
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -309,7 +309,7 @@ class SupplierRiskScorer:
         }
 
         composite = 0.0
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for dimension, method in dimension_methods.items():
             score, rationale = method(supplier)

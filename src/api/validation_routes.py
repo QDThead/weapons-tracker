@@ -12,16 +12,14 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 
 from src.analysis.source_registry import get_registry
+from src.utils.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/validation", tags=["Validation"])
 
-_sources_cache: tuple[float, dict] | None = None
-_SOURCES_TTL = 3600
-
-_health_cache: tuple[float, dict] | None = None
-_HEALTH_TTL = 60
+_sources_cache = TTLCache(ttl_seconds=3600, max_size=5)
+_health_cache = TTLCache(ttl_seconds=60, max_size=5)
 
 _SOURCE_TYPES = [
     "Primary", "Cross-validation", "Trade validation",
@@ -33,41 +31,38 @@ _SOURCE_TYPES = [
 @router.get("/sources")
 async def get_validation_sources():
     """Return the full source validation registry."""
-    global _sources_cache
-    now = time.time()
-    if _sources_cache and now - _sources_cache[0] < _SOURCES_TTL:
-        return _sources_cache[1]
+    cached = _sources_cache.get("sources")
+    if cached is not None:
+        return cached
     registry = get_registry()
     result = {
         "registry": registry,
         "total_keys": len(registry),
         "source_types": _SOURCE_TYPES,
     }
-    _sources_cache = (now, result)
+    _sources_cache.set("sources", result)
     return result
 
 
 @router.get("/health")
 async def get_validation_health():
     """Return live health/freshness data for all data source connectors."""
-    global _health_cache
-    now = time.time()
-    if _health_cache and now - _health_cache[0] < _HEALTH_TTL:
-        return _health_cache[1]
+    cached = _health_cache.get("health")
+    if cached is not None:
+        return cached
     health = _collect_health()
-    _health_cache = (now, health)
+    _health_cache.set("health", health)
     return health
 
 
 def _collect_health() -> dict:
     """Aggregate health data from all route module caches."""
-    now = time.time()
     health: dict[str, dict] = {}
     connectors = _get_connector_specs()
     for spec in connectors:
         key = spec["key"]
-        cache_dict = spec.get("cache_dict")
-        cache_key = spec.get("cache_key")
+        cache_obj = spec.get("cache_obj") or spec.get("cache_dict")
+        cache_key = spec.get("cache_key", "")
         expected_ttl = spec.get("expected_ttl", 3600)
         entry = {
             "last_fetch": None,
@@ -76,12 +71,35 @@ def _collect_health() -> dict:
             "cache_status": "UNKNOWN",
             "health": "UNKNOWN",
         }
-        if cache_dict and cache_key:
-            cached = cache_dict.get(cache_key)
-            if cached and isinstance(cached, tuple) and len(cached) == 2:
-                ts, data = cached
-                age = now - ts
-                entry["last_fetch"] = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+        if cache_obj is not None and cache_key:
+            age: float | None = None
+            data = None
+
+            if hasattr(cache_obj, "health"):
+                # TTLCache path
+                # Wildcard keys (e.g. "comtrade:*", "mirror:*", "news:*") — check if
+                # any entry exists in the cache rather than a specific key.
+                if cache_key.endswith(":*"):
+                    oldest = cache_obj.oldest_entry()
+                    if oldest is not None:
+                        ts, data = oldest
+                        age = time.time() - ts
+                else:
+                    info = cache_obj.health(cache_key)
+                    if info["exists"]:
+                        age = info["age_seconds"]
+                        data = cache_obj.get(cache_key)
+            elif isinstance(cache_obj, dict):
+                # Legacy plain-dict fallback
+                cached_entry = cache_obj.get(cache_key)
+                if cached_entry and isinstance(cached_entry, tuple) and len(cached_entry) == 2:
+                    ts, data = cached_entry
+                    age = time.time() - ts
+
+            if age is not None:
+                # Reconstruct last_fetch from current time minus age
+                last_fetch_ts = time.time() - age
+                entry["last_fetch"] = datetime.fromtimestamp(last_fetch_ts, tz=timezone.utc).isoformat()
                 entry["cache_age_seconds"] = int(age)
                 if isinstance(data, list):
                     entry["records"] = len(data)
@@ -138,19 +156,19 @@ def _get_connector_specs() -> list[dict]:
             ("treasury_fiscal", "treasury_fiscal", 3600),
         ]
         for key, cache_key, ttl in enrichment_connectors:
-            specs.append({"key": key, "cache_dict": enrich_cache, "cache_key": cache_key, "expected_ttl": ttl})
+            specs.append({"key": key, "cache_obj": enrich_cache, "cache_key": cache_key, "expected_ttl": ttl})
     except ImportError:
         pass
     try:
         from src.api.dashboard_routes import _buyer_mirror_cache, _comtrade_cache, _news_cache
-        specs.append({"key": "comtrade_trade", "cache_dict": _comtrade_cache, "cache_key": "comtrade:*", "expected_ttl": 3600})
-        specs.append({"key": "buyer_mirror", "cache_dict": _buyer_mirror_cache, "cache_key": "mirror:*", "expected_ttl": 3600})
-        specs.append({"key": "gdelt_news", "cache_dict": _news_cache, "cache_key": "news:*", "expected_ttl": 900})
+        specs.append({"key": "comtrade_trade", "cache_obj": _comtrade_cache, "cache_key": "comtrade:*", "expected_ttl": 3600})
+        specs.append({"key": "buyer_mirror", "cache_obj": _buyer_mirror_cache, "cache_key": "mirror:*", "expected_ttl": 3600})
+        specs.append({"key": "gdelt_news", "cache_obj": _news_cache, "cache_key": "news:*", "expected_ttl": 900})
     except ImportError:
         pass
     try:
         from src.api.supplier_routes import _cache as supplier_cache
-        specs.append({"key": "suppliers", "cache_dict": supplier_cache, "cache_key": "suppliers", "expected_ttl": 3600})
+        specs.append({"key": "suppliers", "cache_obj": supplier_cache, "cache_key": "suppliers", "expected_ttl": 3600})
     except ImportError:
         pass
     return specs

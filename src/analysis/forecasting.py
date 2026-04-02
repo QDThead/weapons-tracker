@@ -6,7 +6,7 @@ using historical trend extrapolation. Addresses DND Q12.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -28,7 +28,7 @@ class SupplyChainForecaster:
     def generate_all_forecasts(self) -> dict:
         """Generate predictions across all forecast types."""
         return {
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "horizon": "12-18 months",
             "forecasts": [
                 self._forecast_arms_trade_volume(),

@@ -5,7 +5,6 @@ Addresses DND Q16: AI/ML Trainability.
 from __future__ import annotations
 
 import logging
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ml", tags=["AI/ML"])
 
 # In-memory storage for user-defined threshold overrides
-_custom_thresholds: Dict[str, float] = {}
+_custom_thresholds: dict[str, float] = {}
 
 
 class FeedbackRequest(BaseModel):

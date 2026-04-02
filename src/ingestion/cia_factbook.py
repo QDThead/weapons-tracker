@@ -287,7 +287,6 @@ class CIAFactbookClient:
                 resolved.append((region, fips, name, iso3))
 
         # Return cached if fresh
-        cache_key = tuple(sorted((r, f) for r, f, _, _ in resolved))
         if (
             self._cache is not None
             and time.monotonic() - self._cache.fetched_at < self.cache_ttl

@@ -11,9 +11,10 @@ Reference: https://api.adsb.lol/docs
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 
@@ -92,7 +93,6 @@ class FlightTrackerClient:
 
     async def fetch_military_aircraft(self) -> list[MilitaryFlightRecord]:
         """Fetch military aircraft from all sources, merge and deduplicate."""
-        import asyncio
 
         async def _fetch_source(source: dict) -> list[MilitaryFlightRecord]:
             url = f"{source['url']}/mil"
@@ -138,7 +138,6 @@ class FlightTrackerClient:
 
     async def fetch_by_type(self, type_code: str) -> list[MilitaryFlightRecord]:
         """Fetch all aircraft of a specific ICAO type code from all sources."""
-        import asyncio
 
         async def _fetch_source(source: dict) -> list[MilitaryFlightRecord]:
             url = f"{source['url']}/type/{type_code}"
@@ -252,5 +251,5 @@ class FlightTrackerClient:
             is_military=is_military,
             country_of_origin=country,
             squawk=ac.get("squawk", ""),
-            seen_at=datetime.utcnow(),
+            seen_at=datetime.now(timezone.utc),
         )

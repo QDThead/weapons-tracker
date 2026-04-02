@@ -251,9 +251,6 @@ class SupplyChainAnalyzer:
 
             total_risk += min(100, route_risk)
 
-        if not routes:
-            return 0
-
         return min(100, round(total_risk / len(routes), 1))
 
     def score_geopolitical_instability(self, country_name: str) -> float:

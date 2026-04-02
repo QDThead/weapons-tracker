@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import logging
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
+
+from src.storage.models import RiskTaxonomyScore
 
 logger = logging.getLogger(__name__)
 
@@ -310,8 +312,6 @@ TAXONOMY_DEFINITIONS: dict[int, dict] = {
     },
 }
 
-from src.storage.models import RiskTaxonomyScore
-
 
 class RiskTaxonomyScorer:
     """Scores 121 DND risk taxonomy sub-categories.
@@ -359,7 +359,7 @@ class RiskTaxonomyScorer:
         for row in rows:
             drift = random.uniform(-5, 5)
             row.score = max(0.0, min(100.0, row.baseline_score + drift))
-            row.scored_at = datetime.utcnow()
+            row.scored_at = datetime.now(timezone.utc)
         self.session.commit()
         return len(rows)
 
@@ -372,8 +372,6 @@ class RiskTaxonomyScorer:
         from src.storage.models import (
             DefenceSupplier, SupplyChainAlert, ArmsTradeNews, SupplyChainMaterial,
         )
-        from sqlalchemy import func  # noqa: F401
-
         # Count available data for graceful degradation
         supplier_count = self.session.query(DefenceSupplier).count()
         news_count = self.session.query(ArmsTradeNews).count()
@@ -415,7 +413,7 @@ class RiskTaxonomyScorer:
             else:
                 row.score = max(0, min(100, row.baseline_score + random.uniform(-3, 3)))
 
-            row.scored_at = datetime.utcnow()
+            row.scored_at = datetime.now(timezone.utc)
 
         # Handle hybrid rows for Financial (12) with graceful degradation
         hybrid_financial = self.session.query(RiskTaxonomyScore).filter(
@@ -429,7 +427,7 @@ class RiskTaxonomyScorer:
             else:
                 row.score = max(0, min(100, row.baseline_score + random.uniform(-3, 3)))
                 row.rationale = "Hybrid: seeded baseline (supplier data pending procurement scrape)"
-            row.scored_at = datetime.utcnow()
+            row.scored_at = datetime.now(timezone.utc)
 
         self.session.commit()
 

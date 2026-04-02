@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import uvicorn
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +24,7 @@ from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from src.storage.database import init_db
-from src.api.routes import app
+from src.api.routes import router as core_router
 from src.api.trend_routes import router as trend_router
 from src.api.dashboard_routes import router as dashboard_router
 from src.api.insights_routes import router as insights_router
@@ -47,8 +49,39 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Security middleware (skipped in development so localhost:8000 works)
 _environment = os.getenv("ENVIRONMENT", "development")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown lifecycle."""
+    logger.info("Initializing database...")
+    init_db()
+
+    logger.info("Starting ingestion scheduler...")
+    scheduler = create_scheduler()
+    scheduler.start()
+    logger.info(
+        "Scheduler running — %d jobs configured",
+        len(scheduler.get_jobs()),
+    )
+    for job in scheduler.get_jobs():
+        logger.info("  [%s] %s — next run: %s", job.id, job.name, job.next_run_time)
+
+    logger.info("Weapons Tracker API is ready")
+    yield
+    logger.info("Shutting down scheduler...")
+    scheduler.shutdown(wait=False)
+
+
+app = FastAPI(
+    title="Weapons Tracker API",
+    description="Global weapons sales and trade tracking across countries using OSINT data sources.",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+# Security middleware (skipped in development so localhost:8000 works)
 _allowed_hosts = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 if _environment != "development":
@@ -69,6 +102,7 @@ app.add_middleware(
 )
 
 # Register routes
+app.include_router(core_router)
 app.include_router(trend_router)
 app.include_router(dashboard_router)
 app.include_router(insights_router)
@@ -94,38 +128,13 @@ app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 async def serve_dashboard():
     return FileResponse(str(_static_dir / "index.html"))
 
-scheduler = create_scheduler()
-
-
-@app.on_event("startup")
-async def startup():
-    logger.info("Initializing database...")
-    init_db()
-
-    logger.info("Starting ingestion scheduler...")
-    scheduler.start()
-    logger.info(
-        "Scheduler running — %d jobs configured",
-        len(scheduler.get_jobs()),
-    )
-    for job in scheduler.get_jobs():
-        logger.info("  [%s] %s — next run: %s", job.id, job.name, job.next_run_time)
-
-    logger.info("Weapons Tracker API is ready")
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    logger.info("Shutting down scheduler...")
-    scheduler.shutdown(wait=False)
-
 
 def main():
     uvicorn.run(
         "src.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
+        reload=(_environment == "development"),
     )
 
 

@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 from fastapi import Depends, Request, HTTPException, Security
@@ -149,7 +149,7 @@ def log_audit(user: str, action: str, resource: str, detail: str = ""):
         session = SessionLocal()
         try:
             entry = AuditLog(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 user=user,
                 action=action,
                 resource=resource,

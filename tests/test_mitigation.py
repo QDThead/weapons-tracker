@@ -144,7 +144,7 @@ def test_generate_coas_from_taxonomy():
 
 
 from fastapi.testclient import TestClient
-from src.api.routes import app
+from src.main import app
 from src.api.mitigation_routes import router as mitigation_router
 
 if not any(getattr(r, 'path', '').startswith("/mitigation") for r in app.routes):

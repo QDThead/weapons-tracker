@@ -6,18 +6,26 @@ and analysis. All data comes from the persisted database.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+import logging
+
+from fastapi import APIRouter, HTTPException, Query
 
 from src.storage.database import SessionLocal
 from src.analysis.trends import TrendAnalyzer
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/trends", tags=["Trends"])
 
 
-def _get_analyzer() -> tuple:
+def _get_analyzer() -> tuple[object, TrendAnalyzer]:
     """Create a session and analyzer. Returns (session, analyzer)."""
     session = SessionLocal()
-    return session, TrendAnalyzer(session)
+    try:
+        return session, TrendAnalyzer(session)
+    except Exception:
+        session.close()
+        raise
 
 
 # --- Database Summary ---
@@ -29,6 +37,9 @@ async def get_summary():
     session, analyzer = _get_analyzer()
     try:
         return analyzer.summary_stats()
+    except Exception as e:
+        logger.error("Summary stats fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -46,6 +57,9 @@ async def get_global_volume(
     try:
         results = analyzer.global_volume_by_year(start_year, end_year)
         return [{"year": r.year, "tiv_total": r.tiv_total, "deal_count": r.deal_count} for r in results]
+    except Exception as e:
+        logger.error("Global volume query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -68,6 +82,9 @@ async def get_global_categories(
             }
             for r in results
         ]
+    except Exception as e:
+        logger.error("Global category breakdown failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -91,6 +108,9 @@ async def get_top_trading_pairs(
             }
             for r in results
         ]
+    except Exception as e:
+        logger.error("Top trading pairs query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -124,6 +144,9 @@ async def get_country_profile(
             "top_import_partners": profile.top_import_partners,
             "top_weapon_categories": profile.top_weapon_categories,
         }
+    except Exception as e:
+        logger.error("Country profile fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -139,6 +162,9 @@ async def get_country_export_trend(
     try:
         results = analyzer.country_exports_by_year(country, start_year, end_year)
         return [{"year": r.year, "tiv_total": r.tiv_total, "deal_count": r.deal_count} for r in results]
+    except Exception as e:
+        logger.error("Country export trend query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -154,6 +180,9 @@ async def get_country_import_trend(
     try:
         results = analyzer.country_imports_by_year(country, start_year, end_year)
         return [{"year": r.year, "tiv_total": r.tiv_total, "deal_count": r.deal_count} for r in results]
+    except Exception as e:
+        logger.error("Country import trend query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -181,6 +210,9 @@ async def get_biggest_import_changes(
             }
             for r in results
         ]
+    except Exception as e:
+        logger.error("Import changes query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -209,6 +241,9 @@ async def get_company_trend(
                 for y, r, rank in zip(trend.years, trend.arms_revenue, trend.ranks)
             ],
         }
+    except Exception as e:
+        logger.error("Company revenue trend fetch failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -222,6 +257,9 @@ async def get_top_companies(
     session, analyzer = _get_analyzer()
     try:
         return analyzer.top_companies_by_year(year, limit)
+    except Exception as e:
+        logger.error("Top companies query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -235,6 +273,9 @@ async def get_flight_activity(days: int = Query(30, ge=1, le=365)):
     session, analyzer = _get_analyzer()
     try:
         return analyzer.flight_activity_by_day(days)
+    except Exception as e:
+        logger.error("Flight activity query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
 
@@ -245,5 +286,8 @@ async def get_news_activity(days: int = Query(30, ge=1, le=365)):
     session, analyzer = _get_analyzer()
     try:
         return analyzer.news_volume_by_day(days)
+    except Exception as e:
+        logger.error("News activity query failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()

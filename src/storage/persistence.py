@@ -6,7 +6,7 @@ Handles upsert logic and deduplication for all entity types.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -147,7 +147,7 @@ class PersistenceService:
                 existing.tiv_delivered = _safe_float(record.tiv_delivered) or existing.tiv_delivered
                 existing.status = _infer_deal_status(record.status)
                 existing.comments = record.comments or existing.comments
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(timezone.utc)
                 continue
 
             seller = self.get_or_create_country(record.seller)
@@ -352,10 +352,21 @@ class PersistenceService:
     # --- Delivery Tracking (Flights) ---
 
     def store_flight_positions(self, flights: list[MilitaryFlightRecord]) -> int:
-        """Store military flight position snapshots."""
+        """Store military flight position snapshots (deduped by hex + timestamp)."""
         inserted = 0
 
         for flight in flights:
+            existing = (
+                self.session.query(DeliveryTracking)
+                .filter_by(
+                    tracking_type="flight",
+                    identifier=flight.icao_hex,
+                    detected_at=flight.seen_at,
+                )
+                .first()
+            )
+            if existing:
+                continue
             tracking = DeliveryTracking(
                 tracking_type="flight",
                 identifier=flight.icao_hex,
@@ -430,7 +441,7 @@ class PersistenceService:
                 existing.concentration_index = rec.get("concentration_index", existing.concentration_index)
                 existing.strategic_importance = rec.get("strategic_importance", existing.strategic_importance)
                 existing.defense_applications = rec.get("defense_applications", existing.defense_applications)
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(timezone.utc)
                 continue
 
             material = SupplyChainMaterial(
@@ -630,7 +641,7 @@ class PersistenceService:
             for key, val in kwargs.items():
                 if val is not None and hasattr(existing, key):
                     setattr(existing, key, val)
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
         else:
             existing = DefenceSupplier(name=name, sector=sector, **kwargs)
             self.session.add(existing)
@@ -666,7 +677,7 @@ class PersistenceService:
         if existing:
             existing.score = score
             existing.rationale = rationale
-            existing.scored_at = datetime.utcnow()
+            existing.scored_at = datetime.now(timezone.utc)
         else:
             existing = SupplierRiskScore(
                 supplier_id=supplier_id, dimension=dimension,
@@ -689,7 +700,7 @@ class PersistenceService:
             for key, val in kwargs.items():
                 if val is not None and hasattr(existing, key):
                     setattr(existing, key, val)
-            existing.scored_at = datetime.utcnow()
+            existing.scored_at = datetime.now(timezone.utc)
         else:
             existing = RiskTaxonomyScore(subcategory_key=subcategory_key, **kwargs)
             self.session.add(existing)
@@ -712,7 +723,7 @@ class PersistenceService:
             for key, val in kwargs.items():
                 if val is not None and hasattr(existing, key):
                     setattr(existing, key, val)
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
         else:
             existing = MitigationAction(
                 risk_source=risk_source,

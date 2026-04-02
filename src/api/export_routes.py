@@ -123,7 +123,7 @@ async def export_transfers_csv():
         )
     except Exception as e:
         logger.error("Transfer CSV export failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Transfer CSV export failed")
     finally:
         session.close()
 
@@ -144,7 +144,7 @@ async def export_transfers_excel():
         )
     except Exception as e:
         logger.error("Transfer Excel export failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Transfer Excel export failed")
     finally:
         session.close()
 
@@ -199,7 +199,7 @@ async def export_suppliers_csv():
         )
     except Exception as e:
         logger.error("Supplier CSV export failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Supplier CSV export failed")
     finally:
         session.close()
 
@@ -240,7 +240,7 @@ async def export_news_csv():
         )
     except Exception as e:
         logger.error("News CSV export failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="News CSV export failed")
     finally:
         session.close()
 
@@ -285,7 +285,7 @@ async def export_taxonomy_csv():
         )
     except Exception as e:
         logger.error("Taxonomy CSV export failed: %s", e)
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Taxonomy CSV export failed")
     finally:
         session.close()
 
@@ -338,9 +338,9 @@ async def export_cobalt_alerts_csv():
         raise HTTPException(status_code=404, detail="Cobalt data not found")
     alerts = list(mineral.get("watchtower_alerts", []))
     # Merge live GDELT/rule-based alerts if available
-    live = get_cached_alerts() or []
+    live_alerts, _ts = get_cached_alerts()
     seen_ids = {a.get("id") for a in alerts}
-    for la in live:
+    for la in (live_alerts or []):
         if la.get("id") not in seen_ids:
             alerts.append(la)
             seen_ids.add(la.get("id"))

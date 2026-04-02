@@ -63,8 +63,16 @@ class TTLCache:
 
     def _evict_oldest(self) -> None:
         while len(self._store) > self._max_size:
-            oldest_key = min(self._store, key=lambda k: self._store[k][0])
+            oldest_key = next(iter(self._store))
             del self._store[oldest_key]
+
+    def oldest_entry(self) -> tuple[float, Any] | None:
+        """Return (timestamp, value) of the oldest non-expired entry, or None."""
+        self._evict_expired()
+        if not self._store:
+            return None
+        oldest_key = next(iter(self._store))
+        return self._store[oldest_key]
 
     def __len__(self) -> int:
         return len(self._store)

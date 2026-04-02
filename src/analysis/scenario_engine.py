@@ -483,10 +483,10 @@ class ScenarioEngine:
             })
 
         # Add layer-specific COAs
-        layer_types = {l["type"] for l in layers}
+        layer_types = {layer["type"] for layer in layers}
         if "sanctions_expansion" in layer_types:
             country = next(
-                (l["params"].get("country", "") for l in layers if l["type"] == "sanctions_expansion"), ""
+                (layer["params"].get("country", "") for layer in layers if layer["type"] == "sanctions_expansion"), ""
             )
             coas.append({
                 "id": "COA-S1",

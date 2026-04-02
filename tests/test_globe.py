@@ -5,7 +5,7 @@ import pytest
 
 from src.analysis.mineral_supply_chains import get_all_minerals, get_mineral_by_name
 from fastapi.testclient import TestClient
-from src.api.routes import app
+from src.main import app
 from src.api.globe_routes import router as globe_router
 
 # Ensure globe router is included for tests

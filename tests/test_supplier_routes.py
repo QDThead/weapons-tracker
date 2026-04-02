@@ -11,7 +11,7 @@ from src.storage.models import (
     SupplierSector, OwnershipType, ContractStatus, RiskDimension,
 )
 from src.storage.persistence import PersistenceService
-from src.api.routes import app
+from src.main import app
 from src.api.supplier_routes import router as supplier_router
 
 # Register supplier routes on app (main.py does this at startup)

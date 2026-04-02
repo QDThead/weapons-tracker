@@ -17,7 +17,7 @@ import asyncio
 import logging
 import math
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
@@ -1196,7 +1196,7 @@ def _fetch_db_flight_trends() -> dict:
                 GROUP BY DATE(detected_at)
                 ORDER BY day DESC
                 LIMIT 30
-            """), {"since": (datetime.utcnow() - timedelta(days=30)).isoformat()}).fetchall()
+            """), {"since": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()}).fetchall()
 
             daily_counts = {}
             total = 0
@@ -1216,7 +1216,7 @@ def _fetch_db_flight_trends() -> dict:
                       AND detected_at >= :since
                       AND (callsign LIKE 'RF%' OR callsign LIKE 'RA%'
                            OR callsign LIKE 'RU%' OR callsign LIKE 'RSD%')
-                """), {"since": (datetime.utcnow() - timedelta(days=30)).isoformat()}).fetchall()
+                """), {"since": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()}).fetchall()
                 russian_count = r_rows[0][0] if r_rows else 0
             except Exception:
                 pass
@@ -1231,7 +1231,7 @@ def _fetch_db_flight_trends() -> dict:
                            OR callsign LIKE 'RCH%' OR callsign LIKE 'REACH%'
                            OR callsign LIKE 'NORW%' OR callsign LIKE 'FIN%'
                            OR callsign LIKE 'SVF%' OR callsign LIKE 'GAF%')
-                """), {"since": (datetime.utcnow() - timedelta(days=30)).isoformat()}).fetchall()
+                """), {"since": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()}).fetchall()
                 nato_count = n_rows[0][0] if n_rows else 0
             except Exception:
                 pass
@@ -1453,7 +1453,7 @@ async def get_arctic_current_intelligence():
             "nations": nato_spending,
         },
         "extrapolation": _extrapolate_arctic_timeline(sipri_data, monthly_trade, dsca_sales, nato_spending),
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
     _arctic_current_cache.set(cache_key, result)

@@ -363,38 +363,6 @@ class CyberThreatIntelligence:
                 "mitre_id": "G0006",
                 "note": "Exposed by Mandiant in 2013. Operations reportedly restructured but capability maintained.",
             },
-            {
-                "name": "Cozy Bear",
-                "aliases": ["APT29", "The Dukes", "NOBELIUM"],
-                "attribution": "Russia (SVR)",
-                "targets": [
-                    "diplomatic", "think tanks", "health care",
-                    "defence policy", "technology companies",
-                ],
-                "ttps": [
-                    "trusted relationship abuse", "MiniDuke", "CozyDuke",
-                    "OAuth token theft via device code phishing",
-                ],
-                "risk_level": "CRITICAL",
-                "last_active": "2025",
-                "known_operations": ["DNC breach (2016)", "SolarWinds (2020)", "Microsoft executive email compromise (2024)"],
-                "mitre_id": "G0016",
-                "note": "Alias entry — see APT29. SVR long-term access focus.",
-            },
-            {
-                "name": "Fancy Bear",
-                "aliases": ["APT28", "Sofacy", "STRONTIUM"],
-                "attribution": "Russia (GRU)",
-                "targets": ["NATO governments", "defence contractors", "media", "elections"],
-                "ttps": [
-                    "X-Agent", "Sofacy toolkit", "spear-phishing", "zero-day exploitation",
-                ],
-                "risk_level": "CRITICAL",
-                "last_active": "2025",
-                "known_operations": ["DNC hack (2016)", "WADA breach (2016)", "Bundestag hack (2015)", "French election targeting (2017)"],
-                "mitre_id": "G0007",
-                "note": "Alias entry — see APT28. GRU active measures unit.",
-            },
         ]
 
         _set_cache("threat_actors", actors)
