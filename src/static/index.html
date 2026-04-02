@@ -457,6 +457,12 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 }
 .feeds-refresh-btn:hover { opacity: 0.85; box-shadow: 0 0 16px rgba(0,212,255,0.3); }
 .feeds-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.feeds-health-banner { padding:14px 20px; border-radius:8px; margin-bottom:16px; font-size:13px; display:none; }
+.feeds-health-banner.has-issues { display:block; }
+.feeds-health-banner.has-failed { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; }
+.feeds-health-banner.has-degraded { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; }
+.feeds-health-banner strong { color:#fff; }
+.feeds-health-banner .banner-feed { display:inline-block; background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:4px; margin:2px 4px; font-family:var(--font-mono); font-size:11px; }
 .feeds-section { margin-bottom: 28px; }
 .feeds-section-title {
   font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
@@ -2307,6 +2313,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 
   <!-- ════ DATA FEEDS PAGE ════ -->
   <div id="page-data-feeds" class="page" role="tabpanel" aria-labelledby="tab-data-feeds">
+    <div id="feeds-health-banner" class="feeds-health-banner"></div>
     <div class="feeds-header" data-val-key="feeds.stats">
       <div>
         <h2>Data Feed Status</h2>
@@ -6803,12 +6810,56 @@ async function refreshDataFeeds() {
 
 async function renderDataFeeds() {
   // Fetch freshness data and enrichment sources in parallel
-  var [freshnessResult, enrichmentResult] = await Promise.allSettled([
+  var [freshnessResult, enrichmentResult, feedHealthResult] = await Promise.allSettled([
     fetch(API + '/insights/freshness').then(r => r.ok ? r.json() : []),
     fetch(API + '/enrichment/sources').then(r => r.ok ? r.json() : { sources: [] }),
+    fetch(API + '/feeds/health').then(r => r.ok ? r.json() : { feeds: {}, summary: {} }),
   ]);
   dataFeedsFreshness = freshnessResult.status === 'fulfilled' ? freshnessResult.value : [];
   dataFeedsEnrichmentSources = enrichmentResult.status === 'fulfilled' ? (enrichmentResult.value.sources || []) : [];
+  var feedHealthData = feedHealthResult.status === 'fulfilled' ? feedHealthResult.value : { feeds: {}, summary: {} };
+
+  // Map from FEED_DEFINITIONS key to scheduler health key
+  var feedKeyToHealthKey = {
+    'adsb.lol + adsb.fi + airplanes.live + adsb.one': 'flights',
+    'Defense RSS': 'defense_news_rss', 'GDELT': 'gdelt',
+    'SIPRI Arms': 'sipri', 'World Bank': 'worldbank',
+    'DND Procurement': 'procurement_scraper',
+    'GC Defence News': 'gc_defence_news', 'NATO News': 'nato_news',
+    'NORAD Press': 'norad_news', 'Canadian Sanctions': 'canadian_sanctions',
+    'US Census': 'census_trade', 'UK HMRC': 'uk_hmrc_trade',
+    'Eurostat': 'eurostat_trade', 'Statistics Canada': 'statcan_trade',
+    'CIA Factbook': 'cia_factbook', 'Comtrade Cobalt': 'comtrade_cobalt',
+    'Critical Minerals': 'usgs_minerals', 'USGS Cobalt': 'usgs_minerals',
+    'SIPRI MILEX': 'sipri'
+  };
+  function getHealthState(fd) {
+    var hk = feedKeyToHealthKey[fd.key];
+    return hk ? (feedHealthData.feeds || {})[hk] || null : null;
+  }
+
+  // Render health banner
+  var banner = document.getElementById('feeds-health-banner');
+  var issues = [];
+  Object.entries(feedHealthData.feeds || {}).forEach(function(entry) {
+    var fname = entry[0], fstate = entry[1];
+    if (fstate.status === 'failed' || fstate.status === 'degraded') {
+      var ago = fstate.last_success ? timeAgo(new Date(fstate.last_success)) : 'never';
+      issues.push({ name: fname, status: fstate.status, error: fstate.last_error, ago: ago });
+    }
+  });
+  if (issues.length > 0) {
+    var hasFailed = issues.some(function(i) { return i.status === 'failed'; });
+    banner.className = 'feeds-health-banner has-issues ' + (hasFailed ? 'has-failed' : 'has-degraded');
+    banner.innerHTML = '<strong>' + (hasFailed ? '&#9888; Feed Failures Detected' : '&#9888; Degraded Feeds') + '</strong> — ' +
+      issues.length + ' feed' + (issues.length > 1 ? 's' : '') + ' with issues:<br>' +
+      issues.map(function(i) {
+        return '<span class="banner-feed">' + esc(i.name) + ' (' + esc(i.status) + ', last OK: ' + esc(i.ago) + ')</span>';
+      }).join(' ');
+  } else {
+    banner.className = 'feeds-health-banner';
+    banner.innerHTML = '';
+  }
 
   // Update stats
   var endpointCount = FEED_DEFINITIONS.filter(function(f) { return !f.inactive; }).length;
@@ -6830,11 +6881,28 @@ async function renderDataFeeds() {
     sectionMap[fd.section].feeds.push(fd);
   });
 
+  // Sort: failed feeds first, then degraded, then by original order
+  sections.forEach(function(sec) {
+    sec.feeds.sort(function(a, b) {
+      var aState = getHealthState(a) || {};
+      var bState = getHealthState(b) || {};
+      var aPri = aState.status === 'failed' ? 0 : aState.status === 'degraded' ? 1 : 2;
+      var bPri = bState.status === 'failed' ? 0 : bState.status === 'degraded' ? 1 : 2;
+      return aPri - bPri;
+    });
+  });
+
   const content = document.getElementById('feeds-content');
   content.innerHTML = sections.map((sec, si) => {
     const cardsHTML = sec.feeds.map((fd, fi) => {
       const freshness = getFeedFreshness(fd);
-      const dotClass = getFeedDotClass(fd, freshness);
+      var dotClass = getFeedDotClass(fd, freshness);
+      // Override dot color with /feeds/health retry state
+      var feedState = getHealthState(fd);
+      if (feedState) {
+        if (feedState.status === 'failed') dotClass = 'red';
+        else if (feedState.status === 'degraded') dotClass = 'orange';
+      }
       const dotStatusLabel = {green:'Active',yellow:'Stale',orange:'Degraded',red:'Error',gray:'Inactive'}[dotClass] || 'Unknown';
       const latestDisplay = getFeedLatestDisplay(fd, freshness);
       const records = freshness && typeof freshness.records === 'number' ? freshness.records.toLocaleString() : (freshness ? freshness.records || '-' : '-');
