@@ -7375,8 +7375,8 @@ var GLOBE_LAYERS = [
   { id: 'chokepoints', name: 'Chokepoints',       color: '#D80621', defaultOn: true },
   { id: 'ports',       name: 'Canadian Ports',     color: '#ff2d2d', defaultOn: true },
   { id: 'arcs',        name: 'Flow Arcs',          color: '#00d4ff', defaultOn: true },
-  { id: 'thermal-gibs', name: 'VIIRS Thermal (NASA)', color: '#ff4500', defaultOn: false },
-  { id: 'thermal-det',  name: 'FIRMS Detections',     color: '#ff6b35', defaultOn: true },
+  { id: 'thermal-gibs', name: 'VIIRS Thermal (NASA)', color: '#ff4500', defaultOn: true },
+  { id: 'thermal-det',  name: 'Thermal Status',       color: '#ff6b35', defaultOn: true },
 ];
 var layerVisibility = {};
 GLOBE_LAYERS.forEach(function(l) { layerVisibility[l.id] = l.defaultOn; });
@@ -7543,7 +7543,7 @@ async function initCesiumGlobe() {
         credit: 'NASA GIBS VIIRS Thermal Anomalies',
       });
       _gibsThermalLayer = scene.imageryLayers.addImageryProvider(gibsProvider);
-      _gibsThermalLayer.alpha = 0.85;
+      _gibsThermalLayer.alpha = 0.95;
       _gibsThermalLayer.show = layerVisibility['thermal-gibs'] || false;
     } catch (e) {
       console.warn('GIBS thermal layer failed:', e);
@@ -8117,47 +8117,86 @@ function renderGlobeEntities() {
       });
     });
 
-    // FIRMS thermal detection points (ground-level hotspot markers)
+    // Thermal status rings + hotspot markers for ALL facilities
     var allFacilities = (m.mines || []).concat(m.refineries || []);
     allFacilities.forEach(function(facility) {
-      var thermal = facility.thermal;
-      if (!thermal || !thermal.detections || thermal.detections.length === 0) return;
-      thermal.detections.forEach(function(det) {
-        var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
-        var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.7 + intensity * 0.3);
-        var dotSize = Math.max(6, Math.min(14, (det.frp || 1) * 1.5));
-        cesiumViewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 500),
-          point: {
-            pixelSize: dotSize,
-            color: hotColor,
-            outlineColor: Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.5),
-            outlineWidth: 4,
-          },
-          label: {
-            text: (det.bright_ti4 || 0).toFixed(0) + 'K',
-            font: '9px JetBrains Mono',
-            fillColor: Cesium.Color.fromCssColorString('#ff6b35'),
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            outlineWidth: 2,
-            outlineColor: Cesium.Color.BLACK,
-            verticalOrigin: Cesium.VerticalOrigin.TOP,
-            pixelOffset: new Cesium.Cartesian2(0, 10),
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 3000000),
-          },
-          properties: {
-            layerId: 'thermal-det',
-            type: 'thermal-detection',
-            mineral: m.name,
-            name: facility.name,
-            brightness: det.bright_ti4 || 0,
-            frp: det.frp || 0,
-            date: det.acq_date || '',
-            time: det.acq_time || '',
-            confidence: det.confidence || '',
-          },
-        });
+      var thermal = facility.thermal || {};
+      var tStatus = thermal.status || 'UNKNOWN';
+      var ringColor = tStatus === 'ACTIVE' ? '#6b9080' : tStatus === 'IDLE' ? '#a89060' : '#4B5567';
+      var ringAlpha = tStatus === 'ACTIVE' ? 0.35 : tStatus === 'IDLE' ? 0.25 : 0.15;
+      var ringRadius = facility.production_t ? 25000 : 20000; // mines larger
+
+      // Ground-level status ring (ellipse) — visible from far away
+      cesiumViewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(facility.lon, facility.lat),
+        ellipse: {
+          semiMajorAxis: ringRadius,
+          semiMinorAxis: ringRadius,
+          material: Cesium.Color.fromCssColorString(ringColor).withAlpha(ringAlpha),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString(ringColor).withAlpha(0.6),
+          outlineWidth: 2,
+          height: 100,
+        },
+        label: {
+          text: tStatus + (thermal.detection_count ? ' (' + thermal.detection_count + ')' : ''),
+          font: '10px JetBrains Mono',
+          fillColor: Cesium.Color.fromCssColorString(ringColor),
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          outlineWidth: 2,
+          outlineColor: Cesium.Color.BLACK,
+          verticalOrigin: Cesium.VerticalOrigin.TOP,
+          pixelOffset: new Cesium.Cartesian2(0, 20),
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
+        },
+        properties: {
+          layerId: 'thermal-det',
+          type: 'thermal-ring',
+          mineral: m.name,
+          name: facility.name,
+          thermalStatus: tStatus,
+        },
       });
+
+      // Individual hotspot detection markers (only for facilities with detections)
+      if (thermal.detections && thermal.detections.length > 0) {
+        thermal.detections.forEach(function(det) {
+          var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
+          var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.7 + intensity * 0.3);
+          var dotSize = Math.max(10, Math.min(20, (det.frp || 1) * 2.5));
+          cesiumViewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 1000),
+            point: {
+              pixelSize: dotSize,
+              color: hotColor,
+              outlineColor: Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.6),
+              outlineWidth: 5,
+            },
+            label: {
+              text: (det.bright_ti4 || 0).toFixed(0) + 'K | ' + (det.frp || 0).toFixed(1) + 'MW',
+              font: '10px JetBrains Mono',
+              fillColor: Cesium.Color.fromCssColorString('#ff6b35'),
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              outlineWidth: 2,
+              outlineColor: Cesium.Color.BLACK,
+              verticalOrigin: Cesium.VerticalOrigin.TOP,
+              pixelOffset: new Cesium.Cartesian2(0, 14),
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
+            },
+            properties: {
+              layerId: 'thermal-det',
+              type: 'thermal-detection',
+              mineral: m.name,
+              name: facility.name,
+              brightness: det.bright_ti4 || 0,
+              frp: det.frp || 0,
+              date: det.acq_date || '',
+              time: det.acq_time || '',
+              confidence: det.confidence || '',
+            },
+          });
+        });
+      }
     });
 
     // Flow arcs: mining → processing (primary connections)
