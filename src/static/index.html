@@ -8154,28 +8154,43 @@ function renderGlobeEntities() {
         },
       });
 
-      // Individual hotspot detection footprints (VIIRS pixel rectangles)
+      // Individual hotspot detections — fuzzy red thermal bloom
       if (thermal.detections && thermal.detections.length > 0) {
         thermal.detections.forEach(function(det) {
           var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
-          var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.4 + intensity * 0.4);
-          var outlineHot = Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.8);
-          // VIIRS pixel footprint: scan_km x track_km (default 0.375km)
-          var scanDeg = (det.scan_km || 0.375) / 111.0; // km to degrees approx
-          var trackDeg = (det.track_km || 0.375) / 111.0;
-          var west = det.lon - scanDeg / 2;
-          var east = det.lon + scanDeg / 2;
-          var south = det.lat - trackDeg / 2;
-          var north = det.lat + trackDeg / 2;
-          // Render as rectangle showing actual satellite pixel footprint
+          var pixelRadius = ((det.scan_km || 0.375) + (det.track_km || 0.375)) / 2 * 1000; // meters
+          var pos = Cesium.Cartesian3.fromDegrees(det.lon, det.lat);
+
+          // Outer glow — large, very transparent red
           cesiumViewer.entities.add({
-            rectangle: {
-              coordinates: Cesium.Rectangle.fromDegrees(west, south, east, north),
-              material: hotColor,
-              outline: true,
-              outlineColor: outlineHot,
-              outlineWidth: 2,
-              height: 150,
+            position: pos,
+            ellipse: {
+              semiMajorAxis: pixelRadius * 4,
+              semiMinorAxis: pixelRadius * 4,
+              material: Cesium.Color.RED.withAlpha(0.08 + intensity * 0.06),
+              height: 80,
+            },
+            properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
+          });
+          // Mid glow — medium, semi-transparent
+          cesiumViewer.entities.add({
+            position: pos,
+            ellipse: {
+              semiMajorAxis: pixelRadius * 2.2,
+              semiMinorAxis: pixelRadius * 2.2,
+              material: Cesium.Color.fromCssColorString('#cc0000').withAlpha(0.15 + intensity * 0.1),
+              height: 100,
+            },
+            properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
+          });
+          // Hot core — bright red-orange, most opaque
+          cesiumViewer.entities.add({
+            position: pos,
+            ellipse: {
+              semiMajorAxis: pixelRadius * 1.0,
+              semiMinorAxis: pixelRadius * 1.0,
+              material: Cesium.Color.fromCssColorString('#ff2200').withAlpha(0.3 + intensity * 0.25),
+              height: 120,
             },
             properties: {
               layerId: 'thermal-det',
@@ -8191,13 +8206,13 @@ function renderGlobeEntities() {
               track_km: det.track_km || 0.375,
             },
           });
-          // Label at center of footprint
+          // Temperature label
           cesiumViewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 500),
+            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 300),
             label: {
               text: (det.bright_ti4 || 0).toFixed(0) + 'K',
               font: '11px JetBrains Mono',
-              fillColor: Cesium.Color.fromCssColorString('#ff6b35'),
+              fillColor: Cesium.Color.fromCssColorString('#ff4444'),
               style: Cesium.LabelStyle.FILL_AND_OUTLINE,
               outlineWidth: 2,
               outlineColor: Cesium.Color.BLACK,
