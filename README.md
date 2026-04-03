@@ -6,7 +6,7 @@ Geopolitical intelligence platform tracking global weapons sales, military spend
 
 ## What It Does
 
-- **57 active OSINT data feeds** — live flights to annual SIPRI transfers, across 24 connector files
+- **58 active OSINT data feeds** — live flights to annual SIPRI transfers, across 24 connector files
 - **10-tab interactive dashboard** with maps, charts, 3D globe (CesiumJS), and intelligence briefings
 - **Arctic security assessment** with 25 mapped military bases and 3 shipping routes
 - **Russia/China tracking** via buyer-side import mirrors, flight pattern analysis, and sanctions overlay
@@ -17,7 +17,7 @@ Geopolitical intelligence platform tracking global weapons sales, military spend
 - **10 Canadian defence suppliers** with 6-dimension risk scoring (Irving Shipbuilding, GD Land Systems, CAE, etc.)
 - **Cyber threat intelligence** — APT groups, Tor exit nodes, CISA KEV, NVD CVEs, breach registry
 - **PDF intelligence briefing** — one-click 7-page export for decision-makers
-- **150+ API endpoints** with CSV/Excel/JSON export, OpenAPI docs
+- **155+ API endpoints** with CSV/Excel/JSON export, OpenAPI docs
 - **EN/FR bilingual interface** with language toggle
 - **RBAC security** — 3 roles (viewer, analyst, admin), CORS, TLS, audit logging
 - **9,311 arms transfers** across 26 seller countries and 186 buyers
@@ -35,16 +35,16 @@ Open `http://localhost:8000` after starting the server:
 | **Live Flights** | Real-time military aircraft positions worldwide (auto-refreshes 30s) with context banner |
 | **Deals** | Searchable table of 9,311 individual arms transfers (2000-2025) |
 | **Canada Intel** | Supplier risk ranking, ally vs adversary flows, threat watchlist, Arctic monitor, Action Centre |
-| **Supply Chain** | 12 sub-tabs: Overview, 3D Supply Map, Knowledge Graph, Risk Matrix, **Scenario Sandbox** (multi-variable Digital Twin with Sankey cascade, preset scenarios, COA comparison, PDF/CSV/JSON export), Risk Taxonomy, **Forecasting** (live FRED data), **BOM Explorer**, **Supplier Dossier**, **Alerts**, **Risk Register**, **Analyst Feedback** — all Cobalt-focused |
-| **Data Feeds** | 57 active feeds with health indicators, freshness, and sample data |
+| **Supply Chain** | 12 sub-tabs: Overview, 3D Supply Map, Knowledge Graph, Risk Matrix, **Scenario Sandbox** (multi-variable Digital Twin with Sankey cascade, preset scenarios, COA comparison, PDF/CSV/JSON export), Risk Taxonomy, **Forecasting** (live FRED data), **BOM Explorer**, **Supplier Dossier**, **Alerts**, **Risk Register**, **Analyst Feedback**, **Satellite Thermal Verification** (NASA FIRMS VIIRS with FRP sparklines) — all Cobalt-focused |
+| **Data Feeds** | 58 active feeds with health indicators, freshness, and sample data |
 | **Compliance** | DMPP 11 compliance matrix — 22 RFI questions, 137 requirements with traceability |
 
-## Data Sources (57 active + 2 inactive)
+## Data Sources (58 active + 2 inactive)
 
 | Category | Sources | Update Frequency |
 |----------|---------|-----------------|
 | **Live** | Military flights (ADS-B), Defense RSS (4 feeds), GDELT news, Tor exit nodes | Seconds to 15 min |
-| **Near-Real-Time** | DSCA arms sales, GDACS disasters, USGS earthquakes, NOAA weather, NASA EONET, space launches, NIST CVEs | Hours to days |
+| **Near-Real-Time** | DSCA arms sales, NASA FIRMS thermal (18 facilities), GDACS disasters, USGS earthquakes, NOAA weather, NASA EONET, space launches, NIST CVEs | Hours to 6hrs |
 | **Monthly Trade** | US Census, UK HMRC, Eurostat, StatCan, FRED commodities, exchange rates | Monthly |
 | **Annual** | SIPRI transfers, SIPRI MILEX, NATO spending, World Bank, Comtrade, CIA Factbook, UNROCA, nuclear arsenals, armed forces, IMF outlook | Annual |
 | **Enrichment** | WGI governance, economic indicators, US fiscal, conflict deaths, UNHCR, USASpending, DND procurement, defence research | Various |
@@ -70,6 +70,7 @@ Open `http://localhost:8000` after starting the server:
 | **Anomaly Detection + RLHF** | Adaptive thresholds trained by analyst feedback |
 | **Canadian Supplier Exposure** | 6-dimension risk scoring: is Irving Shipbuilding a single point of failure? |
 | **Nuclear Arsenal Tracking** | 9 nuclear states, 12,121 warheads with deployed/reserve breakdown |
+| **Satellite Thermal Verification** | 18 cobalt facilities monitored via NASA FIRMS VIIRS 375m — fraud detection via thermal signature analysis |
 
 ## Getting Started
 
@@ -143,16 +144,17 @@ curl http://localhost:8000/globe/minerals/Cobalt
 | `API_KEYS_JSON` | (dev defaults) | JSON dict of API keys → roles |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
 | `ALLOWED_HOSTS` | `*` | Comma-separated trusted hostnames |
+| `NASA_FIRMS_MAP_KEY` | (none) | Free NASA FIRMS API key for satellite thermal monitoring |
 
 ## Project Stats
 
-- **60+ Python files**, ~24,000 lines
-- **1 HTML dashboard**, ~6,500 lines
-- **118+ API endpoints** (REST, CSV, Excel, PDF)
-- **57 active data sources** spanning live to annual
+- **95 Python files**, ~39,000 lines
+- **1 HTML dashboard**, ~12,900 lines
+- **155+ API endpoints** (REST, CSV, Excel, PDF)
+- **58 active data sources** spanning live to annual
 - **10 dashboard tabs** + EN/FR bilingual
 - **18 database tables**
-- **50 automated tests**
+- **351 automated tests**
 - **13 risk categories**, 121 sub-categories (DND Annex B)
 - **191 COA playbook entries** across all risk categories
 - **30 critical minerals** tracked
