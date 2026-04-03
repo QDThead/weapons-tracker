@@ -2122,7 +2122,9 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D80621; vertical-align:middle; margin-right:6px;"></span> Chinese-owned</div>
-              <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Pin Outline = Satellite Status</div>
+              <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Satellite Thermal</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff4500; vertical-align:middle; margin-right:6px; box-shadow:0 0 4px #ff4500;"></span><span style="color:#ff6b35;">FIRMS detection</span> — hotspot</div>
+              <div style="margin-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Pin Outline = Satellite Status</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #6b9080; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b9080;">Active</span> — thermal detected</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Idle</span> — no thermal (48hrs)</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #4B5567; vertical-align:middle; margin-right:6px;"></span><span style="color:#4B5567;">Unknown</span> — no data</div>
@@ -7373,12 +7375,22 @@ var GLOBE_LAYERS = [
   { id: 'chokepoints', name: 'Chokepoints',       color: '#D80621', defaultOn: true },
   { id: 'ports',       name: 'Canadian Ports',     color: '#ff2d2d', defaultOn: true },
   { id: 'arcs',        name: 'Flow Arcs',          color: '#00d4ff', defaultOn: true },
+  { id: 'thermal-gibs', name: 'VIIRS Thermal (NASA)', color: '#ff4500', defaultOn: false },
+  { id: 'thermal-det',  name: 'FIRMS Detections',     color: '#ff6b35', defaultOn: true },
 ];
 var layerVisibility = {};
 GLOBE_LAYERS.forEach(function(l) { layerVisibility[l.id] = l.defaultOn; });
 
+var _gibsThermalLayer = null; // reference to GIBS imagery layer for toggle
+
 function toggleGlobeLayer(layerId, visible) {
   layerVisibility[layerId] = visible;
+  // Special handling for GIBS imagery layer (not an entity)
+  if (layerId === 'thermal-gibs' && _gibsThermalLayer) {
+    _gibsThermalLayer.show = visible;
+    cesiumViewer.scene.requestRender();
+    return;
+  }
   cesiumViewer.entities.values.forEach(function(e) {
     if (e.properties && e.properties.layerId &&
         e.properties.layerId.getValue() === layerId) {
@@ -7518,6 +7530,24 @@ async function initCesiumGlobe() {
     if (scene.sun) scene.sun.show = false;
     if (scene.moon) scene.moon.show = false;
     if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
+
+    // NASA GIBS VIIRS thermal anomaly overlay (WMTS)
+    try {
+      var gibsProvider = new Cesium.WebMapTileServiceImageryProvider({
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi',
+        layer: 'VIIRS_NOAA20_Thermal_Anomalies_375m_All',
+        style: 'default',
+        tileMatrixSetID: '250m',
+        format: 'image/png',
+        maximumLevel: 8,
+        credit: 'NASA GIBS VIIRS Thermal Anomalies',
+      });
+      _gibsThermalLayer = scene.imageryLayers.addImageryProvider(gibsProvider);
+      _gibsThermalLayer.alpha = 0.85;
+      _gibsThermalLayer.show = layerVisibility['thermal-gibs'] || false;
+    } catch (e) {
+      console.warn('GIBS thermal layer failed:', e);
+    }
   } catch (e) {
     document.getElementById('cesium-globe').innerHTML =
       '<div style="color:var(--accent2); text-align:center; padding:60px;">Failed to initialize 3D globe: ' + esc(e.message) + '</div>';
@@ -8084,6 +8114,49 @@ function renderGlobeEntities() {
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
         },
         properties: { layerId: 'chokepoints', type: 'chokepoint', mineral: m.name, name: cp.name },
+      });
+    });
+
+    // FIRMS thermal detection points (ground-level hotspot markers)
+    var allFacilities = (m.mines || []).concat(m.refineries || []);
+    allFacilities.forEach(function(facility) {
+      var thermal = facility.thermal;
+      if (!thermal || !thermal.detections || thermal.detections.length === 0) return;
+      thermal.detections.forEach(function(det) {
+        var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
+        var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.7 + intensity * 0.3);
+        var dotSize = Math.max(6, Math.min(14, (det.frp || 1) * 1.5));
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 500),
+          point: {
+            pixelSize: dotSize,
+            color: hotColor,
+            outlineColor: Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.5),
+            outlineWidth: 4,
+          },
+          label: {
+            text: (det.bright_ti4 || 0).toFixed(0) + 'K',
+            font: '9px JetBrains Mono',
+            fillColor: Cesium.Color.fromCssColorString('#ff6b35'),
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2,
+            outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 10),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 3000000),
+          },
+          properties: {
+            layerId: 'thermal-det',
+            type: 'thermal-detection',
+            mineral: m.name,
+            name: facility.name,
+            brightness: det.bright_ti4 || 0,
+            frp: det.frp || 0,
+            date: det.acq_date || '',
+            time: det.acq_time || '',
+            confidence: det.confidence || '',
+          },
+        });
       });
     });
 
@@ -9091,6 +9164,18 @@ function setupGlobeClickHandler() {
       title.textContent = props.name.getValue();
       html = '<div><strong>Mineral:</strong> ' + esc(mineral) + '</div>'
            + '<div><strong>Assembly:</strong> ' + esc(props.country.getValue()) + '</div>';
+    } else if (type === 'thermal-detection') {
+      title.textContent = 'Thermal Detection — ' + (props.name ? props.name.getValue() : '');
+      var bright = props.brightness ? props.brightness.getValue() : 0;
+      var frpVal = props.frp ? props.frp.getValue() : 0;
+      var detDate = props.date ? props.date.getValue() : '';
+      var detTime = props.time ? props.time.getValue() : '';
+      var conf = props.confidence ? props.confidence.getValue() : '';
+      html = '<div style="color:#ff6b35; font-weight:600; font-size:13px; margin-bottom:6px;">' + bright.toFixed(1) + 'K brightness</div>'
+           + '<div><strong>Fire Radiative Power:</strong> ' + frpVal.toFixed(1) + ' MW</div>'
+           + '<div><strong>Detected:</strong> ' + esc(detDate) + ' ' + esc(detTime) + ' UTC</div>'
+           + '<div><strong>Confidence:</strong> ' + esc(conf) + '</div>'
+           + '<div style="margin-top:6px; font-size:9px; color:var(--text-muted);">NASA FIRMS VIIRS NOAA-20 (375m)</div>';
     } else if (type === 'chokepoint') {
       title.textContent = props.name.getValue();
       html = '<div><strong>Mineral:</strong> ' + esc(mineral) + '</div>'
