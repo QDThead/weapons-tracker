@@ -1268,6 +1268,48 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
 @keyframes sc{0%{transform:translateY(0);opacity:0}2%{opacity:.6}98%{opacity:.6}100%{transform:translateY(100vh);opacity:0}}
 .cb{height:22px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:3px;color:#fff;position:relative;z-index:1001;}
 
+/* ── Globe Layer Panel ── */
+.globe-layer-btn{
+  position:absolute;top:12px;right:12px;z-index:10;
+  width:32px;height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .25s;
+}
+.globe-layer-btn:hover{border-color:var(--accent);color:var(--accent);}
+.globe-layer-btn svg{width:16px;height:16px;stroke:var(--text-dim);fill:none;stroke-width:1.6;}
+.globe-layer-btn:hover svg{stroke:var(--accent);}
+.globe-layer-btn .glb-label{font-family:var(--font-mono);font-size:6px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-top:1px;}
+.globe-layer-panel{
+  position:absolute;top:12px;right:12px;z-index:10;width:220px;
+  background:var(--surface);border:1px solid var(--border);
+  display:none;flex-direction:column;
+}
+.globe-layer-panel.open{display:flex;}
+.glp-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--border);
+}
+.glp-title{font-family:var(--font-mono);font-size:8px;letter-spacing:2.5px;color:var(--text-muted);text-transform:uppercase;}
+.glp-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
+.glp-close:hover{color:var(--accent);}
+.glp-row{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;
+  border-bottom:1px solid var(--border);transition:background .15s;
+}
+.glp-row:last-child{border-bottom:none;}
+.glp-row:hover{background:rgba(0,212,255,0.03);}
+.glp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.glp-name{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;flex:1;}
+.glp-toggle{
+  position:relative;width:28px;height:14px;border-radius:7px;
+  background:var(--border-hover);cursor:pointer;flex-shrink:0;transition:background .25s;
+}
+.glp-toggle.on{background:var(--accent);}
+.glp-toggle::after{
+  content:'';position:absolute;top:2px;left:2px;width:10px;height:10px;
+  border-radius:50%;background:#fff;transition:left .25s;
+}
+.glp-toggle.on::after{left:16px;}
+
 /* ── Right Side Nav ── */
 .side-nav{position:fixed;right:0;top:90px;bottom:22px;z-index:999;width:140px;display:flex;flex-direction:column;padding:16px 0;background:rgba(6,9,15,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-left:1px solid var(--border);}
 .sn-head{font-family:var(--font-mono);font-size:8px;letter-spacing:2.5px;color:var(--text-muted);text-transform:uppercase;padding:0 16px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;}
@@ -7314,6 +7356,56 @@ function applyLayerVisibility() {
   cesiumViewer.scene.requestRender();
 }
 
+function renderLayerPanel() {
+  var container = document.getElementById('cesium-globe');
+  // Remove existing panel elements if re-rendering
+  var old = container.querySelector('.globe-layer-btn');
+  if (old) old.remove();
+  var oldPanel = container.querySelector('.globe-layer-panel');
+  if (oldPanel) oldPanel.remove();
+
+  // Icon button (collapsed state)
+  var btn = document.createElement('div');
+  btn.className = 'globe-layer-btn';
+  btn.setAttribute('title', 'Toggle layers');
+  btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><span class="glb-label">Layers</span>';
+  container.appendChild(btn);
+
+  // Panel (expanded state)
+  var panel = document.createElement('div');
+  panel.className = 'globe-layer-panel';
+  var html = '<div class="glp-header"><span class="glp-title">Layers</span><button class="glp-close">&times;</button></div>';
+  GLOBE_LAYERS.forEach(function(l) {
+    var on = layerVisibility[l.id] !== false;
+    html += '<div class="glp-row" data-layer="' + l.id + '">'
+      + '<span class="glp-dot" style="background:' + l.color + ';"></span>'
+      + '<span class="glp-name">' + l.name + '</span>'
+      + '<div class="glp-toggle' + (on ? ' on' : '') + '" data-layer="' + l.id + '"></div>'
+      + '</div>';
+  });
+  panel.innerHTML = html;
+  container.appendChild(panel);
+
+  // Wire up: button opens panel, hides button
+  btn.addEventListener('click', function() {
+    btn.style.display = 'none';
+    panel.classList.add('open');
+  });
+  // Wire up: close button hides panel, shows button
+  panel.querySelector('.glp-close').addEventListener('click', function() {
+    panel.classList.remove('open');
+    btn.style.display = '';
+  });
+  // Wire up: toggle switches
+  panel.querySelectorAll('.glp-toggle').forEach(function(tog) {
+    tog.addEventListener('click', function() {
+      var lid = this.dataset.layer;
+      var isOn = this.classList.toggle('on');
+      toggleGlobeLayer(lid, isOn);
+    });
+  });
+}
+
 async function initCesiumGlobe() {
   globeInitialized = true;
 
@@ -7400,6 +7492,7 @@ async function initCesiumGlobe() {
   }
 
   renderMineralLayerPanel();
+  renderLayerPanel();
   setupGlobeClickHandler();
   loadShippingLanes();
 
