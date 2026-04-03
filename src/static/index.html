@@ -2128,6 +2128,10 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #6b9080; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b9080;">Active</span> — thermal detected</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Idle</span> — no thermal (48hrs)</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #4B5567; vertical-align:middle; margin-right:6px;"></span><span style="color:#4B5567;">Unknown</span> — no data</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:radial-gradient(circle, rgba(200,120,255,0.6), rgba(160,80,220,0.1));"></span>
+<span style="font-size:10px; color:var(--text-dim);">NO2 Emissions (Sentinel-5P)</span>
+</div>
             </div>
             <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.leg-arrow').textContent=this.nextElementSibling.style.display==='none'?'\u25B8':'\u25BE'" style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; padding:8px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
               <span>Sea Route Risk</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
@@ -7382,6 +7386,7 @@ var GLOBE_LAYERS = [
   { id: 'arcs',        name: 'Flow Arcs',          color: '#00d4ff', defaultOn: true },
   { id: 'thermal-gibs', name: 'VIIRS Thermal (NASA)', color: '#ff4500', defaultOn: true },
   { id: 'thermal-det',  name: 'Thermal Status',       color: '#ff6b35', defaultOn: true },
+  { id: 'no2-emissions', name: 'NO2 Emissions (S5P)', color: '#a050dc', defaultOn: true },
 ];
 var layerVisibility = {};
 GLOBE_LAYERS.forEach(function(l) { layerVisibility[l.id] = l.defaultOn; });
@@ -7997,7 +8002,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -16),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1, thermal: JSON.stringify(mine.thermal || {}) },
+          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1, thermal: JSON.stringify(mine.thermal || {}), no2: JSON.stringify(mine.no2 || {}), verdict: JSON.stringify(mine.operational_verdict || {}) },
         });
       });
     } else {
@@ -8053,7 +8058,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -14),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1, thermal: JSON.stringify(ref.thermal || {}) },
+          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1, thermal: JSON.stringify(ref.thermal || {}), no2: JSON.stringify(ref.no2 || {}), verdict: JSON.stringify(ref.operational_verdict || {}) },
         });
       });
     } else {
@@ -8254,6 +8259,79 @@ function renderGlobeEntities() {
               }, [])),
             },
           });
+        });
+      }
+
+      // NO2 emissions — purple plume ellipses (Sentinel-5P TROPOMI)
+      var no2 = facility.no2 || {};
+      if (no2.status === 'EMITTING' && no2.ratio >= 2.0) {
+        var no2Pos = Cesium.Cartesian3.fromDegrees(facility.lon || facility.longitude, facility.lat || facility.latitude);
+        var ratioScale = Math.min(2.0, (no2.ratio - 2.0) / 3.0 + 1.0);
+        var baseRadius = 3000 * ratioScale;
+
+        // Outer glow
+        cesiumViewer.entities.add({
+          position: no2Pos,
+          ellipse: {
+            semiMajorAxis: baseRadius * 3,
+            semiMinorAxis: baseRadius * 2.5,
+            material: Cesium.Color.fromCssColorString('#a050dc').withAlpha(0.08),
+            outline: false,
+            height: 0,
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'no2-emissions', type: 'no2-plume', mineral: m.name, name: facility.name },
+        });
+        // Mid bloom
+        cesiumViewer.entities.add({
+          position: no2Pos,
+          ellipse: {
+            semiMajorAxis: baseRadius * 1.8,
+            semiMinorAxis: baseRadius * 1.5,
+            material: Cesium.Color.fromCssColorString('#b464f0').withAlpha(0.15),
+            outline: false,
+            height: 0,
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'no2-emissions', type: 'no2-plume', mineral: m.name, name: facility.name },
+        });
+        // Inner core
+        cesiumViewer.entities.add({
+          position: no2Pos,
+          ellipse: {
+            semiMajorAxis: baseRadius,
+            semiMinorAxis: baseRadius * 0.8,
+            material: Cesium.Color.fromCssColorString('#c878ff').withAlpha(0.28),
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString('#a050dc').withAlpha(0.12),
+            outlineWidth: 1,
+            height: 0,
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'no2-emissions', type: 'no2-plume', mineral: m.name, name: facility.name },
+        });
+        // Center label with ratio
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(facility.lon || facility.longitude, facility.lat || facility.latitude, 200),
+          point: {
+            pixelSize: 6,
+            color: Cesium.Color.fromCssColorString('#c878ff').withAlpha(0.7),
+            outlineColor: Cesium.Color.fromCssColorString('#a050dc').withAlpha(0.4),
+            outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          label: {
+            text: no2.ratio + '\u00d7',
+            font: '10px JetBrains Mono',
+            fillColor: Cesium.Color.fromCssColorString('#c878ff'),
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2,
+            outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -8),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          properties: { layerId: 'no2-emissions', type: 'no2-label', mineral: m.name, name: facility.name },
         });
       }
     });
@@ -9333,6 +9411,31 @@ function setupGlobeClickHandler() {
       if (props.note.getValue()) {
         html += '<div style="margin-top:6px; font-size:11px; color:var(--text-dim); border-top:1px solid var(--border); padding-top:6px;">' + esc(props.note.getValue()) + '</div>';
       }
+      // Combined Operational Verdict
+      var verdictJson = props.verdict ? props.verdict.getValue() : '{}';
+      try {
+        var verdict = JSON.parse(verdictJson);
+        if (verdict.status) {
+          var verdictColors = {
+            'CONFIRMED ACTIVE': '#6b9080',
+            'ACTIVE': '#6b9080',
+            'LIKELY ACTIVE': '#a89060',
+            'IDLE': '#4B5567',
+            'UNKNOWN': '#4B5567'
+          };
+          var vc = verdictColors[verdict.status] || '#4B5567';
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
+          html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">'
+            + '<span style="display:inline-block; padding:2px 8px; background:' + vc + '22; border:1px solid ' + vc + '; font-family:var(--font-mono); font-size:11px; font-weight:700; color:' + vc + '; letter-spacing:0.5px;">' + verdict.status + '</span>'
+            + '<span style="font-size:10px; color:var(--text-dim);">confidence: ' + (verdict.confidence || 'unknown') + '</span>'
+            + '</div>';
+          if (verdict.sources && verdict.sources.length > 0) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Sources: ' + verdict.sources.join(', ') + '</div>';
+          }
+          html += '</div>';
+        }
+      } catch(e) {}
+
       // Satellite Verification section
       var thermalJson = props.thermal ? props.thermal.getValue() : '{}';
       try {
@@ -9414,6 +9517,81 @@ function setupGlobeClickHandler() {
                 });
               } catch(e) {}
             }, 50);
+          }
+        }
+      } catch(e) {}
+
+      // Emissions Verification section (Sentinel-5P NO2)
+      var no2Json = props.no2 ? props.no2.getValue() : '{}';
+      try {
+        var no2 = JSON.parse(no2Json);
+        if (no2.status) {
+          var no2Colors = {EMITTING:'#a050dc', LOW_EMISSION:'#6b6b8a', UNKNOWN:'#4B5567'};
+          var no2Color = no2Colors[no2.status] || '#4B5567';
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
+          html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Emissions Verification</div>';
+          html += '<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">'
+            + '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + no2Color + '; box-shadow:0 0 6px ' + no2Color + ';"></span>'
+            + '<span style="font-family:var(--font-mono); font-size:11px; font-weight:600; color:' + no2Color + ';">' + no2.status + '</span>'
+            + (no2.ratio ? '<span style="font-size:10px; color:var(--text-dim);">(' + no2.ratio + '\u00d7 background)</span>' : '')
+            + '</div>';
+          if (no2.no2_mol_m2) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">NO2: ' + no2.no2_mol_m2.toFixed(6) + ' mol/m\u00b2</div>';
+          }
+          if (no2.background_mol_m2) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Background: ' + no2.background_mol_m2.toFixed(6) + ' mol/m\u00b2</div>';
+          }
+          if (no2.last_overpass) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Last overpass: ' + esc(no2.last_overpass) + '</div>';
+          }
+          var no2History = no2.history || [];
+          if (no2History.length > 1) {
+            html += '<div style="margin-top:6px;">'
+              + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">NO2 Ratio History (30d)</div>'
+              + '<canvas id="dossier-no2-sparkline" width="260" height="60" style="width:100%; height:60px;"></canvas>'
+              + '</div>';
+          }
+          html += '<div style="font-size:9px; color:var(--text-muted); margin-top:4px;">' + esc(no2.source || 'Sentinel-5P TROPOMI') + ' (5.5km)</div>';
+          html += '</div>';
+          if (no2History.length > 1) {
+            setTimeout(function() {
+              try {
+                var canvas = document.getElementById('dossier-no2-sparkline');
+                if (!canvas) return;
+                var ctx = canvas.getContext('2d');
+                if (canvas._chartInstance) canvas._chartInstance.destroy();
+                canvas._chartInstance = new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                    labels: no2History.map(function(h) { return (h.date || '').slice(5); }),
+                    datasets: [{
+                      data: no2History.map(function(h) { return h.ratio || 0; }),
+                      backgroundColor: no2History.map(function(h) {
+                        var r = h.ratio || 0;
+                        return r >= 2.0 ? 'rgba(160,80,220,0.6)' : 'rgba(107,107,138,0.4)';
+                      }),
+                      borderColor: '#a050dc',
+                      borderWidth: 1,
+                      borderRadius: 2,
+                      barPercentage: 0.85,
+                    }]
+                  },
+                  options: {
+                    responsive: false,
+                    plugins: { legend: { display: false }, tooltip: {
+                      callbacks: {
+                        title: function(items) { return items[0].label; },
+                        label: function(c) { return c.parsed.y.toFixed(1) + '\u00d7 background'; }
+                      }
+                    }},
+                    scales: {
+                      x: { display: true, ticks: { font: { size: 7, family: 'JetBrains Mono' }, color: '#4B5567', maxRotation: 45, maxTicksLimit: 8 }, grid: { display: false } },
+                      y: { display: true, beginAtZero: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                  }
+                });
+              } catch(e) {}
+            }, 100);
           }
         }
       } catch(e) {}
