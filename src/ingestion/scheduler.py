@@ -744,8 +744,12 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # NASA FIRMS facility thermal monitoring (every 6 hours)
     async def refresh_firms_thermal():
-        from src.ingestion.firms_thermal import FIRMSThermalClient
+        from src.ingestion.firms_thermal import FIRMSThermalClient, _HISTORY_PATH
         client = FIRMSThermalClient()
+        # Backfill 30 days of history on first run
+        if not _HISTORY_PATH.exists():
+            logger.info("[firms_thermal] First run — backfilling 30 days of history")
+            await client.backfill_history(days=30)
         data = await client.fetch_all_facilities()
         active = sum(1 for v in data.values() if v["status"] == "ACTIVE")
         logger.info("[firms_thermal] %d/%d facilities ACTIVE", active, len(data))

@@ -1,0 +1,242 @@
+{
+ "Tenke Fungurume (TFM)": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Kisanfu (KFM)": [
+  {
+   "date": "2026-03-21",
+   "count": 2,
+   "total_frp_mw": 1.76,
+   "max_k": 309.55
+  },
+  {
+   "date": "2026-03-28",
+   "count": 1,
+   "total_frp_mw": 1.45,
+   "max_k": 295.25
+  },
+  {
+   "date": "2026-03-30",
+   "count": 2,
+   "total_frp_mw": 11.44,
+   "max_k": 341.6
+  },
+  {
+   "date": "2026-03-31",
+   "count": 4,
+   "total_frp_mw": 3.97,
+   "max_k": 301.28
+  },
+  {
+   "date": "2026-04-02",
+   "count": 1,
+   "total_frp_mw": 5.73,
+   "max_k": 346.46
+  },
+  {
+   "date": "2026-04-03",
+   "count": 4,
+   "total_frp_mw": 3.97,
+   "max_k": 301.28
+  }
+ ],
+ "Kamoto (KCC)": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Mutanda": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Murrin Murrin": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Moa JV": [
+  {
+   "date": "2026-03-25",
+   "count": 1,
+   "total_frp_mw": 3.02,
+   "max_k": 336.41
+  },
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Voisey's Bay": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Sudbury Basin": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Raglan Mine": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Huayou Cobalt": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "GEM Co.": [
+  {
+   "date": "2026-03-14",
+   "count": 1,
+   "total_frp_mw": 3.14,
+   "max_k": 336.27
+  },
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Jinchuan Group": [
+  {
+   "date": "2026-03-14",
+   "count": 1,
+   "total_frp_mw": 2.78,
+   "max_k": 328.94
+  },
+  {
+   "date": "2026-03-27",
+   "count": 1,
+   "total_frp_mw": 0.59,
+   "max_k": 295.58
+  },
+  {
+   "date": "2026-03-31",
+   "count": 1,
+   "total_frp_mw": 1.01,
+   "max_k": 295.65
+  },
+  {
+   "date": "2026-04-03",
+   "count": 1,
+   "total_frp_mw": 1.01,
+   "max_k": 295.65
+  }
+ ],
+ "Umicore Kokkola": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Umicore Hoboken": [
+  {
+   "date": "2026-03-10",
+   "count": 1,
+   "total_frp_mw": 0.99,
+   "max_k": 299.32
+  },
+  {
+   "date": "2026-03-19",
+   "count": 1,
+   "total_frp_mw": 0.8,
+   "max_k": 301.91
+  },
+  {
+   "date": "2026-03-26",
+   "count": 1,
+   "total_frp_mw": 1.15,
+   "max_k": 295.54
+  },
+  {
+   "date": "2026-03-29",
+   "count": 1,
+   "total_frp_mw": 1.09,
+   "max_k": 298.67
+  },
+  {
+   "date": "2026-03-31",
+   "count": 1,
+   "total_frp_mw": 0.73,
+   "max_k": 306.26
+  },
+  {
+   "date": "2026-04-03",
+   "count": 1,
+   "total_frp_mw": 0.73,
+   "max_k": 306.26
+  }
+ ],
+ "Fort Saskatchewan": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Long Harbour NPP": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Niihama Nickel Refinery": [
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ],
+ "Harjavalta": [
+  {
+   "date": "2026-03-07",
+   "count": 1,
+   "total_frp_mw": 0.51,
+   "max_k": 295.65
+  },
+  {
+   "date": "2026-04-03",
+   "count": 0,
+   "total_frp_mw": 0,
+   "max_k": 0
+  }
+ ]
+}

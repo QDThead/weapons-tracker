@@ -8217,6 +8217,7 @@ function renderGlobeEntities() {
               confidence: det.confidence || '',
               scan_km: det.scan_km || 0.375,
               track_km: det.track_km || 0.375,
+              history: JSON.stringify(thermal.history || []),
             },
           });
         });
@@ -9205,8 +9206,53 @@ function setupGlobeClickHandler() {
             html += '<div style="font-size:10px; color:#a89060; margin-top:4px; padding:4px 6px; background:rgba(168,144,96,0.1); border-left:2px solid #a89060;">'
               + '\u26A0 No thermal signature detected — facility may be shut down or operating below detection threshold</div>';
           }
+          // Sparkline in dossier popup
+          if (thermal.history && thermal.history.length > 1) {
+            html += '<div style="margin-top:6px;">'
+              + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">FRP History (30 days)</div>'
+              + '<canvas id="dossier-thermal-sparkline" width="260" height="50" style="width:100%; height:50px;"></canvas>'
+              + '</div>';
+          }
           html += '<div style="font-size:9px; color:var(--text-muted); margin-top:4px;">' + esc(thermal.source || 'NASA FIRMS') + ' (375m VIIRS)</div>';
           html += '</div>';
+          // Defer sparkline
+          if (thermal.history && thermal.history.length > 1) {
+            var _dossierHist = thermal.history;
+            setTimeout(function() {
+              try {
+                var canvas = document.getElementById('dossier-thermal-sparkline');
+                if (!canvas) return;
+                var ctx = canvas.getContext('2d');
+                if (canvas._chartInstance) canvas._chartInstance.destroy();
+                canvas._chartInstance = new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                    labels: _dossierHist.map(function(h) { return h.date.slice(5); }),
+                    datasets: [{
+                      data: _dossierHist.map(function(h) { return h.total_frp_mw; }),
+                      borderColor: '#ff4444',
+                      backgroundColor: 'rgba(255,68,68,0.15)',
+                      borderWidth: 2,
+                      fill: true,
+                      pointRadius: 2,
+                      pointBackgroundColor: '#ff4444',
+                      tension: 0.3,
+                    }]
+                  },
+                  options: {
+                    responsive: false,
+                    plugins: { legend: { display: false }, tooltip: {
+                      callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' MW'; } }
+                    }},
+                    scales: {
+                      x: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxRotation: 0, maxTicksLimit: 6 }, grid: { display: false } },
+                      y: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                  }
+                });
+              } catch(e) {}
+            }, 50);
+          }
         }
       } catch(e) {}
     } else if (type === 'mining') {
@@ -9234,11 +9280,60 @@ function setupGlobeClickHandler() {
       var detDate = props.date ? props.date.getValue() : '';
       var detTime = props.time ? props.time.getValue() : '';
       var conf = props.confidence ? props.confidence.getValue() : '';
-      html = '<div style="color:#ff6b35; font-weight:600; font-size:13px; margin-bottom:6px;">' + bright.toFixed(1) + 'K brightness</div>'
+      html = '<div style="color:#ff4444; font-weight:600; font-size:13px; margin-bottom:6px;">' + bright.toFixed(1) + 'K brightness</div>'
            + '<div><strong>Fire Radiative Power:</strong> ' + frpVal.toFixed(1) + ' MW</div>'
            + '<div><strong>Detected:</strong> ' + esc(detDate) + ' ' + esc(detTime) + ' UTC</div>'
-           + '<div><strong>Confidence:</strong> ' + esc(conf) + '</div>'
-           + '<div style="margin-top:6px; font-size:9px; color:var(--text-muted);">NASA FIRMS VIIRS NOAA-20 (375m)</div>';
+           + '<div><strong>Confidence:</strong> ' + esc(conf) + '</div>';
+      // Sparkline chart for historical FRP
+      var histJson = props.history ? props.history.getValue() : '[]';
+      try {
+        var hist = JSON.parse(histJson);
+        if (hist.length > 1) {
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">'
+            + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">FRP History (30 days)</div>'
+            + '<canvas id="thermal-sparkline" width="260" height="60" style="width:100%; height:60px;"></canvas>'
+            + '</div>';
+        }
+      } catch(e) {}
+      html += '<div style="margin-top:6px; font-size:9px; color:var(--text-muted);">NASA FIRMS VIIRS NOAA-20 (375m)</div>';
+      // Defer sparkline rendering to after popup HTML is set
+      setTimeout(function() {
+        try {
+          var histData = JSON.parse(histJson);
+          if (histData.length < 2) return;
+          var canvas = document.getElementById('thermal-sparkline');
+          if (!canvas) return;
+          var ctx = canvas.getContext('2d');
+          // Destroy previous chart if any
+          if (canvas._chartInstance) canvas._chartInstance.destroy();
+          canvas._chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: histData.map(function(h) { return h.date.slice(5); }),
+              datasets: [{
+                data: histData.map(function(h) { return h.total_frp_mw; }),
+                borderColor: '#ff4444',
+                backgroundColor: 'rgba(255,68,68,0.15)',
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 2,
+                pointBackgroundColor: '#ff4444',
+                tension: 0.3,
+              }]
+            },
+            options: {
+              responsive: false,
+              plugins: { legend: { display: false }, tooltip: {
+                callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' MW'; } }
+              }},
+              scales: {
+                x: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxRotation: 0, maxTicksLimit: 6 }, grid: { display: false } },
+                y: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'MW', font: { size: 8 }, color: '#4B5567' } }
+              }
+            }
+          });
+        } catch(e) {}
+      }, 50);
     } else if (type === 'chokepoint') {
       title.textContent = props.name.getValue();
       html = '<div><strong>Mineral:</strong> ' + esc(mineral) + '</div>'

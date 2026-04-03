@@ -11,11 +11,16 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import logging
 import os
 import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import httpx
+
+_HISTORY_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "firms_thermal_history.json"
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +190,12 @@ class FIRMSThermalClient:
             status["detections"] = detections[:10]
             result[name] = status
 
+        # Snapshot to history and attach sparkline data
+        self.snapshot_to_history(result)
+        history = self.load_history()
+        for name in result:
+            result[name]["history"] = history.get(name, [])[-30:]
+
         _cache_set(self._cache, cache_key, result)
         active = sum(1 for v in result.values() if v["status"] == "ACTIVE")
         logger.info("FIRMS thermal: %d/%d facilities ACTIVE", active, len(result))
@@ -222,6 +233,128 @@ class FIRMSThermalClient:
                 "avg_frp_mw": frp,
                 "source": "NASA FIRMS (fallback)",
                 "detections": [],
+                "history": [],
             }
+        # Try loading real history even in fallback mode
+        history = self.load_history()
+        for name in result:
+            if name in history:
+                result[name]["history"] = history[name][-30:]
         _cache_set(self._cache, "firms_all_facilities", result)
         return result
+
+    # ── History tracking ────────────────────────────────────────────
+
+    @staticmethod
+    def load_history() -> dict[str, list[dict]]:
+        """Load historical thermal snapshots from JSON file.
+
+        Returns dict keyed by facility name, each a list of
+        {"date": "YYYY-MM-DD", "count": int, "total_frp_mw": float, "max_k": float}.
+        """
+        if not _HISTORY_PATH.exists():
+            return {}
+        try:
+            data = json.loads(_HISTORY_PATH.read_text(encoding="utf-8"))
+            return data
+        except Exception:
+            return {}
+
+    @staticmethod
+    def save_history(history: dict[str, list[dict]]) -> None:
+        """Persist history to JSON, capped at 90 days per facility."""
+        for name in history:
+            history[name] = history[name][-90:]
+        _HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _HISTORY_PATH.write_text(json.dumps(history, indent=1), encoding="utf-8")
+
+    def snapshot_to_history(self, all_data: dict[str, dict]) -> None:
+        """Append today's thermal summary for each facility to history."""
+        history = self.load_history()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+        for name, thermal in all_data.items():
+            if name not in history:
+                history[name] = []
+            # Don't duplicate today's entry
+            existing_dates = {e["date"] for e in history[name]}
+            if today in existing_dates:
+                continue
+            dets = thermal.get("detections", [])
+            total_frp = sum(d.get("frp", 0) for d in dets)
+            max_k = thermal.get("max_brightness_k", 0)
+            history[name].append({
+                "date": today,
+                "count": thermal.get("detection_count", 0),
+                "total_frp_mw": round(total_frp, 2),
+                "max_k": max_k,
+            })
+
+        self.save_history(history)
+        logger.info("FIRMS history snapshot saved for %d facilities", len(all_data))
+
+    async def backfill_history(self, days: int = 30) -> None:
+        """Fetch historical FIRMS data for the past N days and build history.
+
+        Queries 5 days at a time per facility. 30 days = 6 requests x 18 = 108 API calls.
+        """
+        if not self.map_key:
+            logger.info("No MAP_KEY — skipping history backfill")
+            return
+
+        history = self.load_history()
+        today = datetime.now(timezone.utc).date()
+
+        for offset in range(0, days, 5):
+            query_date = (today - timedelta(days=offset + 5)).strftime("%Y-%m-%d")
+            chunk_days = min(5, days - offset)
+
+            for name, cfg in FACILITY_CONFIG.items():
+                if name not in history:
+                    history[name] = []
+                existing_dates = {e["date"] for e in history[name]}
+
+                west, south, east, north = _make_bbox(cfg["lat"], cfg["lon"], cfg["radius_deg"])
+                area = f"{west},{south},{east},{north}"
+                url = f"{_FIRMS_BASE}/api/area/csv/{self.map_key}/VIIRS_NOAA20_NRT/{area}/{chunk_days}/{query_date}"
+
+                try:
+                    async with httpx.AsyncClient(timeout=self.timeout) as client:
+                        resp = await client.get(url)
+                        if resp.status_code != 200:
+                            continue
+
+                    # Group detections by date
+                    by_date: dict[str, list[dict]] = {}
+                    reader = csv.DictReader(io.StringIO(resp.text))
+                    for row in reader:
+                        conf = row.get("confidence", "low")
+                        if conf == "low":
+                            continue
+                        d = row.get("acq_date", "")
+                        if not d:
+                            continue
+                        frp = float(row.get("frp", 0)) if row.get("frp") else 0
+                        bright = float(row.get("bright_ti4", 0))
+                        by_date.setdefault(d, []).append({"frp": frp, "bright": bright})
+
+                    for d, dets in by_date.items():
+                        if d in existing_dates:
+                            continue
+                        history[name].append({
+                            "date": d,
+                            "count": len(dets),
+                            "total_frp_mw": round(sum(x["frp"] for x in dets), 2),
+                            "max_k": max(x["bright"] for x in dets),
+                        })
+                        existing_dates.add(d)
+
+                except Exception as e:
+                    logger.warning("FIRMS backfill failed for %s on %s: %s", name, query_date, e)
+
+        # Sort each facility's history by date
+        for name in history:
+            history[name].sort(key=lambda e: e["date"])
+
+        self.save_history(history)
+        logger.info("FIRMS backfill complete: %d days, %d facilities", days, len(history))
