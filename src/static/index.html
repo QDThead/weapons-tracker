@@ -8154,43 +8154,56 @@ function renderGlobeEntities() {
         },
       });
 
-      // Individual hotspot detections — fuzzy red thermal bloom
+      // Individual hotspot detections — fuzzy red thermal bloom (points, not ellipses)
       if (thermal.detections && thermal.detections.length > 0) {
         thermal.detections.forEach(function(det) {
           var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
-          var pixelRadius = ((det.scan_km || 0.375) + (det.track_km || 0.375)) / 2 * 1000; // meters
-          var pos = Cesium.Cartesian3.fromDegrees(det.lon, det.lat);
+          var pos = Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 200);
 
           // Outer glow — large, very transparent red
           cesiumViewer.entities.add({
             position: pos,
-            ellipse: {
-              semiMajorAxis: pixelRadius * 4,
-              semiMinorAxis: pixelRadius * 4,
-              material: Cesium.Color.RED.withAlpha(0.08 + intensity * 0.06),
-              height: 80,
+            point: {
+              pixelSize: 50,
+              color: Cesium.Color.RED.withAlpha(0.10 + intensity * 0.08),
+              outlineColor: Cesium.Color.RED.withAlpha(0.05),
+              outlineWidth: 15,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
           });
-          // Mid glow — medium, semi-transparent
+          // Mid bloom — semi-transparent dark red
           cesiumViewer.entities.add({
             position: pos,
-            ellipse: {
-              semiMajorAxis: pixelRadius * 2.2,
-              semiMinorAxis: pixelRadius * 2.2,
-              material: Cesium.Color.fromCssColorString('#cc0000').withAlpha(0.15 + intensity * 0.1),
-              height: 100,
+            point: {
+              pixelSize: 28,
+              color: Cesium.Color.fromCssColorString('#cc0000').withAlpha(0.20 + intensity * 0.15),
+              outlineColor: Cesium.Color.fromCssColorString('#ff0000').withAlpha(0.10),
+              outlineWidth: 8,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
           });
-          // Hot core — bright red-orange, most opaque
+          // Hot core — bright red, most opaque
           cesiumViewer.entities.add({
             position: pos,
-            ellipse: {
-              semiMajorAxis: pixelRadius * 1.0,
-              semiMinorAxis: pixelRadius * 1.0,
-              material: Cesium.Color.fromCssColorString('#ff2200').withAlpha(0.3 + intensity * 0.25),
-              height: 120,
+            point: {
+              pixelSize: 14,
+              color: Cesium.Color.fromCssColorString('#ff1100').withAlpha(0.45 + intensity * 0.35),
+              outlineColor: Cesium.Color.fromCssColorString('#ff4400').withAlpha(0.30),
+              outlineWidth: 4,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            },
+            label: {
+              text: (det.bright_ti4 || 0).toFixed(0) + 'K',
+              font: '10px JetBrains Mono',
+              fillColor: Cesium.Color.fromCssColorString('#ff4444'),
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              outlineWidth: 2,
+              outlineColor: Cesium.Color.BLACK,
+              verticalOrigin: Cesium.VerticalOrigin.TOP,
+              pixelOffset: new Cesium.Cartesian2(0, 14),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: {
               layerId: 'thermal-det',
@@ -8205,22 +8218,6 @@ function renderGlobeEntities() {
               scan_km: det.scan_km || 0.375,
               track_km: det.track_km || 0.375,
             },
-          });
-          // Temperature label
-          cesiumViewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 300),
-            label: {
-              text: (det.bright_ti4 || 0).toFixed(0) + 'K',
-              font: '11px JetBrains Mono',
-              fillColor: Cesium.Color.fromCssColorString('#ff4444'),
-              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-              outlineWidth: 2,
-              outlineColor: Cesium.Color.BLACK,
-              verticalOrigin: Cesium.VerticalOrigin.CENTER,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 2000000),
-            },
-            properties: { layerId: 'thermal-det', type: 'thermal-label', mineral: m.name },
           });
         });
       }
