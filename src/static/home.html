@@ -12,11 +12,26 @@
     :root {
       --bg:#06090f; --bg-c:#111620; --bg-ch:#161c2a;
       --red:#D80621; --cyan:#00D4FF; --cyan-d:rgba(0,212,255,0.45);
-      --green:#34D399; --amber:#FBBF24;
+      --green:#6b9080; --amber:#a89060;
       --t1:#E8ECF2; --t2:#8A95A8; --t3:#4B5567;
       --brd:rgba(255,255,255,0.06); --brd-h:rgba(255,255,255,0.12);
       --fd:'Barlow Condensed',sans-serif; --fb:'DM Sans',sans-serif; --fm:'JetBrains Mono',monospace;
     }
+    body.light {
+      --bg:#f0f2f5; --bg-c:#ffffff; --bg-ch:#f7f8fa;
+      --cyan:#0077b6; --cyan-d:rgba(0,119,182,0.45);
+      --green:#4a7a60; --amber:#8a7040;
+      --t1:#1a1a2e; --t2:#555e6e; --t3:#8895a7;
+      --brd:rgba(0,0,0,0.08); --brd-h:rgba(0,0,0,0.15);
+    }
+    body.light .atm{display:none;} body.light .scan{display:none;}
+    body.light .cb{background:#B8041A;}
+    body.light .nav{background:rgba(255,255,255,0.92);}
+    body.light .side-nav{background:rgba(255,255,255,0.85);}
+    body.light .fip-flag{filter:drop-shadow(0 4px 12px rgba(0,0,0,0.15));}
+    body.light .hero-cta{color:#fff;}
+    body.light .bcta-b{color:var(--t1);}
+    body.light .bcta-b:hover{color:#fff;}
     html { scroll-behavior:smooth; }
     body { font-family:var(--fb); background:var(--bg); color:var(--t1); overflow-x:hidden; -webkit-font-smoothing:antialiased; }
 
@@ -60,6 +75,13 @@
       text-transform:uppercase;text-decoration:none;color:#fff;background:var(--red);
       padding:5px 14px;transition:all .3s;}
     .nb:hover{background:#f00a2b;box-shadow:0 0 14px rgba(216,6,33,0.35);}
+    /* Theme toggle */
+    .theme-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;}
+    .theme-toggle .tgl-label{font-family:var(--fm);font-size:8px;letter-spacing:1.5px;color:var(--t3);text-transform:uppercase;}
+    .theme-toggle .tgl-track{position:relative;width:32px;height:16px;border-radius:8px;background:var(--brd-h);transition:background 0.3s;flex-shrink:0;}
+    .theme-toggle .tgl-thumb{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--t2);transition:all 0.3s;}
+    body.light .theme-toggle .tgl-track{background:var(--cyan);}
+    body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
     .nb:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
 
     main{position:relative;z-index:1;}
@@ -296,6 +318,11 @@
       <span class="ntag">Defence Supply Chain Intelligence</span>
     </div>
     <div class="nr">
+      <div class="theme-toggle" id="theme-toggle" role="switch" aria-checked="false" aria-label="Toggle light theme" tabindex="0">
+        <span class="tgl-label">Dark</span>
+        <div class="tgl-track"><div class="tgl-thumb"></div></div>
+        <span class="tgl-label">Light</span>
+      </div>
       <span class="nclk" id="utc-clock">--:--:-- UTC</span>
       <span class="nlv">ONLINE</span>
     </div>
@@ -472,6 +499,22 @@
     document.querySelectorAll(".rv").forEach(function(e){o.observe(e)});
     var c=false,s=new IntersectionObserver(function(e){e.forEach(function(i){i.isIntersecting&&!c&&(c=true,document.querySelectorAll(".stv[data-t]").forEach(animC),s.unobserve(i.target))})},{threshold:.3});
     var r=document.querySelector(".stats");if(r)s.observe(r);
+  }();
+  /* Theme toggle */
+  !function(){
+    var toggle=document.getElementById('theme-toggle');
+    function setTheme(light){
+      document.body.classList.toggle('light',light);
+      toggle.setAttribute('aria-checked',light?'true':'false');
+      localStorage.setItem('cmct-theme',light?'light':'dark');
+    }
+    if(localStorage.getItem('cmct-theme')==='light') setTheme(true);
+    toggle.addEventListener('click',function(){
+      setTheme(!document.body.classList.contains('light'));
+    });
+    toggle.addEventListener('keydown',function(e){
+      if(e.key===' '||e.key==='Enter'){e.preventDefault();toggle.click();}
+    });
   }();
   </script>
 </body>
