@@ -2130,13 +2130,16 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #4B5567; vertical-align:middle; margin-right:6px;"></span><span style="color:#4B5567;">Unknown</span> — no data</div>
             </div>
             <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.leg-arrow').textContent=this.nextElementSibling.style.display==='none'?'\u25B8':'\u25BE'" style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; padding:8px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
-              <span>Shipping Route Risk</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
+              <span>Sea Route Risk</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
             </div>
             <div style="padding:6px 12px;">
               <div><span style="color:#D80621;">━ ━ ━</span> Critical</div>
               <div><span style="color:#a89060;">━ ━ ━</span> High</div>
               <div><span style="color:#eab308;">━ ━ ━</span> Medium</div>
               <div><span style="color:#6b9080;">━ ━ ━</span> Low</div>
+              <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Overland Routes</div>
+              <div><span style="display:inline-block; width:20px; height:3px; background:#a89060; vertical-align:middle; margin-right:6px; box-shadow:0 0 4px #a89060;"></span><span style="color:#a89060;">Truck/Road</span></div>
+              <div><span style="display:inline-block; width:20px; height:3px; background:#5a7a9b; vertical-align:middle; margin-right:6px; box-shadow:0 0 4px #5a7a9b;"></span><span style="color:#5a7a9b;">Rail</span></div>
             </div>
           </div>
           <!-- Shipping route list (shows when mineral has routes) -->
@@ -7371,7 +7374,9 @@ var GLOBE_LAYERS = [
   { id: 'processing',  name: 'Processing',       color: '#6b6b8a', defaultOn: true },
   { id: 'components',  name: 'Components',        color: '#a89060', defaultOn: true },
   { id: 'platforms',   name: 'Platforms',          color: '#00d4ff', defaultOn: true },
-  { id: 'shipping',    name: 'Shipping Routes',   color: '#D80621', defaultOn: true },
+  { id: 'sea-routes',      name: 'Sea Routes',      color: '#5a7a9b', defaultOn: true },
+  { id: 'overland-routes', name: 'Overland Routes',  color: '#a89060', defaultOn: true },
+  { id: 'route-labels',    name: 'Route Labels',     color: '#999999', defaultOn: true },
   { id: 'chokepoints', name: 'Chokepoints',       color: '#D80621', defaultOn: true },
   { id: 'ports',       name: 'Canadian Ports',     color: '#ff2d2d', defaultOn: true },
   { id: 'arcs',        name: 'Flow Arcs',          color: '#00d4ff', defaultOn: true },
@@ -8271,19 +8276,16 @@ function renderGlobeEntities() {
       });
     }
 
-    // ── Shipping routes to Canada ──
-    var canadaRouteColor = Cesium.Color.fromCssColorString('#ff2d2d');
-    var routeColors = ['#ff2d2d', '#ff6b35', '#ffa500', '#ffcc00', '#ff69b4', '#00ffcc'];
+    // ── Sea routes ──
+    var riskRouteColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
     var portsRendered = {};
 
-    // Deep-dive: render mineral-specific shipping routes if available
-    if (m.shipping_routes && m.shipping_routes.length > 0) {
-      m.shipping_routes.forEach(function(sr, idx) {
+    if (m.sea_routes && m.sea_routes.length > 0) {
+      m.sea_routes.forEach(function(sr) {
         if (!sr.waypoints || sr.waypoints.length < 2) return;
-        // Color by risk level
-        var riskRouteColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
-        var lineColor = Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#64748b');
-        var lineWidth = sr.risk === 'critical' ? 4 : sr.risk === 'high' ? 3 : 2;
+        var lineColor = Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b');
+        var lineWidth = sr.risk === 'critical' ? 4 : sr.risk === 'high' ? 3 : sr.risk === 'medium' ? 2.5 : 2;
+        var dashLen = sr.risk === 'critical' ? 8 : sr.risk === 'high' ? 12 : sr.risk === 'medium' ? 14 : 16;
         var routeCoords = [];
         sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
         cesiumViewer.entities.add({
@@ -8292,33 +8294,89 @@ function renderGlobeEntities() {
             width: lineWidth,
             material: new Cesium.PolylineDashMaterialProperty({
               color: lineColor.withAlpha(0.85),
-              dashLength: sr.risk === 'critical' ? 8 : 14,
+              dashLength: dashLen,
             }),
           },
           properties: {
-            layerId: 'shipping', type: 'searoute', mineral: m.name, risk: sr.risk || 'unknown',
-            description: sr.name + ' (' + sr.transit_days + ' days) — ' + (sr.form || '') + (sr.risk_reason ? ' | RISK: ' + sr.risk_reason : '') + (sr.note ? ' | ' + sr.note : ''),
+            layerId: 'sea-routes', type: 'searoute', mineral: m.name, risk: sr.risk || 'unknown',
+            description: sr.name + ' (' + sr.transit_days + ' days) \u2014 ' + (sr.form || '')
+              + (sr.chokepoints && sr.chokepoints.length ? ' | Chokepoints: ' + sr.chokepoints.join(', ') : '')
+              + (sr.risk_reason ? ' | RISK: ' + sr.risk_reason : '')
+              + (sr.note ? ' | ' + sr.note : ''),
           },
+        });
+        // Route midpoint label
+        var midIdx = Math.floor(sr.waypoints.length / 2);
+        var midWp = sr.waypoints[midIdx];
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(midWp[0], midWp[1], 8000),
+          label: {
+            text: sr.name + ' | ' + sr.transit_days + 'd',
+            font: '9px JetBrains Mono',
+            fillColor: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#999').withAlpha(0.9),
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 25000000),
+          },
+          properties: { layerId: 'route-labels', type: 'route-label', mineral: m.name },
         });
         // Mark endpoint port
         var lastWp = sr.waypoints[sr.waypoints.length - 1];
         var portKey = lastWp[0].toFixed(1) + ',' + lastWp[1].toFixed(1);
         if (!portsRendered[portKey]) {
           portsRendered[portKey] = true;
+          var portName = sr.name.split('\u2192').pop().trim();
           cesiumViewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(lastWp[0], lastWp[1], 30000),
-            point: { pixelSize: 14, color: canadaRouteColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
+            point: { pixelSize: 12, color: Cesium.Color.fromCssColorString('#ff2d2d'), outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
             label: {
-              text: sr.name.split('\u2192').pop().trim() + ' \u{1F341}',
-              font: 'bold 11px JetBrains Mono',
-              fillColor: canadaRouteColor,
+              text: portName, font: 'bold 10px JetBrains Mono',
+              fillColor: Cesium.Color.fromCssColorString('#ff2d2d'),
               style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-              verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
+              verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 14),
               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
-            properties: { layerId: 'ports', type: 'port', mineral: m.name, name: sr.name, desc: sr.description + (sr.onward ? ' | Onward: ' + sr.onward : '') },
+            properties: { layerId: 'ports', type: 'port', mineral: m.name, name: portName, desc: sr.description },
           });
         }
+        // Also mark origin port
+        var firstWp = sr.waypoints[0];
+        var originKey = firstWp[0].toFixed(1) + ',' + firstWp[1].toFixed(1);
+        if (!portsRendered[originKey]) {
+          portsRendered[originKey] = true;
+          var originName = sr.name.split('\u2192')[0].trim();
+          cesiumViewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(firstWp[0], firstWp[1], 30000),
+            point: { pixelSize: 10, color: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b').withAlpha(0.8), outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+            label: {
+              text: originName, font: '9px JetBrains Mono',
+              fillColor: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b'),
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+              verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            },
+            properties: { layerId: 'ports', type: 'port', mineral: m.name, name: originName, desc: sr.description },
+          });
+        }
+      });
+    } else if (m.shipping_routes && m.shipping_routes.length > 0) {
+      // Legacy fallback for non-cobalt minerals with old shipping_routes key
+      m.shipping_routes.forEach(function(sr) {
+        if (!sr.waypoints || sr.waypoints.length < 2) return;
+        var lineColor = Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b');
+        var routeCoords = [];
+        sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
+        cesiumViewer.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
+            width: sr.risk === 'critical' ? 4 : 2,
+            material: new Cesium.PolylineDashMaterialProperty({ color: lineColor.withAlpha(0.85), dashLength: 14 }),
+          },
+          properties: { layerId: 'sea-routes', type: 'searoute', mineral: m.name, risk: sr.risk || 'unknown', description: sr.name },
+        });
       });
     } else if (m.processing.length > 0) {
       // Fallback: single route from top processor to Canada
@@ -8333,24 +8391,68 @@ function renderGlobeEntities() {
             polyline: {
               positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
               width: 3,
-              material: new Cesium.PolylineDashMaterialProperty({ color: canadaRouteColor.withAlpha(0.7), dashLength: 16 }),
+              material: new Cesium.PolylineDashMaterialProperty({ color: Cesium.Color.fromCssColorString('#ff2d2d').withAlpha(0.7), dashLength: 16 }),
             },
-            properties: { layerId: 'shipping', type: 'searoute', mineral: m.name, description: m.name + ': ' + source.country + ' \u2192 ' + port.name },
+            properties: { layerId: 'sea-routes', type: 'searoute', mineral: m.name, description: m.name + ': ' + source.country + ' \u2192 ' + port.name },
           });
         } else {
-          addFlowArc(source.lon, source.lat, port.lon, port.lat, canadaRouteColor.withAlpha(0.5), m.name + ': ' + source.country + ' \u2192 ' + port.name, 'shipping');
+          addFlowArc(source.lon, source.lat, port.lon, port.lat, Cesium.Color.fromCssColorString('#ff2d2d').withAlpha(0.5), m.name + ': ' + source.country + ' \u2192 ' + port.name, 'sea-routes');
         }
       }
       cesiumViewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(port.lon, port.lat, 30000),
-        point: { pixelSize: 14, color: canadaRouteColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
+        point: { pixelSize: 14, color: Cesium.Color.fromCssColorString('#ff2d2d'), outlineColor: Cesium.Color.WHITE, outlineWidth: 3, disableDepthTestDistance: Number.POSITIVE_INFINITY },
         label: {
-          text: port.name + ' \u{1F341}', font: 'bold 12px JetBrains Mono', fillColor: canadaRouteColor,
+          text: port.name + ' \u{1F341}', font: 'bold 12px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#ff2d2d'),
           style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
           verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
-        properties: { layerId: 'ports', type: 'port', mineral: m.name, name: port.name, desc: port.desc },
+        properties: { layerId: 'ports', type: 'port', mineral: m.name, name: port.name, desc: 'Canadian import port' },
+      });
+    }
+
+    // ── Overland routes ──
+    if (m.overland_routes && m.overland_routes.length > 0) {
+      var modeColors = { truck: '#a89060', rail: '#5a7a9b', mixed: '#8a7a6b' };
+      m.overland_routes.forEach(function(ol) {
+        if (!ol.waypoints || ol.waypoints.length < 2) return;
+        var olColor = Cesium.Color.fromCssColorString(modeColors[ol.mode] || '#a89060');
+        var olWidth = ol.mode === 'truck' ? 3 : 2.5;
+        var routeCoords = [];
+        ol.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 500); });
+        cesiumViewer.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
+            width: olWidth,
+            material: new Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.15,
+              color: olColor.withAlpha(0.8),
+            }),
+          },
+          properties: {
+            layerId: 'overland-routes', type: 'overland-route', mineral: m.name, risk: ol.risk || 'unknown',
+            description: ol.name + ' (' + ol.transit_days + ' days, ' + ol.mode + ') \u2014 ' + (ol.form || '')
+              + (ol.risk_reason ? ' | RISK: ' + ol.risk_reason : ''),
+          },
+        });
+        // Overland route midpoint label
+        var midIdx = Math.floor(ol.waypoints.length / 2);
+        var midWp = ol.waypoints[midIdx];
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(midWp[0], midWp[1], 2000),
+          label: {
+            text: ol.name + ' | ' + ol.transit_days + 'd ' + ol.mode,
+            font: '9px JetBrains Mono',
+            fillColor: Cesium.Color.fromCssColorString(modeColors[ol.mode] || '#a89060').withAlpha(0.9),
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
+          },
+          properties: { layerId: 'route-labels', type: 'route-label', mineral: m.name },
+        });
       });
     }
   });
@@ -8473,28 +8575,48 @@ function selectMineralDetail(name) {
   document.getElementById('globe-detail-panel').style.display = '';
   validationManager.attach(document.getElementById('globe-detail-panel'), 'supply.globe');
 
-  // Populate shipping route menu if routes exist
+  // Populate route menu with sea + overland routes
   var routeMenu = document.getElementById('globe-route-menu');
   var routeList = document.getElementById('globe-route-list');
-  if (m.shipping_routes && m.shipping_routes.length > 0) {
+  var allSeaRoutes = m.sea_routes || m.shipping_routes || [];
+  var allOverlandRoutes = m.overland_routes || [];
+  if (allSeaRoutes.length > 0 || allOverlandRoutes.length > 0) {
     var riskRouteColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
     var riskLabels = { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM', low: 'LOW' };
     var rhtml = '';
-    m.shipping_routes.forEach(function(sr) {
-      var rc = riskRouteColors[sr.risk] || '#64748b';
-      rhtml += '<div style="margin-bottom:8px; padding:6px 8px; border-left:3px solid ' + rc + '; background:' + rc + '0a; border-radius:0 6px 6px 0;">'
-        + '<div style="display:flex; justify-content:space-between; align-items:center;">'
-        + '<span style="font-size:11px; font-weight:600; color:var(--text);">' + esc(sr.name) + '</span>'
-        + '<span style="font-size:9px; font-family:var(--font-mono); padding:1px 6px; border-radius:8px; background:' + rc + '22; color:' + rc + ';">' + (riskLabels[sr.risk] || '?') + '</span>'
-        + '</div>'
-        + '<div style="font-size:10px; color:var(--text-dim); margin-top:2px;">' + sr.transit_days + ' days — ' + esc(sr.form || '') + '</div>'
-        + (sr.risk_reason ? '<div style="font-size:9px; color:' + rc + '; margin-top:3px;">' + esc(sr.risk_reason) + '</div>' : '')
-        + (sr.onward ? '<div style="font-size:9px; color:var(--accent); margin-top:3px;">' + esc(sr.onward) + '</div>' : '')
-        + '</div>';
-    });
+    if (allSeaRoutes.length > 0) {
+      rhtml += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:4px;">Sea Routes (' + allSeaRoutes.length + ')</div>';
+      allSeaRoutes.forEach(function(sr) {
+        var rc = riskRouteColors[sr.risk] || '#64748b';
+        rhtml += '<div style="margin-bottom:6px; padding:4px 8px; border-left:3px solid ' + rc + '; background:' + rc + '0a;">'
+          + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+          + '<span style="font-size:10px; font-weight:600; color:var(--text);">\u2693 ' + esc(sr.name) + '</span>'
+          + '<span style="font-size:8px; font-family:var(--font-mono); padding:1px 5px; background:' + rc + '22; color:' + rc + ';">' + (riskLabels[sr.risk] || '?') + '</span>'
+          + '</div>'
+          + '<div style="font-size:9px; color:var(--text-dim); margin-top:2px;">' + sr.transit_days + ' days \u2014 ' + esc(sr.form || '') + '</div>'
+          + (sr.chokepoints && sr.chokepoints.length ? '<div style="font-size:8px; color:var(--text-muted); margin-top:2px;">Chokepoints: ' + sr.chokepoints.map(esc).join(', ') + '</div>' : '')
+          + (sr.note ? '<div style="font-size:8px; color:var(--accent); margin-top:2px;">' + esc(sr.note) + '</div>' : '')
+          + '</div>';
+      });
+    }
+    if (allOverlandRoutes.length > 0) {
+      rhtml += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em; margin:8px 0 4px;">Overland Routes (' + allOverlandRoutes.length + ')</div>';
+      allOverlandRoutes.forEach(function(ol) {
+        var rc = riskRouteColors[ol.risk] || '#64748b';
+        var modeIcons = { truck: '\u{1F69A}', rail: '\u{1F682}', mixed: '\u{1F504}' };
+        var icon = modeIcons[ol.mode] || '\u{1F6E4}';
+        rhtml += '<div style="margin-bottom:6px; padding:4px 8px; border-left:3px solid ' + rc + '; background:' + rc + '0a;">'
+          + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+          + '<span style="font-size:10px; font-weight:600; color:var(--text);">' + icon + ' ' + esc(ol.name) + '</span>'
+          + '<span style="font-size:8px; font-family:var(--font-mono); padding:1px 5px; background:' + rc + '22; color:' + rc + ';">' + (riskLabels[ol.risk] || '?') + '</span>'
+          + '</div>'
+          + '<div style="font-size:9px; color:var(--text-dim); margin-top:2px;">' + ol.transit_days + ' days ' + ol.mode + ' \u2014 ' + esc(ol.form || '') + '</div>'
+          + (ol.connects_to ? '<div style="font-size:8px; color:var(--accent); margin-top:2px;">Feeds \u2192 ' + esc(ol.connects_to) + '</div>' : '')
+          + '</div>';
+      });
+    }
     routeList.innerHTML = rhtml;
     routeMenu.style.display = '';
-    // Start collapsed
     routeList.style.display = 'none';
     document.getElementById('globe-route-toggle').style.transform = 'rotate(-90deg)';
   } else {
@@ -9398,6 +9520,12 @@ function setupGlobeClickHandler() {
       title.textContent = 'Shipping Route';
       html = '<div>' + esc(props.description ? props.description.getValue() : '') + '</div>'
            + '<div style="margin-top:6px;"><span style="font-family:var(--font-mono); padding:2px 8px; border-radius:8px; background:' + riskClr + '22; color:' + riskClr + '; font-size:10px; font-weight:600;">' + riskVal.toUpperCase() + ' RISK</span></div>';
+    } else if (type === 'overland-route') {
+      var riskVal = props.risk ? props.risk.getValue() : 'unknown';
+      var riskClr = {critical:'#D80621',high:'#a89060',medium:'#eab308',low:'#6b9080'}[riskVal] || '#64748b';
+      title.textContent = 'Overland Route';
+      html = '<div>' + esc(props.description ? props.description.getValue() : '') + '</div>'
+           + '<div style="margin-top:6px;"><span style="font-family:var(--font-mono); padding:2px 8px; background:' + riskClr + '22; color:' + riskClr + '; font-size:10px; font-weight:600;">' + riskVal.toUpperCase() + ' RISK</span></div>';
     } else if (type === 'port') {
       title.textContent = '🍁 ' + props.name.getValue();
       html = '<div>' + esc(props.desc ? props.desc.getValue() : 'Canadian import port') + '</div>';
