@@ -16,7 +16,9 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
 - **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~12,000 lines)
 - **3D Globes:** CesiumJS 1.119 (CDN) — Arctic globe (Esri satellite imagery, 8 layers) + Supply Chain globe (CartoDB dark tiles)
-- **Design System:** Outfit (display), IBM Plex Sans (body), JetBrains Mono (numbers); cyan accent (#00d4ff); glass-morphism cards
+- **Design System:** Barlow Condensed (display), DM Sans (body), JetBrains Mono (numbers); military theme with "Signal" desaturated palette; sharp edges, solid surfaces, atmospheric grid overlay + scan line
+- **Home Page:** Landing page at `/` with DND branding, OODA framework, capabilities grid, intel ticker, right-side nav menu
+- **Routing:** `/` = home.html (landing), `/dashboard` = index.html (7-tab dashboard)
 - **Codebase:** 94 Python files, ~38,350 total lines
 - **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
 - **Tests:** 310 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds (225 unit/integration + 85 adversarial)
@@ -373,20 +375,26 @@ python -m src.main
 - No Alembic migrations — using `create_all()` only
 
 ## UI Design System
-- **Fonts:** Outfit (display/headings), IBM Plex Sans (body), JetBrains Mono (numbers/stats)
-- **Colors:** `--accent` #00d4ff (cyan), `--accent2` #ef4444 (red), `--accent3` #10b981 (green), `--accent4` #f59e0b (amber), `--accent5` #8b5cf6 (purple)
-- **Surfaces:** Glass-morphism cards (`backdrop-filter: blur(16px)`), gradient header, cyan glow on hover
-- **Components:** `.card`, `.stat-box`, `.stat-num`, `.stat-label`, `.insight-alert`, `.btn-primary`, `.nav-tab`
-- **Responsive:** Breakpoints at 1200px and 768px
+- **Fonts:** Barlow Condensed (display/headings), DM Sans (body), JetBrains Mono (numbers/stats/labels)
+- **Signal Palette (desaturated):** `--accent` #00d4ff (cyan — primary operational), `--accent2` #D80621 (DND red — identity + threats), `--accent3` #6b9080 (sage — positive/live), `--accent4` #a89060 (ochre — warnings), `--accent5` #6b6b8a (slate — tertiary)
+- **Surfaces:** Sharp-edge cards (no border-radius), solid `#111620` backgrounds, white-based borders `rgba(255,255,255,0.06)`
+- **Atmosphere:** Fixed 80px grid overlay, red/cyan radial glow, 16s scan line sweep
+- **Components:** `.card`, `.stat-box`, `.stat-num`, `.stat-label`, `.insight-alert`, `.btn-primary` (red), `.nav-tab` (monospace underline), `.side-nav` (right-side nav), `.cb` (classification bar)
+- **Theme Toggle:** Dark/Light mode via `body.light` class, persists in `localStorage` key `cmct-theme`
+- **Section Headers:** Monospace tag (`SECTION 01`) + Barlow Condensed title pattern
+- **Responsive:** Breakpoints at 1200px, 960px (side-nav hides), 768px, 600px
 
 ## Next Steps (Priority Order)
-1. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity, HS codes, NSN)
-2. Full French translation of dynamic content (currently covers nav tabs + PSI sub-tab headers; body content is English-only)
-3. Activate maritime tracker (needs aisstream.io API key)
-4. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
-5. Migrate to async SQLAlchemy sessions for production
-6. Migrate `@app.on_event` to lifespan context manager
-7. Add Alembic migration framework for production schema evolution
-8. Expand ML anomaly detection with time-series models (LSTM/Prophet)
-9. Add SAML/OAuth SSO integration for DND Azure AD
-10. Formal PBMM / ITSG-33 security certification
+1. Continue theme unification to remaining tabs (Arctic, Canada Intel, Supply Chain sub-tabs, Data Feeds, Compliance) — foundation CSS already applied, needs per-tab polish
+2. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity, HS codes, NSN)
+3. Explore diamond/custom markers for globe facilities (CesiumJS 1.119 billboard crashes — needs Cesium upgrade or PointPrimitive approach)
+4. Full light theme QA pass across all tabs (Cesium/Leaflet globes don't respond to CSS variables)
+5. Full French translation of dynamic content (currently covers nav tabs + PSI sub-tab headers; body content is English-only)
+6. Activate maritime tracker (needs aisstream.io API key)
+7. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
+8. Migrate to async SQLAlchemy sessions for production
+9. Migrate `@app.on_event` to lifespan context manager
+10. Add Alembic migration framework for production schema evolution
+11. Expand ML anomaly detection with time-series models (LSTM/Prophet)
+12. Add SAML/OAuth SSO integration for DND Azure AD
+13. Formal PBMM / ITSG-33 security certification
