@@ -358,7 +358,7 @@ def _build_forecast_scenarios(
 
 def _compute_lead_time(mineral: dict) -> dict:
     """Compute lead time risk from shipping routes and chokepoints."""
-    routes = mineral.get("shipping_routes", [])
+    routes = mineral.get("sea_routes", []) + mineral.get("overland_routes", [])
     chokepoints = mineral.get("chokepoints", [])
 
     if not routes:

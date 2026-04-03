@@ -160,7 +160,7 @@ class ScenarioEngine:
 
         # Shipping routes
         routes = []
-        for r in m.get("shipping_routes", []):
+        for r in m.get("sea_routes", []) + m.get("overland_routes", []):
             # Extract chokepoints: use structured field if present,
             # otherwise infer from risk_reason text
             cps = r.get("chokepoints", [])
