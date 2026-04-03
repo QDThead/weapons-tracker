@@ -2092,8 +2092,8 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <span>Supply Chain Nodes</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
             </div>
             <div style="padding:6px 12px;">
-              <div><span style="display:inline-block; width:10px; height:10px; background:#6b9080; vertical-align:middle; margin-right:6px; transform:rotate(45deg);"></span><span style="color:#6b9080;">Tier 1</span> — Mining</div>
-              <div><span style="display:inline-block; width:10px; height:10px; background:#6b6b8a; vertical-align:middle; margin-right:6px; transform:rotate(45deg);"></span><span style="color:#6b6b8a;">Tier 2</span> — Processing</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b9080; vertical-align:middle; margin-right:6px; box-shadow:0 0 0 2px rgba(255,255,255,0.4);"></span><span style="color:#6b9080;">Tier 1</span> — Mining</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b6b8a; vertical-align:middle; margin-right:6px; box-shadow:0 0 0 2px rgba(255,255,255,0.4);"></span><span style="color:#6b6b8a;">Tier 2</span> — Processing</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Tier 3</span> — Components</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00d4ff; vertical-align:middle; margin-right:6px;"></span><span style="color:#00d4ff;">Tier 4</span> — Platforms</div>
               <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
@@ -7897,11 +7897,11 @@ function renderGlobeEntities() {
     if (m.mines && m.mines.length > 0) {
       m.mines.forEach(function(mine) {
         var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
-        var colorHex = isChineseOwned ? '#D80621' : '#6b9080';
-        var sc = Math.max(0.6, Math.min(1.2, (mine.production_t || 1000) / 20000));
+        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : tierColors.mining;
+        var size = Math.max(8, Math.min(18, (mine.production_t || 1000) / 1500));
         cesiumViewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat),
-          billboard: { image: buildDiamondImage(colorHex), scale: sc },
+          point: { pixelSize: size, color: markerColor, outlineColor: Cesium.Color.WHITE.withAlpha(0.6), outlineWidth: 2 },
           label: {
             text: mine.name + '\n' + (mine.production_t ? mine.production_t.toLocaleString() + 't' : ''),
             font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
@@ -7936,11 +7936,11 @@ function renderGlobeEntities() {
       m.refineries.forEach(function(ref) {
         var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
         var isRussian = /nornickel|russia/i.test(ref.owner);
-        var colorHex = isChineseOwned ? '#D80621' : isRussian ? '#f97316' : '#6b6b8a';
-        var sc = Math.max(0.5, Math.min(1.0, (ref.capacity_t || 3000) / 25000));
+        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : isRussian ? Cesium.Color.fromCssColorString('#f97316') : tierColors.processing;
+        var size = Math.max(8, Math.min(16, (ref.capacity_t || 3000) / 2000));
         cesiumViewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 60000),
-          billboard: { image: buildDiamondImage(colorHex), scale: sc },
+          point: { pixelSize: size, color: markerColor, outlineColor: Cesium.Color.WHITE.withAlpha(0.6), outlineWidth: 2 },
           label: {
             text: ref.name + '\n' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't cap' : ''),
             font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
