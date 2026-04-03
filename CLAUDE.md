@@ -21,7 +21,7 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Routing:** `/` = home.html (landing), `/dashboard` = index.html (7-tab dashboard)
 - **Codebase:** 95 Python files
 - **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
-- **Tests:** 351 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds, FIRMS thermal (225 unit/integration + 85 adversarial)
+- **Tests:** 364 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds, FIRMS thermal, Sentinel NO2 (238 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
@@ -109,7 +109,7 @@ weapons-tracker/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 351 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine, source validation, scheduler feeds, FIRMS thermal)
+├── tests/                            # 364 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine, source validation, scheduler feeds, FIRMS thermal, Sentinel NO2)
 ├── docs/superpowers/                 # Design specs and implementation plans
 ├── Dockerfile                        # Container image definition
 ├── docker-compose.yml                # Multi-service local orchestration
@@ -120,7 +120,7 @@ weapons-tracker/
 └── README.md
 ```
 
-## Data Sources (57 active + 2 inactive)
+## Data Sources (58 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -156,6 +156,7 @@ weapons-tracker/
 | 50 | IMF Cobalt Prices | `cobalt_forecasting.py` | Monthly | None | Working |
 | 51 | Comtrade Cobalt Bilateral | `comtrade.py` | Monthly | API key | Working |
 | 52 | NASA FIRMS Thermal | `firms_thermal.py` | 6 hours (18 facilities) | MAP_KEY (free) | Working |
+| 53 | Sentinel-5P NO2 | `sentinel_no2.py` | Daily (18 facilities) | OAuth (free) | Working |
 
 ## Intelligence Features
 
@@ -199,6 +200,7 @@ weapons-tracker/
 | **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
 | **Universal Source Validation** | source_registry.py, validation_routes.py, index.html | Every card, table, stat box across all 7 tabs has expandable "Sources & Validation" panel showing source citations, type badges, live data health (last fetch, records, cache status), and confidence assessment. 50 hierarchical registry keys with inheritance. |
 | **Satellite Thermal Verification** | firms_thermal.py, globe_routes.py, index.html | NASA FIRMS VIIRS NOAA-20 (375m) thermal anomaly detection for all 18 cobalt mines/refineries. Per-facility bounding boxes (2-8km adaptive). Status badges on globe pins (green=ACTIVE, amber=IDLE). Fuzzy red thermal bloom markers. FRP sparkline history (30-day backfill). Click popup with brightness, FRP, detection timestamp. GIBS VIIRS global thermal tile overlay. |
+| **Satellite NO2 Verification** | sentinel_no2.py, globe_routes.py, index.html | Sentinel-5P TROPOMI NO2 column density for 18 cobalt facilities. Per-facility vs regional background ratio. Combined thermal+NO2 operational verdict (CONFIRMED ACTIVE / LIKELY ACTIVE / IDLE). Purple plume ellipses on globe. 30-day NO2 ratio history sparklines. |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
 ## Dashboard UI (7 tabs, EN/FR bilingual)
@@ -370,6 +372,7 @@ python -m src.main
 - Disinformation detection on ingested news (3-layer: domain, tone, pattern)
 - WCAG 2.1 AA: ARIA roles on all tabs/panels, labels on maps/charts
 - NASA FIRMS thermal requires `NASA_FIRMS_MAP_KEY` env var (free from https://firms.modaps.eosdis.nasa.gov/api/area/)
+- Sentinel-5P NO2 requires `SENTINEL_CLIENT_ID` + `SENTINEL_CLIENT_SECRET` env vars (free from https://dataspace.copernicus.eu)
 
 ## Known Code Quality Items
 - `routes.py` endpoints hit live external APIs per-request; dashboard routes serve from DB instead
@@ -377,7 +380,7 @@ python -m src.main
 - `main.py` uses deprecated `@app.on_event` instead of lifespan context manager
 - `datetime.utcnow()` deprecated — ~20 occurrences should migrate to `datetime.now(timezone.utc)`
 - No Alembic migrations — using `create_all()` only
-- NASA FIRMS VIIRS 375m resolution detects fire-scale heat — most enclosed refineries show 0 detections. Sentinel-5P NO2 would provide better industrial activity coverage (planned next layer).
+- NASA FIRMS VIIRS 375m resolution detects fire-scale heat — most enclosed refineries show 0 detections. Sentinel-5P TROPOMI NO2 now provides complementary industrial emissions detection for enclosed facilities.
 
 ## UI Design System
 - **Fonts:** Inter (display + body), JetBrains Mono (numbers/stats/labels)
@@ -391,7 +394,7 @@ python -m src.main
 
 ## Next Steps (Priority Order)
 1. Continue theme unification to remaining tabs (Arctic, Canada Intel, Supply Chain sub-tabs, Data Feeds, Compliance) — foundation CSS already applied, needs per-tab polish
-2. Sentinel-5P TROPOMI NO2 layer for industrial emissions detection (better facility coverage than thermal)
+2. ~~Sentinel-5P TROPOMI NO2 layer~~ (DONE — daily polling, purple plume ellipses, combined verdict)
 3. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, sea + overland routes, 13-cat taxonomy per entity, HS codes, NSN)
 4. Explore diamond/custom markers for globe facilities (CesiumJS 1.119 billboard crashes — needs Cesium upgrade or PointPrimitive approach)
 5. Full light theme QA pass across all tabs (Cesium/Leaflet globes don't respond to CSS variables)

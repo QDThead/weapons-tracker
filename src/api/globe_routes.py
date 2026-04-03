@@ -70,6 +70,25 @@ async def get_mineral(name: str):
         except Exception as e:
             logger.warning("FIRMS thermal enrichment failed: %s", e)
 
+        # Enrich mines/refineries with Sentinel-5P NO2 emissions data
+        try:
+            from src.ingestion.sentinel_no2 import SentinelNO2Client, compute_combined_verdict
+            sentinel = SentinelNO2Client()
+            no2_data = await sentinel.fetch_all_facilities()
+            unknown_no2 = {"status": "UNKNOWN", "ratio": 0, "source": "Sentinel-5P (unavailable)", "history": []}
+            for mine in mineral.get("mines", []):
+                mine["no2"] = no2_data.get(mine["name"], unknown_no2)
+                t_status = mine.get("thermal", {}).get("status", "UNKNOWN")
+                n_status = mine["no2"].get("status", "UNKNOWN")
+                mine["operational_verdict"] = compute_combined_verdict(t_status, n_status)
+            for ref in mineral.get("refineries", []):
+                ref["no2"] = no2_data.get(ref["name"], unknown_no2)
+                t_status = ref.get("thermal", {}).get("status", "UNKNOWN")
+                n_status = ref["no2"].get("status", "UNKNOWN")
+                ref["operational_verdict"] = compute_combined_verdict(t_status, n_status)
+        except Exception as e:
+            logger.warning("Sentinel NO2 enrichment failed: %s", e)
+
     return mineral
 
 

@@ -25,6 +25,7 @@ Schedule:
   - Supplier enrichment:    weekly Sunday 3 AM
   - PSI supply chain:       weekly Sunday 4 AM
   - Supplier scoring:       weekly Sunday 5 AM
+  - Sentinel-5P NO2:         daily 3 AM
   - Comtrade cobalt:        monthly 1st 6 AM
 """
 
@@ -759,6 +760,27 @@ def create_scheduler() -> AsyncIOScheduler:
         IntervalTrigger(hours=6),
         id="firms_thermal",
         name="NASA FIRMS facility thermal monitoring (18 facilities)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Sentinel-5P NO2 facility emissions monitoring (daily at 03:00 UTC)
+    async def refresh_sentinel_no2():
+        from src.ingestion.sentinel_no2 import SentinelNO2Client, _HISTORY_PATH
+        client = SentinelNO2Client()
+        # Backfill 30 days of history on first run
+        if not _HISTORY_PATH.exists():
+            logger.info("[sentinel_no2] First run — backfilling 30 days of NO2 history")
+            await client.backfill_history(days=30)
+        data = await client.fetch_all_facilities()
+        emitting = sum(1 for v in data.values() if v["status"] == "EMITTING")
+        logger.info("[sentinel_no2] %d/%d facilities EMITTING", emitting, len(data))
+
+    scheduler.add_job(
+        resilient_job("sentinel_no2", timeout_s=300)(refresh_sentinel_no2),
+        CronTrigger(hour=3, minute=0),
+        id="sentinel_no2",
+        name="Sentinel-5P NO2 facility emissions (18 facilities)",
         replace_existing=True,
         max_instances=1,
     )
