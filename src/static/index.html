@@ -7808,7 +7808,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 14),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1 },
+          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1 },
         });
       });
     } else {
@@ -7825,7 +7825,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
           },
-          properties: { type: 'mining', mineral: m.name, country: site.country, pct: site.pct },
+          properties: { layerId: 'mining', type: 'mining', mineral: m.name, country: site.country, pct: site.pct },
         });
       });
     }
@@ -7847,7 +7847,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1 },
+          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1 },
         });
       });
     } else {
@@ -7864,7 +7864,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 10),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { type: 'processing', mineral: m.name, country: site.country, pct: site.pct, processType: site.type },
+          properties: { layerId: 'processing', type: 'processing', mineral: m.name, country: site.country, pct: site.pct, processType: site.type },
         });
       });
     }
@@ -7881,7 +7881,7 @@ function renderGlobeEntities() {
           verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 8),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
         },
-        properties: { type: 'component', mineral: m.name, name: comp.name, country: comp.manufacturer_country },
+        properties: { layerId: 'components', type: 'component', mineral: m.name, name: comp.name, country: comp.manufacturer_country },
       });
     });
 
@@ -7897,7 +7897,7 @@ function renderGlobeEntities() {
           verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
         },
-        properties: { type: 'platform', mineral: m.name, name: plat.name, country: plat.assembly_country },
+        properties: { layerId: 'platforms', type: 'platform', mineral: m.name, name: plat.name, country: plat.assembly_country },
       });
     });
 
@@ -7912,7 +7912,7 @@ function renderGlobeEntities() {
           verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 10),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
         },
-        properties: { type: 'chokepoint', mineral: m.name, name: cp.name },
+        properties: { layerId: 'chokepoints', type: 'chokepoint', mineral: m.name, name: cp.name },
       });
     });
 
@@ -7921,7 +7921,7 @@ function renderGlobeEntities() {
       var topMiner = m.mining[0];
       m.processing.forEach(function(proc) {
         if (proc.country === topMiner.country) return;
-        addFlowArc(topMiner.lon, topMiner.lat, proc.lon, proc.lat, arcColor, m.name + ': ' + topMiner.country + ' \u2192 ' + proc.country);
+        addFlowArc(topMiner.lon, topMiner.lat, proc.lon, proc.lat, arcColor, m.name + ': ' + topMiner.country + ' \u2192 ' + proc.country, 'arcs');
       });
     }
 
@@ -7930,7 +7930,7 @@ function renderGlobeEntities() {
       var topProc = m.processing[0];
       m.components.slice(0, 3).forEach(function(comp) {
         if (comp.manufacturer_country === topProc.country) return;
-        addFlowArc(topProc.lon, topProc.lat, comp.lon, comp.lat, arcColor.withAlpha(0.6), m.name + ': ' + topProc.country + ' \u2192 ' + comp.manufacturer_country);
+        addFlowArc(topProc.lon, topProc.lat, comp.lon, comp.lat, arcColor.withAlpha(0.6), m.name + ': ' + topProc.country + ' \u2192 ' + comp.manufacturer_country, 'arcs');
       });
     }
 
@@ -7959,7 +7959,7 @@ function renderGlobeEntities() {
             }),
           },
           properties: {
-            type: 'searoute', mineral: m.name, risk: sr.risk || 'unknown',
+            layerId: 'shipping', type: 'searoute', mineral: m.name, risk: sr.risk || 'unknown',
             description: sr.name + ' (' + sr.transit_days + ' days) — ' + (sr.form || '') + (sr.risk_reason ? ' | RISK: ' + sr.risk_reason : '') + (sr.note ? ' | ' + sr.note : ''),
           },
         });
@@ -7979,7 +7979,7 @@ function renderGlobeEntities() {
               verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
             },
-            properties: { type: 'port', mineral: m.name, name: sr.name, desc: sr.description + (sr.onward ? ' | Onward: ' + sr.onward : '') },
+            properties: { layerId: 'ports', type: 'port', mineral: m.name, name: sr.name, desc: sr.description + (sr.onward ? ' | Onward: ' + sr.onward : '') },
           });
         }
       });
@@ -7998,10 +7998,10 @@ function renderGlobeEntities() {
               width: 3,
               material: new Cesium.PolylineDashMaterialProperty({ color: canadaRouteColor.withAlpha(0.7), dashLength: 16 }),
             },
-            properties: { type: 'searoute', mineral: m.name, description: m.name + ': ' + source.country + ' \u2192 ' + port.name },
+            properties: { layerId: 'shipping', type: 'searoute', mineral: m.name, description: m.name + ': ' + source.country + ' \u2192 ' + port.name },
           });
         } else {
-          addFlowArc(source.lon, source.lat, port.lon, port.lat, canadaRouteColor.withAlpha(0.5), m.name + ': ' + source.country + ' \u2192 ' + port.name);
+          addFlowArc(source.lon, source.lat, port.lon, port.lat, canadaRouteColor.withAlpha(0.5), m.name + ': ' + source.country + ' \u2192 ' + port.name, 'shipping');
         }
       }
       cesiumViewer.entities.add({
@@ -8013,7 +8013,7 @@ function renderGlobeEntities() {
           verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
         },
-        properties: { type: 'port', mineral: m.name, name: port.name, desc: port.desc },
+        properties: { layerId: 'ports', type: 'port', mineral: m.name, name: port.name, desc: port.desc },
       });
     }
   });
@@ -8032,12 +8032,13 @@ function renderGlobeEntities() {
         pixelOffset: new Cesium.Cartesian2(0, 8),
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
       },
-      properties: { type: 'port', name: port.name, desc: port.desc },
+      properties: { layerId: 'ports', type: 'port', name: port.name, desc: port.desc },
     });
   });
+  applyLayerVisibility();
 }
 
-function addFlowArc(lon1, lat1, lon2, lat2, color, description) {
+function addFlowArc(lon1, lat1, lon2, lat2, color, description, layerId) {
   // Skip arcs with invalid or identical coordinates
   if (isNaN(lon1) || isNaN(lat1) || isNaN(lon2) || isNaN(lat2)) return;
   if (Math.abs(lon1 - lon2) < 0.5 && Math.abs(lat1 - lat2) < 0.5) return;
@@ -8061,7 +8062,7 @@ function addFlowArc(lon1, lat1, lon2, lat2, color, description) {
         color: color,
       }),
     },
-    properties: { type: 'arc', description: description },
+    properties: { layerId: layerId || 'arcs', type: 'flowarc', description: description },
   });
 }
 
