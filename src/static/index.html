@@ -8117,26 +8117,22 @@ function renderGlobeEntities() {
       });
     });
 
-    // Thermal status rings + hotspot markers for ALL facilities
+    // Thermal status markers + hotspot points for ALL facilities
     var allFacilities = (m.mines || []).concat(m.refineries || []);
     allFacilities.forEach(function(facility) {
       var thermal = facility.thermal || {};
       var tStatus = thermal.status || 'UNKNOWN';
       var ringColor = tStatus === 'ACTIVE' ? '#6b9080' : tStatus === 'IDLE' ? '#a89060' : '#4B5567';
-      var ringAlpha = tStatus === 'ACTIVE' ? 0.35 : tStatus === 'IDLE' ? 0.25 : 0.15;
-      var ringRadius = facility.production_t ? 25000 : 20000; // mines larger
 
-      // Ground-level status ring (ellipse) — visible from far away
+      // Large status point at ground level — always visible at any zoom
       cesiumViewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(facility.lon, facility.lat),
-        ellipse: {
-          semiMajorAxis: ringRadius,
-          semiMinorAxis: ringRadius,
-          material: Cesium.Color.fromCssColorString(ringColor).withAlpha(ringAlpha),
-          outline: true,
-          outlineColor: Cesium.Color.fromCssColorString(ringColor).withAlpha(0.6),
-          outlineWidth: 2,
-          height: 100,
+        position: Cesium.Cartesian3.fromDegrees(facility.lon, facility.lat, 200),
+        point: {
+          pixelSize: 28,
+          color: Cesium.Color.fromCssColorString(ringColor).withAlpha(0.25),
+          outlineColor: Cesium.Color.fromCssColorString(ringColor).withAlpha(0.7),
+          outlineWidth: 3,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
         label: {
           text: tStatus + (thermal.detection_count ? ' (' + thermal.detection_count + ')' : ''),
@@ -8147,7 +8143,7 @@ function renderGlobeEntities() {
           outlineColor: Cesium.Color.BLACK,
           verticalOrigin: Cesium.VerticalOrigin.TOP,
           pixelOffset: new Cesium.Cartesian2(0, 20),
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
         properties: {
           layerId: 'thermal-det',
@@ -8163,14 +8159,15 @@ function renderGlobeEntities() {
         thermal.detections.forEach(function(det) {
           var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
           var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.7 + intensity * 0.3);
-          var dotSize = Math.max(10, Math.min(20, (det.frp || 1) * 2.5));
+          var dotSize = Math.max(12, Math.min(22, (det.frp || 1) * 2.5));
           cesiumViewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 1000),
+            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 500),
             point: {
               pixelSize: dotSize,
               color: hotColor,
               outlineColor: Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.6),
               outlineWidth: 5,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             label: {
               text: (det.bright_ti4 || 0).toFixed(0) + 'K | ' + (det.frp || 0).toFixed(1) + 'MW',
@@ -8181,7 +8178,7 @@ function renderGlobeEntities() {
               outlineColor: Cesium.Color.BLACK,
               verticalOrigin: Cesium.VerticalOrigin.TOP,
               pixelOffset: new Cesium.Cartesian2(0, 14),
-              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: {
               layerId: 'thermal-det',
