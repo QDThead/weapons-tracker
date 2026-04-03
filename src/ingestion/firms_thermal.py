@@ -97,7 +97,12 @@ class FIRMSThermalClient:
         self, name: str, lat: float, lon: float, radius_deg: float,
         days: int = 2, source: str = "VIIRS_NOAA20_NRT",
     ) -> list[dict]:
-        """Query FIRMS Area API for thermal detections in a bounding box."""
+        """Query FIRMS Area API for thermal detections in a bounding box.
+
+        Filters out low-confidence detections and those far from the
+        facility center (likely bush fires, not industrial heat).
+        Includes scan/track pixel dimensions for footprint rendering.
+        """
         cache_key = f"firms_{name}_{days}"
         cached = _cache_get(self._cache, cache_key)
         if cached is not None:
@@ -120,13 +125,31 @@ class FIRMSThermalClient:
             results = []
             reader = csv.DictReader(io.StringIO(resp.text))
             for row in reader:
+                det_lat = float(row.get("latitude", 0))
+                det_lon = float(row.get("longitude", 0))
+                conf = row.get("confidence", "low")
+
+                # Filter: drop low-confidence detections
+                if conf == "low":
+                    continue
+
+                # Filter: drop detections >50% of radius from facility center
+                # (likely bush fires or unrelated heat sources)
+                dist_deg = ((det_lat - lat) ** 2 + (det_lon - lon) ** 2) ** 0.5
+                if dist_deg > radius_deg * 0.6:
+                    continue
+
+                scan_km = float(row.get("scan", 0.375))
+                track_km = float(row.get("track", 0.375))
                 results.append({
-                    "lat": float(row.get("latitude", 0)),
-                    "lon": float(row.get("longitude", 0)),
+                    "lat": det_lat,
+                    "lon": det_lon,
                     "bright_ti4": float(row.get("bright_ti4", 0)),
                     "bright_ti5": float(row.get("bright_ti5", 0)),
                     "frp": float(row.get("frp", 0)) if row.get("frp") else 0,
-                    "confidence": row.get("confidence", ""),
+                    "scan_km": scan_km,
+                    "track_km": track_km,
+                    "confidence": conf,
                     "acq_date": row.get("acq_date", ""),
                     "acq_time": row.get("acq_time", ""),
                     "daynight": row.get("daynight", ""),

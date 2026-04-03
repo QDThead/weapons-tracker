@@ -8154,31 +8154,28 @@ function renderGlobeEntities() {
         },
       });
 
-      // Individual hotspot detection markers (only for facilities with detections)
+      // Individual hotspot detection footprints (VIIRS pixel rectangles)
       if (thermal.detections && thermal.detections.length > 0) {
         thermal.detections.forEach(function(det) {
           var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
-          var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.7 + intensity * 0.3);
-          var dotSize = Math.max(12, Math.min(22, (det.frp || 1) * 2.5));
+          var hotColor = Cesium.Color.fromCssColorString('#ff4500').withAlpha(0.4 + intensity * 0.4);
+          var outlineHot = Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.8);
+          // VIIRS pixel footprint: scan_km x track_km (default 0.375km)
+          var scanDeg = (det.scan_km || 0.375) / 111.0; // km to degrees approx
+          var trackDeg = (det.track_km || 0.375) / 111.0;
+          var west = det.lon - scanDeg / 2;
+          var east = det.lon + scanDeg / 2;
+          var south = det.lat - trackDeg / 2;
+          var north = det.lat + trackDeg / 2;
+          // Render as rectangle showing actual satellite pixel footprint
           cesiumViewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 500),
-            point: {
-              pixelSize: dotSize,
-              color: hotColor,
-              outlineColor: Cesium.Color.fromCssColorString('#ff6b35').withAlpha(0.6),
-              outlineWidth: 5,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            },
-            label: {
-              text: (det.bright_ti4 || 0).toFixed(0) + 'K | ' + (det.frp || 0).toFixed(1) + 'MW',
-              font: '10px JetBrains Mono',
-              fillColor: Cesium.Color.fromCssColorString('#ff6b35'),
-              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            rectangle: {
+              coordinates: Cesium.Rectangle.fromDegrees(west, south, east, north),
+              material: hotColor,
+              outline: true,
+              outlineColor: outlineHot,
               outlineWidth: 2,
-              outlineColor: Cesium.Color.BLACK,
-              verticalOrigin: Cesium.VerticalOrigin.TOP,
-              pixelOffset: new Cesium.Cartesian2(0, 14),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              height: 150,
             },
             properties: {
               layerId: 'thermal-det',
@@ -8190,7 +8187,25 @@ function renderGlobeEntities() {
               date: det.acq_date || '',
               time: det.acq_time || '',
               confidence: det.confidence || '',
+              scan_km: det.scan_km || 0.375,
+              track_km: det.track_km || 0.375,
             },
+          });
+          // Label at center of footprint
+          cesiumViewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 500),
+            label: {
+              text: (det.bright_ti4 || 0).toFixed(0) + 'K',
+              font: '11px JetBrains Mono',
+              fillColor: Cesium.Color.fromCssColorString('#ff6b35'),
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              outlineWidth: 2,
+              outlineColor: Cesium.Color.BLACK,
+              verticalOrigin: Cesium.VerticalOrigin.CENTER,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 2000000),
+            },
+            properties: { layerId: 'thermal-det', type: 'thermal-label', mineral: m.name },
           });
         });
       }
