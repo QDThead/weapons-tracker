@@ -283,11 +283,17 @@ class FIRMSThermalClient:
             dets = thermal.get("detections", [])
             total_frp = sum(d.get("frp", 0) for d in dets)
             max_k = thermal.get("max_brightness_k", 0)
+            # Store per-flyby records for sparkline granularity
+            flybys = [
+                {"date": d.get("acq_date", today), "time": d.get("acq_time", ""), "frp": round(d.get("frp", 0), 2)}
+                for d in dets if d.get("frp", 0) > 0
+            ]
             history[name].append({
                 "date": today,
                 "count": thermal.get("detection_count", 0),
                 "total_frp_mw": round(total_frp, 2),
                 "max_k": max_k,
+                "flybys": flybys,
             })
 
         self.save_history(history)
@@ -336,16 +342,22 @@ class FIRMSThermalClient:
                             continue
                         frp = float(row.get("frp", 0)) if row.get("frp") else 0
                         bright = float(row.get("bright_ti4", 0))
-                        by_date.setdefault(d, []).append({"frp": frp, "bright": bright})
+                        acq_time = row.get("acq_time", "")
+                        by_date.setdefault(d, []).append({"frp": frp, "bright": bright, "time": acq_time})
 
                     for d, dets in by_date.items():
                         if d in existing_dates:
                             continue
+                        flybys = [
+                            {"date": d, "time": x["time"], "frp": round(x["frp"], 2)}
+                            for x in dets if x["frp"] > 0
+                        ]
                         history[name].append({
                             "date": d,
                             "count": len(dets),
                             "total_frp_mw": round(sum(x["frp"] for x in dets), 2),
                             "max_k": max(x["bright"] for x in dets),
+                            "flybys": flybys,
                         })
                         existing_dates.add(d)
 

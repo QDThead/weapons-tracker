@@ -2123,7 +2123,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D80621; vertical-align:middle; margin-right:6px;"></span> Chinese-owned</div>
               <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Satellite Thermal</div>
-              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff4500; vertical-align:middle; margin-right:6px; box-shadow:0 0 4px #ff4500;"></span><span style="color:#ff6b35;">FIRMS detection</span> — hotspot</div>
+              <div><span style="display:inline-block; width:14px; height:10px; border-radius:50%; background:radial-gradient(ellipse, rgba(255,17,0,0.5), rgba(255,0,0,0.1), transparent); vertical-align:middle; margin-right:6px;"></span><span style="color:#ff6b35;">FIRMS detection</span> — thermal area</div>
               <div style="margin-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Pin Outline = Satellite Status</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #6b9080; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b9080;">Active</span> — thermal detected</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Idle</span> — no thermal (48hrs)</div>
@@ -8154,44 +8154,68 @@ function renderGlobeEntities() {
         },
       });
 
-      // Individual hotspot detections — fuzzy red thermal bloom (points, not ellipses)
+      // Individual hotspot detections — soft red ground-hugging heat patches
+      // Uses ellipses sized to VIIRS scan/track footprint so they scale with zoom
       if (thermal.detections && thermal.detections.length > 0) {
         thermal.detections.forEach(function(det) {
           var intensity = Math.min(1.0, (det.bright_ti4 || 300) / 400);
-          var pos = Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 200);
+          var pos = Cesium.Cartesian3.fromDegrees(det.lon, det.lat);
+          // VIIRS pixel footprint in metres (scan × track, typically 375m each)
+          // Cesium requires semiMajorAxis >= semiMinorAxis
+          var rawScan = (det.scan_km || 0.375) * 1000;
+          var rawTrack = (det.track_km || 0.375) * 1000;
+          var scanM = Math.max(rawScan, rawTrack);
+          var trackM = Math.min(rawScan, rawTrack);
 
-          // Outer glow — large, very transparent red
+          // Outer soft glow — 6× footprint, very transparent
           cesiumViewer.entities.add({
             position: pos,
-            point: {
-              pixelSize: 50,
-              color: Cesium.Color.RED.withAlpha(0.10 + intensity * 0.08),
-              outlineColor: Cesium.Color.RED.withAlpha(0.05),
-              outlineWidth: 15,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            ellipse: {
+              semiMajorAxis: scanM * 6,
+              semiMinorAxis: trackM * 6,
+              material: Cesium.Color.RED.withAlpha(0.06 + intensity * 0.04),
+              outline: false,
+              height: 0,
+              classificationType: Cesium.ClassificationType.BOTH,
             },
             properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
           });
-          // Mid bloom — semi-transparent dark red
+          // Mid bloom — 3× footprint, semi-transparent
           cesiumViewer.entities.add({
             position: pos,
-            point: {
-              pixelSize: 28,
-              color: Cesium.Color.fromCssColorString('#cc0000').withAlpha(0.20 + intensity * 0.15),
-              outlineColor: Cesium.Color.fromCssColorString('#ff0000').withAlpha(0.10),
-              outlineWidth: 8,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            ellipse: {
+              semiMajorAxis: scanM * 3,
+              semiMinorAxis: trackM * 3,
+              material: Cesium.Color.fromCssColorString('#cc0000').withAlpha(0.12 + intensity * 0.10),
+              outline: false,
+              height: 0,
+              classificationType: Cesium.ClassificationType.BOTH,
             },
             properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
           });
-          // Hot core — bright red, most opaque
+          // Hot core — actual VIIRS footprint, most opaque
           cesiumViewer.entities.add({
             position: pos,
+            ellipse: {
+              semiMajorAxis: scanM * 1.5,
+              semiMinorAxis: trackM * 1.5,
+              material: Cesium.Color.fromCssColorString('#ff1100').withAlpha(0.25 + intensity * 0.25),
+              outline: true,
+              outlineColor: Cesium.Color.fromCssColorString('#ff4400').withAlpha(0.15),
+              outlineWidth: 1,
+              height: 0,
+              classificationType: Cesium.ClassificationType.BOTH,
+            },
+            properties: { layerId: 'thermal-det', type: 'thermal-glow', mineral: m.name, name: facility.name },
+          });
+          // Bright center point with temperature label (always visible)
+          cesiumViewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(det.lon, det.lat, 100),
             point: {
-              pixelSize: 14,
-              color: Cesium.Color.fromCssColorString('#ff1100').withAlpha(0.45 + intensity * 0.35),
-              outlineColor: Cesium.Color.fromCssColorString('#ff4400').withAlpha(0.30),
-              outlineWidth: 4,
+              pixelSize: 8,
+              color: Cesium.Color.fromCssColorString('#ff2200').withAlpha(0.6 + intensity * 0.3),
+              outlineColor: Cesium.Color.fromCssColorString('#ff4400').withAlpha(0.3),
+              outlineWidth: 2,
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             label: {
@@ -8202,7 +8226,7 @@ function renderGlobeEntities() {
               outlineWidth: 2,
               outlineColor: Cesium.Color.BLACK,
               verticalOrigin: Cesium.VerticalOrigin.TOP,
-              pixelOffset: new Cesium.Cartesian2(0, 14),
+              pixelOffset: new Cesium.Cartesian2(0, 10),
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: {
@@ -8218,6 +8242,11 @@ function renderGlobeEntities() {
               scan_km: det.scan_km || 0.375,
               track_km: det.track_km || 0.375,
               history: JSON.stringify(thermal.history || []),
+              flybys: JSON.stringify((thermal.history || []).reduce(function(acc, h) {
+                if (h.flybys) h.flybys.forEach(function(f) { acc.push(f); });
+                else if (h.total_frp_mw > 0) acc.push({date: h.date, time: '—', frp: h.total_frp_mw});
+                return acc;
+              }, [])),
             },
           });
         });
@@ -9206,18 +9235,22 @@ function setupGlobeClickHandler() {
             html += '<div style="font-size:10px; color:#a89060; margin-top:4px; padding:4px 6px; background:rgba(168,144,96,0.1); border-left:2px solid #a89060;">'
               + '\u26A0 No thermal signature detected — facility may be shut down or operating below detection threshold</div>';
           }
-          // Sparkline in dossier popup
-          if (thermal.history && thermal.history.length > 1) {
+          // Per-flyby FRP sparkline in dossier popup
+          var _dossierFlybys = (thermal.history || []).reduce(function(acc, h) {
+            if (h.flybys) h.flybys.forEach(function(f) { acc.push(f); });
+            else if (h.total_frp_mw > 0) acc.push({date: h.date, time: '—', frp: h.total_frp_mw});
+            return acc;
+          }, []);
+          if (_dossierFlybys.length > 0) {
             html += '<div style="margin-top:6px;">'
-              + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">FRP History (30 days)</div>'
-              + '<canvas id="dossier-thermal-sparkline" width="260" height="50" style="width:100%; height:50px;"></canvas>'
+              + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">FRP per Satellite Flyby</div>'
+              + '<canvas id="dossier-thermal-sparkline" width="260" height="60" style="width:100%; height:60px;"></canvas>'
               + '</div>';
           }
           html += '<div style="font-size:9px; color:var(--text-muted); margin-top:4px;">' + esc(thermal.source || 'NASA FIRMS') + ' (375m VIIRS)</div>';
           html += '</div>';
           // Defer sparkline
-          if (thermal.history && thermal.history.length > 1) {
-            var _dossierHist = thermal.history;
+          if (_dossierFlybys.length > 0) {
             setTimeout(function() {
               try {
                 var canvas = document.getElementById('dossier-thermal-sparkline');
@@ -9225,28 +9258,35 @@ function setupGlobeClickHandler() {
                 var ctx = canvas.getContext('2d');
                 if (canvas._chartInstance) canvas._chartInstance.destroy();
                 canvas._chartInstance = new Chart(ctx, {
-                  type: 'line',
+                  type: 'bar',
                   data: {
-                    labels: _dossierHist.map(function(h) { return h.date.slice(5); }),
+                    labels: _dossierFlybys.map(function(f) {
+                      var d = (f.date || '').slice(5);
+                      return f.time && f.time !== '—' ? d + ' ' + f.time : d;
+                    }),
                     datasets: [{
-                      data: _dossierHist.map(function(h) { return h.total_frp_mw; }),
+                      data: _dossierFlybys.map(function(f) { return f.frp || 0; }),
+                      backgroundColor: _dossierFlybys.map(function(f) {
+                        var v = Math.min(1.0, (f.frp || 0) / 15);
+                        return 'rgba(255,' + Math.round(40 + (1 - v) * 60) + ',0,' + (0.5 + v * 0.4).toFixed(2) + ')';
+                      }),
                       borderColor: '#ff4444',
-                      backgroundColor: 'rgba(255,68,68,0.15)',
-                      borderWidth: 2,
-                      fill: true,
-                      pointRadius: 2,
-                      pointBackgroundColor: '#ff4444',
-                      tension: 0.3,
+                      borderWidth: 1,
+                      borderRadius: 2,
+                      barPercentage: 0.85,
                     }]
                   },
                   options: {
                     responsive: false,
                     plugins: { legend: { display: false }, tooltip: {
-                      callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' MW'; } }
+                      callbacks: {
+                        title: function(items) { return 'Flyby: ' + items[0].label; },
+                        label: function(c) { return c.parsed.y.toFixed(2) + ' MW FRP'; }
+                      }
                     }},
                     scales: {
-                      x: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxRotation: 0, maxTicksLimit: 6 }, grid: { display: false } },
-                      y: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                      x: { display: true, ticks: { font: { size: 7, family: 'JetBrains Mono' }, color: '#4B5567', maxRotation: 45, maxTicksLimit: 8 }, grid: { display: false } },
+                      y: { display: true, beginAtZero: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     }
                   }
                 });
@@ -9284,51 +9324,65 @@ function setupGlobeClickHandler() {
            + '<div><strong>Fire Radiative Power:</strong> ' + frpVal.toFixed(1) + ' MW</div>'
            + '<div><strong>Detected:</strong> ' + esc(detDate) + ' ' + esc(detTime) + ' UTC</div>'
            + '<div><strong>Confidence:</strong> ' + esc(conf) + '</div>';
-      // Sparkline chart for historical FRP
+      // Per-flyby FRP sparkline — shows individual satellite passes
+      var flybyJson = props.flybys ? props.flybys.getValue() : '[]';
       var histJson = props.history ? props.history.getValue() : '[]';
-      try {
-        var hist = JSON.parse(histJson);
-        if (hist.length > 1) {
-          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">'
-            + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">FRP History (30 days)</div>'
-            + '<canvas id="thermal-sparkline" width="260" height="60" style="width:100%; height:60px;"></canvas>'
-            + '</div>';
-        }
-      } catch(e) {}
+      // Build flyby array: prefer per-flyby data, fall back to daily aggregates
+      var flybyData = [];
+      try { flybyData = JSON.parse(flybyJson); } catch(e) {}
+      if (flybyData.length < 2) {
+        try {
+          var hist = JSON.parse(histJson);
+          flybyData = hist.filter(function(h) { return h.total_frp_mw > 0; }).map(function(h) {
+            return {date: h.date, time: '—', frp: h.total_frp_mw};
+          });
+        } catch(e) {}
+      }
+      if (flybyData.length > 0) {
+        html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">'
+          + '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">FRP per Satellite Flyby</div>'
+          + '<canvas id="thermal-sparkline" width="260" height="70" style="width:100%; height:70px;"></canvas>'
+          + '</div>';
+      }
       html += '<div style="margin-top:6px; font-size:9px; color:var(--text-muted);">NASA FIRMS VIIRS NOAA-20 (375m)</div>';
-      // Defer sparkline rendering to after popup HTML is set
+      // Defer sparkline rendering
       setTimeout(function() {
         try {
-          var histData = JSON.parse(histJson);
-          if (histData.length < 2) return;
+          if (flybyData.length < 1) return;
           var canvas = document.getElementById('thermal-sparkline');
           if (!canvas) return;
           var ctx = canvas.getContext('2d');
-          // Destroy previous chart if any
           if (canvas._chartInstance) canvas._chartInstance.destroy();
           canvas._chartInstance = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
-              labels: histData.map(function(h) { return h.date.slice(5); }),
+              labels: flybyData.map(function(f) {
+                var d = (f.date || '').slice(5);
+                return f.time && f.time !== '—' ? d + ' ' + f.time : d;
+              }),
               datasets: [{
-                data: histData.map(function(h) { return h.total_frp_mw; }),
+                data: flybyData.map(function(f) { return f.frp || 0; }),
+                backgroundColor: flybyData.map(function(f) {
+                  var v = Math.min(1.0, (f.frp || 0) / 15);
+                  return 'rgba(255,' + Math.round(40 + (1 - v) * 60) + ',0,' + (0.5 + v * 0.4).toFixed(2) + ')';
+                }),
                 borderColor: '#ff4444',
-                backgroundColor: 'rgba(255,68,68,0.15)',
-                borderWidth: 2,
-                fill: true,
-                pointRadius: 2,
-                pointBackgroundColor: '#ff4444',
-                tension: 0.3,
+                borderWidth: 1,
+                borderRadius: 2,
+                barPercentage: 0.85,
               }]
             },
             options: {
               responsive: false,
               plugins: { legend: { display: false }, tooltip: {
-                callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' MW'; } }
+                callbacks: {
+                  title: function(items) { return 'Flyby: ' + items[0].label; },
+                  label: function(c) { return c.parsed.y.toFixed(2) + ' MW FRP'; }
+                }
               }},
               scales: {
-                x: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxRotation: 0, maxTicksLimit: 6 }, grid: { display: false } },
-                y: { display: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'MW', font: { size: 8 }, color: '#4B5567' } }
+                x: { display: true, ticks: { font: { size: 7, family: 'JetBrains Mono' }, color: '#4B5567', maxRotation: 45, maxTicksLimit: 8 }, grid: { display: false } },
+                y: { display: true, beginAtZero: true, ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'MW', font: { size: 8 }, color: '#4B5567' } }
               }
             }
           });
