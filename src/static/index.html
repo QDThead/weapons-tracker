@@ -26,15 +26,48 @@
   --text-muted: #4B5567;
   --accent: #00d4ff;
   --accent2: #D80621;
-  --accent3: #34D399;
-  --accent4: #FBBF24;
-  --accent5: #8b5cf6;
+  --accent3: #6b9080;
+  --accent4: #a89060;
+  --accent5: #6b6b8a;
   --glow: none;
   --maple: #D80621;
   --font-display: 'Barlow Condensed', sans-serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
+/* ── Light Theme ── */
+body.light {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface-glass: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --border-hover: rgba(0,0,0,0.15);
+  --text: #1a1a2e;
+  --text-dim: #555e6e;
+  --text-muted: #8895a7;
+  --accent: #0077b6;
+  --accent2: #D80621;
+  --accent3: #4a7a60;
+  --accent4: #8a7040;
+  --accent5: #5a5a7a;
+  --glow: none;
+}
+body.light .atm { display:none; }
+body.light .scan { display:none; }
+body.light .cb { background: #B8041A; }
+body.light header { background:rgba(255,255,255,0.92); }
+body.light .nav { background:rgba(255,255,255,0.85); }
+body.light .side-nav { background:rgba(255,255,255,0.85); }
+body.light .card:hover { background:#f7f8fa; }
+body.light .insight-alert:hover { background:#f7f8fa; }
+body.light .sitrep-card:hover { background:#f7f8fa; }
+body.light .stat-box { background:var(--bg); }
+body.light .sn-item:hover { background:rgba(0,119,182,0.05); }
+body.light .nav-tab:hover { background:rgba(0,119,182,0.05); }
+body.light .nav-dropdown-menu { background:#fff; }
+body.light .leaflet-container { background:#e8ecf0; }
+body.light .header-brand h1 { color:var(--text); }
+body.light .hs-val { color: var(--accent); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: var(--font-body);
@@ -197,7 +230,7 @@ header::after { display:none; }
 }
 .ov-hero::before {
   content:''; position:absolute; top:0; left:0; right:0; height:3px;
-  background: linear-gradient(90deg, #00d4ff 0%, #8b5cf6 40%, #ef4444 70%, #f59e0b 100%);
+  background: linear-gradient(90deg, #00d4ff 0%, #6b6b8a 40%, #D80621 70%, #a89060 100%);
   animation: ov-gradient-shift 6s ease infinite;
 }
 @keyframes ov-gradient-shift {
@@ -209,9 +242,9 @@ header::after { display:none; }
 .ov-hero-sub { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
 .ov-badge-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
 .ov-badge { padding:3px 10px; border-radius:0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
-.ov-badge-live { background:rgba(16,185,129,0.15); color:var(--accent3); }
+.ov-badge-live { background:rgba(107,144,128,0.15); color:var(--accent3); }
 .ov-badge-deep { background:rgba(0,212,255,0.15); color:var(--accent); }
-.ov-badge-risk { background:rgba(239,68,68,0.15); color:var(--accent2); }
+.ov-badge-risk { background:rgba(216,6,33,0.15); color:var(--accent2); }
 .ov-hero-stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 .ov-stat { text-align:center; padding:12px 8px; background:rgba(0,0,0,0.3); border-radius:0; border:1px solid rgba(255,255,255,0.04); }
 .ov-stat-val { font-family:var(--font-mono); font-size:28px; font-weight:700; line-height:1; }
@@ -284,7 +317,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   padding: 2px 8px; border-radius: 0; font-size: 12px; cursor: pointer;
 }
 .buyer-tag {
-  background: rgba(239,68,68,0.12); color: var(--accent2);
+  background: rgba(216,6,33,0.12); color: var(--accent2);
   padding: 2px 8px; border-radius: 0; font-size: 12px; cursor: pointer;
 }
 .filters { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
@@ -350,9 +383,9 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .threat-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
 .threat-table tr:hover td { background: rgba(0,212,255,0.04); }
 .threat-flag { display: inline-block; padding: 2px 8px; border-radius: 0; font-size: 11px; font-weight: 600; }
-.threat-flag.high { background: rgba(239,68,68,0.15); color: var(--accent2); }
-.threat-flag.medium { background: rgba(245,158,11,0.15); color: var(--accent4); }
-.threat-flag.low { background: rgba(16,185,129,0.15); color: var(--accent3); }
+.threat-flag.high { background: rgba(216,6,33,0.15); color: var(--accent2); }
+.threat-flag.medium { background: rgba(168,144,96,0.15); color: var(--accent4); }
+.threat-flag.low { background: rgba(107,144,128,0.15); color: var(--accent3); }
 .concentration-bar { background: var(--bg); border-radius: 0; height: 24px; margin-top: 8px; overflow: hidden; position: relative; }
 .concentration-fill { height: 100%; border-radius: 0; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; }
 .shift-item {
@@ -422,8 +455,8 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   font-family: var(--font-mono);
   letter-spacing: 0.5px;
 }
-.ins-badge.up { background: rgba(16,185,129,0.15); color: var(--accent3); }
-.ins-badge.down { background: rgba(239,68,68,0.15); color: var(--accent2); }
+.ins-badge.up { background: rgba(107,144,128,0.15); color: var(--accent3); }
+.ins-badge.down { background: rgba(216,6,33,0.15); color: var(--accent2); }
 .ins-mover {
   display: flex;
   justify-content: space-between;
@@ -504,8 +537,8 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .feeds-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .feeds-health-banner { padding:14px 20px; border-radius:0; margin-bottom:16px; font-size:13px; display:none; }
 .feeds-health-banner.has-issues { display:block; }
-.feeds-health-banner.has-failed { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; }
-.feeds-health-banner.has-degraded { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; }
+.feeds-health-banner.has-failed { background:rgba(216,6,33,0.1); border:1px solid rgba(216,6,33,0.3); color:#fca5a5; }
+.feeds-health-banner.has-degraded { background:rgba(168,144,96,0.1); border:1px solid rgba(168,144,96,0.3); color:#fcd34d; }
 .feeds-health-banner strong { color:#fff; }
 .feeds-health-banner .banner-feed { display:inline-block; background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:0; margin:2px 4px; font-family:var(--font-mono); font-size:11px; }
 .feeds-section { margin-bottom: 28px; }
@@ -525,10 +558,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .feed-dot {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }
-.feed-dot.green { background: var(--accent3); box-shadow: 0 0 6px rgba(16,185,129,0.4); animation: pulse 2s infinite; }
-.feed-dot.yellow { background: var(--accent4); box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+.feed-dot.green { background: var(--accent3); box-shadow: 0 0 6px rgba(107,144,128,0.4); animation: pulse 2s infinite; }
+.feed-dot.yellow { background: var(--accent4); box-shadow: 0 0 6px rgba(168,144,96,0.4); }
 .feed-dot.orange { background: #f97316; box-shadow: 0 0 6px rgba(255,146,43,0.4); }
-.feed-dot.red { background: var(--accent2); box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+.feed-dot.red { background: var(--accent2); box-shadow: 0 0 6px rgba(216,6,33,0.4); }
 .feed-dot.gray { background: var(--text-muted); }
 .feed-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text); }
 .feed-latest {
@@ -591,14 +624,14 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .bom-val-panel .bvp-src { padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
 .bom-val-panel .bvp-src:last-child { border-bottom:none; }
 .bom-val-panel .bvp-type { display:inline-block; padding:1px 6px; border-radius:0; font-size:9px; font-weight:600; margin-right:6px; }
-.bvp-Primary { background:rgba(16,185,129,0.15); color:var(--accent3); }
-.bvp-Cross-validation { background:rgba(139,92,246,0.15); color:var(--accent5); }
+.bvp-Primary { background:rgba(107,144,128,0.15); color:var(--accent3); }
+.bvp-Cross-validation { background:rgba(107,107,138,0.15); color:var(--accent5); }
 .bvp-Company { background:rgba(0,212,255,0.1); color:var(--accent); }
-.bvp-Trade { background:rgba(245,158,11,0.1); color:var(--accent4); }
-.bvp-Derived { background:rgba(239,68,68,0.1); color:var(--accent2); }
+.bvp-Trade { background:rgba(168,144,96,0.1); color:var(--accent4); }
+.bvp-Derived { background:rgba(216,6,33,0.1); color:var(--accent2); }
 .bvp-Reference { background:rgba(255,255,255,0.05); color:var(--text-dim); }
 .bvp-Manufacturer { background:rgba(0,212,255,0.1); color:var(--accent); }
-.bvp-Public { background:rgba(16,185,129,0.1); color:var(--accent3); }
+.bvp-Public { background:rgba(107,144,128,0.1); color:var(--accent3); }
 .bom-val-panel .bvp-conf { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-weight:600; }
 .bom-val-panel .bvp-note { margin-top:4px; color:var(--text-dim); font-style:italic; }
 /* --- Universal Source Validation Panels --- */
@@ -608,9 +641,9 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .val-trigger.open .val-chev{transform:rotate(90deg);}
 .val-trigger .val-label{color:rgba(0,212,255,0.8);font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
 .val-trigger .val-badge{font-size:9px;padding:1px 6px;border-radius:0;font-weight:600;margin-left:auto;}
-.val-badge-HIGH{background:rgba(16,185,129,0.12);color:rgba(16,185,129,0.8);}
-.val-badge-MEDIUM{background:rgba(245,158,11,0.12);color:rgba(245,158,11,0.8);}
-.val-badge-LOW{background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.8);}
+.val-badge-HIGH{background:rgba(107,144,128,0.12);color:rgba(107,144,128,0.8);}
+.val-badge-MEDIUM{background:rgba(168,144,96,0.12);color:rgba(168,144,96,0.8);}
+.val-badge-LOW{background:rgba(216,6,33,0.12);color:rgba(216,6,33,0.8);}
 .val-trigger .val-count{color:rgba(255,255,255,0.3);font-size:10px;}
 .val-panel{display:none;padding:16px;background:rgba(0,212,255,0.03);border-left:3px solid var(--accent);font-size:11px;line-height:1.7;}
 .val-panel.open{display:block;}
@@ -654,9 +687,9 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:3px 10px;
   border-radius:0; flex-shrink:0;
 }
-.cc-badge.compliant { background:rgba(16,185,129,0.15); color:var(--accent3); }
+.cc-badge.compliant { background:rgba(107,144,128,0.15); color:var(--accent3); }
 .cc-badge.exceeds { background:rgba(0,212,255,0.15); color:var(--accent); }
-.cc-badge.partial { background:rgba(245,158,11,0.15); color:var(--accent4); }
+.cc-badge.partial { background:rgba(168,144,96,0.15); color:var(--accent4); }
 .cc-badge.planned { background:rgba(249,115,22,0.15); color:#f97316; }
 .cc-badge.na { background:rgba(120,120,140,0.15); color:var(--text-muted); }
 .cc-chevron { color:var(--text-dim); transition:transform 0.2s; font-size:14px; }
@@ -1049,13 +1082,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   flex-shrink: 0; margin-top: 2px;
 }
 .ci-badge.dnd { background: rgba(0,212,255,0.15); color: var(--accent); }
-.ci-badge.gac { background: rgba(139,92,246,0.15); color: var(--accent5); }
-.ci-badge.nato { background: rgba(16,185,129,0.15); color: var(--accent3); }
-.ci-badge.norad { background: rgba(245,158,11,0.15); color: var(--accent4); }
-.ci-badge.arctic { background: rgba(59,130,246,0.15); color: #3b82f6; }
-.ci-badge.safety { background: rgba(239,68,68,0.12); color: var(--accent2); }
-.ci-badge.sema { background: rgba(239,68,68,0.15); color: var(--accent2); }
-.ci-badge.nddn { background: rgba(139,92,246,0.12); color: var(--accent5); }
+.ci-badge.gac { background: rgba(107,107,138,0.15); color: var(--accent5); }
+.ci-badge.nato { background: rgba(107,144,128,0.15); color: var(--accent3); }
+.ci-badge.norad { background: rgba(168,144,96,0.15); color: var(--accent4); }
+.ci-badge.arctic { background: rgba(90,122,155,0.15); color: #5a7a9b; }
+.ci-badge.safety { background: rgba(216,6,33,0.12); color: var(--accent2); }
+.ci-badge.sema { background: rgba(216,6,33,0.15); color: var(--accent2); }
+.ci-badge.nddn { background: rgba(107,107,138,0.12); color: var(--accent5); }
 .ci-title { font-size: 13px; color: var(--text); line-height: 1.4; }
 .ci-title a { color: var(--text); text-decoration: none; }
 .ci-title a:hover { color: var(--accent); text-decoration: underline; }
@@ -1068,7 +1101,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 }
 .suf-gauge-bg {
   width: 160px; height: 80px; border-radius: 0; overflow: hidden;
-  background: conic-gradient(from 180deg, #ef4444 0deg, #ef4444 60deg, #f59e0b 60deg, #f59e0b 108deg, #10b981 108deg, #10b981 180deg);
+  background: conic-gradient(from 180deg, #D80621 0deg, #D80621 60deg, #a89060 60deg, #a89060 108deg, #6b9080 108deg, #6b9080 180deg);
 }
 .suf-gauge-inner {
   position: absolute; top: 8px; left: 8px; width: 144px; height: 72px;
@@ -1094,10 +1127,10 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   transition: background 0.3s, border-color 0.3s;
 }
 .suf-platform-card.at-risk {
-  border-left-color: #ef4444; background: rgba(239, 68, 68, 0.06);
+  border-left-color: #D80621; background: rgba(239, 68, 68, 0.06);
 }
 .suf-platform-card .suf-badge-indirect {
-  background: rgba(139, 92, 246, 0.15); color: #8b5cf6; font-size: 9px;
+  background: rgba(139, 92, 246, 0.15); color: #6b6b8a; font-size: 9px;
   padding: 2px 8px; border-radius: 0; font-weight: 600;
 }
 .suf-platform-card .suf-badge-direct {
@@ -1111,14 +1144,14 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .suf-pill { padding: 2px 6px; border-radius: 0; white-space: nowrap; }
 .suf-pill-mineral { background: rgba(0, 212, 255, 0.12); color: #00d4ff; }
 .suf-pill-oem { background: rgba(139, 92, 246, 0.12); color: #a78bfa; }
-.suf-pill-canada { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.suf-pill-canada { background: rgba(16, 185, 129, 0.12); color: #6b9080; }
 .suf-chain-arrow { color: var(--text-muted); }
 .suf-risk-note {
   font-size: 10px; margin-top: 5px;
 }
-.suf-risk-note.warning { color: #f59e0b; }
-.suf-risk-note.ok { color: #10b981; }
-.suf-risk-note.critical { color: #ef4444; }
+.suf-risk-note.warning { color: #a89060; }
+.suf-risk-note.ok { color: #6b9080; }
+.suf-risk-note.critical { color: #D80621; }
 .suf-slider-wrap {
   display: flex; flex-direction: column; align-items: center;
 }
@@ -1159,7 +1192,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 0; padding: 8px 10px; margin-top: 8px; font-size: 10px; color: #c4b5fd;
 }
-.suf-insight strong { color: #8b5cf6; }
+.suf-insight strong { color: #6b6b8a; }
 
 /* Per-Mineral Knowledge Graph */
 .mineral-graph-node { cursor: pointer; transition: opacity 0.3s; }
@@ -1168,7 +1201,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .mineral-graph-edge { transition: opacity 0.3s, stroke 0.3s; }
 .mineral-graph-edge.dimmed { opacity: 0.05; }
 .mineral-graph-edge.highlighted-up { stroke: #00d4ff !important; stroke-width: 3px !important; stroke-dasharray: none !important; opacity: 1; }
-.mineral-graph-edge.highlighted-down { stroke: #f59e0b !important; stroke-width: 3px !important; stroke-dasharray: none !important; opacity: 1; }
+.mineral-graph-edge.highlighted-down { stroke: #a89060 !important; stroke-width: 3px !important; stroke-dasharray: none !important; opacity: 1; }
 .mineral-graph-label { font-size: 9px; fill: #94a3b8; text-anchor: middle; pointer-events: none; }
 
 @media (max-width: 1200px) {
@@ -1214,6 +1247,19 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
+/* ── Theme Toggle ── */
+.theme-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;padding:0 8px;}
+.theme-toggle .tgl-label{font-family:var(--font-mono);font-size:8px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;}
+.theme-toggle .tgl-track{
+  position:relative;width:32px;height:16px;border-radius:8px;
+  background:var(--border-hover);transition:background 0.3s;flex-shrink:0;
+}
+.theme-toggle .tgl-thumb{
+  position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+  background:var(--text-dim);transition:all 0.3s;
+}
+body.light .theme-toggle .tgl-track{background:var(--accent);}
+body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
 /* ── Atmosphere ── */
 .atm{position:fixed;inset:0;pointer-events:none;z-index:0;}
 .atm-g{position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px);background-size:80px 80px;}
@@ -1240,19 +1286,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 <div class="cb">UNCLASSIFIED // OSINT</div>
 
 <header>
-  <div class="header-brand">
-    <!-- Canada flag -->
-    <svg width="28" height="16" viewBox="0 0 28 16" style="flex-shrink:0;">
-      <rect width="7" height="16" fill="#D80621"/>
-      <rect x="7" width="14" height="16" fill="#fff"/>
-      <rect x="21" width="7" height="16" fill="#D80621"/>
-      <path d="M14 3 L14.8 5.5 L13.2 5.5Z M12 6.5 L11 8 L12.5 7.5 L14 10 L15.5 7.5 L17 8 L16 6.5 L17.5 6 L15.5 5.5 L16 4 L14 5 L12 4 L12.5 5.5 L10.5 6Z" fill="#D80621"/>
-    </svg>
+  <a href="/" class="header-brand" style="text-decoration:none;">
+    <svg width="16" height="16" viewBox="0 0 30 30" aria-hidden="true" style="flex-shrink:0;"><path fill="#D80621" d="M15 1.5l1.3 3.8 2.5-1.8-.7 3.5 3.2-1.5-2.2 3.3 3.5-.4-2.7 2.6 4.2-.5-3.5 2.8 2.8 1-4.2.8 2.8 3.7-3.5-2.2.3 4-1.8-2.5L15 28l-1.8-7.1-1.8 2.5.3-4-3.5 2.2 2.8-3.7-4.2-.8 2.8-1-3.5-2.8 4.2.5-2.7-2.6 3.5.4-2.2-3.3 3.2 1.5-.7-3.5 2.5 1.8z"/></svg>
     <div>
-      <h1>PSI <span>CONTROL TOWER</span></h1>
-      <div class="brand-sub">Quantum Data Technologies — DND/MDN</div>
+      <h1>CMCT</h1>
+      <div class="brand-sub">Defence Supply Chain Intelligence</div>
     </div>
-  </div>
+  </a>
   <div class="header-status" id="stats-bar">
     <div class="header-stat">
       <span class="hs-label">Transfers</span>
@@ -1276,6 +1316,11 @@ tr:hover td { background: rgba(0,212,255,0.04); }
     </div>
   </div>
   <div class="header-time">
+    <div class="theme-toggle" id="theme-toggle" role="switch" aria-checked="false" aria-label="Toggle light theme" tabindex="0">
+      <span class="tgl-label">Dark</span>
+      <div class="tgl-track"><div class="tgl-thumb"></div></div>
+      <span class="tgl-label">Light</span>
+    </div>
     <a href="/briefing/pdf" target="_blank" style="text-decoration:none;background:var(--accent2);color:#fff;padding:5px 14px;font-size:11px;font-family:var(--font-display);font-weight:600;letter-spacing:2px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.boxShadow='0 0 14px rgba(216,6,33,0.35)'" onmouseout="this.style.boxShadow='none'">PDF BRIEF</a>
     <div class="header-live">Live</div>
     <span id="header-clock"></span>
@@ -1304,14 +1349,6 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   <!-- ════ INSIGHTS PAGE ════ -->
   <div id="page-insights" class="page active" role="tabpanel" aria-labelledby="tab-insights">
 
-    <!-- Data Freshness Banner -->
-    <div id="freshness-banner" class="card" data-val-key="insights.freshness" style="margin-bottom:20px; padding:14px 20px; display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <h2 style="margin:0;">Data Freshness</h2>
-        <div id="freshness-items" style="display:flex; gap:20px; flex-wrap:wrap; font-size:13px;"></div>
-      </div>
-    </div>
-
     <!-- Risk Taxonomy Summary Strip -->
     <div id="taxonomy-strip" data-val-key="insights.taxonomy" style="margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -1335,15 +1372,15 @@ tr:hover td { background: rgba(0,212,255,0.04); }
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:12px;">
           <h2 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin:0;">Action Centre</h2>
-          <span class="stat-box" style="padding:2px 10px;background:rgba(239,68,68,0.15);border-color:var(--accent2);">
+          <span class="stat-box" style="padding:2px 10px;background:rgba(216,6,33,0.15);border-color:var(--accent2);">
             <span class="stat-num" style="font-size:14px;color:var(--accent2);" id="ac-open-count">0</span>
             <span style="font-size:9px;color:var(--accent2);margin-left:4px;">OPEN</span>
           </span>
-          <span class="stat-box" style="padding:2px 10px;background:rgba(245,158,11,0.15);border-color:var(--accent4);">
+          <span class="stat-box" style="padding:2px 10px;background:rgba(168,144,96,0.15);border-color:var(--accent4);">
             <span class="stat-num" style="font-size:14px;color:var(--accent4);" id="ac-progress-count">0</span>
             <span style="font-size:9px;color:var(--accent4);margin-left:4px;">IN PROGRESS</span>
           </span>
-          <span class="stat-box" style="padding:2px 10px;background:rgba(16,185,129,0.15);border-color:var(--accent3);">
+          <span class="stat-box" style="padding:2px 10px;background:rgba(107,144,128,0.15);border-color:var(--accent3);">
             <span class="stat-num" style="font-size:14px;color:var(--accent3);" id="ac-resolved-count">0</span>
             <span style="font-size:9px;color:var(--accent3);margin-left:4px;">RESOLVED</span>
           </span>
@@ -2010,18 +2047,18 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           <!-- Floating legend overlay -->
           <div style="position:absolute; bottom:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; line-height:1.8;">
             <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Supply Chain Nodes</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; vertical-align:middle; margin-right:6px;"></span><span style="color:#10b981;">Tier 1</span> — Mining / Extraction</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#8b5cf6; vertical-align:middle; margin-right:6px;"></span><span style="color:#8b5cf6;">Tier 2</span> — Processing / Refining</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b; vertical-align:middle; margin-right:6px;"></span><span style="color:#f59e0b;">Tier 3</span> — Components / Alloys</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b9080; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b9080;">Tier 1</span> — Mining / Extraction</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b6b8a; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b6b8a;">Tier 2</span> — Processing / Refining</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Tier 3</span> — Components / Alloys</div>
             <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00d4ff; vertical-align:middle; margin-right:6px;"></span><span style="color:#00d4ff;">Tier 4</span> — Weapon Platforms</div>
-            <div><span style="display:inline-block; width:10px; height:10px; background:#ef4444; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#ef4444;">Chokepoint</span></div>
+            <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
             <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; vertical-align:middle; margin-right:6px;"></span> Chinese-owned (mine/refinery)</div>
+            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D80621; vertical-align:middle; margin-right:6px;"></span> Chinese-owned (mine/refinery)</div>
             <div style="border-top:1px solid var(--border); margin:4px 0; padding-top:4px; font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Shipping Route Risk</div>
-            <div><span style="color:#ef4444;">━ ━ ━</span> Critical — conflict zone, export controls, chokepoint</div>
-            <div><span style="color:#f59e0b;">━ ━ ━</span> High — sanctions, single-source, political instability</div>
+            <div><span style="color:#D80621;">━ ━ ━</span> Critical — conflict zone, export controls, chokepoint</div>
+            <div><span style="color:#a89060;">━ ━ ━</span> High — sanctions, single-source, political instability</div>
             <div><span style="color:#eab308;">━ ━ ━</span> Medium — emerging route, partial risk</div>
-            <div><span style="color:#10b981;">━ ━ ━</span> Low — NATO-allied, open ocean, reliable supplier</div>
+            <div><span style="color:#6b9080;">━ ━ ━</span> Low — NATO-allied, open ocean, reliable supplier</div>
           </div>
           <!-- Shipping route list (shows when mineral has routes) -->
           <div id="globe-route-menu" style="display:none; position:absolute; top:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; max-width:320px;">
@@ -2087,24 +2124,24 @@ tr:hover td { background: rgba(0,212,255,0.04); }
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-top:10px;">
           <div class="card" style="padding:14px;">
             <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
-              <span style="width:10px; height:10px; border-radius:50%; background:#10b981;"></span>
-              <h4 style="font-size:13px; margin:0; color:#10b981;">1. Mining</h4>
+              <span style="width:10px; height:10px; border-radius:50%; background:#6b9080;"></span>
+              <h4 style="font-size:13px; margin:0; color:#6b9080;">1. Mining</h4>
             </div>
             <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Where is it extracted?</div>
             <div id="globe-detail-mining"></div>
           </div>
           <div class="card" style="padding:14px;">
             <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
-              <span style="width:10px; height:10px; border-radius:50%; background:#8b5cf6;"></span>
-              <h4 style="font-size:13px; margin:0; color:#8b5cf6;">2. Processing</h4>
+              <span style="width:10px; height:10px; border-radius:50%; background:#6b6b8a;"></span>
+              <h4 style="font-size:13px; margin:0; color:#6b6b8a;">2. Processing</h4>
             </div>
             <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Where is it refined?</div>
             <div id="globe-detail-processing"></div>
           </div>
           <div class="card" style="padding:14px;">
             <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
-              <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
-              <h4 style="font-size:13px; margin:0; color:#f59e0b;">3. Components</h4>
+              <span style="width:10px; height:10px; border-radius:50%; background:#a89060;"></span>
+              <h4 style="font-size:13px; margin:0; color:#a89060;">3. Components</h4>
             </div>
             <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">What is it built into?</div>
             <div id="globe-detail-components"></div>
@@ -2175,13 +2212,13 @@ tr:hover td { background: rgba(0,212,255,0.04); }
           <div id="psi-graph-info-body" style="color:var(--text-dim); line-height:1.6;"></div>
         </div>
         <div id="psi-graph-layered-legend" style="display:none; margin-top:10px; font-size:11px; color:var(--text-dim); flex-wrap:wrap; gap:6px 18px;">
-          <span><span class="graph-legend-dot circle" style="background:#10b981;"></span> Mine</span>
-          <span><span class="graph-legend-dot square" style="background:#f59e0b;"></span> Refinery</span>
+          <span><span class="graph-legend-dot circle" style="background:#6b9080;"></span> Mine</span>
+          <span><span class="graph-legend-dot square" style="background:#a89060;"></span> Refinery</span>
           <span><span class="graph-legend-dot diamond" style="background:#eab308;"></span> Alloy</span>
           <span><span class="graph-legend-dot circle" style="background:#00d4ff;"></span> Engine</span>
-          <span><span class="graph-legend-dot circle" style="background:#ef4444;"></span> Platform</span>
-          <span style="margin-left:12px;"><span style="display:inline-block; width:10px; height:10px; border:3px solid #ef4444; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> Adversary</span>
-          <span><span style="display:inline-block; width:10px; height:10px; border:2px solid #3b82f6; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> NATO</span>
+          <span><span class="graph-legend-dot circle" style="background:#D80621;"></span> Platform</span>
+          <span style="margin-left:12px;"><span style="display:inline-block; width:10px; height:10px; border:3px solid #D80621; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> Adversary</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border:2px solid #5a7a9b; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> NATO</span>
           <span><span style="display:inline-block; width:10px; height:10px; border:1px solid #64748b; border-radius:50%; vertical-align:middle; margin-right:4px;"></span> Neutral</span>
         </div>
         <div style="margin-top:10px; font-size:11px; color:var(--text-dim); display:flex; flex-wrap:wrap; gap:6px 18px;">
@@ -2590,7 +2627,7 @@ function fmt(n) {
   return n.toFixed(2) + 'M';
 }
 function fmtInt(n) { return n == null ? '-' : n.toLocaleString(); }
-const COLORS = ['#00d4ff','#D80621','#10b981','#f59e0b','#8b5cf6','#14b8a6',
+const COLORS = ['#00d4ff','#D80621','#6b9080','#a89060','#6b6b8a','#5a8a80',
   '#f97316','#38bdf8','#f43f5e','#22d3ee','#84cc16','#c084fc'];
 function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
 
@@ -2961,8 +2998,8 @@ async function loadComtrade() {
           datasets: [{
             label: 'Arms Exports (USD)',
             data: sorted.map(([, v]) => v / 1e9),
-            backgroundColor: '#10b98188',
-            borderColor: '#10b981',
+            backgroundColor: '#6b908088',
+            borderColor: '#6b9080',
             borderWidth: 1,
           }],
         },
@@ -2977,7 +3014,7 @@ async function loadComtrade() {
     // Trend chart: top 5 exporters over time
     const top5 = sorted.slice(0, 5).map(([c]) => c);
     const years = [2020, 2021, 2022, 2023];
-    const trendColors = ['#00d4ff', '#D80621', '#10b981', '#f59e0b', '#8b5cf6'];
+    const trendColors = ['#00d4ff', '#D80621', '#6b9080', '#a89060', '#6b6b8a'];
     var comtradeTrendEl = document.getElementById('comtrade-trend-chart');
     if (comtradeTrendEl) {
       destroyChart('comtrade-trend-chart');
@@ -3446,7 +3483,7 @@ function renderArcticMonitor(flights) {
     if (isRussian) russianCount++;
     else alliedCount++;
 
-    const color = isRussian ? '#D80621' : '#10b981';
+    const color = isRussian ? '#D80621' : '#6b9080';
     const icon = L.divIcon({
       className: '',
       html: `<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(${f.heading || 0}deg)">
@@ -3460,7 +3497,7 @@ function renderArcticMonitor(flights) {
     marker.bindTooltip(
       `<b>${esc(cs || 'Unknown')}</b><br>${esc(f.aircraft_description || '')}<br>` +
       `Alt: ${(f.altitude_ft || 0).toLocaleString()} ft<br>` +
-      `${isRussian ? '<span style="color:#ef4444">RUSSIAN</span>' : 'Allied/Other'}`,
+      `${isRussian ? '<span style="color:#D80621">RUSSIAN</span>' : 'Allied/Other'}`,
       { sticky: true }
     );
     arcticMarkers.push(marker);
@@ -3489,13 +3526,13 @@ function renderCanadaSupplyChain(profile) {
       <div class="concentration-bar">
         ${importPartners.slice(0, 5).map((p, i) => {
           const pct = (p.tiv / totalTIV) * 100;
-          const colors = ['#00d4ff', '#D80621', '#10b981', '#f59e0b', '#8b5cf6'];
+          const colors = ['#00d4ff', '#D80621', '#6b9080', '#a89060', '#6b6b8a'];
           return `<div class="concentration-fill" style="width:${pct}%;background:${colors[i]};display:inline-flex;">${pct >= 10 ? p.partner : ''}</div>`;
         }).join('')}
       </div>
       <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;">
         ${importPartners.slice(0, 5).map((p, i) => {
-          const colors = ['#00d4ff', '#D80621', '#10b981', '#f59e0b', '#8b5cf6'];
+          const colors = ['#00d4ff', '#D80621', '#6b9080', '#a89060', '#6b6b8a'];
           const pct = ((p.tiv / totalTIV) * 100).toFixed(1);
           return `<span><span class="legend-dot" style="background:${colors[i]}"></span>${p.partner} (${pct}%)</span>`;
         }).join('')}
@@ -3516,12 +3553,12 @@ function renderCanadaSupplyChain(profile) {
           backgroundColor: importPartners.map((p, i) => {
             if (ADVERSARY_COUNTRIES.includes(p.partner)) return '#D8062188';
             if (NATO_COUNTRIES.includes(p.partner)) return '#00d4ff88';
-            return '#f59e0b88';
+            return '#a8906088';
           }),
           borderColor: importPartners.map(p => {
             if (ADVERSARY_COUNTRIES.includes(p.partner)) return '#D80621';
             if (NATO_COUNTRIES.includes(p.partner)) return '#00d4ff';
-            return '#f59e0b';
+            return '#a89060';
           }),
           borderWidth: 1,
         }],
@@ -4152,13 +4189,13 @@ function renderCanadaTradePosition(canadaTrade, natoData) {
     const values = nonAgg.map(n => n.pct_gdp || 0);
     const bgColors = nonAgg.map(n => {
       const name = (n.country || n.name || '').toLowerCase();
-      if (name.includes('canada')) return '#f59e0b88';
-      return n.pct_gdp >= 2.0 ? '#10b98188' : '#D8062188';
+      if (name.includes('canada')) return '#a8906088';
+      return n.pct_gdp >= 2.0 ? '#6b908088' : '#D8062188';
     });
     const borderColors = nonAgg.map(n => {
       const name = (n.country || n.name || '').toLowerCase();
-      if (name.includes('canada')) return '#f59e0b';
-      return n.pct_gdp >= 2.0 ? '#10b981' : '#D80621';
+      if (name.includes('canada')) return '#a89060';
+      return n.pct_gdp >= 2.0 ? '#6b9080' : '#D80621';
     });
 
     chartInstances['ins-nato-spending-chart'] = new Chart(document.getElementById('ins-nato-spending-chart'), {
@@ -4306,7 +4343,7 @@ function renderWhatToWatch(hotspots, weapons) {
   const labels = sorted.map(w => esc(w.weapon));
   const values = sorted.map(w => (w.new_tiv || 0) - (w.old_tiv || 0));
   const bgColors = values.map(v => v >= 0 ? 'rgba(81,207,102,0.6)' : 'rgba(255,107,107,0.6)');
-  const borderColors = values.map(v => v >= 0 ? '#10b981' : '#D80621');
+  const borderColors = values.map(v => v >= 0 ? '#6b9080' : '#D80621');
   chartInstances['ins-weapons-chart'] = new Chart(document.getElementById('ins-weapons-chart'), {
     type: 'bar',
     data: {
@@ -4356,7 +4393,7 @@ async function loadFreshness() {
       if (hoursAgo < 1) headerEl.textContent = 'Live';
       else if (hoursAgo < 24) headerEl.textContent = hoursAgo + 'h ago';
       else headerEl.textContent = Math.floor(hoursAgo / 24) + 'd ago';
-      headerEl.style.color = hoursAgo < 1 ? '#10b981' : hoursAgo < 24 ? '#f59e0b' : '#D80621';
+      headerEl.style.color = hoursAgo < 1 ? '#6b9080' : hoursAgo < 24 ? '#a89060' : '#D80621';
     }
 
     // Insights banner
@@ -4912,7 +4949,7 @@ const ARCTIC_ROUTES = [
     flag: "\ud83c\uddf7\ud83c\uddfa",
     owner: "Russia",
     status: "Active \u2014 37.8M tons in 2024. China-Russia joint development agreement Oct 2025. Record Chinese container voyages in 2025.",
-    color: "#ef4444",
+    color: "#D80621",
     weight: 4,
     // Bering Strait → Chukchi Sea → East Siberian Sea → Laptev Sea →
     // Vilkitsky Strait → Kara Sea → Kara Gate (S of Novaya Zemlya) → Barents Sea → Murmansk → Norway
@@ -5106,7 +5143,7 @@ function updateArcticFreightStats(flights) {
     byNation[nation].types[f.aircraft_type] = (byNation[nation].types[f.aircraft_type] || 0) + 1;
   });
 
-  var nationColors = { russian: '#D80621', chinese: '#f59e0b', nato: '#3b82f6', unknown: '#64748b' };
+  var nationColors = { russian: '#D80621', chinese: '#a89060', nato: '#5a7a9b', unknown: '#64748b' };
   var nationLabels = { russian: 'Russia', chinese: 'China', nato: 'NATO', unknown: 'Other' };
   var parts = [];
   Object.keys(byNation).forEach(function(nation) {
@@ -5219,14 +5256,14 @@ function renderArcticCargoChart() {
   }
 
   var maxTonnes = Math.max.apply(null, entries.map(function(e) { return e.data.totalTonnes; }).concat([1]));
-  var allianceColors = { russia: '#D80621', nato: '#3b82f6', china: '#f59e0b' };
+  var allianceColors = { russia: '#D80621', nato: '#5a7a9b', china: '#a89060' };
 
   var html = '';
   entries.forEach(function(entry) {
     var d = entry.data;
     var barHeight = Math.max(8, Math.round((d.totalTonnes / maxTonnes) * 140));
-    var color = allianceColors[d.alliance] || '#3b82f6';
-    if (d.country === 'Canada') color = '#10b981';
+    var color = allianceColors[d.alliance] || '#5a7a9b';
+    if (d.country === 'Canada') color = '#6b9080';
     var shortName = entry.name.split(',')[0].split('(')[0].trim();
     if (shortName.length > 14) shortName = shortName.substring(0, 12) + '..';
 
@@ -5316,13 +5353,13 @@ function renderArcticBases(bases) {
 
   var allianceColors = {
     russia: Cesium.Color.fromCssColorString('#D80621'),
-    nato: Cesium.Color.fromCssColorString('#3b82f6'),
-    china: Cesium.Color.fromCssColorString('#f59e0b'),
+    nato: Cesium.Color.fromCssColorString('#5a7a9b'),
+    china: Cesium.Color.fromCssColorString('#a89060'),
   };
 
   bases.forEach(function(base) {
-    var color = allianceColors[base.alliance] || Cesium.Color.fromCssColorString('#3b82f6');
-    if (base.country === 'Canada') color = Cesium.Color.fromCssColorString('#10b981');
+    var color = allianceColors[base.alliance] || Cesium.Color.fromCssColorString('#5a7a9b');
+    if (base.country === 'Canada') color = Cesium.Color.fromCssColorString('#6b9080');
     var threat = base.threat_level || 1;
     var pixelSize = threat <= 1 ? 8 : threat <= 3 ? 12 : threat <= 4 ? 16 : 20;
 
@@ -5383,7 +5420,7 @@ function setupArcticPopupHandler() {
         picked.id.properties.type.getValue() === 'arctic-base') {
       var p = picked.id.properties;
       var threat = p.threat_level.getValue();
-      var threatColor = threat >= 4 ? '#D80621' : threat >= 3 ? '#fb923c' : '#00d4ff';
+      var threatColor = threat >= 4 ? '#D80621' : threat >= 3 ? '#a89060' : '#00d4ff';
       var distStr = p.country.getValue() !== 'Canada'
         ? '<div style="margin-top:4px;">Nearest Canadian base: <b>' + esc(p.nearest_canadian_base.getValue()) + '</b> (' + (p.distance_to_nearest_canadian_km.getValue() || 0).toLocaleString() + ' km)</div>'
         : '';
@@ -5397,7 +5434,7 @@ function setupArcticPopupHandler() {
           '<span onclick="document.getElementById(\'arctic-base-popup-overlay\').style.display=\'none\'" style="cursor:pointer;color:var(--text-dim);font-size:16px;">&times;</span>' +
         '</div>' +
         '<div style="color:var(--text-dim);margin-bottom:6px;">' + esc(p.baseType.getValue()) + ' base &mdash; ' + esc(p.country.getValue()) +
-          ' &mdash; <span style="text-transform:uppercase;color:' + (p.status.getValue() === 'expanding' ? '#f59e0b' : '#10b981') + ';">' + esc(p.status.getValue()) + '</span></div>' +
+          ' &mdash; <span style="text-transform:uppercase;color:' + (p.status.getValue() === 'expanding' ? '#a89060' : '#6b9080') + ';">' + esc(p.status.getValue()) + '</span></div>' +
         '<div style="margin-bottom:6px;">Threat: <b style="color:' + threatColor + ';">' + threat + '/5</b>' +
           (p.personnel.getValue() > 0 ? ' &mdash; ~' + p.personnel.getValue().toLocaleString() + ' personnel' : '') + '</div>' +
         '<div style="margin-bottom:6px;line-height:1.4;">' + esc(p.capability.getValue()) + '</div>' +
@@ -5436,7 +5473,7 @@ function setupArcticPopupHandler() {
 
       if (isT && payload > 0) {
         html += '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-bottom:8px;">' +
-          '<div style="margin-bottom:4px;">Payload Capacity: <b style="color:#10b981;">' + payload + ' tonnes</b></div>' +
+          '<div style="margin-bottom:4px;">Payload Capacity: <b style="color:#6b9080;">' + payload + ' tonnes</b></div>' +
           '<div style="margin-bottom:4px;color:var(--text-dim);">Status: Assumed fully loaded</div>' +
           '<div style="margin-bottom:4px;">Origin: <b>' + originStr + '</b></div>' +
           '<div style="margin-bottom:4px;">Destination: <b>' + destStr + '</b></div>' +
@@ -5487,7 +5524,7 @@ function renderArcticRoutes() {
 
   var routeStyles = {
     'Northern Sea Route': { color: '#D80621', width: 3, dash: false },
-    'Northwest Passage': { color: '#3b82f6', width: 3, dash: true },
+    'Northwest Passage': { color: '#5a7a9b', width: 3, dash: true },
     'Transpolar Route': { color: '#a855f7', width: 2, dash: true },
   };
 
@@ -5587,9 +5624,9 @@ function renderArcticADIZ() {
   var adizEntity = arcticCesiumViewer.entities.add({
     polygon: {
       hierarchy: new Cesium.PolygonHierarchy(positions),
-      material: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.08),
+      material: Cesium.Color.fromCssColorString('#5a7a9b').withAlpha(0.08),
       outline: true,
-      outlineColor: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.4),
+      outlineColor: Cesium.Color.fromCssColorString('#5a7a9b').withAlpha(0.4),
       outlineWidth: 1,
     },
     show: arcticLayerVisible.adiz,
@@ -5601,7 +5638,7 @@ function renderArcticADIZ() {
     label: {
       text: 'Canadian ADIZ',
       font: '10px DM Sans, sans-serif',
-      fillColor: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.5),
+      fillColor: Cesium.Color.fromCssColorString('#5a7a9b').withAlpha(0.5),
       style: Cesium.LabelStyle.FILL,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
       distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
@@ -5674,8 +5711,8 @@ function renderArcticFlights(flights) {
 
   var nationColors = {
     russian: '#D80621',
-    chinese: '#f59e0b',
-    nato: '#3b82f6',
+    chinese: '#a89060',
+    nato: '#5a7a9b',
     unknown: '#64748b',
   };
 
@@ -5691,10 +5728,10 @@ function renderArcticFlights(flights) {
     var dotColor = nationColor;
     var pixelSize = 6;
     if (isTransport) {
-      dotColor = Cesium.Color.fromCssColorString('#10b981');
+      dotColor = Cesium.Color.fromCssColorString('#6b9080');
       pixelSize = 8;
     } else if (isTanker) {
-      dotColor = Cesium.Color.fromCssColorString('#8b5cf6');
+      dotColor = Cesium.Color.fromCssColorString('#6b6b8a');
       pixelSize = 7;
     }
 
@@ -5724,7 +5761,7 @@ function renderArcticFlights(flights) {
     }
 
     // Aircraft icon entity (SVG plane rotated by heading)
-    var hexColor = isTransport ? '#10b981' : isTanker ? '#8b5cf6' : (nationColors[f.nation] || '#64748b');
+    var hexColor = isTransport ? '#6b9080' : isTanker ? '#6b6b8a' : (nationColors[f.nation] || '#64748b');
     var svgSize = isTransport ? 24 : 20;
     var rotation = f.heading || 0;
     var planeSvg = 'data:image/svg+xml,' + encodeURIComponent(
@@ -5745,7 +5782,7 @@ function renderArcticFlights(flights) {
       label: {
         text: labelText,
         font: '9px JetBrains Mono, monospace',
-        fillColor: (isTransport ? Cesium.Color.fromCssColorString('#10b981') : dotColor).withAlpha(0.8),
+        fillColor: (isTransport ? Cesium.Color.fromCssColorString('#6b9080') : dotColor).withAlpha(0.8),
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         outlineWidth: 2,
         outlineColor: Cesium.Color.BLACK,
@@ -5857,7 +5894,7 @@ function renderArcticConnections(bases) {
           Cesium.Cartesian3.fromDegrees(natoBases[j+1].lon, natoBases[j+1].lat),
         ],
         width: 1,
-        material: Cesium.Color.fromCssColorString('#3b82f6').withAlpha(0.15),
+        material: Cesium.Color.fromCssColorString('#5a7a9b').withAlpha(0.15),
         clampToGround: true,
       },
       show: arcticLayerVisible.connections,
@@ -5877,7 +5914,7 @@ function renderArcticConnections(bases) {
         ],
         width: 1,
         material: new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.3),
+          color: Cesium.Color.fromCssColorString('#a89060').withAlpha(0.3),
           dashLength: 10,
         }),
         clampToGround: true,
@@ -5893,7 +5930,7 @@ function renderArcticConnections(bases) {
       label: {
         text: nearest.dist.toLocaleString() + ' km',
         font: '9px JetBrains Mono, monospace',
-        fillColor: Cesium.Color.fromCssColorString('#f59e0b').withAlpha(0.6),
+        fillColor: Cesium.Color.fromCssColorString('#a89060').withAlpha(0.6),
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         outlineWidth: 2,
         outlineColor: Cesium.Color.BLACK,
@@ -5914,7 +5951,7 @@ function renderArcticRangeRings(bases) {
     { keywords: ['S-400', 'S-300'], range_km: 400, color: '#D80621', label: 'S-400 SAM' },
     { keywords: ['Bastion', 'coastal defense'], range_km: 500, color: '#f97316', label: 'Bastion AShM' },
     { keywords: ['Kinzhal', 'MiG-31', 'bomber', 'Tu-22', 'Tu-95'], range_km: 2000, color: '#D80621', label: 'Air-launched strike' },
-    { keywords: ['interceptor', 'GBI', 'Ground-Based Interceptor'], range_km: 2000, color: '#3b82f6', label: 'GBI intercept' },
+    { keywords: ['interceptor', 'GBI', 'Ground-Based Interceptor'], range_km: 2000, color: '#5a7a9b', label: 'GBI intercept' },
   ];
 
   bases.forEach(function(base) {
@@ -6232,7 +6269,7 @@ function _renderIntelRows(bases) {
       : b.alliance === 'russia' ? 'row-russia'
       : b.alliance === 'china' ? 'row-china'
       : 'row-nato';
-    const statusColor = {active:'#10b981',expanding:'#f59e0b',planned:'#00d4ff',delayed:'#D80621'}[b.status] || '#64748b';
+    const statusColor = {active:'#6b9080',expanding:'#a89060',planned:'#00d4ff',delayed:'#D80621'}[b.status] || '#64748b';
     const threatClass = 'threat-' + b.threat_level;
 
     const distStr = b.country === 'Canada'
@@ -6316,7 +6353,7 @@ function renderArcticVsChart(assessment) {
         {
           label: 'Russia Exports',
           data: catList.map(c => rusMap[c] || 0),
-          backgroundColor: '#ef444466',
+          backgroundColor: '#D8062166',
           borderColor: '#D80621',
           borderWidth: 1,
         },
@@ -6424,10 +6461,10 @@ function renderArcticTimeline(assessment) {
   const nationColors = {
     "Russia": '#D80621',
     "United States": '#00d4ff',
-    "Canada": '#10b981',
-    "Norway": '#10b981',
-    "Finland": '#14b8a6',
-    "Sweden": '#f59e0b',
+    "Canada": '#6b9080',
+    "Norway": '#6b9080',
+    "Finland": '#5a8a80',
+    "Sweden": '#a89060',
     "Denmark": '#22d3ee',
     "Poland": '#f97316',
     "Iceland": '#38bdf8',
@@ -6491,7 +6528,7 @@ function renderArcticTimeline(assessment) {
                 display: true,
                 position: 'start',
                 font: { size: 9 },
-                color: '#f59e0b',
+                color: '#a89060',
                 backgroundColor: 'rgba(26,29,39,0.8)',
               },
             },
@@ -6577,9 +6614,9 @@ function renderArcticNATOSpendingChart(spendingData) {
   }
 
   const spendingColors = {
-    "Norway": '#10b981', "Finland": '#14b8a6', "Denmark": '#22d3ee',
-    "Canada": '#10b981', "United States": '#00d4ff', "Poland": '#f97316',
-    "Estonia": '#38bdf8', "Latvia": '#84cc16', "Lithuania": '#f59e0b',
+    "Norway": '#6b9080', "Finland": '#5a8a80', "Denmark": '#22d3ee',
+    "Canada": '#6b9080', "United States": '#00d4ff', "Poland": '#f97316',
+    "Estonia": '#38bdf8', "Latvia": '#84cc16', "Lithuania": '#a89060',
     "Iceland": '#f43f5e',
   };
 
@@ -6790,7 +6827,7 @@ function renderArcticAirspace(flights) {
   document.getElementById('arctic-count-nato').textContent = counts.nato;
   document.getElementById('arctic-count-unknown').textContent = counts.unknown;
 
-  const nationColors = { russian: '#D80621', chinese: '#f59e0b', nato: '#00d4ff', unknown: '#64748b' };
+  const nationColors = { russian: '#D80621', chinese: '#a89060', nato: '#00d4ff', unknown: '#64748b' };
 
   (flights.flights || []).forEach(f => {
     const color = nationColors[f.nation] || '#64748b';
@@ -7240,6 +7277,43 @@ function switchPsiTab(btn) {
 // CesiumJS 3D Supply Map Globe
 // ═══════════════════════════════════════════════════
 
+/* ── Globe Layer System ── */
+var GLOBE_LAYERS = [
+  { id: 'mining',      name: 'Mining',           color: '#6b9080', defaultOn: true },
+  { id: 'processing',  name: 'Processing',       color: '#6b6b8a', defaultOn: true },
+  { id: 'components',  name: 'Components',        color: '#a89060', defaultOn: true },
+  { id: 'platforms',   name: 'Platforms',          color: '#00d4ff', defaultOn: true },
+  { id: 'shipping',    name: 'Shipping Routes',   color: '#D80621', defaultOn: true },
+  { id: 'chokepoints', name: 'Chokepoints',       color: '#D80621', defaultOn: true },
+  { id: 'ports',       name: 'Canadian Ports',     color: '#ff2d2d', defaultOn: true },
+  { id: 'arcs',        name: 'Flow Arcs',          color: '#00d4ff', defaultOn: true },
+];
+var layerVisibility = {};
+GLOBE_LAYERS.forEach(function(l) { layerVisibility[l.id] = l.defaultOn; });
+
+function toggleGlobeLayer(layerId, visible) {
+  layerVisibility[layerId] = visible;
+  cesiumViewer.entities.values.forEach(function(e) {
+    if (e.properties && e.properties.layerId &&
+        e.properties.layerId.getValue() === layerId) {
+      e.show = visible;
+    }
+  });
+  cesiumViewer.scene.requestRender();
+}
+
+function applyLayerVisibility() {
+  cesiumViewer.entities.values.forEach(function(e) {
+    if (e.properties && e.properties.layerId) {
+      var lid = e.properties.layerId.getValue();
+      if (layerVisibility[lid] !== undefined) {
+        e.show = layerVisibility[lid];
+      }
+    }
+  });
+  cesiumViewer.scene.requestRender();
+}
+
 async function initCesiumGlobe() {
   globeInitialized = true;
 
@@ -7341,7 +7415,7 @@ async function initCesiumGlobe() {
 function renderMineralLayerPanel() {
   const container = document.getElementById('globe-mineral-list');
   const riskOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-  const riskColors = { critical: '#D80621', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+  const riskColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
   const sorted = [...globeMinerals].sort((a, b) => riskOrder[a.risk_level] - riskOrder[b.risk_level]);
 
   let currentRisk = '';
@@ -7700,16 +7774,16 @@ function renderGlobeEntities() {
   cesiumViewer.entities.removeAll();
 
   var tierColors = {
-    mining: Cesium.Color.fromCssColorString('#10b981'),
-    processing: Cesium.Color.fromCssColorString('#8b5cf6'),
-    component: Cesium.Color.fromCssColorString('#f59e0b'),
+    mining: Cesium.Color.fromCssColorString('#6b9080'),
+    processing: Cesium.Color.fromCssColorString('#6b6b8a'),
+    component: Cesium.Color.fromCssColorString('#a89060'),
     platform: Cesium.Color.fromCssColorString('#00d4ff'),
   };
   var riskArcColors = {
     critical: Cesium.Color.fromCssColorString('#D80621'),
-    high: Cesium.Color.fromCssColorString('#f59e0b'),
+    high: Cesium.Color.fromCssColorString('#a89060'),
     medium: Cesium.Color.fromCssColorString('#eab308'),
-    low: Cesium.Color.fromCssColorString('#10b981'),
+    low: Cesium.Color.fromCssColorString('#6b9080'),
   };
 
   activeGlobeLayers.forEach(function(name) {
@@ -7870,7 +7944,7 @@ function renderGlobeEntities() {
       m.shipping_routes.forEach(function(sr, idx) {
         if (!sr.waypoints || sr.waypoints.length < 2) return;
         // Color by risk level
-        var riskRouteColors = { critical: '#D80621', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+        var riskRouteColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
         var lineColor = Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#64748b');
         var lineWidth = sr.risk === 'critical' ? 4 : sr.risk === 'high' ? 3 : 2;
         var routeCoords = [];
@@ -8043,7 +8117,7 @@ function selectMineralDetail(name) {
   var routeMenu = document.getElementById('globe-route-menu');
   var routeList = document.getElementById('globe-route-list');
   if (m.shipping_routes && m.shipping_routes.length > 0) {
-    var riskRouteColors = { critical: '#D80621', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+    var riskRouteColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
     var riskLabels = { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM', low: 'LOW' };
     var rhtml = '';
     m.shipping_routes.forEach(function(sr) {
@@ -8126,7 +8200,7 @@ function renderCompactTaxonomySummary(scores) {
   var top3 = entries.slice(0, 3);
   var html = '<div style="font-size:10px; color:var(--text-dim); margin-bottom:4px;">Top risks:</div>';
   top3.forEach(function(e) {
-    var c = e.score >= 76 ? '#D80621' : e.score >= 51 ? '#f59e0b' : e.score >= 26 ? '#eab308' : '#10b981';
+    var c = e.score >= 76 ? '#D80621' : e.score >= 51 ? '#a89060' : e.score >= 26 ? '#eab308' : '#6b9080';
     html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0;">';
     html += '<span style="font-size:10px;">' + esc(e.name) + '</span>';
     html += '<span style="font-family:var(--font-mono); font-size:10px; font-weight:600; color:' + c + ';">' + e.score + '</span>';
@@ -8139,11 +8213,11 @@ function renderCompactTaxonomySummary(scores) {
 function renderTaxonomyScorecard(scores, kpis) {
   if (!scores) return '<div style="font-size:10px; color:var(--text-dim);">No taxonomy data</div>';
   var html = '';
-  var lvlColors = {critical: '#D80621', high: '#f59e0b', medium: '#eab308', low: '#10b981'};
+  var lvlColors = {critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080'};
 
   // Composite score header
   var composite = calcComposite(scores);
-  var compColor = composite >= 76 ? '#D80621' : composite >= 51 ? '#f59e0b' : composite >= 26 ? '#eab308' : '#10b981';
+  var compColor = composite >= 76 ? '#D80621' : composite >= 51 ? '#a89060' : composite >= 26 ? '#eab308' : '#6b9080';
   var compLabel = composite >= 76 ? 'CRITICAL' : composite >= 51 ? 'HIGH' : composite >= 26 ? 'MEDIUM' : 'LOW';
   html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">'
     + '<span style="font-family:var(--font-mono); font-size:18px; font-weight:700; color:' + compColor + ';">' + composite + '</span>'
@@ -8180,15 +8254,15 @@ function renderTaxonomyScorecard(scores, kpis) {
     if (kpis.years_operating) html += '<div><span style="color:var(--text-muted);">Operating:</span> ' + kpis.years_operating + ' yrs</div>';
     if (kpis.employees_est) html += '<div><span style="color:var(--text-muted);">Employees:</span> ~' + kpis.employees_est.toLocaleString() + '</div>';
     if (kpis.cpi_score != null) {
-      var cpiColor = kpis.cpi_score < 30 ? '#D80621' : kpis.cpi_score < 50 ? '#f59e0b' : '#10b981';
+      var cpiColor = kpis.cpi_score < 30 ? '#D80621' : kpis.cpi_score < 50 ? '#a89060' : '#6b9080';
       html += '<div><span style="color:var(--text-muted);">CPI:</span> <span style="color:' + cpiColor + ';">' + kpis.cpi_score + '/100</span></div>';
     }
     if (kpis.distance_to_port_km) html += '<div><span style="color:var(--text-muted);">To port:</span> ' + kpis.distance_to_port_km.toLocaleString() + ' km</div>';
     if (kpis.port_used) html += '<div><span style="color:var(--text-muted);">Port:</span> ' + esc(kpis.port_used) + '</div>';
-    html += '<div><span style="color:var(--text-muted);">Sanctioned:</span> ' + (kpis.sanctioned ? '<span style="color:#ef4444;">YES</span>' : '<span style="color:#10b981;">No</span>') + '</div>';
-    html += '<div><span style="color:var(--text-muted);">Five Eyes:</span> ' + (kpis.five_eyes_allied ? '<span style="color:#10b981;">Yes</span>' : '<span style="color:var(--text-dim);">No</span>') + '</div>';
-    html += '<div><span style="color:var(--text-muted);">NATO:</span> ' + (kpis.nato_allied ? '<span style="color:#10b981;">Yes</span>' : '<span style="color:var(--text-dim);">No</span>') + '</div>';
-    html += '<div><span style="color:var(--text-muted);">Conflict zone:</span> ' + (kpis.conflict_zone ? '<span style="color:#ef4444;">YES</span>' : '<span style="color:#10b981;">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">Sanctioned:</span> ' + (kpis.sanctioned ? '<span style="color:#D80621;">YES</span>' : '<span style="color:#6b9080;">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">Five Eyes:</span> ' + (kpis.five_eyes_allied ? '<span style="color:#6b9080;">Yes</span>' : '<span style="color:var(--text-dim);">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">NATO:</span> ' + (kpis.nato_allied ? '<span style="color:#6b9080;">Yes</span>' : '<span style="color:var(--text-dim);">No</span>') + '</div>';
+    html += '<div><span style="color:var(--text-muted);">Conflict zone:</span> ' + (kpis.conflict_zone ? '<span style="color:#D80621;">YES</span>' : '<span style="color:#6b9080;">No</span>') + '</div>';
     html += '</div></div>';
   }
 
@@ -8196,7 +8270,7 @@ function renderTaxonomyScorecard(scores, kpis) {
 }
 
 function renderMineralDetail(m) {
-  var riskColors = { critical: '#D80621', high: '#f59e0b', medium: '#eab308', low: '#10b981' };
+  var riskColors = { critical: '#D80621', high: '#a89060', medium: '#eab308', low: '#6b9080' };
   var riskColor = riskColors[m.risk_level] || '#64748b';
 
   // ── Header ──
@@ -8211,7 +8285,7 @@ function renderMineralDetail(m) {
     + '</div>'
     + '<div style="font-size:12px; color:var(--text-dim); margin-top:4px;">'
     + 'HHI: <strong style="color:var(--text);">' + m.hhi.toLocaleString() + '</strong>'
-    + (chinaShare > 0 ? ' &nbsp;|&nbsp; China processing share: <strong style="color:' + (chinaShare >= 60 ? '#D80621' : chinaShare >= 30 ? '#f59e0b' : '#10b981') + ';">' + chinaShare + '%</strong>' : '')
+    + (chinaShare > 0 ? ' &nbsp;|&nbsp; China processing share: <strong style="color:' + (chinaShare >= 60 ? '#D80621' : chinaShare >= 30 ? '#a89060' : '#6b9080') + ';">' + chinaShare + '%</strong>' : '')
     + (topMiner ? ' &nbsp;|&nbsp; Top miner: <strong style="color:var(--text);">' + esc(topMiner.country) + ' (' + topMiner.pct + '%)</strong>' : '')
     + ' &nbsp;|&nbsp; Source: ' + esc(m.source)
     + '</div>'
@@ -8225,11 +8299,11 @@ function renderMineralDetail(m) {
     m.mines.forEach(function(mine, idx) {
       var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
       var isCanadian = mine.country === 'Canada';
-      var borderColor = isCanadian ? '#ff2d2d' : isChineseOwned ? '#D80621' : '#10b981';
+      var borderColor = isCanadian ? '#ff2d2d' : isChineseOwned ? '#D80621' : '#6b9080';
       var mineFlags = mine.flags || [];
       var hasFlags = mineFlags.length > 0;
       var compositeScore = calcComposite(mine.taxonomy_scores);
-      var compColor = compositeScore >= 76 ? '#D80621' : compositeScore >= 51 ? '#f59e0b' : compositeScore >= 26 ? '#eab308' : '#10b981';
+      var compColor = compositeScore >= 76 ? '#D80621' : compositeScore >= 51 ? '#a89060' : compositeScore >= 26 ? '#eab308' : '#6b9080';
       var mineId = 'mine-detail-' + idx;
       miningHtml += '<div style="margin-bottom:6px; padding:5px 8px; border-left:3px solid ' + borderColor + '; background:' + borderColor + '08; border-radius:0 6px 6px 0; cursor:pointer;" onclick="toggleEntityDetail(\'' + mineId + '\')">'
         + '<div style="display:flex; justify-content:space-between; align-items:center;">'
@@ -8241,7 +8315,7 @@ function renderMineralDetail(m) {
       if (hasFlags) {
         miningHtml += '<div style="margin-top:3px; display:flex; flex-wrap:wrap; gap:2px;">';
         mineFlags.forEach(function(f) {
-          var fc = /ADVERSARY|CONFLICT|PAUSED/.test(f) ? '#D80621' : /SANCTION|RUSSIAN/.test(f) ? '#f97316' : /EXPORT|OPERATIONAL|RISK/.test(f) ? '#f59e0b' : /STRATEGIC|NATO|ALLIED/.test(f) ? '#10b981' : '#64748b';
+          var fc = /ADVERSARY|CONFLICT|PAUSED/.test(f) ? '#D80621' : /SANCTION|RUSSIAN/.test(f) ? '#f97316' : /EXPORT|OPERATIONAL|RISK/.test(f) ? '#a89060' : /STRATEGIC|NATO|ALLIED/.test(f) ? '#6b9080' : '#64748b';
           miningHtml += '<span style="font-size:8px; font-family:var(--font-mono); padding:1px 4px; border-radius:3px; background:' + fc + '22; color:' + fc + ';">' + esc(f) + '</span>';
         });
         miningHtml += '</div>';
@@ -8258,11 +8332,11 @@ function renderMineralDetail(m) {
       var isSanctioned = ['Russia', 'China', 'DRC', 'Myanmar', 'Iran'].indexOf(site.country) >= 0;
       miningHtml += '<div style="margin-bottom:8px;">'
         + '<div style="display:flex; justify-content:space-between; align-items:center;">'
-        + '<span style="font-size:12px; font-weight:500;' + (isSanctioned ? ' color:#ef4444;' : '') + '">' + esc(site.country) + (isSanctioned ? ' ⚠' : '') + '</span>'
+        + '<span style="font-size:12px; font-weight:500;' + (isSanctioned ? ' color:#D80621;' : '') + '">' + esc(site.country) + (isSanctioned ? ' ⚠' : '') + '</span>'
         + '<span style="font-family:var(--font-mono); font-size:12px; font-weight:600;">' + site.pct + '%</span>'
         + '</div>'
         + '<div style="background:rgba(255,255,255,0.05); border-radius:3px; height:6px; margin-top:3px;">'
-        + '<div style="width:' + barW + '%; height:100%; background:#10b981; border-radius:3px;"></div>'
+        + '<div style="width:' + barW + '%; height:100%; background:#6b9080; border-radius:3px;"></div>'
         + '</div>'
         + (site.production_tonnes ? '<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">' + site.production_tonnes.toLocaleString() + 't/yr</div>' : '')
         + '</div>';
@@ -8277,10 +8351,10 @@ function renderMineralDetail(m) {
       var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
       var isCanadian = ref.country === 'Canada';
       var isRussian = /nornickel|russia/i.test(ref.owner);
-      var borderColor = isCanadian ? '#ff2d2d' : isChineseOwned ? '#D80621' : isRussian ? '#f97316' : '#8b5cf6';
+      var borderColor = isCanadian ? '#ff2d2d' : isChineseOwned ? '#D80621' : isRussian ? '#f97316' : '#6b6b8a';
       var refFlags = ref.flags || [];
       var refComposite = calcComposite(ref.taxonomy_scores);
-      var refCompColor = refComposite >= 76 ? '#D80621' : refComposite >= 51 ? '#f59e0b' : refComposite >= 26 ? '#eab308' : '#10b981';
+      var refCompColor = refComposite >= 76 ? '#D80621' : refComposite >= 51 ? '#a89060' : refComposite >= 26 ? '#eab308' : '#6b9080';
       var refId = 'ref-detail-' + idx;
       procHtml += '<div style="margin-bottom:6px; padding:5px 8px; border-left:3px solid ' + borderColor + '; background:' + borderColor + '08; border-radius:0 6px 6px 0; cursor:pointer;" onclick="toggleEntityDetail(\'' + refId + '\')">'
         + '<div style="display:flex; justify-content:space-between; align-items:center;">'
@@ -8293,7 +8367,7 @@ function renderMineralDetail(m) {
       if (refFlags.length > 0) {
         procHtml += '<div style="margin-top:3px; display:flex; flex-wrap:wrap; gap:2px;">';
         refFlags.forEach(function(f) {
-          var fc = /ADVERSARY|DISRUPTED|PAUSED|SUSPENDED/.test(f) ? '#D80621' : /SANCTION|RUSSIAN|LME/.test(f) ? '#f97316' : /EXPORT|CHOKEPOINT|RISK/.test(f) ? '#f59e0b' : /STRATEGIC|NATO|ALLIED/.test(f) ? '#10b981' : '#64748b';
+          var fc = /ADVERSARY|DISRUPTED|PAUSED|SUSPENDED/.test(f) ? '#D80621' : /SANCTION|RUSSIAN|LME/.test(f) ? '#f97316' : /EXPORT|CHOKEPOINT|RISK/.test(f) ? '#a89060' : /STRATEGIC|NATO|ALLIED/.test(f) ? '#6b9080' : '#64748b';
           procHtml += '<span style="font-size:8px; font-family:var(--font-mono); padding:1px 4px; border-radius:3px; background:' + fc + '22; color:' + fc + ';">' + esc(f) + '</span>';
         });
         procHtml += '</div>';
@@ -8310,11 +8384,11 @@ function renderMineralDetail(m) {
       var isDominant = site.pct >= 50;
       procHtml += '<div style="margin-bottom:8px;">'
         + '<div style="display:flex; justify-content:space-between; align-items:center;">'
-        + '<span style="font-size:12px; font-weight:500;' + (isDominant ? ' color:#ef4444;' : '') + '">' + esc(site.country) + (isDominant ? ' ⚠' : '') + '</span>'
+        + '<span style="font-size:12px; font-weight:500;' + (isDominant ? ' color:#D80621;' : '') + '">' + esc(site.country) + (isDominant ? ' ⚠' : '') + '</span>'
         + '<span style="font-family:var(--font-mono); font-size:12px; font-weight:600;">' + site.pct + '%</span>'
         + '</div>'
         + '<div style="background:rgba(255,255,255,0.05); border-radius:3px; height:6px; margin-top:3px;">'
-        + '<div style="width:' + barW + '%; height:100%; background:#8b5cf6; border-radius:3px;"></div>'
+        + '<div style="width:' + barW + '%; height:100%; background:#6b6b8a; border-radius:3px;"></div>'
         + '</div>'
         + '<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">' + esc(site.type || 'refining') + '</div>'
         + '</div>';
@@ -8328,20 +8402,20 @@ function renderMineralDetail(m) {
     compHtml += '<div style="font-size:10px; color:var(--accent4); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Defence Alloys</div>';
     m.alloys.forEach(function(alloy) {
       var barW = Math.min(100, alloy.cobalt_pct * 1.6);
-      compHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(245,158,11,0.06); border-radius:6px; border-left:3px solid #f59e0b;">'
+      compHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(168,144,96,0.06); border-radius:6px; border-left:3px solid #a89060;">'
         + '<div style="display:flex; justify-content:space-between; align-items:center;">'
         + '<span style="font-size:11px; font-weight:600;">' + esc(alloy.name) + '</span>'
-        + '<span style="font-family:var(--font-mono); font-size:11px; color:#f59e0b;">' + alloy.cobalt_pct + '% Co</span>'
+        + '<span style="font-family:var(--font-mono); font-size:11px; color:#a89060;">' + alloy.cobalt_pct + '% Co</span>'
         + '</div>'
         + '<div style="background:rgba(255,255,255,0.05); border-radius:2px; height:4px; margin:3px 0;">'
-        + '<div style="width:' + barW + '%; height:100%; background:#f59e0b; border-radius:2px;"></div>'
+        + '<div style="width:' + barW + '%; height:100%; background:#a89060; border-radius:2px;"></div>'
         + '</div>'
         + '<div style="font-size:9px; color:var(--text-muted);">' + esc(alloy.use) + '</div>'
         + '</div>';
     });
   }
   m.components.forEach(function(comp) {
-    compHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(245,158,11,0.04); border-radius:6px; border-left:2px solid rgba(245,158,11,0.3);">'
+    compHtml += '<div style="margin-bottom:6px; padding:6px 8px; background:rgba(168,144,96,0.04); border-radius:6px; border-left:2px solid rgba(168,144,96,0.3);">'
       + '<div style="font-size:11px; font-weight:500;">' + esc(comp.name) + '</div>'
       + '<div style="font-size:10px; color:var(--text-muted);">' + esc(comp.manufacturer_country) + '</div>'
       + '</div>';
@@ -8366,8 +8440,8 @@ function renderMineralDetail(m) {
   if (m.chokepoints && m.chokepoints.length > 0) {
     routeHtml += '<div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">Supply must transit through:</div>';
     m.chokepoints.forEach(function(cp) {
-      routeHtml += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; padding:5px 8px; background:rgba(239,68,68,0.06); border-radius:6px;">'
-        + '<span style="color:#ef4444; font-size:14px;">⚠</span>'
+      routeHtml += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; padding:5px 8px; background:rgba(216,6,33,0.06); border-radius:6px;">'
+        + '<span style="color:#D80621; font-size:14px;">⚠</span>'
         + '<div>'
         + '<div style="font-size:11px; font-weight:500;">' + esc(cp.name) + '</div>'
         + '<div style="font-size:10px; color:var(--text-muted);">' + cp.lat.toFixed(1) + '°, ' + cp.lon.toFixed(1) + '°</div>'
@@ -8397,7 +8471,7 @@ function renderMineralDetail(m) {
     var isRussia = /russia/i.test(rf);
     var isSanction = /sanction|ban|export control|restrict/i.test(rf);
     var isMonopoly = /monopol|dominan|control|single.source|single.point/i.test(rf);
-    var tagColor = isSanction ? '#D80621' : isMonopoly ? '#f59e0b' : isChina ? '#D80621' : isRussia ? '#f97316' : '#64748b';
+    var tagColor = isSanction ? '#D80621' : isMonopoly ? '#a89060' : isChina ? '#D80621' : isRussia ? '#f97316' : '#64748b';
     var tag = isSanction ? 'SANCTIONS' : isMonopoly ? 'CONCENTRATION' : isChina ? 'CHINA RISK' : isRussia ? 'RUSSIA RISK' : 'RISK';
     riskHtml += '<div style="margin-bottom:6px; padding:5px 8px; border-left:3px solid ' + tagColor + '; background:' + tagColor + '08; border-radius:0 6px 6px 0;">'
       + '<div style="font-size:9px; font-family:var(--font-mono); color:' + tagColor + '; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">' + tag + '</div>'
@@ -8412,7 +8486,7 @@ function renderMineralDetail(m) {
   var importPct = ca.import_pct != null ? ca.import_pct : 100;
 
   // Import dependency gauge
-  var depColor = importPct >= 95 ? '#D80621' : importPct >= 50 ? '#f59e0b' : '#10b981';
+  var depColor = importPct >= 95 ? '#D80621' : importPct >= 50 ? '#a89060' : '#6b9080';
   canadaHtml += '<div style="margin-bottom:10px;">'
     + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">'
     + '<span style="font-size:11px; color:var(--text-dim);">Import dependency</span>'
@@ -8425,12 +8499,12 @@ function renderMineralDetail(m) {
 
   // Domestic production
   if (ca.domestic) {
-    canadaHtml += '<div style="padding:6px 8px; background:rgba(16,185,129,0.08); border-radius:6px; margin-bottom:8px; font-size:11px; border-left:3px solid #10b981;">'
-      + '<strong style="color:#10b981;">Domestic source:</strong> ' + esc(ca.domestic)
+    canadaHtml += '<div style="padding:6px 8px; background:rgba(107,144,128,0.08); border-radius:6px; margin-bottom:8px; font-size:11px; border-left:3px solid #6b9080;">'
+      + '<strong style="color:#6b9080;">Domestic source:</strong> ' + esc(ca.domestic)
       + '</div>';
   } else {
-    canadaHtml += '<div style="padding:6px 8px; background:rgba(239,68,68,0.08); border-radius:6px; margin-bottom:8px; font-size:11px; border-left:3px solid #ef4444;">'
-      + '<strong style="color:#ef4444;">No domestic production</strong> — fully dependent on imports'
+    canadaHtml += '<div style="padding:6px 8px; background:rgba(216,6,33,0.08); border-radius:6px; margin-bottom:8px; font-size:11px; border-left:3px solid #D80621;">'
+      + '<strong style="color:#D80621;">No domestic production</strong> — fully dependent on imports'
       + '</div>';
   }
 
@@ -8454,11 +8528,11 @@ function renderMineralDetail(m) {
 
   // Concentration warning
   if (m.hhi >= 5000) {
-    canadaHtml += '<div style="margin-top:8px; padding:6px 8px; background:rgba(239,68,68,0.08); border-radius:6px; font-size:11px; color:#ef4444;">'
+    canadaHtml += '<div style="margin-top:8px; padding:6px 8px; background:rgba(216,6,33,0.08); border-radius:6px; font-size:11px; color:#D80621;">'
       + '<strong>EXTREME CONCENTRATION (HHI ' + m.hhi.toLocaleString() + ')</strong> — supply disruption has no viable alternative. Canada must stockpile or develop domestic capacity.'
       + '</div>';
   } else if (m.hhi >= 3000) {
-    canadaHtml += '<div style="margin-top:8px; padding:6px 8px; background:rgba(245,158,11,0.08); border-radius:6px; font-size:11px; color:#f59e0b;">'
+    canadaHtml += '<div style="margin-top:8px; padding:6px 8px; background:rgba(168,144,96,0.08); border-radius:6px; font-size:11px; color:#a89060;">'
       + '<strong>HIGH CONCENTRATION (HHI ' + m.hhi.toLocaleString() + ')</strong> — limited alternatives. Supply chain diversification recommended.'
       + '</div>';
   }
@@ -8474,7 +8548,7 @@ var currentSufficiencyMineral = null;
 var currentScenarioPosition = 0;
 
 function renderSufficiencyGauge(ratio, verdict, scenarioName, supplyT, demandT) {
-  var gaugeColor = ratio >= 0.9 ? '#10b981' : ratio >= 0.5 ? '#f59e0b' : '#D80621';
+  var gaugeColor = ratio >= 0.9 ? '#6b9080' : ratio >= 0.5 ? '#a89060' : '#D80621';
   var displayRatio = ratio >= 100 ? ratio.toFixed(0) + 'x' : ratio.toFixed(2) + 'x';
 
   var html = '<div class="suf-gauge-ring">'
@@ -8734,7 +8808,7 @@ function setupGlobeClickHandler() {
       // Flags
       var flagsStr = props.flags ? props.flags.getValue() : '';
       if (flagsStr) {
-        var riskFlagColors = {'ADVERSARY':'#D80621','CONFLICT':'#D80621','PAUSED':'#D80621','DISRUPTED':'#D80621','SUSPENDED':'#D80621','SANCTIONS':'#f97316','RUSSIAN':'#f97316','EXPORT':'#f59e0b','OPERATIONAL':'#f59e0b','STRATEGIC':'#00d4ff','NATO':'#10b981','ALLIED':'#10b981'};
+        var riskFlagColors = {'ADVERSARY':'#D80621','CONFLICT':'#D80621','PAUSED':'#D80621','DISRUPTED':'#D80621','SUSPENDED':'#D80621','SANCTIONS':'#f97316','RUSSIAN':'#f97316','EXPORT':'#a89060','OPERATIONAL':'#a89060','STRATEGIC':'#00d4ff','NATO':'#6b9080','ALLIED':'#6b9080'};
         html += '<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">';
         flagsStr.split(', ').forEach(function(f) {
           var fc = '#D80621';
@@ -8747,10 +8821,10 @@ function setupGlobeClickHandler() {
       var fociAssess = props.foci_assessment ? props.foci_assessment.getValue() : '';
       var zScoreVal = props.z_score ? props.z_score.getValue() : -1;
       if (fociAssess) {
-        var confColor = fociAssess === 'CRITICAL' ? '#D80621' : fociAssess === 'HIGH' ? '#f59e0b' : fociAssess === 'LOW-MODERATE' ? '#eab308' : '#10b981';
+        var confColor = fociAssess === 'CRITICAL' ? '#D80621' : fociAssess === 'HIGH' ? '#a89060' : fociAssess === 'LOW-MODERATE' ? '#eab308' : '#6b9080';
         html += '<div style="margin-top:6px;"><span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + confColor + '22; color:' + confColor + ';">FOCI: ' + esc(fociAssess) + '</span>';
         if (zScoreVal >= 0) {
-          var zColor = zScoreVal > 2.99 ? '#10b981' : zScoreVal > 1.81 ? '#f59e0b' : '#D80621';
+          var zColor = zScoreVal > 2.99 ? '#6b9080' : zScoreVal > 1.81 ? '#a89060' : '#D80621';
           html += ' <span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + zColor + '22; color:' + zColor + ';">Z: ' + zScoreVal.toFixed(1) + '</span>';
         }
         html += '</div>';
@@ -8760,7 +8834,7 @@ function setupGlobeClickHandler() {
       try {
         var risks = JSON.parse(risksJson);
         if (risks.length > 0) {
-          var lvlColors = {critical:'#D80621',high:'#f59e0b',medium:'#eab308',low:'#10b981'};
+          var lvlColors = {critical:'#D80621',high:'#a89060',medium:'#eab308',low:'#6b9080'};
           html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
           html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Risk Taxonomy</div>';
           risks.forEach(function(r) {
@@ -8801,7 +8875,7 @@ function setupGlobeClickHandler() {
            + '<div>Strategic maritime chokepoint</div>';
     } else if (type === 'searoute') {
       var riskVal = props.risk ? props.risk.getValue() : 'unknown';
-      var riskClr = {critical:'#D80621',high:'#f59e0b',medium:'#eab308',low:'#10b981'}[riskVal] || '#64748b';
+      var riskClr = {critical:'#D80621',high:'#a89060',medium:'#eab308',low:'#6b9080'}[riskVal] || '#64748b';
       title.textContent = 'Shipping Route';
       html = '<div>' + esc(props.description ? props.description.getValue() : '') + '</div>'
            + '<div style="margin-top:6px;"><span style="font-family:var(--font-mono); padding:2px 8px; border-radius:8px; background:' + riskClr + '22; color:' + riskClr + '; font-size:10px; font-weight:600;">' + riskVal.toUpperCase() + ' RISK</span></div>';
@@ -8929,10 +9003,10 @@ function renderCobaltHero(m) {
   // Action bar
   html += '<div style="display:flex; gap:8px; margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">';
   html += '<button style="font-size:11px; color:var(--accent); background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-globe]\').click();">3D Supply Map</button>';
-  html += '<button style="font-size:11px; color:var(--accent4); background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-forecasting]\').click();">Forecasting</button>';
-  html += '<button style="font-size:11px; color:var(--accent3); background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-bom]\').click();">BOM Explorer</button>';
-  html += '<button style="font-size:11px; color:var(--accent5); background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-dossier]\').click();">Supplier Dossiers</button>';
-  html += '<button style="font-size:11px; color:var(--accent2); background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-alerts]\').click();">Alerts &amp; Sensing</button>';
+  html += '<button style="font-size:11px; color:var(--accent4); background:rgba(168,144,96,0.08); border:1px solid rgba(168,144,96,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-forecasting]\').click();">Forecasting</button>';
+  html += '<button style="font-size:11px; color:var(--accent3); background:rgba(107,144,128,0.08); border:1px solid rgba(107,144,128,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-bom]\').click();">BOM Explorer</button>';
+  html += '<button style="font-size:11px; color:var(--accent5); background:rgba(107,107,138,0.08); border:1px solid rgba(107,107,138,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-dossier]\').click();">Supplier Dossiers</button>';
+  html += '<button style="font-size:11px; color:var(--accent2); background:rgba(216,6,33,0.08); border:1px solid rgba(216,6,33,0.2); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="document.querySelector(\'[data-psi-tab=psi-alerts]\').click();">Alerts &amp; Sensing</button>';
   html += '</div>';
 
   html += '</div>'; // end ov-hero
@@ -9028,7 +9102,7 @@ function renderIntelFeed(alerts, overview) {
     return;
   }
 
-  var sevColors = { 5: '#D80621', 4: '#f97316', 3: '#f59e0b', 2: '#00d4ff', 1: '#10b981' };
+  var sevColors = { 5: '#D80621', 4: '#f97316', 3: '#a89060', 2: '#00d4ff', 1: '#6b9080' };
   container.innerHTML = items.slice(0, 12).map(function(it) {
     var color = sevColors[it.severity] || '#64748b';
     return '<div class="ov-intel-item">' +
@@ -9046,7 +9120,7 @@ function renderPsiAlerts(alerts) {
   const el = document.getElementById('psi-alerts-list');
   if (!alerts.length) { el.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">No active alerts</div>'; return; }
   el.innerHTML = alerts.map(a => {
-    const sevColors = { 5: '#D80621', 4: '#f97316', 3: '#f59e0b', 2: '#00d4ff', 1: '#10b981' };
+    const sevColors = { 5: '#D80621', 4: '#f97316', 3: '#a89060', 2: '#00d4ff', 1: '#6b9080' };
     const color = sevColors[a.severity] || '#64748b';
     return `<div style="display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border);">
       <div style="min-width:32px; height:32px; background:${color}22; color:${color}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">${a.severity}</div>
@@ -9196,7 +9270,7 @@ function renderMineralOverview(m, container) {
   }
   html += '<div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">' + (canada.platforms ? canada.platforms.length : 0) + ' CAF platforms dependent</div>';
   if (canada.strategic_note) {
-    html += '<div style="font-size:12px; color:var(--text-dim); line-height:1.6; padding:10px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:6px;">';
+    html += '<div style="font-size:12px; color:var(--text-dim); line-height:1.6; padding:10px; background:rgba(216,6,33,0.06); border:1px solid rgba(216,6,33,0.15); border-radius:6px;">';
     html += '<strong style="color:var(--accent2);">Strategic Note:</strong> ' + esc(canada.strategic_note);
     html += '</div>';
   }
@@ -9264,9 +9338,9 @@ function renderForecasting(m, container) {
   html += '<h3 style="margin:0;">' + esc(m.mineral || 'Cobalt') + ' — Predictive Forecasting (12-18 Month Horizon)</h3>';
   html += '<div style="display:flex; align-items:center; gap:8px;">';
   if (m.live_data) {
-    html += '<span style="background:rgba(16,185,129,0.15); color:var(--accent3); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; LIVE DATA</span>';
+    html += '<span style="background:rgba(107,144,128,0.15); color:var(--accent3); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; LIVE DATA</span>';
   } else {
-    html += '<span style="background:rgba(245,158,11,0.15); color:var(--accent4); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; CACHED</span>';
+    html += '<span style="background:rgba(168,144,96,0.15); color:var(--accent4); padding:4px 10px; border-radius:4px; font-size:10px; font-weight:600;">&#9679; CACHED</span>';
   }
   if (pf.r_squared !== undefined) {
     var r2c = pf.r_squared >= 0.7 ? 'var(--accent3)' : pf.r_squared >= 0.4 ? 'var(--accent4)' : 'var(--accent2)';
@@ -9322,11 +9396,11 @@ function renderForecasting(m, container) {
         var hLower = Math.max(0, Math.round(((p.lower_90_lb - minP) / range) * 85 + 15));
         html += '<div style="flex:1; position:relative; height:100%;">';
         // CI band (full height container, positioned from bottom)
-        html += '<div style="position:absolute; bottom:0; left:10%; right:10%; height:'+hUpper+'%; background:rgba(245,158,11,0.08); border:1px dashed rgba(245,158,11,0.25); border-radius:3px;" title="90% CI: $'+p.lower_90_lb+' - $'+p.upper_90_lb+'/lb"></div>';
+        html += '<div style="position:absolute; bottom:0; left:10%; right:10%; height:'+hUpper+'%; background:rgba(168,144,96,0.08); border:1px dashed rgba(168,144,96,0.25); border-radius:3px;" title="90% CI: $'+p.lower_90_lb+' - $'+p.upper_90_lb+'/lb"></div>';
         // Lower bound marker
-        html += '<div style="position:absolute; bottom:'+hLower+'%; left:5%; right:5%; height:1px; background:rgba(245,158,11,0.3);"></div>';
+        html += '<div style="position:absolute; bottom:'+hLower+'%; left:5%; right:5%; height:1px; background:rgba(168,144,96,0.3);"></div>';
         // Forecast bar
-        html += '<div style="position:absolute; bottom:0; left:15%; right:15%; height:'+h+'%; background:rgba(245,158,11,0.25); border:2px dashed var(--accent4); border-radius:3px 3px 0 0;"></div>';
+        html += '<div style="position:absolute; bottom:0; left:15%; right:15%; height:'+h+'%; background:rgba(168,144,96,0.25); border:2px dashed var(--accent4); border-radius:3px 3px 0 0;"></div>';
         // Value label
         html += '<div style="position:absolute; bottom:calc('+h+'% + 2px); left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap;">'+p.usd_lb+'</div>';
         // Upper bound label
@@ -9346,7 +9420,7 @@ function renderForecasting(m, container) {
     html += '<div style="display:flex; gap:14px; margin-top:8px; font-size:10px; color:var(--text-dim); flex-wrap:wrap;">';
     html += '<span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);opacity:0.8;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Historical</span>';
     html += '<span><span style="display:inline-block;width:10px;height:10px;border:2px dashed var(--accent4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>Forecast</span>';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>90% Prediction Interval</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(168,144,96,0.1);border:1px dashed rgba(168,144,96,0.4);border-radius:2px;margin-right:4px;vertical-align:middle;"></span>90% Prediction Interval</span>';
     html += '</div>';
   } else {
     html += '<div style="color:var(--text-dim); padding:20px; text-align:center;">Price data unavailable</div>';
@@ -9494,7 +9568,7 @@ function renderBomExplorer(m, container) {
   html += '<div class="card" style="padding:18px;">';
   html += '<div style="font-family:var(--font-mono); font-size:12px; line-height:2.4; color:var(--text);">';
 
-  html += '<div data-tier="mining"><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span></div>';
+  html += '<div data-tier="mining"><span style="color:'+tierColors[1]+';">&#9679;</span> <strong style="color:'+tierColors[1]+';">' + esc(m.name) + ' (Raw Mineral)</strong> <span style="background:rgba(107,144,128,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[1]+'</span></div>';
   var hsCodes = m.hs_codes || {};
   var hsKeys = Object.keys(hsCodes);
   if (hsKeys.length > 0) {
@@ -9509,7 +9583,7 @@ function renderBomExplorer(m, container) {
     html += '<div style="padding-left:24px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
 
-  html += '<div data-tier="processing" style="padding-left:24px; margin-top:4px;"><span style="color:'+tierColors[2]+';">&#9679;</span> <strong style="color:'+tierColors[2]+';">Refined '+esc(m.name)+' Metal</strong> <span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[2]+'</span></div>';
+  html += '<div data-tier="processing" style="padding-left:24px; margin-top:4px;"><span style="color:'+tierColors[2]+';">&#9679;</span> <strong style="color:'+tierColors[2]+';">Refined '+esc(m.name)+' Metal</strong> <span style="background:rgba(107,107,138,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[2]+'</span></div>';
   (m.processing || []).forEach(function(entry){
     html += '<div style="padding-left:48px;"><span style="color:var(--text-dim);">&#9500;&#9472;</span> ' + esc(entry.country) + ' <span style="color:var(--text-dim);">(' + entry.pct + '% share)</span></div>';
   });
@@ -9523,7 +9597,7 @@ function renderBomExplorer(m, container) {
       var coPct = alloy.cobalt_pct || alloy.co_pct || 0;
       var alloyTierAttr = '';
       if (!alloysShown) { alloyTierAttr = ' data-tier="alloys"'; alloysShown = true; }
-      html += '<div' + alloyTierAttr + ' style="padding-left:48px; margin-top:4px;"><span style="color:'+tierColors[3]+';">&#9679;</span> <strong style="color:'+tierColors[3]+';">' + esc(alloy.name) + '</strong> <span style="color:var(--text-dim);">— ' + coPct + '% Co, ' + esc(alloy.type || '') + '</span> <span style="background:rgba(245,158,11,0.1); color:var(--accent4); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[3]+'</span></div>';
+      html += '<div' + alloyTierAttr + ' style="padding-left:48px; margin-top:4px;"><span style="color:'+tierColors[3]+';">&#9679;</span> <strong style="color:'+tierColors[3]+';">' + esc(alloy.name) + '</strong> <span style="color:var(--text-dim);">— ' + coPct + '% Co, ' + esc(alloy.type || '') + '</span> <span style="background:rgba(168,144,96,0.1); color:var(--accent4); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">Confidence: '+tierConf[3]+'</span></div>';
       var linkedPlatforms = demand.filter(function(d){ return d.alloy === alloy.name; });
       linkedPlatforms.forEach(function(lp){
         var platTierAttr = '';
@@ -9623,11 +9697,11 @@ function renderDossierEntity() {
   var fociColor = fociScore >= 80 ? 'var(--accent2)' : fociScore >= 50 ? 'var(--accent4)' : 'var(--accent3)';
   html += '<div style="margin-top:6px;"><span style="background:'+fociColor+'22; color:'+fociColor+'; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600;">FOCI: '+(ts.foci ? ts.foci.level.toUpperCase() : 'N/A')+'</span>';
   if (d.foci_assessment) {
-    var fc2 = d.foci_assessment === 'CRITICAL' ? '#D80621' : d.foci_assessment === 'HIGH' ? '#f59e0b' : d.foci_assessment === 'LOW-MODERATE' ? '#eab308' : '#10b981';
+    var fc2 = d.foci_assessment === 'CRITICAL' ? '#D80621' : d.foci_assessment === 'HIGH' ? '#a89060' : d.foci_assessment === 'LOW-MODERATE' ? '#eab308' : '#6b9080';
     html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; background:' + fc2 + '22; color:' + fc2 + '; margin-left:8px;">FOCI: ' + esc(d.foci_assessment) + ' (' + (d.foci_score || '?') + '/100)</span>';
   }
   html += '</div>';
-  flags.forEach(function(f){ html += ' <span style="background:rgba(239,68,68,0.1); color:var(--accent2); padding:2px 6px; border-radius:3px; font-size:9px; margin-top:4px; display:inline-block;">'+esc(f)+'</span>'; });
+  flags.forEach(function(f){ html += ' <span style="background:rgba(216,6,33,0.1); color:var(--accent2); padding:2px 6px; border-radius:3px; font-size:9px; margin-top:4px; display:inline-block;">'+esc(f)+'</span>'; });
   html += '</div>';
 
   html += '<div class="card" style="padding:14px;">';
@@ -9636,7 +9710,7 @@ function renderDossierEntity() {
     var zColor = d.z_score < 1.8 ? 'var(--accent2)' : d.z_score < 2.7 ? 'var(--accent4)' : 'var(--accent3)';
     html += '<div style="font-size:16px; font-weight:700; color:'+zColor+'; margin:4px 0;">Z-Score: '+d.z_score+'</div>';
     html += '<div style="font-size:11px; color:var(--text-dim);">Credit trend: '+(d.credit_trend||'N/A')+'</div>';
-    html += '<div style="margin-top:6px;"><span style="background:rgba(245,158,11,0.1); color:var(--accent4); padding:2px 8px; border-radius:4px; font-size:10px;">INSOLVENCY: '+(d.insolvency_prob||0)+'%</span></div>';
+    html += '<div style="margin-top:6px;"><span style="background:rgba(168,144,96,0.1); color:var(--accent4); padding:2px 8px; border-radius:4px; font-size:10px;">INSOLVENCY: '+(d.insolvency_prob||0)+'%</span></div>';
   } else {
     html += '<div style="font-size:13px; color:var(--text-dim); margin-top:8px;">Financial data placeholder</div>';
   }
@@ -9718,7 +9792,7 @@ function alertEscalate(btn, alertId) {
     .then(function(r){ if (!r.ok) throw new Error('Failed to record action'); })
     .catch(function(e){ console.error('Alert escalate error:', e); });
   var card = btn.closest('.card');
-  btn.textContent = '\u2B06 Escalated'; btn.style.color = 'var(--accent2)'; btn.style.borderColor = 'var(--accent2)'; btn.style.background = 'rgba(239,68,68,0.15)'; btn.disabled = true;
+  btn.textContent = '\u2B06 Escalated'; btn.style.color = 'var(--accent2)'; btn.style.borderColor = 'var(--accent2)'; btn.style.background = 'rgba(216,6,33,0.15)'; btn.disabled = true;
   card.style.borderLeftWidth = '6px';
 }
 function alertEvidence(btn) {
@@ -9783,11 +9857,11 @@ function renderAlertsSensing(m, container) {
     html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">';
     html += '<div style="flex:1;"><div style="font-size:13px; font-weight:600;">' + esc(a.title) + '</div>';
     html += '<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Source: ' + esc((a.sources||[]).join(', ')) + ' — <strong>Confidence: '+a.confidence+'%</strong></div>';
-    var srcBadge = a.auto_generated ? '<span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">LIVE</span>' : '<span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">SEEDED</span>';
+    var srcBadge = a.auto_generated ? '<span style="background:rgba(107,144,128,0.1); color:var(--accent3); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">LIVE</span>' : '<span style="background:rgba(107,107,138,0.1); color:var(--accent5); padding:1px 6px; border-radius:3px; font-size:9px; margin-left:6px;">SEEDED</span>';
     html += '<div style="font-size:11px; color:var(--text-dim); margin-top:2px;">Category: <span style="color:'+c+';">' + esc(a.category) + '</span> — ' + esc(a.timestamp || '') + srcBadge + '</div></div>';
     html += '<span style="background:'+c+'; color:#fff; padding:3px 10px; border-radius:4px; font-size:10px; font-weight:700; white-space:nowrap;">SEV '+a.severity+'</span></div>';
     if (a.coa) {
-      html += '<div style="margin-top:10px; padding:8px 10px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.15); border-radius:6px; font-size:11px;">';
+      html += '<div style="margin-top:10px; padding:8px 10px; background:rgba(168,144,96,0.06); border:1px solid rgba(168,144,96,0.15); border-radius:6px; font-size:11px;">';
       html += '<strong style="color:var(--accent4);">Recommended COA:</strong> ' + esc(a.coa) + '</div>';
     }
     var btnStyle = 'background:var(--surface); border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-family:var(--font-body);';
@@ -9974,7 +10048,7 @@ function renderAnalystFeedback(m, container) {
   html += '<div class="card" style="text-align:center; padding:16px;"><div style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">False Positive Rate</div><div class="stat-num" style="font-size:32px; color:'+fpColor+';">'+af.fp_rate+'%</div><div style="font-size:10px; color:var(--text-dim);">trending '+(af.fp_trend==='down'?'&#8595; down':'&#8593; up')+'</div></div>';
   html += '<div class="card" style="text-align:center; padding:16px;"><div style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">Pending Review</div><div class="stat-num" style="font-size:32px; color:var(--accent);">'+(af.pending||[]).length+'</div><div style="font-size:10px; color:var(--text-dim);">awaiting analyst</div></div>';
   html += '</div>';
-  var statsBadge = af._live_stats ? '<span style="background:rgba(16,185,129,0.1); color:var(--accent3); padding:2px 6px; border-radius:3px; font-size:9px;">LIVE ML DATA</span>' : '<span style="background:rgba(139,92,246,0.1); color:var(--accent5); padding:2px 6px; border-radius:3px; font-size:9px;">BASELINE DATA</span>';
+  var statsBadge = af._live_stats ? '<span style="background:rgba(107,144,128,0.1); color:var(--accent3); padding:2px 6px; border-radius:3px; font-size:9px;">LIVE ML DATA</span>' : '<span style="background:rgba(107,107,138,0.1); color:var(--accent5); padding:2px 6px; border-radius:3px; font-size:9px;">BASELINE DATA</span>';
   html += '<div style="text-align:center; margin-top:6px; margin-bottom:10px;">' + statsBadge + '</div>';
 
   html += '<div class="card" style="padding:18px; margin-bottom:14px;"><h3 style="margin-bottom:12px;">Pending Adjudication</h3>';
@@ -9984,8 +10058,8 @@ function renderAnalystFeedback(m, container) {
     html += '<div style="font-size:12px; color:var(--text);">"' + esc(p.text) + '"</div>';
     html += '<div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Source: ' + esc(p.source) + ' — Confidence: '+p.confidence+'% <span data-feedback-status style="display:none; margin-left:8px; font-weight:600; color:var(--accent3);"></span></div></div>';
     html += '<div style="display:flex; gap:6px;">';
-    html += '<button style="background:rgba(16,185,129,0.15); color:var(--accent3); border:1px solid rgba(16,185,129,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="submitFeedback(this, \'' + esc(m.name).replace(/'/g, "\\'") + '\', \'' + esc(p.text).replace(/'/g, "\\'") + '\', \'true_positive\')">&#10003; Verified</button>';
-    html += '<button style="background:rgba(239,68,68,0.15); color:var(--accent2); border:1px solid rgba(239,68,68,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="submitFeedback(this, \'' + esc(m.name).replace(/'/g, "\\'") + '\', \'' + esc(p.text).replace(/'/g, "\\'") + '\', \'false_positive\')">&#10007; False Positive</button>';
+    html += '<button style="background:rgba(107,144,128,0.15); color:var(--accent3); border:1px solid rgba(107,144,128,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="submitFeedback(this, \'' + esc(m.name).replace(/'/g, "\\'") + '\', \'' + esc(p.text).replace(/'/g, "\\'") + '\', \'true_positive\')">&#10003; Verified</button>';
+    html += '<button style="background:rgba(216,6,33,0.15); color:var(--accent2); border:1px solid rgba(216,6,33,0.3); padding:6px 12px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font-body); font-weight:600;" onclick="submitFeedback(this, \'' + esc(m.name).replace(/'/g, "\\'") + '\', \'' + esc(p.text).replace(/'/g, "\\'") + '\', \'false_positive\')">&#10007; False Positive</button>';
     html += '</div></div></div>';
   });
   html += '</div>';
@@ -10063,7 +10137,7 @@ function renderPsiForceGraph(data, container) {
 
   const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
 
-  const typeColors = { material: '#f97316', component: '#00d4ff', subsystem: '#10b981', platform: '#D80621' };
+  const typeColors = { material: '#f97316', component: '#00d4ff', subsystem: '#6b9080', platform: '#D80621' };
   const typeShapes = { material: d3.symbolCircle, component: d3.symbolSquare, subsystem: d3.symbolDiamond, platform: d3.symbolStar };
 
   // Build node/link arrays
@@ -10147,16 +10221,16 @@ function getCountryBorder(country) {
     if (c.includes(MG_ADVERSARY[i])) return { color: '#D80621', width: 3 };
   }
   for (var j = 0; j < MG_NATO.length; j++) {
-    if (c.includes(MG_NATO[j])) return { color: '#3b82f6', width: 2 };
+    if (c.includes(MG_NATO[j])) return { color: '#5a7a9b', width: 2 };
   }
   return { color: '#64748b', width: 1 };
 }
 
 function getRiskColor(level) {
   if (level === 'critical') return '#D80621';
-  if (level === 'high') return '#f59e0b';
+  if (level === 'high') return '#a89060';
   if (level === 'medium') return '#eab308';
-  return '#10b981';
+  return '#6b9080';
 }
 
 function getCompositeRiskLevel(taxonomyScores) {
@@ -10203,21 +10277,21 @@ function renderNarrativeGraph(m, container) {
   m.processing.forEach(function(p) { if ((p.country || '').toLowerCase() === 'china') chinaRefPct = p.pct; });
   var topMiner = m.mining[0] || {};
 
-  html += '<div style="background:linear-gradient(135deg, rgba(239,68,68,0.08), rgba(139,92,246,0.08)); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:16px; margin-bottom:16px;">';
+  html += '<div style="background:linear-gradient(135deg, rgba(216,6,33,0.08), rgba(107,107,138,0.08)); border:1px solid rgba(216,6,33,0.2); border-radius:10px; padding:16px; margin-bottom:16px;">';
   html += '<div style="font-size:15px; font-weight:bold; color:var(--text); margin-bottom:8px;">' + esc(m.name) + ' Supply Chain \u2014 Intelligence Summary</div>';
   html += '<div style="font-size:12px; color:var(--text-dim); line-height:1.7;">';
-  html += esc(m.name) + ' is a <strong style="color:' + (m.risk_level === 'critical' ? '#D80621' : '#f59e0b') + ';">' + (m.risk_level || 'high').toUpperCase() + ' RISK</strong> mineral. ';
+  html += esc(m.name) + ' is a <strong style="color:' + (m.risk_level === 'critical' ? '#D80621' : '#a89060') + ';">' + (m.risk_level || 'high').toUpperCase() + ' RISK</strong> mineral. ';
   html += esc(topMiner.country) + ' controls ' + topMiner.pct + '% of global mining. ';
   html += 'China controls ' + chinaRefPct + '% of refining. ';
   if (suf && suf.totals) {
     html += 'Canada\'s annual military demand is ' + suf.totals.steady_state_kg + ' kg \u2014 ' + Math.round(suf.totals.indirect_kg / suf.totals.steady_state_kg * 100) + '% flows through foreign OEMs. ';
   }
-  html += '<strong style="color:#8b5cf6;">The vulnerability is not volume \u2014 it is supply chain architecture.</strong>';
+  html += '<strong style="color:#6b6b8a;">The vulnerability is not volume \u2014 it is supply chain architecture.</strong>';
   html += '</div></div>';
 
   // ── TIER 1: MINING ──
   html += renderNarrativeTier(
-    '1', 'Mining \u2014 Where It Comes From', '#10b981', '\u26CF',
+    '1', 'Mining \u2014 Where It Comes From', '#6b9080', '\u26CF',
     topMiner.pct + '% of global ' + esc(m.name) + ' comes from ' + esc(topMiner.country) + '. ' +
     'Chinese-owned companies control the majority of production in the DRC, creating a critical adversary dependency at the source.',
     m.mines || [],
@@ -10226,7 +10300,7 @@ function renderNarrativeGraph(m, container) {
       var total = 0, count = 0;
       for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; } }
       var avg = count > 0 ? Math.round(total / count) : 50;
-      var riskColor = avg >= 75 ? '#D80621' : avg >= 55 ? '#f59e0b' : avg >= 35 ? '#eab308' : '#10b981';
+      var riskColor = avg >= 75 ? '#D80621' : avg >= 55 ? '#a89060' : avg >= 35 ? '#eab308' : '#6b9080';
       var borderStyle = getCountryBorder(mine.country);
       var flags = (mine.flags || []).join(', ');
 
@@ -10237,7 +10311,7 @@ function renderNarrativeGraph(m, container) {
       card += '</div>';
       card += '<div style="font-size:10px; color:var(--text-dim); margin-top:3px;">' + esc(mine.country) + ' \u2014 ' + esc(mine.owner || '') + '</div>';
       card += '<div style="font-size:10px; margin-top:3px;">' + (mine.production_t || 0).toLocaleString() + ' t/yr</div>';
-      if (flags) card += '<div style="font-size:9px; color:#ef4444; margin-top:3px;">' + esc(flags) + '</div>';
+      if (flags) card += '<div style="font-size:9px; color:#D80621; margin-top:3px;">' + esc(flags) + '</div>';
       card += '</div>';
       return card;
     }
@@ -10248,7 +10322,7 @@ function renderNarrativeGraph(m, container) {
 
   // ── TIER 2: REFINING ──
   html += renderNarrativeTier(
-    '2', 'Refining \u2014 Who Controls Processing', '#8b5cf6', '\u2699',
+    '2', 'Refining \u2014 Who Controls Processing', '#6b6b8a', '\u2699',
     'China refines ' + chinaRefPct + '% of global cobalt. This is the critical chokepoint \u2014 even cobalt mined in allied countries like Australia and Canada is often sent to China for processing. ' +
     'Western refining capacity (Umicore in Finland/Belgium, Sherritt in Canada) is insufficient to replace Chinese processing if disrupted.',
     m.refineries || [],
@@ -10257,7 +10331,7 @@ function renderNarrativeGraph(m, container) {
       var total = 0, count = 0;
       for (var k in scores) { if (scores[k] && typeof scores[k].score === 'number') { total += scores[k].score; count++; } }
       var avg = count > 0 ? Math.round(total / count) : 50;
-      var riskColor = avg >= 75 ? '#D80621' : avg >= 55 ? '#f59e0b' : avg >= 35 ? '#eab308' : '#10b981';
+      var riskColor = avg >= 75 ? '#D80621' : avg >= 55 ? '#a89060' : avg >= 35 ? '#eab308' : '#6b9080';
       var borderStyle = getCountryBorder(ref.country);
 
       var card = '<div style="background:var(--surface); border:1px solid var(--border); border-left:3px solid ' + borderStyle.color + '; border-radius:6px; padding:10px; min-width:200px;">';
@@ -10278,20 +10352,20 @@ function renderNarrativeGraph(m, container) {
 
   // ── TIER 3: ALLOYS ──
   html += renderNarrativeTier(
-    '3', 'Defence Alloys \u2014 What It Becomes', '#f59e0b', '\u2666',
+    '3', 'Defence Alloys \u2014 What It Becomes', '#a89060', '\u2666',
     'Cobalt is essential in high-temperature superalloys that enable jet engines, gas turbines, and guided munitions. ' +
     'There are NO substitutes for cobalt in single-crystal turbine blade alloys (CMSX-4) operating above 1100\u00B0C. ' +
     'Only 3-4 Western foundries can cast these components.',
     m.alloys || [],
     function(alloy) {
-      var card = '<div style="background:var(--surface); border:1px solid var(--border); border-left:3px solid #f59e0b; border-radius:6px; padding:10px; min-width:200px;">';
+      var card = '<div style="background:var(--surface); border:1px solid var(--border); border-left:3px solid #a89060; border-radius:6px; padding:10px; min-width:200px;">';
       card += '<div style="display:flex; justify-content:space-between; align-items:center;">';
       card += '<strong style="font-size:11px;">' + esc(alloy.name) + '</strong>';
-      card += '<span style="font-family:var(--font-mono); font-size:11px; color:#f59e0b; font-weight:bold;">' + alloy.cobalt_pct + '% Co</span>';
+      card += '<span style="font-family:var(--font-mono); font-size:11px; color:#a89060; font-weight:bold;">' + alloy.cobalt_pct + '% Co</span>';
       card += '</div>';
       card += '<div style="font-size:10px; color:var(--text-dim); margin-top:3px;">' + esc(alloy.type || '') + '</div>';
       card += '<div style="font-size:10px; margin-top:3px;">' + esc(alloy.use || '') + '</div>';
-      if (alloy.temp) card += '<div style="font-size:9px; color:#ef4444; margin-top:2px;">Operating temp: ' + esc(alloy.temp) + '</div>';
+      if (alloy.temp) card += '<div style="font-size:9px; color:#D80621; margin-top:2px;">Operating temp: ' + esc(alloy.temp) + '</div>';
       card += '</div>';
       return card;
     }
@@ -10310,7 +10384,7 @@ function renderNarrativeGraph(m, container) {
   html += '<span style="font-size:14px; font-weight:bold; color:#00d4ff;">\u2B50 CAF Platforms \u2014 What Depends On It</span>';
   html += '</div>';
   html += '<div style="font-size:12px; color:var(--text-dim); margin-bottom:12px; line-height:1.6;">';
-  html += 'Canada does not manufacture jet engines or cast superalloy components. <strong style="color:#8b5cf6;">' + indirectDemand.length + ' CAF platforms</strong> depend on foreign OEMs (primarily US) who need cobalt. ';
+  html += 'Canada does not manufacture jet engines or cast superalloy components. <strong style="color:#6b6b8a;">' + indirectDemand.length + ' CAF platforms</strong> depend on foreign OEMs (primarily US) who need cobalt. ';
   html += '<strong style="color:#00d4ff;">' + directDemand.length + ' uses</strong> are direct domestic consumption (batteries, cutting tools, munitions). ';
   if (suf && suf.totals) {
     html += 'Total steady-state demand: <strong>' + suf.totals.steady_state_kg + ' kg/yr</strong> (' + suf.totals.indirect_kg + ' kg indirect, ' + suf.totals.direct_kg + ' kg direct).';
@@ -10319,10 +10393,10 @@ function renderNarrativeGraph(m, container) {
 
   // Indirect platforms
   if (indirectDemand.length > 0) {
-    html += '<div style="font-size:11px; font-weight:600; color:#8b5cf6; margin-bottom:6px;">\uD83D\uDD17 INDIRECT \u2014 Through Foreign OEM Supply Chain</div>';
+    html += '<div style="font-size:11px; font-weight:600; color:#6b6b8a; margin-bottom:6px;">\uD83D\uDD17 INDIRECT \u2014 Through Foreign OEM Supply Chain</div>';
     html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:6px; margin-bottom:12px;">';
     indirectDemand.forEach(function(d) {
-      html += '<div style="background:var(--surface); border:1px solid var(--border); border-left:3px solid #8b5cf6; border-radius:6px; padding:8px 10px;">';
+      html += '<div style="background:var(--surface); border:1px solid var(--border); border-left:3px solid #6b6b8a; border-radius:6px; padding:8px 10px;">';
       html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
       html += '<strong style="font-size:11px;">' + esc(d.platform) + '</strong>';
       html += '<span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim);">' + d.kg_yr + ' kg/yr</span>';
@@ -10333,14 +10407,14 @@ function renderNarrativeGraph(m, container) {
       html += '<span style="background:rgba(0,212,255,0.12); color:#00d4ff; padding:1px 5px; border-radius:3px;">Cobalt</span>';
       html += '<span style="color:var(--text-muted);">\u2192</span>';
       if (d.alloy && d.alloy !== 'n/a') {
-        html += '<span style="background:rgba(139,92,246,0.12); color:#a78bfa; padding:1px 5px; border-radius:3px;">' + esc(d.alloy) + '</span>';
+        html += '<span style="background:rgba(107,107,138,0.12); color:#a78bfa; padding:1px 5px; border-radius:3px;">' + esc(d.alloy) + '</span>';
         html += '<span style="color:var(--text-muted);">\u2192</span>';
       }
-      html += '<span style="background:rgba(139,92,246,0.12); color:#a78bfa; padding:1px 5px; border-radius:3px;">' + esc(d.engine || '') + ' \u2014 ' + esc(d.oem || '') + '</span>';
+      html += '<span style="background:rgba(107,107,138,0.12); color:#a78bfa; padding:1px 5px; border-radius:3px;">' + esc(d.engine || '') + ' \u2014 ' + esc(d.oem || '') + '</span>';
       html += '<span style="color:var(--text-muted);">\u2192</span>';
-      html += '<span style="background:rgba(16,185,129,0.12); color:#10b981; padding:1px 5px; border-radius:3px;">\uD83C\uDF41 CAF</span>';
+      html += '<span style="background:rgba(107,144,128,0.12); color:#6b9080; padding:1px 5px; border-radius:3px;">\uD83C\uDF41 CAF</span>';
       html += '</div>';
-      html += '<div style="font-size:9px; color:#f59e0b; margin-top:4px;">\u26A0 ' + esc(d.risk_note || '') + '</div>';
+      html += '<div style="font-size:9px; color:#a89060; margin-top:4px;">\u26A0 ' + esc(d.risk_note || '') + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -10357,7 +10431,7 @@ function renderNarrativeGraph(m, container) {
       html += '<span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim);">' + d.kg_yr + ' kg/yr</span>';
       html += '</div>';
       html += '<div style="font-size:9px; color:var(--text-dim); margin-top:2px;">' + esc(d.fleet_note || '') + '</div>';
-      html += '<div style="font-size:9px; color:#10b981; margin-top:4px;">\u2713 ' + esc(d.risk_note || '') + '</div>';
+      html += '<div style="font-size:9px; color:#6b9080; margin-top:4px;">\u2713 ' + esc(d.risk_note || '') + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -10366,16 +10440,16 @@ function renderNarrativeGraph(m, container) {
   html += '</div>';
 
   // ── BOTTOM: Key Risk Assessment ──
-  html += '<div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:14px; margin-top:12px;">';
-  html += '<div style="font-size:13px; font-weight:bold; color:#ef4444; margin-bottom:8px;">\u26A0 Cascading Vulnerability</div>';
+  html += '<div style="background:rgba(216,6,33,0.06); border:1px solid rgba(216,6,33,0.2); border-radius:10px; padding:14px; margin-top:12px;">';
+  html += '<div style="font-size:13px; font-weight:bold; color:#D80621; margin-bottom:8px;">\u26A0 Cascading Vulnerability</div>';
   html += '<div style="font-size:11px; color:var(--text-dim); line-height:1.8;">';
   html += '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">';
   var cascade = [
     { text: 'DRC conflict / China export ban', color: '#D80621' },
     { text: 'Mine output disrupted', color: '#D80621' },
-    { text: 'Chinese refinery bottleneck', color: '#f59e0b' },
-    { text: 'Superalloy blade shortage', color: '#f59e0b' },
-    { text: 'OEM engine production halt', color: '#8b5cf6' },
+    { text: 'Chinese refinery bottleneck', color: '#a89060' },
+    { text: 'Superalloy blade shortage', color: '#a89060' },
+    { text: 'OEM engine production halt', color: '#6b6b8a' },
     { text: 'CAF platforms grounded', color: '#D80621' },
   ];
   cascade.forEach(function(step, i) {
@@ -10677,7 +10751,7 @@ function showMineralGraphInfoPanel(node, upSet, downSet) {
   html += ' <span style="background:' + node.border.color + '22; color:' + node.border.color + '; padding:2px 8px; border-radius:8px; font-size:10px;">' + node.type.toUpperCase() + '</span>';
   if (node.depType) {
     var badge = node.depType === 'indirect' ? '\uD83D\uDD17 INDIRECT' : '\uD83C\uDF41 DIRECT';
-    var badgeColor = node.depType === 'indirect' ? '#8b5cf6' : '#00d4ff';
+    var badgeColor = node.depType === 'indirect' ? '#6b6b8a' : '#00d4ff';
     html += ' <span style="background:' + badgeColor + '22; color:' + badgeColor + '; padding:2px 8px; border-radius:8px; font-size:10px;">' + badge + '</span>';
   }
   html += '</div>';
@@ -10696,7 +10770,7 @@ function showMineralGraphInfoPanel(node, upSet, downSet) {
   var downCount = Object.keys(downSet).length - 1;
   html += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border); font-size:11px;">';
   if (upCount > 0) html += '<div style="color:#00d4ff;">\u25B2 Upstream suppliers: ' + upCount + ' nodes</div>';
-  if (downCount > 0) html += '<div style="color:#f59e0b;">\u25BC Downstream dependents: ' + downCount + ' nodes</div>';
+  if (downCount > 0) html += '<div style="color:#a89060;">\u25BC Downstream dependents: ' + downCount + ' nodes</div>';
   html += '</div>';
 
   body.innerHTML = html;
@@ -10709,7 +10783,7 @@ function renderPsiRiskMatrix(alerts) {
 
   const typeColors = {
     material_shortage: '#f97316', supplier_disruption: '#D80621', sanctions_risk: '#f43f5e',
-    chokepoint_blocked: '#00d4ff', demand_surge: '#f59e0b', concentration_risk: '#8b5cf6',
+    chokepoint_blocked: '#00d4ff', demand_surge: '#a89060', concentration_risk: '#6b6b8a',
   };
 
   const points = alerts.map((a, i) => ({
@@ -10824,7 +10898,7 @@ function renderMineralRiskMatrix(m, container) {
   html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">';
   entities.sort(function(a,b){ return b.risk - a.risk; });
   entities.forEach(function(e) {
-    var riskColor = e.risk >= 75 ? '#D80621' : e.risk >= 55 ? '#f59e0b' : e.risk >= 35 ? '#eab308' : '#10b981';
+    var riskColor = e.risk >= 75 ? '#D80621' : e.risk >= 55 ? '#a89060' : e.risk >= 35 ? '#eab308' : '#6b9080';
     var riskLabel = e.risk >= 75 ? 'CRITICAL' : e.risk >= 55 ? 'HIGH' : e.risk >= 35 ? 'MEDIUM' : 'LOW';
     var typeIcon = e.type === 'Mine' ? '\u26CF' : '\u2699';
     html += '<div class="card" style="padding:10px; border-left:3px solid '+riskColor+';">';
@@ -10867,10 +10941,10 @@ function renderMineralRiskMatrix(m, container) {
             return { x: e.risk, y: e.impact, r: 8, name: e.name, country: e.country, owner: e.owner, topRisk: (e.rationales && e.rationales[0]) ? e.rationales[0].rationale : '' };
           }),
           backgroundColor: entities.map(function(e) {
-            return e.risk >= 75 ? 'rgba(239,68,68,0.6)' : e.risk >= 55 ? 'rgba(245,158,11,0.6)' : 'rgba(16,185,129,0.6)';
+            return e.risk >= 75 ? 'rgba(216,6,33,0.6)' : e.risk >= 55 ? 'rgba(168,144,96,0.6)' : 'rgba(107,144,128,0.6)';
           }),
           borderColor: entities.map(function(e) {
-            return e.risk >= 75 ? '#D80621' : e.risk >= 55 ? '#f59e0b' : '#10b981';
+            return e.risk >= 75 ? '#D80621' : e.risk >= 55 ? '#a89060' : '#6b9080';
           }),
           borderWidth: 2,
         }],
@@ -11574,7 +11648,7 @@ function renderMineralTaxonomy(m, container) {
     var total = 0, count = 0;
     for (var k in entity.scores) { if (entity.scores[k] && typeof entity.scores[k].score === 'number') { total += entity.scores[k].score; count++; } }
     var avg = count > 0 ? Math.round(total / count) : 0;
-    var avgColor = avg >= 75 ? '#D80621' : avg >= 55 ? '#f59e0b' : avg >= 35 ? '#eab308' : '#10b981';
+    var avgColor = avg >= 75 ? '#D80621' : avg >= 55 ? '#a89060' : avg >= 35 ? '#eab308' : '#6b9080';
 
     html += '<div class="card" style="padding:14px; margin-bottom:10px;">';
     html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">';
@@ -11589,7 +11663,7 @@ function renderMineralTaxonomy(m, container) {
     taxonomyCats.forEach(function(cat) {
       var s = entity.scores[cat];
       if (!s) return;
-      var color = s.score >= 75 ? '#D80621' : s.score >= 55 ? '#f59e0b' : s.score >= 35 ? '#eab308' : '#10b981';
+      var color = s.score >= 75 ? '#D80621' : s.score >= 55 ? '#a89060' : s.score >= 35 ? '#eab308' : '#6b9080';
       html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:3px; font-size:10px;">';
       html += '<span style="width:160px; color:var(--text-dim); text-align:right; flex-shrink:0;">' + esc(catLabels[cat] || cat) + '</span>';
       html += '<div style="flex:1; height:12px; background:var(--border); border-radius:2px; overflow:hidden;">';
@@ -11623,10 +11697,10 @@ function renderTaxonomyBarChart(categories) {
       datasets: [{
         data: sorted.map(c => c.composite_score),
         backgroundColor: sorted.map(c =>
-          c.risk_level === 'red' ? '#D8062188' : c.risk_level === 'amber' ? '#f59e0b88' : '#10b98188'
+          c.risk_level === 'red' ? '#D8062188' : c.risk_level === 'amber' ? '#a8906088' : '#6b908088'
         ),
         borderColor: sorted.map(c =>
-          c.risk_level === 'red' ? '#D80621' : c.risk_level === 'amber' ? '#f59e0b' : '#10b981'
+          c.risk_level === 'red' ? '#D80621' : c.risk_level === 'amber' ? '#a89060' : '#6b9080'
         ),
         borderWidth: 1,
       }],
@@ -11646,7 +11720,7 @@ function renderTaxonomyBarChart(categories) {
 function renderTaxonomyAccordion(categories) {
   const container = document.getElementById('taxonomy-accordion');
   const srcBadge = (ds) => ds === 'live'
-    ? '<span style="background:rgba(16,185,129,0.15);color:var(--accent3);padding:2px 6px;border-radius:4px;font-size:10px;">LIVE</span>'
+    ? '<span style="background:rgba(107,144,128,0.15);color:var(--accent3);padding:2px 6px;border-radius:4px;font-size:10px;">LIVE</span>'
     : ds === 'hybrid'
     ? '<span style="background:rgba(0,212,255,0.15);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:10px;">HYBRID</span>'
     : '<span style="background:rgba(100,116,139,0.15);color:var(--text-dim);padding:2px 6px;border-radius:4px;font-size:10px;">SEEDED</span>';
@@ -11788,11 +11862,11 @@ function renderSupplierRiskChart(data) {
         data: sorted.map(s => s.risk_score_composite || 0),
         backgroundColor: sorted.map(s => {
           const sc = s.risk_score_composite || 0;
-          return sc >= 70 ? '#D8062188' : sc >= 40 ? '#f59e0b88' : '#10b98188';
+          return sc >= 70 ? '#D8062188' : sc >= 40 ? '#a8906088' : '#6b908088';
         }),
         borderColor: sorted.map(s => {
           const sc = s.risk_score_composite || 0;
-          return sc >= 70 ? '#D80621' : sc >= 40 ? '#f59e0b' : '#10b981';
+          return sc >= 70 ? '#D80621' : sc >= 40 ? '#a89060' : '#6b9080';
         }),
         borderWidth: 1,
       }],
@@ -11853,7 +11927,7 @@ function renderOwnershipChart(data) {
   if (ownershipChart) ownershipChart.destroy();
   const labels = Object.keys(data.breakdown).map(k => k.replace(/_/g, ' '));
   const values = Object.values(data.breakdown).map(v => v.count);
-  const colors = ['#00d4ff', '#10b981', '#f59e0b', '#8b5cf6', '#D80621'];
+  const colors = ['#00d4ff', '#6b9080', '#a89060', '#6b6b8a', '#D80621'];
   ownershipChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -12354,6 +12428,23 @@ document.querySelectorAll('.nav-tab[data-page]').forEach(function(tab){
     });
   });
 });
+/* Theme toggle */
+!function(){
+  var toggle=document.getElementById('theme-toggle');
+  function setTheme(light){
+    document.body.classList.toggle('light',light);
+    toggle.setAttribute('aria-checked',light?'true':'false');
+    localStorage.setItem('cmct-theme',light?'light':'dark');
+  }
+  // Restore saved preference
+  if(localStorage.getItem('cmct-theme')==='light') setTheme(true);
+  toggle.addEventListener('click',function(){
+    setTheme(!document.body.classList.contains('light'));
+  });
+  toggle.addEventListener('keydown',function(e){
+    if(e.key===' '||e.key==='Enter'){e.preventDefault();toggle.click();}
+  });
+}();
 </script>
 </body>
 </html>
