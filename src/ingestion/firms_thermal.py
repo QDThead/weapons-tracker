@@ -90,7 +90,7 @@ class FIRMSThermalClient:
     _cache: dict = {}
 
     def __init__(self, map_key: str = "", timeout: float = 30.0):
-        self.map_key = map_key or os.getenv("NASA_FIRMS_MAP_KEY", "")
+        self.map_key = map_key or os.getenv("NASA_FIRMS_MAP_KEY", "") or os.getenv("MAP_KEY", "")
         self.timeout = timeout
 
     async def fetch_facility_thermal(
@@ -155,7 +155,7 @@ class FIRMSThermalClient:
         for name, cfg in FACILITY_CONFIG.items():
             detections = await self.fetch_facility_thermal(
                 name=name, lat=cfg["lat"], lon=cfg["lon"],
-                radius_deg=cfg["radius_deg"], days=2,
+                radius_deg=cfg["radius_deg"], days=5,
             )
             status = _compute_status(detections)
             status["source"] = "NASA FIRMS VIIRS NOAA-20 (live)"
