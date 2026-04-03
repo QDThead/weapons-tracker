@@ -2087,20 +2087,28 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
         <div style="flex:1; position:relative; border-radius:0 10px 10px 0; overflow:hidden;">
           <div id="cesium-globe" style="width:100%; height:100%; position:relative;"></div>
           <!-- Floating legend overlay -->
-          <div style="position:absolute; bottom:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; line-height:1.8;">
-            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Supply Chain Nodes</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b9080; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b9080;">Tier 1</span> — Mining / Extraction</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b6b8a; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b6b8a;">Tier 2</span> — Processing / Refining</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Tier 3</span> — Components / Alloys</div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00d4ff; vertical-align:middle; margin-right:6px;"></span><span style="color:#00d4ff;">Tier 4</span> — Weapon Platforms</div>
-            <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
-            <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D80621; vertical-align:middle; margin-right:6px;"></span> Chinese-owned (mine/refinery)</div>
-            <div style="border-top:1px solid var(--border); margin:4px 0; padding-top:4px; font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Shipping Route Risk</div>
-            <div><span style="color:#D80621;">━ ━ ━</span> Critical — conflict zone, export controls, chokepoint</div>
-            <div><span style="color:#a89060;">━ ━ ━</span> High — sanctions, single-source, political instability</div>
-            <div><span style="color:#eab308;">━ ━ ━</span> Medium — emerging route, partial risk</div>
-            <div><span style="color:#6b9080;">━ ━ ━</span> Low — NATO-allied, open ocean, reliable supplier</div>
+          <div style="position:absolute; bottom:12px; left:12px; background:var(--surface); border:1px solid var(--border); padding:0; z-index:5; font-size:10px; line-height:1.8; min-width:180px;">
+            <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.leg-arrow').textContent=this.nextElementSibling.style.display==='none'?'\u25B8':'\u25BE'" style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; padding:8px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+              <span>Supply Chain Nodes</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
+            </div>
+            <div style="padding:6px 12px;">
+              <div><span style="display:inline-block; width:10px; height:10px; background:#6b9080; vertical-align:middle; margin-right:6px; transform:rotate(45deg);"></span><span style="color:#6b9080;">Tier 1</span> — Mining</div>
+              <div><span style="display:inline-block; width:10px; height:10px; background:#6b6b8a; vertical-align:middle; margin-right:6px; transform:rotate(45deg);"></span><span style="color:#6b6b8a;">Tier 2</span> — Processing</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Tier 3</span> — Components</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00d4ff; vertical-align:middle; margin-right:6px;"></span><span style="color:#00d4ff;">Tier 4</span> — Platforms</div>
+              <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D80621; vertical-align:middle; margin-right:6px;"></span> Chinese-owned</div>
+            </div>
+            <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.leg-arrow').textContent=this.nextElementSibling.style.display==='none'?'\u25B8':'\u25BE'" style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; padding:8px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+              <span>Shipping Route Risk</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
+            </div>
+            <div style="padding:6px 12px;">
+              <div><span style="color:#D80621;">━ ━ ━</span> Critical</div>
+              <div><span style="color:#a89060;">━ ━ ━</span> High</div>
+              <div><span style="color:#eab308;">━ ━ ━</span> Medium</div>
+              <div><span style="color:#6b9080;">━ ━ ━</span> Low</div>
+            </div>
           </div>
           <!-- Shipping route list (shows when mineral has routes) -->
           <div id="globe-route-menu" style="display:none; position:absolute; top:12px; left:12px; background:var(--surface-glass); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:5; font-size:10px; max-width:320px;">
@@ -7889,11 +7897,11 @@ function renderGlobeEntities() {
     if (m.mines && m.mines.length > 0) {
       m.mines.forEach(function(mine) {
         var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
-        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : tierColors.mining;
-        var size = Math.max(8, Math.min(18, (mine.production_t || 1000) / 1500));
+        var colorHex = isChineseOwned ? '#D80621' : '#6b9080';
+        var size = Math.max(14, Math.min(22, (mine.production_t || 1000) / 1200));
         cesiumViewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat),
-          point: { pixelSize: size, color: markerColor, outlineColor: markerColor.withAlpha(0.4), outlineWidth: 3 },
+          billboard: { image: buildDiamondCanvas(colorHex, Math.round(size)), width: size, height: size },
           label: {
             text: mine.name + '\n' + (mine.production_t ? mine.production_t.toLocaleString() + 't' : ''),
             font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
@@ -7928,11 +7936,11 @@ function renderGlobeEntities() {
       m.refineries.forEach(function(ref) {
         var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
         var isRussian = /nornickel|russia/i.test(ref.owner);
-        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : isRussian ? Cesium.Color.fromCssColorString('#f97316') : tierColors.processing;
-        var size = Math.max(8, Math.min(16, (ref.capacity_t || 3000) / 2000));
+        var colorHex = isChineseOwned ? '#D80621' : isRussian ? '#f97316' : '#6b6b8a';
+        var size = Math.max(14, Math.min(20, (ref.capacity_t || 3000) / 1500));
         cesiumViewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 60000),
-          point: { pixelSize: size, color: markerColor, outlineColor: markerColor.withAlpha(0.4), outlineWidth: 2 },
+          billboard: { image: buildDiamondCanvas(colorHex, Math.round(size)), width: size, height: size },
           label: {
             text: ref.name + '\n' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't cap' : ''),
             font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
@@ -8157,6 +8165,30 @@ function addFlowArc(lon1, lat1, lon2, lat2, color, description, layerId) {
     },
     properties: { layerId: layerId || 'arcs', type: 'flowarc', description: description },
   });
+}
+
+var _diamondCache = {};
+function buildDiamondCanvas(color, size) {
+  var key = color + '_' + size;
+  if (_diamondCache[key]) return _diamondCache[key];
+  var c = document.createElement('canvas');
+  var s = size || 16;
+  c.width = s; c.height = s;
+  var ctx = c.getContext('2d');
+  var h = s / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(h, 0);
+  ctx.lineTo(s, h);
+  ctx.lineTo(h, s);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  _diamondCache[key] = c;
+  return c;
 }
 
 function buildTriangleCanvas() {
