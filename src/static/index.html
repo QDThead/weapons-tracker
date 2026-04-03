@@ -13415,6 +13415,128 @@ function renderVerificationTab(m, container) {
   sortFacilities(currentSort);
   renderGrid('all');
 }
+
+function renderVerificationChart(canvasId, facility) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  if (canvas._chartInstance) canvas._chartInstance.destroy();
+
+  var thermalHistory = (facility.thermal || {}).history || [];
+  var no2History = (facility.no2 || {}).history || [];
+
+  var dateSet = {};
+  thermalHistory.forEach(function(h) { dateSet[h.date] = dateSet[h.date] || {}; dateSet[h.date].frp = h.total_frp_mw || 0; });
+  no2History.forEach(function(h) { dateSet[h.date] = dateSet[h.date] || {}; dateSet[h.date].ratio = h.ratio || 0; });
+
+  var dates = Object.keys(dateSet).sort();
+  if (dates.length < 2) {
+    ctx.fillStyle = '#4B5567';
+    ctx.font = '11px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('Insufficient satellite history', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  var frpData = dates.map(function(d) { return (dateSet[d].frp || 0); });
+  var ratioData = dates.map(function(d) { return (dateSet[d].ratio || 0); });
+  var labels = dates.map(function(d) { return d.slice(5); });
+
+  var maxFrp = Math.max.apply(null, frpData.concat([1]));
+  var capacity = facility.production_t || facility.capacity_t || 0;
+  var refLevel = capacity > 0 ? maxFrp * 0.6 : null;
+
+  var datasets = [
+    {
+      label: 'Thermal FRP (MW)',
+      data: frpData,
+      backgroundColor: 'rgba(255,68,68,0.5)',
+      borderColor: '#ff4444',
+      borderWidth: 1,
+      borderRadius: 2,
+      barPercentage: 0.45,
+      categoryPercentage: 0.8,
+      yAxisID: 'y',
+      order: 2,
+    },
+    {
+      label: 'NO2 Ratio (\u00d7bg)',
+      data: ratioData,
+      backgroundColor: 'rgba(160,80,220,0.5)',
+      borderColor: '#a050dc',
+      borderWidth: 1,
+      borderRadius: 2,
+      barPercentage: 0.45,
+      categoryPercentage: 0.8,
+      yAxisID: 'y1',
+      order: 2,
+    },
+  ];
+
+  if (refLevel !== null) {
+    datasets.push({
+      label: 'Rated: ' + capacity.toLocaleString() + ' t/yr',
+      data: dates.map(function() { return refLevel; }),
+      type: 'line',
+      borderColor: 'rgba(255,255,255,0.3)',
+      borderWidth: 1,
+      borderDash: [6, 3],
+      pointRadius: 0,
+      fill: false,
+      yAxisID: 'y',
+      order: 1,
+    });
+  }
+
+  canvas._chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { font: { size: 8, family: 'JetBrains Mono' }, color: '#4B5567', boxWidth: 10, padding: 6 },
+        },
+        tooltip: {
+          callbacks: {
+            title: function(items) { return items[0].label; },
+            label: function(c) {
+              if (c.datasetIndex === 0) return c.parsed.y.toFixed(2) + ' MW FRP';
+              if (c.datasetIndex === 1) return c.parsed.y.toFixed(1) + '\u00d7 background';
+              return c.dataset.label;
+            }
+          }
+        },
+      },
+      scales: {
+        x: {
+          display: true,
+          ticks: { font: { size: 7, family: 'JetBrains Mono' }, color: '#4B5567', maxRotation: 45, maxTicksLimit: 10 },
+          grid: { display: false },
+        },
+        y: {
+          display: true,
+          position: 'left',
+          title: { display: true, text: 'FRP (MW)', font: { size: 8, family: 'JetBrains Mono' }, color: '#ff4444' },
+          beginAtZero: true,
+          ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+        },
+        y1: {
+          display: true,
+          position: 'right',
+          title: { display: true, text: 'NO2 (\u00d7bg)', font: { size: 8, family: 'JetBrains Mono' }, color: '#a050dc' },
+          beginAtZero: true,
+          ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 },
+          grid: { drawOnChartArea: false },
+        },
+      },
+    },
+  });
+}
 </script>
 
 <div class="cb">UNCLASSIFIED // OSINT</div>
