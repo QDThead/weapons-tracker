@@ -62,8 +62,8 @@ Open `http://localhost:8000` after starting the server:
 | **Buyer-side Mirror** | Reveals Russia/China arms deliveries by querying buyer-reported imports |
 | **Supplier Shift Detection** | Poland switched US→South Korea; Egypt switched Russia→Italy |
 | **Supply Chain BOM Explosion** | Trace F-35 → engine → turbine blades → titanium → China/Russia |
-| **3D Supply Chain Globe** | CesiumJS globe: 30 minerals, mine-level markers, refinery markers, risk-colored shipping routes to Canadian ports, per-entity 13-category DND risk taxonomy scorecards |
-| **Cobalt Deep Intelligence** | 9 named mines with ownership risk, 9 refineries, 8 defence alloys (Waspaloy, CMSX-4, Stellite), 6 shipping corridors, 13-category taxonomy + KPIs per entity |
+| **3D Supply Chain Globe** | CesiumJS globe: 30 minerals, mine-level markers, refinery markers, 11 sea routes + 5 overland routes (Cobalt) to Canadian ports, per-entity 13-category DND risk taxonomy scorecards |
+| **Cobalt Deep Intelligence** | 9 named mines with ownership risk, 9 refineries, 8 defence alloys (Waspaloy, CMSX-4, Stellite), 16 logistics routes (11 sea + 5 overland), 13-category taxonomy + KPIs per entity |
 | **191 Courses of Action** | Auto-generated mitigation playbook across all 13 DND risk categories |
 | **Confidence Scoring** | Glass Box source triangulation — shows how many independent sources agree |
 | **Disinformation Detection** | Flags articles from known state-media, extreme tone, sensationalist patterns |

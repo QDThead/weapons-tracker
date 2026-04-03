@@ -173,9 +173,9 @@ weapons-tracker/
 | **PSI: BOM Explosion** | supply_chain_graph.py | Trace weapon platform -> subsystems -> components -> raw materials -> source countries |
 | **PSI: Scenario Sandbox** | scenario_engine.py, supply_chain.py | Multi-variable "Digital Twin" sandbox: stackable disruption layers (sanctions, shortages, route disruptions, supplier failures, demand surges), 5 preset compound scenarios (Indo-Pacific Conflict, Arctic Escalation, Global Recession, DRC Collapse, Suez Closure), Sankey cascade visualization (4-tier Rocks-to-Rockets), Likelihood×Impact scoring with dollar values, up to 4 saved runs with side-by-side comparison, COA comparison drawer, PDF/CSV/JSON export |
 | **PSI: Critical Minerals** | critical_minerals.py | 30 defense-critical materials with USGS production data, HHI concentration indices |
-| **PSI: 3D Supply Globe** | mineral_supply_chains.py, globe_routes.py | CesiumJS 3D globe: 30 minerals with 4-tier flow (mine→process→component→platform), shipping routes to 5 Canadian ports, risk-colored sea lanes, entity-level 13-category DND risk taxonomy scorecards |
-| **PSI: Cobalt Deep Dive** | mineral_supply_chains.py | 9 named mines, 9 refineries, 8 defence alloys (Waspaloy/CMSX-4/Stellite), 6 shipping corridors with risk ratings, 13-cat taxonomy scores + KPIs per entity, Canada platform-engine dependencies |
-| **PSI: Live Forecasting** | cobalt_forecasting.py, globe_routes.py | IMF PCOBALT direct cobalt prices (live, monthly) → quarterly linear regression → 12-month price forecast; FRED nickel as fallback; lead time from shipping routes + chokepoint risk; supplier insolvency from real Altman Z-scores (financial_scoring.py); auto-generated signals |
+| **PSI: 3D Supply Globe** | mineral_supply_chains.py, globe_routes.py | CesiumJS 3D globe: 30 minerals with 4-tier flow (mine→process→component→platform), 11 sea routes + 5 overland routes (Cobalt) to 5 Canadian ports, risk-colored sea lanes, entity-level 13-category DND risk taxonomy scorecards |
+| **PSI: Cobalt Deep Dive** | mineral_supply_chains.py | 9 named mines, 9 refineries, 8 defence alloys (Waspaloy/CMSX-4/Stellite), 16 logistics routes (11 sea + 5 overland) with risk ratings, 13-cat taxonomy scores + KPIs per entity, Canada platform-engine dependencies |
+| **PSI: Live Forecasting** | cobalt_forecasting.py, globe_routes.py | IMF PCOBALT direct cobalt prices (live, monthly) → quarterly linear regression → 12-month price forecast; FRED nickel as fallback; lead time from sea routes + chokepoint risk; supplier insolvency from real Altman Z-scores (financial_scoring.py); auto-generated signals |
 | **PSI: BOM Explorer** | index.html | 4-tier Rocks-to-Rockets tree: Mining → Processing → Alloys (8 cobalt alloys with Co%) → CAF Platforms via engines; computed confidence per tier from source counts; HS codes (5 entries) and NSN entries (6 items, illustrative) |
 | **PSI: Supplier Dossier** | mineral_supply_chains.py | Per-entity deep dive: 18 entities (mines + refineries), FOCI badges, Altman Z-Score, UBO ownership chains, recent intelligence, DND contract summary |
 | **PSI: Watchtower Alerts** | cobalt_alert_engine.py, mineral_supply_chains.py | 6 seed alerts + live GDELT keyword monitoring (8 queries) + rule-based triggers (HHI, China refining, paused ops); SEEDED/LIVE badges; Acknowledge/Assign/Escalate persist to DB; Evidence Locker |
@@ -311,7 +311,7 @@ weapons-tracker/
 
 ### Globe / 3D Supply Map (src/api/globe_routes.py)
 - `GET /globe/minerals` — All 30 mineral supply chains with geo-coordinates, Canada dependencies
-- `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, shipping routes, taxonomy scores, 18 dossiers, live HHI)
+- `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, sea_routes, overland_routes, taxonomy scores, 18 dossiers, live HHI)
 - `GET /globe/minerals/{name}/forecast` — Live computed forecast (FRED nickel proxy, linear regression, insolvency, lead time)
 
 ### Validation (src/api/validation_routes.py)
@@ -330,7 +330,7 @@ weapons-tracker/
 
 ## Database
 - **18 tables:** countries, weapon_systems, arms_transfers, defense_companies, trade_indicators, arms_trade_news, delivery_tracking, supply_chain_materials, supply_chain_nodes, supply_chain_edges, supply_chain_routes, supply_chain_alerts, defence_suppliers, supplier_contracts, supplier_risk_scores, risk_taxonomy_scores, **mitigation_actions**, **audit_log**
-- **Current data:** 9,311 transfers, 5,110 indicators, flight positions (live), 167 news articles, 30 materials, 90 supply chain nodes, 96 edges, 20 routes, 8 alerts, 10 Canadian suppliers, 121 taxonomy scores, 191 COA playbook entries
+- **Current data:** 9,311 transfers, 5,110 indicators, flight positions (live), 167 news articles, 30 materials, 90 supply chain nodes, 96 edges, 16 cobalt routes (11 sea + 5 overland), 8 alerts, 10 Canadian suppliers, 121 taxonomy scores, 191 COA playbook entries
 - **Coverage:** 26 seller countries, 186 buyer countries, 256 countries total
 
 ## How to Run
@@ -392,7 +392,7 @@ python -m src.main
 ## Next Steps (Priority Order)
 1. Continue theme unification to remaining tabs (Arctic, Canada Intel, Supply Chain sub-tabs, Data Feeds, Compliance) — foundation CSS already applied, needs per-tab polish
 2. Sentinel-5P TROPOMI NO2 layer for industrial emissions detection (better facility coverage than thermal)
-3. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity, HS codes, NSN)
+3. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, sea + overland routes, 13-cat taxonomy per entity, HS codes, NSN)
 4. Explore diamond/custom markers for globe facilities (CesiumJS 1.119 billboard crashes — needs Cesium upgrade or PointPrimitive approach)
 5. Full light theme QA pass across all tabs (Cesium/Leaflet globes don't respond to CSS variables)
 6. Full French translation of dynamic content (currently covers nav tabs + PSI sub-tab headers; body content is English-only)
