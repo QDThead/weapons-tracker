@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Critical Mineral Control Tower | Department of National Defence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#06090f; --bg-c:#111620; --bg-ch:#161c2a;
+      --red:#D80621; --cyan:#00D4FF; --cyan-d:rgba(0,212,255,0.45);
+      --green:#34D399; --amber:#FBBF24;
+      --t1:#E8ECF2; --t2:#8A95A8; --t3:#4B5567;
+      --brd:rgba(255,255,255,0.06); --brd-h:rgba(255,255,255,0.12);
+      --fd:'Barlow Condensed',sans-serif; --fb:'DM Sans',sans-serif; --fm:'JetBrains Mono',monospace;
+    }
+    html { scroll-behavior:smooth; }
+    body { font-family:var(--fb); background:var(--bg); color:var(--t1); overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+
+    /* Atmosphere */
+    .atm { position:fixed; inset:0; pointer-events:none; z-index:0; }
+    .atm-g { position:absolute; inset:0;
+      background: linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px);
+      background-size:80px 80px; }
+    .atm-r { position:absolute; inset:0;
+      background: radial-gradient(ellipse 60% 40% at 50% 35%,rgba(216,6,33,0.025),transparent),
+        radial-gradient(ellipse 50% 50% at 50% 80%,rgba(0,212,255,0.015),transparent); }
+
+    /* Scan */
+    .scan { position:fixed; top:0; left:0; width:100%; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(0,212,255,0.08),rgba(0,212,255,0.18),rgba(0,212,255,0.08),transparent);
+      animation:sc 16s ease-in-out infinite; pointer-events:none; z-index:9999; opacity:0; }
+    @keyframes sc{0%{transform:translateY(0);opacity:0}2%{opacity:.6}98%{opacity:.6}100%{transform:translateY(100vh);opacity:0}}
+
+    /* Classification */
+    .cb{height:22px;background:var(--red);display:flex;align-items:center;justify-content:center;
+      font-family:var(--fm);font-size:9.5px;font-weight:500;letter-spacing:3px;color:#fff;}
+
+    /* Nav */
+    .nav{position:sticky;top:0;height:46px;background:rgba(6,9,15,0.9);
+      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--brd);display:flex;align-items:center;
+      justify-content:space-between;padding:0 28px;z-index:1000;}
+    .nl{display:flex;align-items:center;gap:10px;}
+    .nm{width:16px;height:16px;}
+    .nt{font-family:var(--fd);font-size:14px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--t1);}
+    .ns{width:1px;height:16px;background:var(--brd);}
+    .ntag{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;color:var(--t3);text-transform:uppercase;}
+    .nr{display:flex;align-items:center;gap:16px;}
+    .nclk{font-family:var(--fm);font-size:10px;color:var(--t3);letter-spacing:1px;}
+    .nlv{display:flex;align-items:center;gap:5px;font-family:var(--fm);font-size:9.5px;letter-spacing:1.5px;color:var(--green);}
+    .nlv::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);
+      box-shadow:0 0 6px var(--green);animation:bl 2.5s ease-in-out infinite;}
+    @keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+    .nb{font-family:var(--fd);font-size:11px;font-weight:600;letter-spacing:2px;
+      text-transform:uppercase;text-decoration:none;color:#fff;background:var(--red);
+      padding:5px 14px;transition:all .3s;}
+    .nb:hover{background:#f00a2b;box-shadow:0 0 14px rgba(216,6,33,0.35);}
+    .nb:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+
+    main{position:relative;z-index:1;}
+
+    /* ── Hero ─────────────────────────────── */
+    .hero{text-align:center;padding:40px 24px 28px;position:relative;}
+
+    .hero-tag{font-family:var(--fm);font-size:10px;letter-spacing:3.5px;color:var(--t3);
+      margin-bottom:14px;animation:fu .7s ease .1s both;}
+
+    /* DND FIP Signature — 3D floating */
+    .fip-scene{
+      position:relative;width:320px;margin:0 auto 24px;
+      perspective:900px;
+      animation:fu .8s ease .2s both;
+    }
+    .fip-glow{
+      position:absolute;top:50%;left:50%;
+      width:400px;height:200px;
+      transform:translate(-50%,-50%);
+      background:radial-gradient(ellipse,rgba(216,6,33,0.07) 0%,transparent 65%);
+      filter:blur(24px);pointer-events:none;
+    }
+    .fip-3d{
+      position:relative;
+      transform-style:preserve-3d;
+      animation:fipFloat 12s ease-in-out infinite;
+    }
+    @keyframes fipFloat{
+      0%,100%{transform:rotateY(-6deg) rotateX(3deg) translateY(0);}
+      25%{transform:rotateY(2deg) rotateX(-1deg) translateY(-3px);}
+      50%{transform:rotateY(6deg) rotateX(-3deg) translateY(-6px);}
+      75%{transform:rotateY(-2deg) rotateX(1deg) translateY(-3px);}
+    }
+    /* The flag card */
+    .fip-flag{
+      display:block;width:100%;height:auto;
+      filter:drop-shadow(0 6px 20px rgba(0,0,0,0.5)) drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    }
+    /* Bilingual text below flag */
+    .fip-text{
+      display:flex;align-items:center;justify-content:center;gap:16px;
+      margin-top:14px;
+      transform:translateZ(4px);
+    }
+    .fip-lang{
+      font-family:var(--fb);font-size:13px;font-weight:400;
+      color:var(--t1);letter-spacing:0.5px;
+    }
+    .fip-sep{
+      width:1px;height:16px;background:var(--t3);opacity:0.5;
+    }
+    /* Subtle shine sweep on flag */
+    .fip-shine{
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      pointer-events:none;overflow:hidden;
+    }
+    .fip-shine::after{
+      content:'';position:absolute;top:0;left:-120%;
+      width:60%;height:100%;
+      background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.08) 50%,transparent 60%);
+      animation:shinePass 8s ease-in-out infinite;
+    }
+    @keyframes shinePass{
+      0%,80%,100%{left:-120%;}
+      40%,60%{left:160%;}
+    }
+
+    .hero-title{font-family:var(--fd);font-weight:700;font-size:clamp(34px,4.5vw,54px);
+      line-height:.95;letter-spacing:3px;text-transform:uppercase;color:var(--t1);
+      margin-bottom:6px;animation:fu .7s ease .4s both;}
+    .hero-title .ac{color:var(--cyan);}
+    .hero-sub{font-family:var(--fd);font-size:16px;font-weight:400;letter-spacing:2px;
+      color:var(--t2);margin-bottom:12px;animation:fu .7s ease .55s both;}
+    .hero-desc{font-size:13px;font-weight:300;line-height:1.7;color:var(--t2);
+      max-width:520px;margin:0 auto;animation:fu .7s ease .65s both;}
+    @keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Stats */
+    .stats{display:flex;justify-content:center;gap:0;margin:20px auto 0;
+      max-width:600px;animation:fu .7s ease .8s both;}
+    .st{padding:12px 18px;border:1px solid var(--brd);border-right:none;min-width:95px;text-align:center;}
+    .st:last-child{border-right:1px solid var(--brd);}
+    .st:first-child{border-left:2px solid var(--cyan-d);}
+    .stv{font-family:var(--fm);font-size:20px;font-weight:500;color:var(--cyan);
+      display:block;line-height:1;margin-bottom:3px;}
+    .stl{font-family:var(--fm);font-size:8.5px;letter-spacing:1.5px;color:var(--t3);text-transform:uppercase;}
+
+    /* CTA */
+    .hero-cta{display:inline-flex;align-items:center;gap:10px;
+      font-family:var(--fd);font-size:13px;font-weight:600;letter-spacing:2.5px;
+      text-transform:uppercase;text-decoration:none;color:#fff;background:var(--red);
+      padding:11px 32px;margin-top:20px;position:relative;overflow:hidden;transition:all .4s;
+      animation:fu .7s ease .95s both;}
+    .hero-cta::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);transition:left .5s;}
+    .hero-cta:hover::before{left:100%;}
+    .hero-cta:hover{box-shadow:0 0 24px rgba(216,6,33,.3);transform:translateY(-1px);}
+    .hero-cta:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+    .hero-cta svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;transition:transform .3s;}
+    .hero-cta:hover svg{transform:translateX(3px);}
+
+    /* ── Divider ──────────────────────────── */
+    .dv{height:1px;max-width:1100px;margin:0 auto;
+      background:linear-gradient(90deg,transparent,var(--brd),transparent);}
+
+    /* ── Sections ─────────────────────────── */
+    .sec{max-width:1100px;margin:0 auto;padding:52px 32px;}
+    .sh{margin-bottom:28px;}
+    .stg-tag{font-family:var(--fm);font-size:9.5px;letter-spacing:3px;color:var(--t3);margin-bottom:4px;display:block;}
+    .stg-t{font-family:var(--fd);font-size:clamp(24px,3vw,36px);font-weight:600;letter-spacing:2px;color:var(--t1);line-height:1;}
+
+    /* OODA */
+    .ooda-r{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;}
+    .oc{padding:20px 18px;background:var(--bg-c);border:1px solid var(--brd);position:relative;transition:all .3s;}
+    .oc:hover{background:var(--bg-ch);border-color:var(--brd-h);}
+    .oc::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;
+      background:linear-gradient(90deg,var(--cyan),transparent);opacity:0;transition:opacity .3s;}
+    .oc:hover::before{opacity:1;}
+    .oc-n{font-family:var(--fm);font-size:9.5px;color:var(--cyan-d);letter-spacing:1.5px;margin-bottom:8px;}
+    .oc-h{font-family:var(--fd);font-size:20px;font-weight:600;letter-spacing:2px;color:var(--t1);margin-bottom:6px;}
+    .oc-d{font-size:12px;line-height:1.7;color:var(--t2);}
+
+    /* Capabilities */
+    .cg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+    .cc{padding:24px 20px;background:var(--bg-c);border:1px solid var(--brd);position:relative;transition:all .3s;cursor:default;}
+    .cc:hover{background:var(--bg-ch);border-color:var(--brd-h);}
+    .cc::after{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:var(--cyan);opacity:0;transition:opacity .3s;}
+    .cc:hover::after{opacity:1;}
+    .ci{width:28px;height:28px;margin-bottom:12px;color:var(--cyan);}
+    .ci svg{width:100%;height:100%;}
+    .cn{font-family:var(--fd);font-size:16px;font-weight:600;letter-spacing:1.5px;color:var(--t1);margin-bottom:3px;}
+    .cs{font-family:var(--fm);font-size:9.5px;letter-spacing:1px;color:var(--cyan-d);margin-bottom:8px;display:block;}
+    .cd{font-size:12px;line-height:1.7;color:var(--t2);}
+
+    /* Ticker */
+    .tk{padding:36px 0;overflow:hidden;position:relative;}
+    .tk::before,.tk::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none;}
+    .tk::before{left:0;background:linear-gradient(90deg,var(--bg),transparent);}
+    .tk::after{right:0;background:linear-gradient(270deg,var(--bg),transparent);}
+    .tkh{text-align:center;margin-bottom:18px;position:relative;z-index:2;}
+    .tks{display:flex;gap:28px;animation:tsc 50s linear infinite;width:max-content;}
+    .tki{display:flex;align-items:center;gap:7px;font-family:var(--fm);font-size:9.5px;
+      letter-spacing:1px;color:var(--t3);white-space:nowrap;text-transform:uppercase;}
+    .td{width:4px;height:4px;border-radius:50%;background:var(--green);flex-shrink:0;opacity:.7;}
+    .td.a{background:var(--amber);}.td.r{background:var(--red);}
+    @keyframes tsc{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+    /* Bottom CTA */
+    .bcta{text-align:center;padding:48px 32px;}
+    .bcta-t{font-family:var(--fd);font-size:clamp(24px,3vw,38px);font-weight:600;letter-spacing:3px;color:var(--t1);margin-bottom:6px;}
+    .bcta-s{font-family:var(--fm);font-size:10px;letter-spacing:2px;color:var(--t3);margin-bottom:24px;}
+    .bcta-b{display:inline-flex;align-items:center;gap:10px;
+      font-family:var(--fd);font-size:14px;font-weight:600;letter-spacing:3px;
+      text-transform:uppercase;text-decoration:none;color:var(--t1);
+      padding:12px 40px;border:1px solid var(--brd-h);background:transparent;
+      position:relative;overflow:hidden;transition:all .4s;}
+    .bcta-b::before{content:'';position:absolute;inset:0;background:var(--cyan);
+      transform:scaleX(0);transform-origin:left;transition:transform .4s;z-index:-1;}
+    .bcta-b:hover::before{transform:scaleX(1);}
+    .bcta-b:hover{color:var(--bg);border-color:var(--cyan);}
+    .bcta-b:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+    .bcta-b svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;transition:transform .3s;}
+    .bcta-b:hover svg{transform:translateX(4px);}
+
+    footer{padding:16px 28px;border-top:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;
+      font-family:var(--fm);font-size:9.5px;color:var(--t3);letter-spacing:1px;}
+
+    /* ── Right Side Nav ─────────────────── */
+    .side-nav{
+      position:fixed;right:0;top:68px;bottom:0;
+      z-index:999;width:140px;
+      display:flex;flex-direction:column;
+      padding:16px 0;
+      background:rgba(6,9,15,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-left:1px solid var(--brd);
+    }
+    .sn-head{
+      font-family:var(--fm);font-size:8px;letter-spacing:2.5px;
+      color:var(--t3);text-transform:uppercase;
+      padding:0 16px 10px;
+      border-bottom:1px solid var(--brd);
+      margin-bottom:4px;
+    }
+    .sn-item{
+      display:block;
+      font-family:var(--fm);font-size:10px;letter-spacing:1.5px;
+      color:var(--t2);text-transform:uppercase;text-decoration:none;
+      padding:9px 16px;
+      transition:all .25s;cursor:pointer;
+      position:relative;
+    }
+    .sn-item:hover{color:var(--cyan);background:rgba(0,212,255,0.03);}
+    .sn-item::before{
+      content:'';position:absolute;left:0;top:0;width:2px;height:100%;
+      background:var(--cyan);opacity:0;
+      transition:opacity .25s;
+    }
+    .sn-item:hover::before{opacity:1;box-shadow:0 0 6px rgba(0,212,255,0.3);}
+    .sn-item:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px;}
+
+    /* Scroll reveal */
+    .rv{opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s;}
+    .rv.on{opacity:1;transform:translateY(0);}
+    .sg .rv:nth-child(1){transition-delay:0ms}.sg .rv:nth-child(2){transition-delay:60ms}
+    .sg .rv:nth-child(3){transition-delay:120ms}.sg .rv:nth-child(4){transition-delay:180ms}
+    .sg .rv:nth-child(5){transition-delay:240ms}.sg .rv:nth-child(6){transition-delay:300ms}
+
+    @media(max-width:960px){
+      .ooda-r{grid-template-columns:repeat(2,1fr);}
+      .cg{grid-template-columns:repeat(2,1fr);}
+    }
+    @media(max-width:600px){
+      .nav{padding:0 14px;}.ntag,.nclk{display:none;}
+      .hero{padding:24px 14px 20px;}
+      .fip-scene{width:240px;}
+      .sec{padding:36px 14px;}
+      .ooda-r,.cg{grid-template-columns:1fr;}
+      .stats{flex-wrap:wrap;justify-content:center;}.st{min-width:90px;}
+      .side-nav{display:none!important;}
+    }
+  </style>
+</head>
+<body>
+  <div class="atm" aria-hidden="true"><div class="atm-g"></div><div class="atm-r"></div></div>
+  <div class="scan" aria-hidden="true"></div>
+  <div class="cb">UNCLASSIFIED // OSINT</div>
+
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nl">
+      <svg class="nm" viewBox="0 0 30 30" aria-hidden="true"><path fill="#D80621" d="M15 1.5l1.3 3.8 2.5-1.8-.7 3.5 3.2-1.5-2.2 3.3 3.5-.4-2.7 2.6 4.2-.5-3.5 2.8 2.8 1-4.2.8 2.8 3.7-3.5-2.2.3 4-1.8-2.5L15 28l-1.8-7.1-1.8 2.5.3-4-3.5 2.2 2.8-3.7-4.2-.8 2.8-1-3.5-2.8 4.2.5-2.7-2.6 3.5.4-2.2-3.3 3.2 1.5-.7-3.5 2.5 1.8z"/></svg>
+      <span class="nt">CMCT</span>
+      <div class="ns"></div>
+      <span class="ntag">Defence Supply Chain Intelligence</span>
+    </div>
+    <div class="nr">
+      <span class="nclk" id="utc-clock">--:--:-- UTC</span>
+      <span class="nlv">ONLINE</span>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero" id="sec-hero">
+      <div class="hero-tag">DEPARTMENT OF NATIONAL DEFENCE &mdash; DMPP 11</div>
+
+      <!-- ── DND FIP Signature (3D floating) ── -->
+      <div class="fip-scene">
+        <div class="fip-glow" aria-hidden="true"></div>
+        <div class="fip-3d">
+          <!-- Canadian Flag SVG — official proportions 2:1 -->
+          <svg class="fip-flag" viewBox="0 0 2400 1200" role="img" aria-label="Flag of Canada — Department of National Defence">
+            <defs>
+              <!-- 3D lighting on white -->
+              <linearGradient id="wLit" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="#e8e8e8"/>
+              </linearGradient>
+              <!-- 3D lighting on red -->
+              <linearGradient id="rLit" x1="0.15" y1="0" x2="0.85" y2="1">
+                <stop offset="0%" stop-color="#ED1025"/>
+                <stop offset="50%" stop-color="#D80621"/>
+                <stop offset="100%" stop-color="#A8041A"/>
+              </linearGradient>
+              <!-- Leaf 3D radial -->
+              <radialGradient id="lLit" cx="42%" cy="32%" r="60%">
+                <stop offset="0%" stop-color="#ff2840"/>
+                <stop offset="40%" stop-color="#D80621"/>
+                <stop offset="100%" stop-color="#8a0416"/>
+              </radialGradient>
+              <!-- Specular sweep -->
+              <linearGradient id="spec" x1="0.1" y1="0" x2="0.6" y2="0.6">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+                <stop offset="40%" stop-color="rgba(255,255,255,0.04)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+              </linearGradient>
+              <!-- Subtle border -->
+              <filter id="fBord">
+                <feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#000" flood-opacity="0.15"/>
+              </filter>
+            </defs>
+            <g filter="url(#fBord)">
+              <!-- White center -->
+              <rect x="250" y="0" width="500" height="1200" fill="url(#wLit)"/>
+              <rect x="750" y="0" width="500" height="1200" fill="url(#wLit)"/>
+              <!-- Red bands -->
+              <rect x="0" y="0" width="600" height="1200" fill="url(#rLit)"/>
+              <rect x="1800" y="0" width="600" height="1200" fill="url(#rLit)"/>
+              <!-- White center (on top of left red overlap) -->
+              <rect x="600" y="0" width="1200" height="1200" fill="url(#wLit)"/>
+              <!-- Maple Leaf — official geometry -->
+              <path fill="url(#lLit)" d="M1200 196.075l-69.517 207.862 55.27-17.157-37.712 72.17 110.485-42.071-23.537 65.882 76.77-6.457-55.182 100.58 135.358-58.437-7.603 26.878 61.06-11.622L1200 1003.925l-245.392-469.2 61.06 11.62-7.603-26.877 135.358 58.437-55.182-100.58 76.77 6.457-23.537-65.882 110.485 42.07-37.712-72.17 55.27 17.158z"/>
+              <!-- Specular overlay on entire flag -->
+              <rect x="0" y="0" width="2400" height="1200" fill="url(#spec)"/>
+              <!-- Thin border -->
+              <rect x="0" y="0" width="2400" height="1200" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+            </g>
+          </svg>
+          <!-- Shine sweep effect -->
+          <div class="fip-shine" aria-hidden="true"></div>
+          <!-- Bilingual text -->
+          <div class="fip-text">
+            <span class="fip-lang">National Defence</span>
+            <div class="fip-sep"></div>
+            <span class="fip-lang">D&eacute;fense nationale</span>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="hero-title">CRITICAL MINERAL <span class="ac">CONTROL TOWER</span></h1>
+      <p class="hero-sub">Rocks to Rockets &mdash; Full-Spectrum Visibility</p>
+      <p class="hero-desc">
+        Real-time OSINT monitoring of Canada's 31 defence-critical minerals
+        from mine to weapon system. 57 intelligence feeds tracking supply chains,
+        arms transfers, and geopolitical threats across 186 nations.
+      </p>
+
+      <div class="stats">
+        <div class="st"><span class="stv" data-t="57">0</span><span class="stl">Intel Feeds</span></div>
+        <div class="st"><span class="stv" data-t="31">0</span><span class="stl">Minerals</span></div>
+        <div class="st"><span class="stv" data-t="9311">0</span><span class="stl">Transfers</span></div>
+        <div class="st"><span class="stv" data-t="186">0</span><span class="stl">Nations</span></div>
+      </div>
+
+      <a href="/dashboard" class="hero-cta">
+        Access Control Tower
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </section>
+
+    <div class="dv"></div>
+
+    <!-- OODA -->
+    <section class="sec" id="sec-ooda">
+      <div class="sh rv">
+        <span class="stg-tag">OPERATIONAL FRAMEWORK</span>
+        <h2 class="stg-t">THE OODA LOOP</h2>
+      </div>
+      <div class="ooda-r sg">
+        <div class="oc rv"><div class="oc-n">01</div><h3 class="oc-h">SENSE</h3><p class="oc-d">57 feeds scanning global supply chains. 4 ADS-B sources tracking military flights. GDELT news in 31 languages. Sanctions, trade, commodity prices.</p></div>
+        <div class="oc rv"><div class="oc-n">02</div><h3 class="oc-h">MAKE SENSE</h3><p class="oc-d">13-category DND risk taxonomy, 121 sub-categories. Knowledge graph maps minerals to weapon platforms. Glass Box confidence scoring.</p></div>
+        <div class="oc rv"><div class="oc-n">03</div><h3 class="oc-h">DECIDE</h3><p class="oc-d">191-entry COA playbook with automated mitigation. Scenario sandbox with cascade propagation. Price and insolvency forecasting.</p></div>
+        <div class="oc rv"><div class="oc-n">04</div><h3 class="oc-h">ACT</h3><p class="oc-d">Action Centre tracking mitigation lifecycle. One-click 8-page PDF briefings. Watchtower alerts with acknowledge, assign, escalate.</p></div>
+      </div>
+    </section>
+
+    <div class="dv"></div>
+
+    <!-- Capabilities -->
+    <section class="caps sec" id="sec-caps">
+      <div class="sh rv">
+        <span class="stg-tag">PLATFORM CAPABILITIES</span>
+        <h2 class="stg-t">ROCKS TO ROCKETS</h2>
+      </div>
+      <div class="cg sg">
+        <div class="cc rv"><div class="ci"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="4"/><circle cx="24" cy="8" r="4"/><circle cx="16" cy="26" r="4"/><line x1="11" y1="10" x2="14" y2="23"/><line x1="21" y1="10" x2="18" y2="23"/><line x1="12" y1="8" x2="20" y2="8"/></svg></div><h3 class="cn">SUPPLY CHAIN GRAPH</h3><span class="cs">30 minerals / 90 nodes / 97 edges</span><p class="cd">Multi-tier knowledge graph mapping minerals to components to weapon platforms. 4-tier BOM explosion with confidence scoring.</p></div>
+        <div class="cc rv"><div class="ci"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="16" cy="16" r="13"/><circle cx="16" cy="16" r="2.5" fill="currentColor"/><line x1="16" y1="2" x2="16" y2="7"/><line x1="16" y1="25" x2="16" y2="30"/><line x1="2" y1="16" x2="7" y2="16"/><line x1="25" y1="16" x2="30" y2="16"/></svg></div><h3 class="cn">ARCTIC SECURITY</h3><span class="cs">25 bases / 3 routes / 4 ADS-B sources</span><p class="cd">3D CesiumJS globe with 8 toggleable layers. Live military flight tracking with freight estimation and weapon range rings.</p></div>
+        <div class="cc rv"><div class="ci"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="16,3 28,28 4,28"/><line x1="16" y1="12" x2="16" y2="20"/><circle cx="16" cy="24" r="1.3" fill="currentColor"/></svg></div><h3 class="cn">THREAT DETECTION</h3><span class="cs">31 languages / 17 embargoes / real-time</span><p class="cd">GDELT news with disinformation detection. Sanctions overlay (OFAC, EU, UN). Buyer-side mirror circumventing adversary opacity.</p></div>
+        <div class="cc rv"><div class="ci"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><polyline points="3,26 10,19 16,22 23,11 29,6"/><circle cx="29" cy="6" r="2.5"/><line x1="3" y1="29" x2="29" y2="29" opacity=".3"/><line x1="3" y1="3" x2="3" y2="29" opacity=".3"/></svg></div><h3 class="cn">PREDICTIVE ANALYTICS</h3><span class="cs">6 forecast types / 12-18 month horizon</span><p class="cd">IMF PCOBALT price forecasting with prediction intervals. Supplier insolvency via Altman Z-Score. Scenario cascade propagation.</p></div>
+        <div class="cc rv"><div class="ci"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="16,3 28,10 28,22 16,29 4,22 4,10"/><text x="16" y="19.5" text-anchor="middle" font-family="var(--fm)" font-size="10" fill="currentColor" stroke="none">Co</text></svg></div><h3 class="cn">COBALT DEEP DIVE</h3><span class="cs">18 dossiers / FOCI 0-100 / 10 corridors</span><p class="cd">Full Rocks-to-Rockets for Cobalt: 9 mines, 9 refineries, 8 alloys, FOCI scoring, UBO chains, live bilateral trade.</p></div>
+        <div class="cc rv"><div class="ci"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="5" y="3" width="22" height="26" rx="1.5"/><line x1="10" y1="11" x2="22" y2="11"/><line x1="10" y1="16" x2="22" y2="16"/><line x1="10" y1="21" x2="17" y2="21"/></svg></div><h3 class="cn">DECISION SUPPORT</h3><span class="cs">191 COAs / PDF export / risk register</span><p class="cd">Automated mitigation from playbook. Action Centre with lifecycle tracking. 8-page PDF briefings and CSV/Excel export.</p></div>
+      </div>
+    </section>
+
+    <div class="dv"></div>
+
+    <!-- Ticker -->
+    <section class="tk" id="sec-feeds">
+      <div class="tkh rv"><span class="stg-tag" style="text-align:center;display:block">INTELLIGENCE NETWORK &mdash; 57 ACTIVE FEEDS</span></div>
+      <div class="tks" aria-label="Active intelligence feeds">
+        <span class="tki"><span class="td"></span>GDELT News</span><span class="tki"><span class="td"></span>ADS-B Flights</span><span class="tki"><span class="td"></span>SIPRI Transfers</span><span class="tki"><span class="td"></span>UN Comtrade</span><span class="tki"><span class="td"></span>NATO Spending</span><span class="tki"><span class="td"></span>OFAC SDN</span><span class="tki"><span class="td"></span>EU Sanctions</span><span class="tki"><span class="td"></span>DSCA Sales</span><span class="tki"><span class="td"></span>SIPRI MILEX</span><span class="tki"><span class="td"></span>IMF PCOBALT</span><span class="tki"><span class="td"></span>BGS Minerals</span><span class="tki"><span class="td"></span>CISA KEV</span><span class="tki"><span class="td"></span>Defence RSS</span><span class="tki"><span class="td a"></span>StatCan</span><span class="tki"><span class="td"></span>Eurostat</span><span class="tki"><span class="td"></span>US Census</span><span class="tki"><span class="td"></span>DND Procurement</span><span class="tki"><span class="td"></span>NOAA</span><span class="tki"><span class="td"></span>NASA EONET</span><span class="tki"><span class="td"></span>MITRE ATT&amp;CK</span><span class="tki"><span class="td"></span>Cobalt Players</span><span class="tki"><span class="td r"></span>Maritime AIS</span>
+        <span class="tki"><span class="td"></span>GDELT News</span><span class="tki"><span class="td"></span>ADS-B Flights</span><span class="tki"><span class="td"></span>SIPRI Transfers</span><span class="tki"><span class="td"></span>UN Comtrade</span><span class="tki"><span class="td"></span>NATO Spending</span><span class="tki"><span class="td"></span>OFAC SDN</span><span class="tki"><span class="td"></span>EU Sanctions</span><span class="tki"><span class="td"></span>DSCA Sales</span><span class="tki"><span class="td"></span>SIPRI MILEX</span><span class="tki"><span class="td"></span>IMF PCOBALT</span><span class="tki"><span class="td"></span>BGS Minerals</span><span class="tki"><span class="td"></span>CISA KEV</span><span class="tki"><span class="td"></span>Defence RSS</span><span class="tki"><span class="td a"></span>StatCan</span><span class="tki"><span class="td"></span>Eurostat</span><span class="tki"><span class="td"></span>US Census</span><span class="tki"><span class="td"></span>DND Procurement</span><span class="tki"><span class="td"></span>NOAA</span><span class="tki"><span class="td"></span>NASA EONET</span><span class="tki"><span class="td"></span>MITRE ATT&amp;CK</span><span class="tki"><span class="td"></span>Cobalt Players</span><span class="tki"><span class="td r"></span>Maritime AIS</span>
+      </div>
+    </section>
+
+    <div class="dv"></div>
+
+    <!-- Bottom CTA -->
+    <section class="bcta" id="sec-deploy">
+      <div class="rv">
+        <h2 class="bcta-t">READY FOR DEPLOYMENT</h2>
+        <p class="bcta-s">155+ ENDPOINTS &bull; 337 TESTS &bull; 100% DMPP 11 COMPLIANT</p>
+        <a href="/dashboard" class="bcta-b">Enter Control Tower <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── Right Side Navigation ── -->
+  <nav class="side-nav" role="navigation" aria-label="Dashboard navigation">
+    <div class="sn-head">Navigate</div>
+    <a class="sn-item" href="/dashboard#tab-insights">Insights</a>
+    <a class="sn-item" href="/dashboard#tab-arctic">Arctic</a>
+    <a class="sn-item" href="/dashboard#tab-deals">Deals</a>
+    <a class="sn-item" href="/dashboard#tab-canada">Canada Intel</a>
+    <a class="sn-item" href="/dashboard#tab-supply-chain">Supply Chain</a>
+    <a class="sn-item" href="/dashboard#tab-data-feeds">Data Feeds</a>
+    <a class="sn-item" href="/dashboard#tab-compliance">Compliance</a>
+  </nav>
+
+  <footer>
+    <span>Quantum Data Technologies Ltd. &bull; Vancouver, BC, Canada</span>
+    <span>UNCLASSIFIED</span>
+  </footer>
+  <div class="cb">UNCLASSIFIED // OSINT</div>
+
+  <script>
+  !function(){var e=document.getElementById("utc-clock");function t(){e.textContent=new Date().toISOString().slice(11,19)+" UTC"}t();setInterval(t,1e3)}();
+  function animC(e){var t=+e.dataset.t,d=1800,s=performance.now();!function u(n){var p=Math.min((n-s)/d,1),v=1===p?1:1-Math.pow(2,-10*p);e.textContent=Math.round(t*v).toLocaleString();p<1&&requestAnimationFrame(u)}(s)}
+  !function(){
+    var o=new IntersectionObserver(function(e){e.forEach(function(i){i.isIntersecting&&(i.target.classList.add("on"),o.unobserve(i.target))})},{threshold:.1});
+    document.querySelectorAll(".rv").forEach(function(e){o.observe(e)});
+    var c=false,s=new IntersectionObserver(function(e){e.forEach(function(i){i.isIntersecting&&!c&&(c=true,document.querySelectorAll(".stv[data-t]").forEach(animC),s.unobserve(i.target))})},{threshold:.3});
+    var r=document.querySelector(".stats");if(r)s.observe(r);
+  }();
+  </script>
+</body>
+</html>

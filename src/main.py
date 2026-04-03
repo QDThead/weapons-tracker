@@ -125,6 +125,11 @@ app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 @app.get("/", include_in_schema=False)
+async def serve_home():
+    return FileResponse(str(_static_dir / "home.html"))
+
+
+@app.get("/dashboard", include_in_schema=False)
 async def serve_dashboard():
     return FileResponse(str(_static_dir / "index.html"))
 
