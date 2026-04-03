@@ -14,21 +14,21 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Scheduling:** APScheduler (AsyncIOScheduler)
 - **Data Processing:** pandas, geopandas, openpyxl
 - **Graph Analysis:** NetworkX (supply chain knowledge graph)
-- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~12,000 lines)
+- **Frontend:** Single-page HTML dashboard (Chart.js, D3.js, Leaflet.js, CesiumJS — no build step, ~12,900 lines)
 - **3D Globes:** CesiumJS 1.119 (CDN) — Arctic globe (Esri satellite imagery, 8 layers) + Supply Chain globe (CartoDB dark tiles)
-- **Design System:** Barlow Condensed (display), DM Sans (body), JetBrains Mono (numbers); military theme with "Signal" desaturated palette; sharp edges, solid surfaces, atmospheric grid overlay + scan line
+- **Design System:** Inter (display + body), JetBrains Mono (numbers); military theme with "Signal" desaturated palette; sharp edges, solid surfaces, atmospheric grid overlay + scan line
 - **Home Page:** Landing page at `/` with DND branding, OODA framework, capabilities grid, intel ticker, right-side nav menu
 - **Routing:** `/` = home.html (landing), `/dashboard` = index.html (7-tab dashboard)
-- **Codebase:** 94 Python files, ~38,350 total lines
+- **Codebase:** 95 Python files
 - **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
-- **Tests:** 310 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds (225 unit/integration + 85 adversarial)
+- **Tests:** 351 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds, FIRMS thermal (225 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
 ```
 weapons-tracker/
 ├── src/
-│   ├── ingestion/              # 45 active data source connectors
+│   ├── ingestion/              # 46 active data source connectors
 │   │   ├── sipri_transfers.py        # SIPRI Arms Transfers (atbackend.sipri.org API)
 │   │   ├── comtrade.py               # UN Comtrade USD values + buyer-side mirror
 │   │   ├── census_trade.py           # US Census monthly trade (HS 93)
@@ -57,7 +57,8 @@ weapons-tracker/
 │   │   ├── worldbank_enrichment.py  # Governance + economic indicators (WGI, fragility)
 │   │   ├── sipri_milex.py           # SIPRI Military Expenditure Database
 │   │   ├── cia_factbook.py          # CIA World Factbook military data
-│   │   └── scheduler.py              # APScheduler ingestion pipeline (25 scheduled jobs)
+│   │   ├── firms_thermal.py         # NASA FIRMS satellite thermal monitoring (18 cobalt facilities, 6hr polling)
+│   │   └── scheduler.py              # APScheduler ingestion pipeline (27 scheduled jobs)
 │   ├── storage/
 │   │   ├── models.py                 # SQLAlchemy models (18 tables)
 │   │   ├── database.py               # DB connection + session management
@@ -108,7 +109,7 @@ weapons-tracker/
 │   └── seed_database.py              # Initial data load
 ├── config/
 │   └── .env.example                  # API key template
-├── tests/                            # 310 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine, source validation, scheduler feeds)
+├── tests/                            # 351 tests (models, persistence, risk scoring, taxonomy, routes, scraper, ML, mitigation, globe, forecasting, scenario engine, source validation, scheduler feeds, FIRMS thermal)
 ├── docs/superpowers/                 # Design specs and implementation plans
 ├── Dockerfile                        # Container image definition
 ├── docker-compose.yml                # Multi-service local orchestration
@@ -119,7 +120,7 @@ weapons-tracker/
 └── README.md
 ```
 
-## Data Sources (56 active + 2 inactive)
+## Data Sources (57 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -154,6 +155,7 @@ weapons-tracker/
 | 49 | SEC EDGAR XBRL | `osint_feeds.py` | Quarterly | None | Working |
 | 50 | IMF Cobalt Prices | `cobalt_forecasting.py` | Monthly | None | Working |
 | 51 | Comtrade Cobalt Bilateral | `comtrade.py` | Monthly | API key | Working |
+| 52 | NASA FIRMS Thermal | `firms_thermal.py` | 6 hours (18 facilities) | MAP_KEY (free) | Working |
 
 ## Intelligence Features
 
@@ -196,6 +198,7 @@ weapons-tracker/
 | **PDF Intelligence Briefing** | briefing_generator.py, briefing_routes.py | One-click **8-page** PDF export (fpdf2): executive summary, threat matrix, Arctic assessment, supplier risks, **Cobalt supply chain intelligence**, recommendations |
 | **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
 | **Universal Source Validation** | source_registry.py, validation_routes.py, index.html | Every card, table, stat box across all 7 tabs has expandable "Sources & Validation" panel showing source citations, type badges, live data health (last fetch, records, cache status), and confidence assessment. 50 hierarchical registry keys with inheritance. |
+| **Satellite Thermal Verification** | firms_thermal.py, globe_routes.py, index.html | NASA FIRMS VIIRS NOAA-20 (375m) thermal anomaly detection for all 18 cobalt mines/refineries. Per-facility bounding boxes (2-8km adaptive). Status badges on globe pins (green=ACTIVE, amber=IDLE). Fuzzy red thermal bloom markers. FRP sparkline history (30-day backfill). Click popup with brightness, FRP, detection timestamp. GIBS VIIRS global thermal tile overlay. |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
 ## Dashboard UI (7 tabs, EN/FR bilingual)
@@ -366,6 +369,7 @@ python -m src.main
 - Trusted host middleware (`ALLOWED_HOSTS` env var)
 - Disinformation detection on ingested news (3-layer: domain, tone, pattern)
 - WCAG 2.1 AA: ARIA roles on all tabs/panels, labels on maps/charts
+- NASA FIRMS thermal requires `NASA_FIRMS_MAP_KEY` env var (free from https://firms.modaps.eosdis.nasa.gov/api/area/)
 
 ## Known Code Quality Items
 - `routes.py` endpoints hit live external APIs per-request; dashboard routes serve from DB instead
@@ -373,28 +377,30 @@ python -m src.main
 - `main.py` uses deprecated `@app.on_event` instead of lifespan context manager
 - `datetime.utcnow()` deprecated — ~20 occurrences should migrate to `datetime.now(timezone.utc)`
 - No Alembic migrations — using `create_all()` only
+- NASA FIRMS VIIRS 375m resolution detects fire-scale heat — most enclosed refineries show 0 detections. Sentinel-5P NO2 would provide better industrial activity coverage (planned next layer).
 
 ## UI Design System
-- **Fonts:** Barlow Condensed (display/headings), DM Sans (body), JetBrains Mono (numbers/stats/labels)
+- **Fonts:** Inter (display + body), JetBrains Mono (numbers/stats/labels)
 - **Signal Palette (desaturated):** `--accent` #00d4ff (cyan — primary operational), `--accent2` #D80621 (DND red — identity + threats), `--accent3` #6b9080 (sage — positive/live), `--accent4` #a89060 (ochre — warnings), `--accent5` #6b6b8a (slate — tertiary)
 - **Surfaces:** Sharp-edge cards (no border-radius), solid `#111620` backgrounds, white-based borders `rgba(255,255,255,0.06)`
 - **Atmosphere:** Fixed 80px grid overlay, red/cyan radial glow, 16s scan line sweep
 - **Components:** `.card`, `.stat-box`, `.stat-num`, `.stat-label`, `.insight-alert`, `.btn-primary` (red), `.nav-tab` (monospace underline), `.side-nav` (right-side nav), `.cb` (classification bar)
 - **Theme Toggle:** Dark/Light mode via `body.light` class, persists in `localStorage` key `cmct-theme`
-- **Section Headers:** Monospace tag (`SECTION 01`) + Barlow Condensed title pattern
+- **Section Headers:** Monospace tag (`SECTION 01`) + Inter title pattern
 - **Responsive:** Breakpoints at 1200px, 960px (side-nav hides), 768px, 600px
 
 ## Next Steps (Priority Order)
 1. Continue theme unification to remaining tabs (Arctic, Canada Intel, Supply Chain sub-tabs, Data Feeds, Compliance) — foundation CSS already applied, needs per-tab polish
-2. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity, HS codes, NSN)
-3. Explore diamond/custom markers for globe facilities (CesiumJS 1.119 billboard crashes — needs Cesium upgrade or PointPrimitive approach)
-4. Full light theme QA pass across all tabs (Cesium/Leaflet globes don't respond to CSS variables)
-5. Full French translation of dynamic content (currently covers nav tabs + PSI sub-tab headers; body content is English-only)
-6. Activate maritime tracker (needs aisstream.io API key)
-7. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
-8. Migrate to async SQLAlchemy sessions for production
-9. Migrate `@app.on_event` to lifespan context manager
-10. Add Alembic migration framework for production schema evolution
-11. Expand ML anomaly detection with time-series models (LSTM/Prophet)
-12. Add SAML/OAuth SSO integration for DND Azure AD
-13. Formal PBMM / ITSG-33 security certification
+2. Sentinel-5P TROPOMI NO2 layer for industrial emissions detection (better facility coverage than thermal)
+3. Deep-dive remaining 29 minerals (same depth as Cobalt: mines, refineries, alloys, shipping routes, 13-cat taxonomy per entity, HS codes, NSN)
+4. Explore diamond/custom markers for globe facilities (CesiumJS 1.119 billboard crashes — needs Cesium upgrade or PointPrimitive approach)
+5. Full light theme QA pass across all tabs (Cesium/Leaflet globes don't respond to CSS variables)
+6. Full French translation of dynamic content (currently covers nav tabs + PSI sub-tab headers; body content is English-only)
+7. Activate maritime tracker (needs aisstream.io API key)
+8. Integrate searoute-js or Eurostat maritime routing for dynamic sea route calculation
+9. Migrate to async SQLAlchemy sessions for production
+10. Migrate `@app.on_event` to lifespan context manager
+11. Add Alembic migration framework for production schema evolution
+12. Expand ML anomaly detection with time-series models (LSTM/Prophet)
+13. Add SAML/OAuth SSO integration for DND Azure AD
+14. Formal PBMM / ITSG-33 security certification
