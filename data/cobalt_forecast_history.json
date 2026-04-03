@@ -115,5 +115,173 @@
         "upper_90_lb": 14.76
       }
     ]
+  },
+  {
+    "snapshot_date": "2026-04-03T03:16:28.830661+00:00",
+    "price_forecast": {
+      "pct_change": 36.2,
+      "direction": "down",
+      "period": "12 months",
+      "methodology": "Linear regression on IMF Primary Commodity Prices (PCOBALT) quarterly data with 90% prediction intervals",
+      "r_squared": 0.6135,
+      "r_squared_interpretation": "Moderate fit \u2014 trend captures general direction",
+      "confidence": "medium",
+      "confidence_pct": 46,
+      "data_quarters": 13
+    },
+    "predictions": [
+      {
+        "quarter": "Q2 2026",
+        "usd_mt": 26254.0,
+        "usd_lb": 11.91,
+        "type": "forecast",
+        "lower_90": 16879.0,
+        "upper_90": 35628.0,
+        "lower_90_lb": 7.66,
+        "upper_90_lb": 16.16
+      },
+      {
+        "quarter": "Q3 2026",
+        "usd_mt": 24917.0,
+        "usd_lb": 11.3,
+        "type": "forecast",
+        "lower_90": 15260.0,
+        "upper_90": 34574.0,
+        "lower_90_lb": 6.92,
+        "upper_90_lb": 15.68
+      },
+      {
+        "quarter": "Q4 2026",
+        "usd_mt": 23580.0,
+        "usd_lb": 10.7,
+        "type": "forecast",
+        "lower_90": 13612.0,
+        "upper_90": 33549.0,
+        "lower_90_lb": 6.17,
+        "upper_90_lb": 15.22
+      },
+      {
+        "quarter": "Q1 2027",
+        "usd_mt": 22244.0,
+        "usd_lb": 10.09,
+        "type": "forecast",
+        "lower_90": 11939.0,
+        "upper_90": 32548.0,
+        "lower_90_lb": 5.42,
+        "upper_90_lb": 14.76
+      }
+    ]
+  },
+  {
+    "snapshot_date": "2026-04-03T04:46:28.502497+00:00",
+    "price_forecast": {
+      "pct_change": 36.2,
+      "direction": "down",
+      "period": "12 months",
+      "methodology": "Linear regression on IMF Primary Commodity Prices (PCOBALT) quarterly data with 90% prediction intervals",
+      "r_squared": 0.6135,
+      "r_squared_interpretation": "Moderate fit \u2014 trend captures general direction",
+      "confidence": "medium",
+      "confidence_pct": 46,
+      "data_quarters": 13
+    },
+    "predictions": [
+      {
+        "quarter": "Q2 2026",
+        "usd_mt": 26254.0,
+        "usd_lb": 11.91,
+        "type": "forecast",
+        "lower_90": 16879.0,
+        "upper_90": 35628.0,
+        "lower_90_lb": 7.66,
+        "upper_90_lb": 16.16
+      },
+      {
+        "quarter": "Q3 2026",
+        "usd_mt": 24917.0,
+        "usd_lb": 11.3,
+        "type": "forecast",
+        "lower_90": 15260.0,
+        "upper_90": 34574.0,
+        "lower_90_lb": 6.92,
+        "upper_90_lb": 15.68
+      },
+      {
+        "quarter": "Q4 2026",
+        "usd_mt": 23580.0,
+        "usd_lb": 10.7,
+        "type": "forecast",
+        "lower_90": 13612.0,
+        "upper_90": 33549.0,
+        "lower_90_lb": 6.17,
+        "upper_90_lb": 15.22
+      },
+      {
+        "quarter": "Q1 2027",
+        "usd_mt": 22244.0,
+        "usd_lb": 10.09,
+        "type": "forecast",
+        "lower_90": 11939.0,
+        "upper_90": 32548.0,
+        "lower_90_lb": 5.42,
+        "upper_90_lb": 14.76
+      }
+    ]
+  },
+  {
+    "snapshot_date": "2026-04-03T04:47:37.362362+00:00",
+    "price_forecast": {
+      "pct_change": 36.2,
+      "direction": "down",
+      "period": "12 months",
+      "methodology": "Linear regression on IMF Primary Commodity Prices (PCOBALT) quarterly data with 90% prediction intervals",
+      "r_squared": 0.6135,
+      "r_squared_interpretation": "Moderate fit \u2014 trend captures general direction",
+      "confidence": "medium",
+      "confidence_pct": 46,
+      "data_quarters": 13
+    },
+    "predictions": [
+      {
+        "quarter": "Q2 2026",
+        "usd_mt": 26254.0,
+        "usd_lb": 11.91,
+        "type": "forecast",
+        "lower_90": 16879.0,
+        "upper_90": 35628.0,
+        "lower_90_lb": 7.66,
+        "upper_90_lb": 16.16
+      },
+      {
+        "quarter": "Q3 2026",
+        "usd_mt": 24917.0,
+        "usd_lb": 11.3,
+        "type": "forecast",
+        "lower_90": 15260.0,
+        "upper_90": 34574.0,
+        "lower_90_lb": 6.92,
+        "upper_90_lb": 15.68
+      },
+      {
+        "quarter": "Q4 2026",
+        "usd_mt": 23580.0,
+        "usd_lb": 10.7,
+        "type": "forecast",
+        "lower_90": 13612.0,
+        "upper_90": 33549.0,
+        "lower_90_lb": 6.17,
+        "upper_90_lb": 15.22
+      },
+      {
+        "quarter": "Q1 2027",
+        "usd_mt": 22244.0,
+        "usd_lb": 10.09,
+        "type": "forecast",
+        "lower_90": 11939.0,
+        "upper_90": 32548.0,
+        "lower_90_lb": 5.42,
+        "upper_90_lb": 14.76
+      }
+    ]
   }
 ]

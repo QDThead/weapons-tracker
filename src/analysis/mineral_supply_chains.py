@@ -319,7 +319,7 @@ MINERALS: list[dict] = [
             "strategic_note": "Every CAF jet engine, helicopter, frigate gas turbine, and guided missile depends on cobalt superalloys. Sherritt's Cuban pipeline — the only vertically integrated non-Chinese cobalt supply — is paused due to Cuba's energy crisis (Feb 2026). Pentagon named Canada as preferred cobalt supplier for US $500M stockpile program. F-35 acquisition will increase cobalt dependency significantly (CMSX-4 single-crystal blades in F135 engine).",
         },
         "mines": [
-            {"name": "Tenke Fungurume (TFM)", "owner": "CMOC Group (China)", "country": "DRC", "lat": -10.5975, "lon": 26.1186, "production_t": 32000, "figure_type": "design_capacity", "figure_source": "USGS MCS 2025", "figure_year": 2025, "note": "World's largest cobalt mine. Freeport-McMoRan sold to CMOC in 2016 for $2.65B",
+            {"name": "Tenke Fungurume (TFM)", "owner": "CMOC Group (China)", "country": "DRC", "lat": -10.5684, "lon": 26.1956, "production_t": 32000, "figure_type": "design_capacity", "figure_source": "USGS MCS 2025", "figure_year": 2025, "note": "World's largest cobalt mine. Freeport-McMoRan sold to CMOC in 2016 for $2.65B",
              "risks": [
                  {"category": "Ownership", "level": "critical", "detail": "Chinese SOE (CMOC) — adversary-controlled; acquired from US company Freeport-McMoRan"},
                  {"category": "Country", "level": "critical", "detail": "DRC: M23 conflict advancing toward Katanga; Transparency International corruption index bottom 10%"},
@@ -372,7 +372,7 @@ MINERALS: list[dict] = [
                  ],
                  "contracts": [],
              }},
-            {"name": "Kisanfu (KFM)", "owner": "CMOC 71.25% / CATL 23.75% / DRC govt 5%", "country": "DRC", "lat": -10.4530, "lon": 25.6990, "production_t": 15000, "figure_type": "design_capacity", "figure_source": "CMOC IR 2025", "figure_year": 2025, "note": "World's largest undeveloped cobalt deposit at time of acquisition",
+            {"name": "Kisanfu (KFM)", "owner": "CMOC 71.25% / CATL 23.75% / DRC govt 5%", "country": "DRC", "lat": -10.7796, "lon": 25.9282, "production_t": 15000, "figure_type": "design_capacity", "figure_source": "CMOC IR 2025", "figure_year": 2025, "note": "World's largest undeveloped cobalt deposit at time of acquisition",
              "risks": [
                  {"category": "Ownership", "level": "critical", "detail": "CMOC (China) 71.25% + CATL (China) 23.75% + DRC govt 5% — entirely Chinese-controlled"},
                  {"category": "Country", "level": "critical", "detail": "DRC conflict zone; M23 advancing south"},
@@ -422,7 +422,7 @@ MINERALS: list[dict] = [
                  ],
                  "contracts": [],
              }},
-            {"name": "Kamoto (KCC)", "owner": "Glencore (75%) / Gecamines (25%) / DRC State (5%) — pending Orion CMC 40%", "country": "DRC", "lat": -10.7326, "lon": 25.4675, "production_t": 12000, "figure_type": "design_capacity", "figure_source": "Glencore FY 2025 Report", "figure_year": 2025, "note": "2026 DRC quota: 16.1kt cobalt (incl. 2025 carryover), 2027: 13.3kt. Combined with Mutanda: 33.5kt Co in 2025. Copper Mark certified 2025. Orion CMC (US-backed) acquiring 40% alongside Mutanda at $9B combined EV.",
+            {"name": "Kamoto (KCC)", "owner": "Glencore (75%) / Gecamines (25%) / DRC State (5%) — pending Orion CMC 40%", "country": "DRC", "lat": -10.7177, "lon": 25.3970, "production_t": 12000, "figure_type": "design_capacity", "figure_source": "Glencore FY 2025 Report", "figure_year": 2025, "note": "2026 DRC quota: 16.1kt cobalt (incl. 2025 carryover), 2027: 13.3kt. Combined with Mutanda: 33.5kt Co in 2025. Copper Mark certified 2025. Orion CMC (US-backed) acquiring 40% alongside Mutanda at $9B combined EV.",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Glencore 75%, Gecamines 25%, DRC State 5%. Orion CMC (US DFC-backed) MoU for 40% of Glencore's stake in both KCC+Mutanda."},
                  {"category": "Country", "level": "critical", "detail": "DRC conflict and governance risk. Tshisekedi renegotiating royalties."},
@@ -477,7 +477,7 @@ MINERALS: list[dict] = [
                  ],
                  "contracts": [],
              }},
-            {"name": "Mutanda", "owner": "Glencore (100% → pending 40% sale to Orion CMC)", "country": "DRC", "lat": -10.6928, "lon": 25.9605, "production_t": 33500, "figure_type": "combined_kcc_mumi", "figure_source": "Glencore FY 2025 Production Report (KCC+Mutanda combined: 33.5kt Co in hydroxides)", "figure_year": 2025, "note": "Glencore 100% ownership (acquired full control 2017 from Gertler/Fleurette for $534M). Suspended Nov 2019-2022. Restarted. Combined KCC+Mutanda 2025: 247.8kt Cu + 33.5kt Co. DRC lifted cobalt export ban Q4 2025 and introduced quotas. 2026 Mutanda quota: 6.7kt (2027: 5.5kt). US-backed Orion CMC consortium signed MoU Feb 2026 to acquire 40% of Mutanda+KCC at $9B enterprise value.",
+            {"name": "Mutanda", "owner": "Glencore (100% → pending 40% sale to Orion CMC)", "country": "DRC", "lat": -10.7858, "lon": 25.8082, "production_t": 33500, "figure_type": "combined_kcc_mumi", "figure_source": "Glencore FY 2025 Production Report (KCC+Mutanda combined: 33.5kt Co in hydroxides)", "figure_year": 2025, "note": "Glencore 100% ownership (acquired full control 2017 from Gertler/Fleurette for $534M). Suspended Nov 2019-2022. Restarted. Combined KCC+Mutanda 2025: 247.8kt Cu + 33.5kt Co. DRC lifted cobalt export ban Q4 2025 and introduced quotas. 2026 Mutanda quota: 6.7kt (2027: 5.5kt). US-backed Orion CMC consortium signed MoU Feb 2026 to acquire 40% of Mutanda+KCC at $9B enterprise value.",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Glencore 100% currently. Orion CMC (US-backed, led by Orion Resource Partners + US DFC) acquiring 40%. Post-deal: Glencore retains management, Orion gets board seats + offtake direction for US/allies."},
                  {"category": "Country", "level": "critical", "detail": "DRC conflict zone. President Tshisekedi renegotiating mining rights and royalties (5% to 10%). M23 in eastern DRC."},
@@ -554,7 +554,7 @@ MINERALS: list[dict] = [
                      "quota_2027_kt": 5.5,
                  },
              }},
-            {"name": "Murrin Murrin", "owner": "Glencore (100% via Minara Resources)", "country": "Australia", "lat": -28.7283, "lon": 121.8708, "production_t": 2100, "figure_type": "reported_2023", "figure_source": "Glencore FY 2023 Production Report / Wikipedia Murrin Murrin Mine", "figure_year": 2023, "note": "HPAL laterite Ni-Co plant, 45km east of Leonora, WA North Eastern Goldfields. Produces LME-grade nickel and cobalt metal briquettes on-site. 100% owned via Minara Resources (acquired 2011). 2022: 3,300t Co; 2023: 2,100t Co; 2024-2025: declined further due to planned maintenance. Glencore total Ni 71.9kt in 2025 (-7% YoY), lower at both INO and Murrin Murrin.",
+            {"name": "Murrin Murrin", "owner": "Glencore (100% via Minara Resources)", "country": "Australia", "lat": -28.7675, "lon": 121.8939, "production_t": 2100, "figure_type": "reported_2023", "figure_source": "Glencore FY 2023 Production Report / Wikipedia Murrin Murrin Mine", "figure_year": 2023, "note": "HPAL laterite Ni-Co plant, 45km east of Leonora, WA North Eastern Goldfields. Produces LME-grade nickel and cobalt metal briquettes on-site. 100% owned via Minara Resources (acquired 2011). 2022: 3,300t Co; 2023: 2,100t Co; 2024-2025: declined further due to planned maintenance. Glencore total Ni 71.9kt in 2025 (-7% YoY), lower at both INO and Murrin Murrin.",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Glencore 100% via Minara Resources (wholly owned since Nov 2011 acquisition). Five Eyes allied nation."},
                  {"category": "Country", "level": "low", "detail": "Australia: stable democracy, AUKUS/Five Eyes member, strong rule of law, Western Australian EPA oversight."},
@@ -620,7 +620,7 @@ MINERALS: list[dict] = [
                      "note": "Glencore does not publish site-level financial data for Murrin Murrin. It is a small operation within Glencore's Australian nickel portfolio.",
                  },
              }},
-            {"name": "Moa JV", "owner": "Sherritt International (50%)", "country": "Cuba", "lat": 20.6560, "lon": -74.9485, "production_t": 3200, "figure_type": "design_capacity", "figure_source": "Sherritt IR", "figure_year": 2024, "note": "Mixed sulphide shipped to Fort Saskatchewan AB. Paused Feb 2026 — Cuban fuel crisis",
+            {"name": "Moa JV", "owner": "Sherritt International (50%)", "country": "Cuba", "lat": 20.6186, "lon": -74.9437, "production_t": 3200, "figure_type": "design_capacity", "figure_source": "Sherritt IR", "figure_year": 2024, "note": "Mixed sulphide shipped to Fort Saskatchewan AB. Paused Feb 2026 — Cuban fuel crisis",
              "risks": [
                  {"category": "Operational", "level": "critical", "detail": "OPERATIONS PAUSED Feb 2026 — Cuban national fuel crisis; no restart timeline"},
                  {"category": "Sanctions", "level": "high", "detail": "US sanctions on Cuba complicate financing, insurance, and shipping; Helms-Burton Act exposure"},
@@ -693,7 +693,7 @@ MINERALS: list[dict] = [
                      "as_of": "2025-12-31",
                  },
              }},
-            {"name": "Voisey's Bay", "owner": "Vale Base Metals", "country": "Canada", "lat": 56.3330, "lon": -62.0855, "production_t": 2500, "figure_type": "design_capacity", "figure_source": "Vale Base Metals IR", "figure_year": 2024, "note": "Concentrate processed at Long Harbour NL hydromet plant",
+            {"name": "Voisey's Bay", "owner": "Vale Base Metals", "country": "Canada", "lat": 56.3347, "lon": -62.1031, "production_t": 2500, "figure_type": "design_capacity", "figure_source": "Vale Base Metals IR", "figure_year": 2024, "note": "Concentrate processed at Long Harbour NL hydromet plant",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Vale Base Metals — publicly traded, Canadian operations"},
                  {"category": "Country", "level": "low", "detail": "Canada: stable, secure, domestic supply"},
@@ -763,7 +763,7 @@ MINERALS: list[dict] = [
                      "note": "Vale S.A. parent consolidated — VBM not separately listed",
                  },
              }},
-            {"name": "Sudbury Basin", "owner": "Vale / Glencore", "country": "Canada", "lat": 46.4730, "lon": -81.0526, "production_t": 1500, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "note": "Ni-Cu-Co sulfide; Glencore sends concentrate to Nikkelverk, Norway",
+            {"name": "Sudbury Basin", "owner": "Vale / Glencore", "country": "Canada", "lat": 46.6000, "lon": -81.1833, "production_t": 1500, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "note": "Ni-Cu-Co sulfide; Glencore sends concentrate to Nikkelverk, Norway",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Vale and Glencore — Western-allied companies"},
                  {"category": "Country", "level": "low", "detail": "Canada: domestic, secure"},
@@ -832,7 +832,7 @@ MINERALS: list[dict] = [
                      "note": "Glencore plc parent consolidated — Sudbury not separately reported",
                  },
              }},
-            {"name": "Raglan Mine", "owner": "Glencore", "country": "Canada", "lat": 61.6798, "lon": -73.5930, "production_t": 800, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "note": "Nunavik QC; concentrate exported to Norway for refining",
+            {"name": "Raglan Mine", "owner": "Glencore", "country": "Canada", "lat": 61.6875, "lon": -73.6781, "production_t": 800, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "note": "Nunavik QC; concentrate exported to Norway for refining",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Glencore — Western-allied"},
                  {"category": "Country", "level": "low", "detail": "Canada: domestic, Arctic sovereignty presence"},
@@ -966,7 +966,7 @@ MINERALS: list[dict] = [
                      "market_cap_note": "As of Nov 2024 per PitchBook; CNY ~55.3B",
                  },
              }},
-            {"name": "GEM Co.", "owner": "GEM Co. Ltd (SZSE:002340 / SIX Swiss Exchange)", "country": "China", "lat": 32.4610, "lon": 119.9230, "capacity_t": 30000, "figure_type": "company_reported", "figure_source": "GEM Co. SZSE 2024 Annual Report / Mysteel", "figure_year": 2025, "products": "Recycled cobalt (sulfate, oxide, powder, carbonate), ternary precursors, cathode materials, nickel sulfate, tungsten products", "note": "World's largest battery recycler. 30kt/yr cobalt smelting capacity. Taixing refinery (Jiangsu). Also dual-listed on SIX Swiss Exchange. Founder: Prof. Xu Kaihua. Glencore long-term offtake: 14,400t cobalt hydroxide/yr through 2029. Indonesia QMB HPAL: 150kt Ni MHP capacity.",
+            {"name": "GEM Co.", "owner": "GEM Co. Ltd (SZSE:002340 / SIX Swiss Exchange)", "country": "China", "lat": 32.1550, "lon": 119.9260, "capacity_t": 30000, "figure_type": "company_reported", "figure_source": "GEM Co. SZSE 2024 Annual Report / Mysteel", "figure_year": 2025, "products": "Recycled cobalt (sulfate, oxide, powder, carbonate), ternary precursors, cathode materials, nickel sulfate, tungsten products", "note": "World's largest battery recycler. 30kt/yr cobalt smelting capacity. Taixing refinery (Jiangsu). Also dual-listed on SIX Swiss Exchange. Founder: Prof. Xu Kaihua. Glencore long-term offtake: 14,400t cobalt hydroxide/yr through 2029. Indonesia QMB HPAL: 150kt Ni MHP capacity.",
              "risks": [
                  {"category": "Ownership", "level": "critical", "detail": "Private Chinese company controlled by founder Prof. Xu Kaihua. Not state-owned but subject to CCP party committee oversight. Dual-listed SZSE + SIX Swiss Exchange."},
                  {"category": "Export controls", "level": "critical", "detail": "Subject to Chinese government export policy. MOFCOM can restrict cobalt product exports. Recycled cobalt would be affected by any export ban."},
@@ -1037,7 +1037,7 @@ MINERALS: list[dict] = [
                      "working_capital_note": "Current liabilities marginally exceeded current assets as of Jun 2025 per HKExNews interim results",
                  },
              }},
-            {"name": "Jinchuan Group", "owner": "Jinchuan Group Co. Ltd (SOE — Gansu SASAC 66.03%)", "country": "China", "lat": 38.5150, "lon": 102.1876, "capacity_t": 17000, "figure_type": "company_reported", "figure_source": "Jinchuan Group official / CAMAL Group analysis", "figure_year": 2024, "products": "Electrolytic cobalt (7,000t/yr), cobalt oxide, cobalt salt, cobalt hydroxide. Also nickel (190kt electrolytic Ni) and copper (400kt+)", "note": "China's largest Ni-Co producer. Gansu provincial SOE (SASAC 66.03%). Annual revenue >CNY 300B (~$43B). Fortune Global 500 #339. HKEx subsidiary: Jinchuan Group International Resources (2362.HK, 60.01% owned). Musonoi DRC mine (75%, Gecamines 25%) commenced cobalt hydroxide production Oct 2025. New subsidiary Jinchuan Nickel & Cobalt Co. est. Dec 2024 with CITIC/Minmetals/Zijin.",
+            {"name": "Jinchuan Group", "owner": "Jinchuan Group Co. Ltd (SOE — Gansu SASAC 66.03%)", "country": "China", "lat": 38.5000, "lon": 102.1880, "capacity_t": 17000, "figure_type": "company_reported", "figure_source": "Jinchuan Group official / CAMAL Group analysis", "figure_year": 2024, "products": "Electrolytic cobalt (7,000t/yr), cobalt oxide, cobalt salt, cobalt hydroxide. Also nickel (190kt electrolytic Ni) and copper (400kt+)", "note": "China's largest Ni-Co producer. Gansu provincial SOE (SASAC 66.03%). Annual revenue >CNY 300B (~$43B). Fortune Global 500 #339. HKEx subsidiary: Jinchuan Group International Resources (2362.HK, 60.01% owned). Musonoi DRC mine (75%, Gecamines 25%) commenced cobalt hydroxide production Oct 2025. New subsidiary Jinchuan Nickel & Cobalt Co. est. Dec 2024 with CITIC/Minmetals/Zijin.",
              "risks": [
                  {"category": "Ownership", "level": "critical", "detail": "Chinese STATE-OWNED enterprise — Gansu Provincial SASAC holds 66.03%. Direct government instrument with mandatory CCP party committee and state production directives."},
                  {"category": "Export controls", "level": "critical", "detail": "SOE will comply immediately with any export ban. State-directed production allocation can divert output to strategic reserves."},
@@ -1114,7 +1114,7 @@ MINERALS: list[dict] = [
                      "parent_employees": 31822,
                  },
              }},
-            {"name": "Umicore Kokkola", "owner": "Umicore", "country": "Finland", "lat": 63.8436, "lon": 23.1244, "capacity_t": 15000, "figure_type": "design_capacity", "figure_source": "Umicore IR 2024", "figure_year": 2024, "products": "Cobalt metal, chemicals, cathode precursors", "note": "Europe's largest cobalt refinery. Acquired from Freeport Cobalt 2019",
+            {"name": "Umicore Kokkola", "owner": "Umicore", "country": "Finland", "lat": 63.8611, "lon": 23.0524, "capacity_t": 15000, "figure_type": "design_capacity", "figure_source": "Umicore IR 2024", "figure_year": 2024, "products": "Cobalt metal, chemicals, cathode precursors", "note": "Europe's largest cobalt refinery. Acquired from Freeport Cobalt 2019",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Umicore (Belgian) — NATO-allied, publicly traded, ESG leader"},
                  {"category": "Country", "level": "low", "detail": "Finland: NATO member since 2023, stable democracy, EU regulatory framework"},
@@ -1180,7 +1180,7 @@ MINERALS: list[dict] = [
                      "note": "Umicore SA parent consolidated — Kokkola falls within Cobalt & Specialty Materials segment",
                  },
              }},
-            {"name": "Umicore Hoboken", "owner": "Umicore", "country": "Belgium", "lat": 51.1867, "lon": 4.3503, "capacity_t": 5000, "figure_type": "estimated", "figure_source": "Umicore IR 2024", "figure_year": 2024, "products": "Cobalt chemicals, recycled metals", "note": "130+ years operation. EUR 350M EIB financing for battery R&D",
+            {"name": "Umicore Hoboken", "owner": "Umicore", "country": "Belgium", "lat": 51.1642, "lon": 4.3371, "capacity_t": 5000, "figure_type": "estimated", "figure_source": "Umicore IR 2024", "figure_year": 2024, "products": "Cobalt chemicals, recycled metals", "note": "130+ years operation. EUR 350M EIB financing for battery R&D",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Umicore — Belgian, NATO HQ nation"},
                  {"category": "Country", "level": "low", "detail": "Belgium: NATO founding member, EU capital, stable"},
@@ -1236,7 +1236,7 @@ MINERALS: list[dict] = [
                      "note": "Hoboken falls within Precious Metals Refining (Recycling) business unit. 17 metals recovered including cobalt.",
                  },
              }},
-            {"name": "Fort Saskatchewan", "owner": "Sherritt International", "country": "Canada", "lat": 53.7168, "lon": -113.2131, "capacity_t": 3800, "figure_type": "design_capacity", "figure_source": "Sherritt IR", "figure_year": 2024, "products": "99.9% cobalt powder and briquettes", "note": "Refines Cuban mixed sulphides. Only vertically integrated non-Chinese pipeline",
+            {"name": "Fort Saskatchewan", "owner": "Sherritt International", "country": "Canada", "lat": 53.7239, "lon": -113.1867, "capacity_t": 3800, "figure_type": "design_capacity", "figure_source": "Sherritt IR", "figure_year": 2024, "products": "99.9% cobalt powder and briquettes", "note": "Refines Cuban mixed sulphides. Only vertically integrated non-Chinese pipeline",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Sherritt International — Canadian-owned, TSX-listed"},
                  {"category": "Operational", "level": "critical", "detail": "FEEDSTOCK PAUSED — Moa JV (Cuba) suspended Feb 2026; refinery has no alternative feedstock"},
@@ -1304,7 +1304,7 @@ MINERALS: list[dict] = [
                      "as_of": "2025-12-31",
                  },
              }},
-            {"name": "Long Harbour NPP", "owner": "Vale Base Metals", "country": "Canada", "lat": 47.4170, "lon": -53.8245, "capacity_t": 2500, "figure_type": "design_capacity", "figure_source": "Vale Base Metals IR", "figure_year": 2024, "products": "Cobalt rounds/briquettes", "note": "Hydromet plant processing Voisey's Bay concentrate",
+            {"name": "Long Harbour NPP", "owner": "Vale Base Metals", "country": "Canada", "lat": 47.4242, "lon": -53.8167, "capacity_t": 2500, "figure_type": "design_capacity", "figure_source": "Vale Base Metals IR", "figure_year": 2024, "products": "Cobalt rounds/briquettes", "note": "Hydromet plant processing Voisey's Bay concentrate",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Vale Base Metals — major miner, Canadian operations"},
                  {"category": "Country", "level": "low", "detail": "Canada: fully domestic mine-to-product chain (Voisey's Bay → Long Harbour)"},
@@ -1361,7 +1361,7 @@ MINERALS: list[dict] = [
                      "note": "Long Harbour not separately reported. Refines Voisey's Bay concentrate — output directly linked to mine production.",
                  },
              }},
-            {"name": "Niihama Nickel Refinery", "owner": "Sumitomo Metal Mining", "country": "Japan", "lat": 33.9547, "lon": 133.2838, "capacity_t": 4000, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "products": "Electrolytic cobalt", "note": "Japan's only cobalt refinery. Feeds from Philippine HPAL",
+            {"name": "Niihama Nickel Refinery", "owner": "Sumitomo Metal Mining", "country": "Japan", "lat": 33.9487, "lon": 133.2489, "capacity_t": 4000, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "products": "Electrolytic cobalt", "note": "Japan's only cobalt refinery. Feeds from Philippine HPAL",
              "risks": [
                  {"category": "Ownership", "level": "low", "detail": "Sumitomo — Japanese, US-allied, publicly traded"},
                  {"category": "Country", "level": "low", "detail": "Japan: US treaty ally, stable democracy, strong IP protection"},
@@ -1426,7 +1426,7 @@ MINERALS: list[dict] = [
                      "as_of": "2025-03-31",
                  },
              }},
-            {"name": "Harjavalta", "owner": "Nornickel", "country": "Finland", "lat": 61.3142, "lon": 22.1458, "capacity_t": 3000, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "products": "Cobalt sulfate", "note": "LME permanent delisting of Harjavalta nickel brands effective June 2026. Nornickel exploring direct sales to battery manufacturers. Finnish govt monitoring for potential ownership change.",
+            {"name": "Harjavalta", "owner": "Nornickel", "country": "Finland", "lat": 61.3188, "lon": 22.1225, "capacity_t": 3000, "figure_type": "estimated", "figure_source": "Industry estimate", "figure_year": 2024, "products": "Cobalt sulfate", "note": "LME permanent delisting of Harjavalta nickel brands effective June 2026. Nornickel exploring direct sales to battery manufacturers. Finnish govt monitoring for potential ownership change.",
              "risks": [
                  {"category": "Ownership", "level": "critical", "detail": "Nornickel — Russian company; LME permanently delisted its nickel brands (effective June 2026)"},
                  {"category": "Sanctions", "level": "critical", "detail": "Russian-owned facility in NATO country; sanctions tightening; product unmarketable on LME"},

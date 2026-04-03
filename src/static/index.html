@@ -6,7 +6,7 @@
 <title>ARMSTRACKER — Defence Intelligence Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -31,8 +31,8 @@
   --accent5: #6b6b8a;
   --glow: none;
   --maple: #D80621;
-  --font-display: 'Barlow Condensed', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 /* ── Light Theme ── */
@@ -77,7 +77,7 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 2px; text-transform: uppercase; }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; font-weight: 600; }
 
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -97,11 +97,11 @@ header::after { display:none; }
   padding:0; position:relative; z-index:1;
   border-right:none;
 }
-.header-brand h1 { font-family:var(--font-display); font-size:14px; font-weight:600; letter-spacing:3px; color:var(--text); margin:0; text-transform:uppercase; }
+.header-brand h1 { font-family:var(--font-display); font-size:14px; font-weight:600; letter-spacing:0.02em; color:var(--text); margin:0; text-transform:uppercase; }
 .header-brand h1 span { color: var(--accent); }
 .header-brand .brand-sub {
-  font-family:var(--font-mono); font-size:9px; color:var(--text-muted);
-  letter-spacing:1.5px; text-transform:uppercase; margin-top:1px;
+  font-family:var(--font-body); font-size:9px; color:var(--text-muted);
+  letter-spacing:0.03em; text-transform:uppercase; margin-top:1px;
 }
 .header-status {
   display: flex; align-items: center; gap: 2px;
@@ -146,8 +146,8 @@ header::after { display:none; }
   overflow:visible;
 }
 .nav-tab {
-  font-family:var(--font-mono); font-weight:400; font-size:10px;
-  letter-spacing:1.5px; text-transform:uppercase;
+  font-family:var(--font-body); font-weight:500; font-size:11px;
+  letter-spacing:0.03em; text-transform:uppercase;
   padding:9px 16px; border-radius:0;
   border:none; border-bottom:2px solid transparent;
   background:transparent; color:var(--text-dim);
@@ -199,10 +199,10 @@ header::after { display:none; }
   background: #161c2a;
 }
 .card h2 {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-family: var(--font-body);
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
   margin-bottom: 12px;
 }
@@ -212,7 +212,7 @@ header::after { display:none; }
 .tabs { display: flex; gap: 2px; margin-bottom: 16px; background: var(--bg); border-radius: 0; padding: 3px; }
 .tab {
   padding: 8px 16px; border-radius: 0; cursor: pointer; font-size: 11px;
-  font-family: var(--font-mono); letter-spacing: 1px; text-transform: uppercase;
+  font-family: var(--font-body); letter-spacing: 0.03em; text-transform: uppercase;
   color: var(--text-dim); border: none; background: none; transition: all 0.2s;
 }
 .tab.active { background: var(--accent); color: #fff; }
@@ -359,7 +359,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   padding: 20px; text-align: center; transition: border-color 0.3s, box-shadow 0.3s;
 }
 .ca-metric:hover { border-color: var(--border-hover); box-shadow: var(--glow); }
-.ca-metric .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.ca-metric .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; }
 .ca-metric .value { font-size: 28px; font-weight: 700; color: var(--accent); margin-top: 6px; font-family: var(--font-mono); }
 .ca-metric .value.red { color: var(--accent2); }
 .ca-metric .value.green { color: var(--accent3); }
@@ -371,7 +371,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 .bloc-card:hover { border-color: var(--border-hover); box-shadow: var(--glow); }
-.bloc-card h2 { font-family: var(--font-display); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.bloc-card h2 { font-family: var(--font-display); font-size: 14px; letter-spacing: -0.01em; margin-bottom: 4px; }
 .bloc-card .bloc-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
 .bloc-card.allied { border-left: 3px solid var(--accent); }
 .bloc-card.adversary { border-left: 3px solid var(--accent2); }
@@ -420,7 +420,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: -0.01em;
   margin-bottom: 4px;
 }
 .insight-alert.threat .alert-title { color: var(--accent2); }
@@ -543,7 +543,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .feeds-health-banner .banner-feed { display:inline-block; background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:0; margin:2px 4px; font-family:var(--font-mono); font-size:11px; }
 .feeds-section { margin-bottom: 28px; }
 .feeds-section-title {
-  font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+  font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--text-dim); margin-bottom: 12px; font-weight: 500;
   border-bottom: 1px solid var(--border); padding-bottom: 8px;
 }
@@ -601,7 +601,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   border-radius:0; padding:16px; text-align:center; border-top:2px solid var(--border);
 }
 .compliance-stat .cs-num { font-family:var(--font-mono); font-size:28px; font-weight:700; }
-.compliance-stat .cs-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+.compliance-stat .cs-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px; }
 .compliance-stat .cs-bar { height:4px; border-radius:0; background:var(--border); margin-top:8px; overflow:hidden; }
 .compliance-stat .cs-bar-fill { height:100%; border-radius:0; transition:width 0.8s ease; }
 .compliance-filter {
@@ -684,7 +684,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 }
 .cc-title { font-family:var(--font-display); font-size:14px; font-weight:600; color:var(--text); flex:1; }
 .cc-badge {
-  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:3px 10px;
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; padding:3px 10px;
   border-radius:0; flex-shrink:0;
 }
 .cc-badge.compliant { background:rgba(107,144,128,0.15); color:var(--accent3); }
@@ -723,7 +723,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .extras-header {
   font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--accent);
   margin:32px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--border);
-  text-transform:uppercase; letter-spacing:1.5px;
+  text-transform:uppercase; letter-spacing:0.03em;
 }
 .extras-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; margin-bottom:24px; }
 .extra-card {
@@ -755,8 +755,8 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 /* Briefing sections */
 .briefing-section { margin-bottom: 28px; }
 .briefing-header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; padding-bottom: 0; border-bottom: none; }
-.briefing-header h2 { font-family: var(--font-display); font-size: clamp(20px,2.5vw,30px); font-weight: 600; color: var(--text); letter-spacing: 2px; margin: 0; }
-.section-tag { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 3px; color: var(--text-muted); display: block; text-transform: uppercase; }
+.briefing-header h2 { font-family: var(--font-display); font-size: clamp(20px,2.5vw,30px); font-weight: 600; color: var(--text); letter-spacing: -0.01em; margin: 0; }
+.section-tag { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--text-muted); display: block; text-transform: uppercase; }
 .section-num { background: var(--accent); color: #0a0e1a; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
 .briefing-context { font-size: 12px; color: var(--text-dim); line-height: 1.7; margin-bottom: 16px; padding: 12px 16px; background: var(--surface); border-radius: 0; border: 1px solid var(--border); border-left: 2px solid var(--accent); }
 .briefing-context.threat { border-left-color: var(--accent2); }
@@ -799,7 +799,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .arctic-metric-card.red { border-top-color: var(--accent2); }
 .arctic-metric-card.green { border-top-color: var(--accent3); }
 .arctic-metric-card.yellow { border-top-color: var(--accent4); }
-.arctic-metric-card .amc-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 6px; }
+.arctic-metric-card .amc-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-dim); margin-bottom: 6px; }
 .arctic-metric-card .amc-value { font-size: 28px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
 .arctic-metric-card.red .amc-value { color: var(--accent2); }
 .arctic-metric-card.green .amc-value { color: var(--accent3); }
@@ -843,7 +843,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 .arctic-intel-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .arctic-intel-table th {
   text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase;
-  letter-spacing: 1px; color: var(--text-dim); border-bottom: 2px solid var(--border);
+  letter-spacing: 0.03em; color: var(--text-dim); border-bottom: 2px solid var(--border);
   cursor: pointer; user-select: none; white-space: nowrap;
 }
 .arctic-intel-table th:hover { color: var(--accent); }
@@ -995,7 +995,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 2px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   transition: all 0.3s;
 }
@@ -1249,7 +1249,7 @@ tr:hover td { background: rgba(0,212,255,0.04); }
 }
 /* ── Theme Toggle ── */
 .theme-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;padding:0 8px;}
-.theme-toggle .tgl-label{font-family:var(--font-mono);font-size:8px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;}
+.theme-toggle .tgl-label{font-family:var(--font-body);font-size:9px;letter-spacing:0.03em;color:var(--text-muted);text-transform:uppercase;}
 .theme-toggle .tgl-track{
   position:relative;width:32px;height:16px;border-radius:8px;
   background:var(--border-hover);transition:background 0.3s;flex-shrink:0;
@@ -1266,7 +1266,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
 .atm-r{position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 50% 35%,rgba(216,6,33,0.025),transparent),radial-gradient(ellipse 50% 50% at 50% 80%,rgba(0,212,255,0.015),transparent);}
 .scan{position:fixed;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.08),rgba(0,212,255,0.18),rgba(0,212,255,0.08),transparent);animation:sc 16s ease-in-out infinite;pointer-events:none;z-index:9999;opacity:0;}
 @keyframes sc{0%{transform:translateY(0);opacity:0}2%{opacity:.6}98%{opacity:.6}100%{transform:translateY(100vh);opacity:0}}
-.cb{height:22px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:3px;color:#fff;position:relative;z-index:1001;}
+.cb{height:22px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:0.1em;color:#fff;position:relative;z-index:1001;}
 
 /* ── Globe Layer Panel ── */
 .globe-layer-btn{
@@ -1277,7 +1277,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
 .globe-layer-btn:hover{border-color:var(--accent);color:var(--accent);}
 .globe-layer-btn svg{width:16px;height:16px;stroke:var(--text-dim);fill:none;stroke-width:1.6;}
 .globe-layer-btn:hover svg{stroke:var(--accent);}
-.globe-layer-btn .glb-label{font-family:var(--font-mono);font-size:6px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-top:1px;}
+.globe-layer-btn .glb-label{font-family:var(--font-body);font-size:7px;letter-spacing:0.03em;color:var(--text-muted);text-transform:uppercase;margin-top:1px;}
 .globe-layer-panel{
   position:absolute;top:12px;right:12px;z-index:10;width:220px;
   background:var(--surface);border:1px solid var(--border);
@@ -1288,7 +1288,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;border-bottom:1px solid var(--border);
 }
-.glp-title{font-family:var(--font-mono);font-size:8px;letter-spacing:2.5px;color:var(--text-muted);text-transform:uppercase;}
+.glp-title{font-family:var(--font-body);font-size:9px;letter-spacing:0.04em;color:var(--text-muted);text-transform:uppercase;}
 .glp-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;}
 .glp-close:hover{color:var(--accent);}
 .glp-row{
@@ -1298,7 +1298,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
 .glp-row:last-child{border-bottom:none;}
 .glp-row:hover{background:rgba(0,212,255,0.03);}
 .glp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.glp-name{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;flex:1;}
+.glp-name{font-family:var(--font-body);font-size:11px;letter-spacing:0.02em;color:var(--text-dim);text-transform:none;flex:1;}
 .glp-toggle{
   position:relative;width:28px;height:14px;border-radius:7px;
   background:var(--border-hover);cursor:pointer;flex-shrink:0;transition:background .25s;
@@ -1312,8 +1312,8 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
 
 /* ── Right Side Nav ── */
 .side-nav{position:fixed;right:0;top:90px;bottom:22px;z-index:999;width:140px;display:flex;flex-direction:column;padding:16px 0;background:rgba(6,9,15,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-left:1px solid var(--border);}
-.sn-head{font-family:var(--font-mono);font-size:8px;letter-spacing:2.5px;color:var(--text-muted);text-transform:uppercase;padding:0 16px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;}
-.sn-item{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;text-decoration:none;padding:9px 16px;transition:all .25s;cursor:pointer;position:relative;}
+.sn-head{font-family:var(--font-body);font-size:9px;letter-spacing:0.04em;color:var(--text-muted);text-transform:uppercase;padding:0 16px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.sn-item{display:block;font-family:var(--font-body);font-size:11px;letter-spacing:0.02em;color:var(--text-dim);text-transform:uppercase;text-decoration:none;padding:9px 16px;transition:all .25s;cursor:pointer;position:relative;}
 .sn-item:hover{color:var(--accent);background:rgba(0,212,255,0.03);}
 .sn-item::before{content:'';position:absolute;left:0;top:0;width:2px;height:100%;background:var(--accent);opacity:0;transition:opacity .25s;}
 .sn-item:hover::before{opacity:1;box-shadow:0 0 6px rgba(0,212,255,0.3);}
@@ -1363,7 +1363,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
       <div class="tgl-track"><div class="tgl-thumb"></div></div>
       <span class="tgl-label">Light</span>
     </div>
-    <a href="/briefing/pdf" target="_blank" style="text-decoration:none;background:var(--accent2);color:#fff;padding:5px 14px;font-size:11px;font-family:var(--font-display);font-weight:600;letter-spacing:2px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.boxShadow='0 0 14px rgba(216,6,33,0.35)'" onmouseout="this.style.boxShadow='none'">PDF BRIEF</a>
+    <a href="/briefing/pdf" target="_blank" style="text-decoration:none;background:var(--accent2);color:#fff;padding:5px 14px;font-size:11px;font-family:var(--font-display);font-weight:600;letter-spacing:0.04em;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.boxShadow='0 0 14px rgba(216,6,33,0.35)'" onmouseout="this.style.boxShadow='none'">PDF BRIEF</a>
     <div class="header-live">Live</div>
     <span id="header-clock"></span>
   </div>
@@ -1395,7 +1395,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
     <div id="taxonomy-strip" data-val-key="insights.taxonomy" style="margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <h2 style="font-family:var(--font-display);font-size:clamp(18px,2vw,24px);font-weight:600;letter-spacing:2px;color:var(--text);margin:0;">Defence Supply Chain Risk Taxonomy</h2>
+          <h2 style="font-family:var(--font-display);font-size:clamp(18px,2vw,24px);font-weight:600;letter-spacing:-0.01em;color:var(--text);margin:0;">Defence Supply Chain Risk Taxonomy</h2>
           <div class="stat-box" style="padding:4px 12px;">
             <span class="stat-num" style="font-size:18px;" id="taxonomy-global-score">--</span>
           </div>
@@ -2092,8 +2092,8 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <span>Supply Chain Nodes</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
             </div>
             <div style="padding:6px 12px;">
-              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b9080; vertical-align:middle; margin-right:6px; box-shadow:0 0 0 2px rgba(255,255,255,0.4);"></span><span style="color:#6b9080;">Tier 1</span> — Mining</div>
-              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b6b8a; vertical-align:middle; margin-right:6px; box-shadow:0 0 0 2px rgba(255,255,255,0.4);"></span><span style="color:#6b6b8a;">Tier 2</span> — Processing</div>
+              <div><span style="display:inline-block; width:10px; height:18px; vertical-align:middle; margin-right:6px; position:relative;"><span style="display:block; width:2px; height:12px; background:#6b9080; opacity:0.7; margin:0 auto;"></span><span style="display:block; width:10px; height:10px; border-radius:50%; background:#6b9080; box-shadow:0 0 0 2px rgba(255,255,255,0.6); margin-top:-4px;"></span></span><span style="color:#6b9080;">Tier 1</span> — Mining (pin)</div>
+              <div><span style="display:inline-block; width:10px; height:18px; vertical-align:middle; margin-right:6px; position:relative;"><span style="display:block; width:2px; height:12px; background:#6b6b8a; opacity:0.7; margin:0 auto;"></span><span style="display:block; width:10px; height:10px; border-radius:50%; background:#6b6b8a; box-shadow:0 0 0 2px rgba(255,255,255,0.6); margin-top:-4px;"></span></span><span style="color:#6b6b8a;">Tier 2</span> — Processing (pin)</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Tier 3</span> — Components</div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00d4ff; vertical-align:middle; margin-right:6px;"></span><span style="color:#00d4ff;">Tier 4</span> — Platforms</div>
               <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
@@ -2306,7 +2306,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
       <div style="display:grid; grid-template-columns:280px 1fr 240px; gap:1px; min-height:600px;">
         <!-- LEFT: Scenario Builder -->
         <div class="card" style="padding:14px; border-radius:8px 0 0 8px; overflow-y:auto; max-height:700px;">
-          <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; font-weight:700;">Scenario Builder</div>
+          <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px; font-weight:700;">Scenario Builder</div>
           <div style="margin-bottom:14px;">
             <div style="font-size:10px; color:var(--text-dim); margin-bottom:4px;">Quick Presets</div>
             <div id="scenario-presets" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
@@ -2344,7 +2344,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
         </div>
         <!-- RIGHT: History Panel -->
         <div class="card" style="padding:14px; border-radius:0 8px 8px 0; overflow-y:auto; max-height:700px;">
-          <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; font-weight:700;">Saved Runs (<span id="scenario-run-count">0</span>/4)</div>
+          <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:10px; font-weight:700;">Saved Runs (<span id="scenario-run-count">0</span>/4)</div>
           <div id="scenario-history"></div>
           <div id="scenario-empty-slots"></div>
           <button id="scenario-compare-btn" onclick="scenarioCompare()" disabled style="width:100%; margin-top:10px; padding:8px; background:var(--accent5); color:white; border:none; border-radius:6px; font-weight:600; font-size:11px; cursor:pointer; opacity:0.5;">Compare Selected (0)</button>
@@ -7893,20 +7893,33 @@ function renderGlobeEntities() {
 
     var arcColor = riskArcColors[m.risk_level] || riskArcColors.medium;
 
-    // Deep-dive: render individual mines if available, otherwise country-level
+    // Deep-dive: render individual mines as pin markers if available, otherwise country-level
     if (m.mines && m.mines.length > 0) {
       m.mines.forEach(function(mine) {
         var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
-        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : tierColors.mining;
-        var size = Math.max(8, Math.min(18, (mine.production_t || 1000) / 1500));
+        var pinColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : tierColors.mining;
+        var pinHead = Math.max(10, Math.min(20, (mine.production_t || 1000) / 1500));
+        var pinHeight = 80000; // 80km stem height
+        var groundPos = Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat, 0);
+        var headPos = Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat, pinHeight);
+        // Pin stem (vertical line from ground to head)
         cesiumViewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat),
-          point: { pixelSize: size, color: markerColor, outlineColor: Cesium.Color.WHITE.withAlpha(0.6), outlineWidth: 2 },
+          polyline: {
+            positions: [groundPos, headPos],
+            width: 2,
+            material: pinColor.withAlpha(0.7),
+          },
+          properties: { layerId: 'mining', type: 'mine-stem', mineral: m.name, name: mine.name },
+        });
+        // Pin head (prominent circle at top of stem)
+        cesiumViewer.entities.add({
+          position: headPos,
+          point: { pixelSize: pinHead, color: pinColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
           label: {
             text: mine.name + '\n' + (mine.production_t ? mine.production_t.toLocaleString() + 't' : ''),
-            font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
+            font: '11px JetBrains Mono', fillColor: Cesium.Color.WHITE,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-            verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 14),
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -16),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
           properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1 },
@@ -7931,21 +7944,34 @@ function renderGlobeEntities() {
       });
     }
 
-    // Deep-dive: render individual refineries if available, otherwise country-level
+    // Deep-dive: render individual refineries as pin markers if available, otherwise country-level
     if (m.refineries && m.refineries.length > 0) {
       m.refineries.forEach(function(ref) {
         var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
         var isRussian = /nornickel|russia/i.test(ref.owner);
-        var markerColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : isRussian ? Cesium.Color.fromCssColorString('#f97316') : tierColors.processing;
-        var size = Math.max(8, Math.min(16, (ref.capacity_t || 3000) / 2000));
+        var pinColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : isRussian ? Cesium.Color.fromCssColorString('#f97316') : tierColors.processing;
+        var pinHead = Math.max(10, Math.min(18, (ref.capacity_t || 3000) / 2000));
+        var pinHeight = 100000; // 100km stem — slightly taller than mines to separate tiers visually
+        var groundPos = Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 0);
+        var headPos = Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, pinHeight);
+        // Pin stem
         cesiumViewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 60000),
-          point: { pixelSize: size, color: markerColor, outlineColor: Cesium.Color.WHITE.withAlpha(0.6), outlineWidth: 2 },
+          polyline: {
+            positions: [groundPos, headPos],
+            width: 2,
+            material: pinColor.withAlpha(0.7),
+          },
+          properties: { layerId: 'processing', type: 'refinery-stem', mineral: m.name, name: ref.name },
+        });
+        // Pin head (square-shaped outline distinguishes from round mine pins)
+        cesiumViewer.entities.add({
+          position: headPos,
+          point: { pixelSize: pinHead, color: pinColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
           label: {
             text: ref.name + '\n' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't cap' : ''),
-            font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
+            font: '11px JetBrains Mono', fillColor: Cesium.Color.WHITE,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-            verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -14),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
           properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1 },
@@ -11332,7 +11358,7 @@ function formatDollar(n) {
 function renderSankeyCascade(cascade) {
   var tiers = cascade.tiers || [];
   if (tiers.length === 0) return '';
-  var html = '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:700;">Disruption Cascade: Rocks \u2192 Rockets</div>';
+  var html = '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:8px; font-weight:700;">Disruption Cascade: Rocks \u2192 Rockets</div>';
   html += '<div class="card" style="padding:16px; margin-bottom:14px;">';
   html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px;">';
   tiers.forEach(function(t) {
@@ -11373,7 +11399,7 @@ function renderSankeyCascade(cascade) {
 
 function renderInlineCOAs(coas) {
   if (!coas || coas.length === 0) return '';
-  var html = '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:700;">Recommended Courses of Action</div>';
+  var html = '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:8px; font-weight:700;">Recommended Courses of Action</div>';
   html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">';
   coas.slice(0, 6).forEach(function(c) {
     var pColor = c.priority === 'critical' ? 'var(--accent2)' : c.priority === 'high' ? 'var(--accent4)' : 'var(--accent)';
@@ -11446,7 +11472,7 @@ function scenarioCompare() {
   scenarioSelected.forEach(function(idx) { if (scenarioHistory[idx]) runs.push(scenarioHistory[idx]); });
   var centerEl = document.getElementById('scenario-results');
   var html = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">';
-  html += '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Scenario Comparison</div>';
+  html += '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.03em; font-weight:700;">Scenario Comparison</div>';
   html += '<button onclick="closeComparisonView()" style="background:none; border:1px solid var(--border); border-radius:4px; padding:4px 10px; color:var(--text-dim); font-size:10px; cursor:pointer;">\u2190 Back to Builder</button>';
   html += '</div>';
   html += '<div class="card" style="padding:12px; margin-bottom:14px; overflow-x:auto;">';
