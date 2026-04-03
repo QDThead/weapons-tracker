@@ -954,10 +954,26 @@ tr:hover td { background: rgba(0,212,255,0.04); }
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+.psi-nav-box {
+  background: var(--surface); border: 1px solid var(--border); margin-bottom: 20px;
+}
+.psi-nav-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 12px;
+}
+.psi-nav-mineral-label {
+  font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+}
+.psi-nav-mineral-label .mineral-badge {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  padding: 3px 10px; background: var(--accent); color: #fff; text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 .psi-tab-bar {
-  display: flex; gap: 4px; margin-bottom: 18px; flex-wrap: wrap;
+  display: flex; gap: 4px; flex-wrap: wrap;
   background: var(--bg); border-radius: 0;
-  padding: 4px; border: 1px solid var(--border);
+  padding: 4px;
 }
 .psi-tab-bar .tab { border-radius: 0; white-space: nowrap; }
 
@@ -2020,24 +2036,31 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
   <!-- ════ SUPPLY CHAIN (PSI) PAGE ════ -->
   <div id="page-supply-chain" class="page" role="tabpanel" aria-labelledby="tab-supply-chain">
 
-    <div class="psi-tab-bar" role="tablist" aria-label="Supply Chain sub-navigation" style="display:flex; align-items:center; gap:0; flex-wrap:wrap;">
-      <button class="tab psi-tab-btn active" role="tab" aria-selected="true" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-globe" onclick="switchPsiTab(this)">3D Supply Map</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-taxonomy" onclick="switchPsiTab(this)">Risk Taxonomy</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-forecasting" onclick="switchPsiTab(this)">Forecasting</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-bom" onclick="switchPsiTab(this)">BOM Explorer</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-dossier" onclick="switchPsiTab(this)">Supplier Dossier</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-alerts" onclick="switchPsiTab(this)">Alerts & Sensing</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-register" onclick="switchPsiTab(this)">Risk Register</button>
-      <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-feedback" onclick="switchPsiTab(this)">Analyst Feedback</button>
-      <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
-        <span style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Mineral:</span>
-        <select id="psi-global-mineral" onchange="onGlobalMineralChange()" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-family:var(--font-body); font-size:12px; font-weight:600;">
-          <option value="">All Minerals</option>
-        </select>
+    <div class="psi-nav-box">
+      <div class="psi-nav-header">
+        <div class="psi-nav-mineral-label">
+          <span class="mineral-badge" id="psi-mineral-badge">COBALT</span>
+          <span id="psi-mineral-title">Supply Chain Intelligence</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <select id="psi-global-mineral" onchange="onGlobalMineralChange()" style="background:var(--bg); color:var(--accent); border:1px solid var(--border); padding:6px 10px; font-family:var(--font-body); font-size:12px; font-weight:600;">
+            <option value="">All Minerals</option>
+          </select>
+        </div>
+      </div>
+      <div class="psi-tab-bar" role="tablist" aria-label="Supply Chain sub-navigation">
+        <button class="tab psi-tab-btn active" role="tab" aria-selected="true" data-psi-tab="psi-overview" onclick="switchPsiTab(this)">Overview</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-globe" onclick="switchPsiTab(this)">3D Supply Map</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-graph" onclick="switchPsiTab(this)">Knowledge Graph</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-risks" onclick="switchPsiTab(this)">Risk Matrix</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-scenarios" onclick="switchPsiTab(this)">Scenario Sandbox</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-taxonomy" onclick="switchPsiTab(this)">Risk Taxonomy</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-forecasting" onclick="switchPsiTab(this)">Forecasting</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-bom" onclick="switchPsiTab(this)">BOM Explorer</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-dossier" onclick="switchPsiTab(this)">Supplier Dossier</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-alerts" onclick="switchPsiTab(this)">Alerts & Sensing</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-register" onclick="switchPsiTab(this)">Risk Register</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-feedback" onclick="switchPsiTab(this)">Analyst Feedback</button>
       </div>
     </div>
 
@@ -2099,6 +2122,10 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
               <div><span style="display:inline-block; width:10px; height:10px; background:#D80621; vertical-align:middle; margin-right:6px; clip-path:polygon(50% 0%, 100% 100%, 0% 100%);"></span><span style="color:#D80621;">Chokepoint</span></div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ff2d2d; vertical-align:middle; margin-right:6px; box-shadow:0 0 6px #ff2d2d;"></span><span style="color:#ff2d2d;">Canada Port</span></div>
               <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D80621; vertical-align:middle; margin-right:6px;"></span> Chinese-owned</div>
+              <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:4px; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em;">Pin Outline = Satellite Status</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #6b9080; vertical-align:middle; margin-right:6px;"></span><span style="color:#6b9080;">Active</span> — thermal detected</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #a89060; vertical-align:middle; margin-right:6px;"></span><span style="color:#a89060;">Idle</span> — no thermal (48hrs)</div>
+              <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #4B5567; vertical-align:middle; margin-right:6px;"></span><span style="color:#4B5567;">Unknown</span> — no data</div>
             </div>
             <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.leg-arrow').textContent=this.nextElementSibling.style.display==='none'?'\u25B8':'\u25BE'" style="font-family:var(--font-mono); font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; padding:8px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
               <span>Shipping Route Risk</span><span class="leg-arrow" style="font-size:11px;">&#x25BE;</span>
@@ -7275,7 +7302,16 @@ function getGlobalMineral() {
   return select ? select.value : '';
 }
 
+function updateMineralHeader() {
+  var mineral = getGlobalMineral();
+  var badge = document.getElementById('psi-mineral-badge');
+  var title = document.getElementById('psi-mineral-title');
+  if (badge) badge.textContent = mineral || 'ALL';
+  if (title) title.textContent = (mineral || 'All Minerals') + ' — Supply Chain Intelligence';
+}
+
 function onGlobalMineralChange() {
+  updateMineralHeader();
   // Find which sub-tab is currently active and refresh it
   var activeTab = document.querySelector('.psi-sub:not([style*="display:none"]):not([style*="display: none"])');
   if (!activeTab) return;
@@ -7899,6 +7935,10 @@ function renderGlobeEntities() {
         var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
         var pinColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : tierColors.mining;
         var pinHead = Math.max(10, Math.min(20, (mine.production_t || 1000) / 1500));
+        var thermalStatus = (mine.thermal && mine.thermal.status) || 'UNKNOWN';
+        var thermalOutline = thermalStatus === 'ACTIVE' ? Cesium.Color.fromCssColorString('#6b9080') :
+                             thermalStatus === 'IDLE' ? Cesium.Color.fromCssColorString('#a89060') :
+                             Cesium.Color.fromCssColorString('#4B5567');
         var pinHeight = 80000; // 80km stem height
         var groundPos = Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat, 0);
         var headPos = Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat, pinHeight);
@@ -7914,7 +7954,7 @@ function renderGlobeEntities() {
         // Pin head (prominent circle at top of stem)
         cesiumViewer.entities.add({
           position: headPos,
-          point: { pixelSize: pinHead, color: pinColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
+          point: { pixelSize: pinHead, color: pinColor, outlineColor: thermalOutline, outlineWidth: 3 },
           label: {
             text: mine.name + '\n' + (mine.production_t ? mine.production_t.toLocaleString() + 't' : ''),
             font: '11px JetBrains Mono', fillColor: Cesium.Color.WHITE,
@@ -7922,7 +7962,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -16),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1 },
+          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1, thermal: JSON.stringify(mine.thermal || {}) },
         });
       });
     } else {
@@ -7951,6 +7991,10 @@ function renderGlobeEntities() {
         var isRussian = /nornickel|russia/i.test(ref.owner);
         var pinColor = isChineseOwned ? Cesium.Color.fromCssColorString('#D80621') : isRussian ? Cesium.Color.fromCssColorString('#f97316') : tierColors.processing;
         var pinHead = Math.max(10, Math.min(18, (ref.capacity_t || 3000) / 2000));
+        var thermalStatus = (ref.thermal && ref.thermal.status) || 'UNKNOWN';
+        var thermalOutline = thermalStatus === 'ACTIVE' ? Cesium.Color.fromCssColorString('#6b9080') :
+                             thermalStatus === 'IDLE' ? Cesium.Color.fromCssColorString('#a89060') :
+                             Cesium.Color.fromCssColorString('#4B5567');
         var pinHeight = 100000; // 100km stem — slightly taller than mines to separate tiers visually
         var groundPos = Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 0);
         var headPos = Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, pinHeight);
@@ -7966,7 +8010,7 @@ function renderGlobeEntities() {
         // Pin head (square-shaped outline distinguishes from round mine pins)
         cesiumViewer.entities.add({
           position: headPos,
-          point: { pixelSize: pinHead, color: pinColor, outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
+          point: { pixelSize: pinHead, color: pinColor, outlineColor: thermalOutline, outlineWidth: 3 },
           label: {
             text: ref.name + '\n' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't cap' : ''),
             font: '11px JetBrains Mono', fillColor: Cesium.Color.WHITE,
@@ -7974,7 +8018,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -14),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1 },
+          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1, thermal: JSON.stringify(ref.thermal || {}) },
         });
       });
     } else {
@@ -9001,6 +9045,34 @@ function setupGlobeClickHandler() {
       if (props.note.getValue()) {
         html += '<div style="margin-top:6px; font-size:11px; color:var(--text-dim); border-top:1px solid var(--border); padding-top:6px;">' + esc(props.note.getValue()) + '</div>';
       }
+      // Satellite Verification section
+      var thermalJson = props.thermal ? props.thermal.getValue() : '{}';
+      try {
+        var thermal = JSON.parse(thermalJson);
+        if (thermal.status) {
+          var satColors = {ACTIVE:'#6b9080', IDLE:'#a89060', UNKNOWN:'#4B5567'};
+          var satColor = satColors[thermal.status] || '#4B5567';
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
+          html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Satellite Verification</div>';
+          html += '<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">'
+            + '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + satColor + '; box-shadow:0 0 6px ' + satColor + ';"></span>'
+            + '<span style="font-family:var(--font-mono); font-size:11px; font-weight:600; color:' + satColor + ';">' + thermal.status + '</span>'
+            + '<span style="font-size:10px; color:var(--text-dim);">(' + (thermal.detection_count || 0) + ' thermal detections, last 48hrs)</span>'
+            + '</div>';
+          if (thermal.latest_detection) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Latest: ' + esc(thermal.latest_detection)
+              + (thermal.max_brightness_k ? ' | ' + thermal.max_brightness_k + 'K' : '')
+              + (thermal.avg_frp_mw ? ' | ' + thermal.avg_frp_mw + ' MW FRP' : '')
+              + '</div>';
+          }
+          if (thermal.status === 'IDLE') {
+            html += '<div style="font-size:10px; color:#a89060; margin-top:4px; padding:4px 6px; background:rgba(168,144,96,0.1); border-left:2px solid #a89060;">'
+              + '\u26A0 No thermal signature detected — facility may be shut down or operating below detection threshold</div>';
+          }
+          html += '<div style="font-size:9px; color:var(--text-muted); margin-top:4px;">' + esc(thermal.source || 'NASA FIRMS') + ' (375m VIIRS)</div>';
+          html += '</div>';
+        }
+      } catch(e) {}
     } else if (type === 'mining') {
       title.textContent = props.country.getValue() + ' \u2014 Mining';
       html = '<div><strong>Mineral:</strong> ' + esc(mineral) + '</div>'

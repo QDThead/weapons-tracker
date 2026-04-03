@@ -742,4 +742,21 @@ def create_scheduler() -> AsyncIOScheduler:
         max_instances=1,
     )
 
+    # NASA FIRMS facility thermal monitoring (every 6 hours)
+    async def refresh_firms_thermal():
+        from src.ingestion.firms_thermal import FIRMSThermalClient
+        client = FIRMSThermalClient()
+        data = await client.fetch_all_facilities()
+        active = sum(1 for v in data.values() if v["status"] == "ACTIVE")
+        logger.info("[firms_thermal] %d/%d facilities ACTIVE", active, len(data))
+
+    scheduler.add_job(
+        resilient_job("firms_thermal", timeout_s=120)(refresh_firms_thermal),
+        IntervalTrigger(hours=6),
+        id="firms_thermal",
+        name="NASA FIRMS facility thermal monitoring (18 facilities)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
     return scheduler

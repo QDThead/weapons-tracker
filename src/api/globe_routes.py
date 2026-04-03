@@ -57,6 +57,19 @@ async def get_mineral(name: str):
         except Exception as e:
             logger.warning("Cobalt HHI enrichment failed: %s", e)
 
+        # Enrich mines/refineries with satellite thermal verification
+        try:
+            from src.ingestion.firms_thermal import FIRMSThermalClient
+            firms = FIRMSThermalClient()
+            thermal_data = await firms.fetch_all_facilities()
+            unknown_thermal = {"status": "UNKNOWN", "detection_count": 0, "source": "NASA FIRMS (unavailable)", "detections": []}
+            for mine in mineral.get("mines", []):
+                mine["thermal"] = thermal_data.get(mine["name"], unknown_thermal)
+            for ref in mineral.get("refineries", []):
+                ref["thermal"] = thermal_data.get(ref["name"], unknown_thermal)
+        except Exception as e:
+            logger.warning("FIRMS thermal enrichment failed: %s", e)
+
     return mineral
 
 
