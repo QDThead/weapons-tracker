@@ -7898,10 +7898,10 @@ function renderGlobeEntities() {
       m.mines.forEach(function(mine) {
         var isChineseOwned = /china|cmoc|jinchuan|huayou/i.test(mine.owner);
         var colorHex = isChineseOwned ? '#D80621' : '#6b9080';
-        var size = Math.max(14, Math.min(22, (mine.production_t || 1000) / 1200));
+        var sc = Math.max(0.6, Math.min(1.2, (mine.production_t || 1000) / 20000));
         cesiumViewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(mine.lon, mine.lat),
-          billboard: { image: buildDiamondImage(colorHex), width: size, height: size },
+          billboard: { image: buildDiamondImage(colorHex), scale: sc },
           label: {
             text: mine.name + '\n' + (mine.production_t ? mine.production_t.toLocaleString() + 't' : ''),
             font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
@@ -7937,10 +7937,10 @@ function renderGlobeEntities() {
         var isChineseOwned = /china|huayou|gem|jinchuan|cngr|cmoc/i.test(ref.owner);
         var isRussian = /nornickel|russia/i.test(ref.owner);
         var colorHex = isChineseOwned ? '#D80621' : isRussian ? '#f97316' : '#6b6b8a';
-        var size = Math.max(14, Math.min(20, (ref.capacity_t || 3000) / 1500));
+        var sc = Math.max(0.5, Math.min(1.0, (ref.capacity_t || 3000) / 25000));
         cesiumViewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(ref.lon, ref.lat, 60000),
-          billboard: { image: buildDiamondImage(colorHex), width: size, height: size },
+          billboard: { image: buildDiamondImage(colorHex), scale: sc },
           label: {
             text: ref.name + '\n' + (ref.capacity_t ? ref.capacity_t.toLocaleString() + 't cap' : ''),
             font: '10px JetBrains Mono', fillColor: Cesium.Color.WHITE,
