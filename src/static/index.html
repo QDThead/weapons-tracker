@@ -2061,6 +2061,7 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
         <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-alerts" onclick="switchPsiTab(this)">Alerts & Sensing</button>
         <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-register" onclick="switchPsiTab(this)">Risk Register</button>
         <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-feedback" onclick="switchPsiTab(this)">Analyst Feedback</button>
+        <button class="tab psi-tab-btn" role="tab" aria-selected="false" data-psi-tab="psi-verification" onclick="switchPsiTab(this)">Verification</button>
       </div>
     </div>
 
@@ -2481,6 +2482,13 @@ body.light .theme-toggle .tgl-thumb{left:18px;background:#fff;}
       </div>
     </div>
 
+    <!-- PSI Production Verification -->
+    <div id="psi-verification" class="psi-sub" style="display:none;">
+      <div id="psi-verification-content">
+        <div style="color:var(--text-dim); text-align:center; padding:40px;">Select a mineral to view production verification.</div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ════ DATA FEEDS PAGE ════ -->
@@ -2645,8 +2653,8 @@ const FRENCH_LABELS = {
   'compliance': 'Conformit\u00e9'
 };
 
-var PSI_FR_TABS = {'psi-overview':'Aperçu','psi-globe':'Carte 3D','psi-graph':'Graphe','psi-risks':'Matrice de risque','psi-scenarios':'Scénarios','psi-taxonomy':'Taxonomie','psi-forecasting':'Prévisions','psi-bom':'Nomenclature','psi-dossier':'Dossier','psi-alerts':'Alertes','psi-register':'Registre','psi-feedback':'Rétroaction'};
-var PSI_EN_TABS = {'psi-overview':'Overview','psi-globe':'3D Supply Map','psi-graph':'Knowledge Graph','psi-risks':'Risk Matrix','psi-scenarios':'Scenario Sandbox','psi-taxonomy':'Risk Taxonomy','psi-forecasting':'Forecasting','psi-bom':'BOM Explorer','psi-dossier':'Supplier Dossier','psi-alerts':'Alerts & Sensing','psi-register':'Risk Register','psi-feedback':'Analyst Feedback'};
+var PSI_FR_TABS = {'psi-overview':'Aperçu','psi-globe':'Carte 3D','psi-graph':'Graphe','psi-risks':'Matrice de risque','psi-scenarios':'Scénarios','psi-taxonomy':'Taxonomie','psi-forecasting':'Prévisions','psi-bom':'Nomenclature','psi-dossier':'Dossier','psi-alerts':'Alertes','psi-register':'Registre','psi-feedback':'Rétroaction','psi-verification':'Vérification'};
+var PSI_EN_TABS = {'psi-overview':'Overview','psi-globe':'3D Supply Map','psi-graph':'Knowledge Graph','psi-risks':'Risk Matrix','psi-scenarios':'Scenario Sandbox','psi-taxonomy':'Risk Taxonomy','psi-forecasting':'Forecasting','psi-bom':'BOM Explorer','psi-dossier':'Supplier Dossier','psi-alerts':'Alerts & Sensing','psi-register':'Risk Register','psi-feedback':'Analyst Feedback','psi-verification':'Verification'};
 
 function toggleLanguage() {
   currentLanguage = currentLanguage === 'en' ? 'fr' : 'en';
@@ -7337,6 +7345,7 @@ function onGlobalMineralChange() {
   if (tabId === 'psi-alerts') onAlertsMineralChange();
   if (tabId === 'psi-register') onRegisterMineralChange();
   if (tabId === 'psi-feedback') onFeedbackMineralChange();
+  if (tabId === 'psi-verification') onVerificationMineralChange();
   if (tabId === 'psi-globe') {
     var mineral = getGlobalMineral();
     if (mineral) selectMineralDetail(mineral);
@@ -7365,6 +7374,7 @@ function switchPsiTab(btn) {
     if (btn.dataset.psiTab === 'psi-alerts') onAlertsMineralChange();
     if (btn.dataset.psiTab === 'psi-register') onRegisterMineralChange();
     if (btn.dataset.psiTab === 'psi-feedback') onFeedbackMineralChange();
+    if (btn.dataset.psiTab === 'psi-verification') onVerificationMineralChange();
   }
 }
 
