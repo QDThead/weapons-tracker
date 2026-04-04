@@ -10692,7 +10692,7 @@ function renderAlertsSensing(m, container) {
         anomalies.push({name: f.name, type: 'PAUSED_BUT_ACTIVE', detail: 'Reports paused but satellite detects ' + (tStatus === 'ACTIVE' ? 'thermal' : '') + (tStatus === 'ACTIVE' && nStatus === 'EMITTING' ? ' + ' : '') + (nStatus === 'EMITTING' ? 'NO2 emissions' : '')});
       }
       var capacity = f.production_t || f.capacity_t || 0;
-      if (capacity > 10000 && !isPaused && tStatus !== 'ACTIVE' && nStatus !== 'EMITTING' && tStatus !== 'UNKNOWN' && nStatus !== 'UNKNOWN') {
+      if (capacity > 2000 && !isPaused && tStatus !== 'ACTIVE' && nStatus !== 'EMITTING' && tStatus !== 'UNKNOWN' && nStatus !== 'UNKNOWN') {
         anomalies.push({name: f.name, type: 'OPERATING_NO_SIGNAL', detail: 'Reports ' + capacity.toLocaleString() + ' t/yr capacity but no satellite confirmation'});
       }
     });
@@ -10738,10 +10738,13 @@ function renderAlertsSensing(m, container) {
       html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--accent2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">ANOMALIES DETECTED</div>';
       anomalies.forEach(function(a) {
         var aColor = a.type === 'PAUSED_BUT_ACTIVE' ? '#D80621' : '#a89060';
-        html += '<div style="padding:8px 10px; margin-bottom:4px; background:' + aColor + '0a; border-left:2px solid ' + aColor + '; font-size:11px;">';
-        html += '<span style="font-weight:600; color:' + aColor + ';">' + esc(a.name) + '</span>';
-        html += '<span style="color:var(--text-dim);"> \u2014 ' + esc(a.detail) + '</span>';
-        html += '</div>';
+        var aBadge = a.type === 'PAUSED_BUT_ACTIVE' ? 'INVESTIGATE' : 'MONITOR';
+        html += '<div style="padding:8px 10px; margin-bottom:4px; background:' + aColor + '0a; border-left:3px solid ' + aColor + '; font-size:11px;">';
+        html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+        html += '<span><span style="font-weight:600; color:' + aColor + ';">' + esc(a.name) + '</span>';
+        html += '<span style="color:var(--text-dim);"> \u2014 ' + esc(a.detail) + '</span></span>';
+        html += '<span style="font-size:8px; font-family:var(--font-mono); padding:2px 6px; border:1px solid ' + aColor + '; color:' + aColor + '; letter-spacing:0.5px;">' + aBadge + '</span>';
+        html += '</div></div>';
       });
       html += '</div>';
     } else {
@@ -13344,17 +13347,39 @@ function computeVerificationScore(facility) {
   if (capacity === 0) reportedStatus = 'unknown';
 
   var thermalActiveDays = thermalHistory.filter(function(h) { return h.count > 0; }).length;
-  var no2EmittingDays = no2History.filter(function(h) { return (h.ratio || 0) >= 2.0; }).length;
-  var totalDays = Math.max(thermalHistory.length, no2History.length, 1);
+  var no2EmittingDays = no2History.filter(function(h) { return (h.ratio || 0) >= 1.5; }).length;
 
-  var satelliteActivityPct = Math.max(thermalActiveDays, no2EmittingDays) / totalDays;
+  // Tier-specific third signal
+  var so2 = facility.so2 || {};
+  var ndviData = facility.ndvi || {};
+  var so2History = so2.history || [];
+  var ndviHistory = ndviData.history || [];
+  var isMine = !(facility._isRefinery);
+  var thirdSignalDays;
+  if (isMine) {
+    thirdSignalDays = ndviHistory.filter(function(h) { return h.status === 'ACTIVE_MINING'; }).length;
+  } else {
+    thirdSignalDays = so2History.filter(function(h) { return (h.ratio || 0) >= 1.5; }).length;
+  }
+
+  var totalDays = Math.max(thermalHistory.length, no2History.length, (isMine ? ndviHistory.length : so2History.length), 1);
+
+  var satelliteActivityPct = Math.max(thermalActiveDays, no2EmittingDays, thirdSignalDays) / totalDays;
 
   var score;
   if (reportedStatus === 'operating') {
     score = satelliteActivityPct * 100;
     if (thermalActiveDays > 0 && no2EmittingDays > 0) score = Math.min(100, score + 10);
+    if (thirdSignalDays > 0) score = Math.min(100, score + 5);
   } else if (reportedStatus === 'paused') {
-    score = (1 - satelliteActivityPct) * 100;
+    // For paused facilities, ANY satellite activity is a red flag
+    if (thermalActiveDays > 0 || no2EmittingDays > 0 || thirdSignalDays > 0) {
+      // Even 1 active day → cap score at 45 (DISCREPANCY territory)
+      var rawPausedScore = (1 - satelliteActivityPct) * 100;
+      score = Math.min(rawPausedScore, 45);
+    } else {
+      score = (1 - satelliteActivityPct) * 100;
+    }
   } else {
     score = 50;
   }
@@ -13391,14 +13416,17 @@ function computeVerificationScore(facility) {
   return {
     score: score, verdict: verdict, verdictColor: verdictColor, verdictText: verdictText,
     reportedStatus: reportedStatus, thermalActiveDays: thermalActiveDays,
-    no2EmittingDays: no2EmittingDays, totalDays: totalDays, capacity: capacity,
+    no2EmittingDays: no2EmittingDays, thirdSignalDays: thirdSignalDays, isMine: isMine,
+    totalDays: totalDays, capacity: capacity,
     figureType: facility.figure_type || '', figureSource: facility.figure_source || '',
     figureYear: facility.figure_year || '',
   };
 }
 
 function renderVerificationTab(m, container) {
-  var facilities = (m.mines || []).concat(m.refineries || []);
+  var mines = (m.mines || []).map(function(f) { f._isRefinery = false; return f; });
+  var refFacilities = (m.refineries || []).map(function(f) { f._isRefinery = true; return f; });
+  var facilities = mines.concat(refFacilities);
   if (facilities.length === 0) {
     container.innerHTML = '<div class="card" style="padding:40px; text-align:center; color:var(--text-dim);">No facility data available.</div>';
     return;
@@ -13422,7 +13450,7 @@ function renderVerificationTab(m, container) {
     html += '<div style="margin-bottom:16px;">';
     html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">SECTION 13</div>';
     html += '<h3 style="margin:0 0 8px 0;">Production Verification \u2014 Satellite vs Reported Output</h3>';
-    html += '<div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Cross-references FIRMS thermal + Sentinel-5P NO2 satellite signals against reported facility production capacity. Discrepancies may indicate unreported shutdowns, covert operations, or data integrity issues.</div>';
+    html += '<div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Cross-references FIRMS thermal + Sentinel-5P NO2/SO2 + Sentinel-2 NDVI satellite signals against reported facility production capacity. Mines use NDVI bare-soil detection; refineries use SO2 smelting emissions. Discrepancies may indicate unreported shutdowns, covert operations, or data integrity issues.</div>';
     html += '</div>';
 
     html += '<div style="display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">';
@@ -13497,9 +13525,17 @@ function renderVerificationTab(m, container) {
       html += '<div style="font-size:10px; font-family:var(--font-mono); color:var(--text-dim);">';
       html += 'Thermal: ' + v.thermalActiveDays + '/' + v.totalDays + ' days ACTIVE';
       html += ' &nbsp;\u00b7&nbsp; NO2: ' + v.no2EmittingDays + '/' + v.totalDays + ' days EMITTING';
+      html += ' &nbsp;\u00b7&nbsp; ' + (v.isMine ? 'NDVI' : 'SO2') + ': ' + v.thirdSignalDays + '/' + v.totalDays + ' days ' + (v.isMine ? 'MINING' : 'SMELTING');
       if (cloudPct !== undefined) html += ' &nbsp;\u00b7&nbsp; Cloud: ' + cloudPct + '% clear';
       html += '</div>';
       html += '</div>';
+
+      var signals = [];
+      if ((f.thermal || {}).status === 'ACTIVE') signals.push('<span style="color:#ff4444;">THERMAL</span>');
+      if ((f.no2 || {}).status === 'EMITTING') signals.push('<span style="color:#a050dc;">NO2</span>');
+      if (f._isRefinery && (f.so2 || {}).status === 'SMELTING') signals.push('<span style="color:#e6c619;">SO2</span>');
+      if (!f._isRefinery && (f.ndvi || {}).status === 'ACTIVE_MINING') signals.push('<span style="color:#6b9080;">NDVI</span>');
+      html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--text-dim); margin-top:4px;">Signals: ' + (signals.length > 0 ? signals.join(' + ') : 'None') + '</div>';
 
       html += '<div style="font-size:10px; color:' + v.verdictColor + '; padding:4px 6px; background:' + v.verdictColor + '0a; border-left:2px solid ' + v.verdictColor + ';">' + esc(v.verdictText) + '</div>';
       html += '</div>';
@@ -13551,8 +13587,8 @@ function openSatelliteZoom(name, lat, lon) {
     + '<span style="font-size:10px; color:var(--text-muted); font-weight:400;">Lat: ' + lat.toFixed(4) + ' Lon: ' + lon.toFixed(4) + '</span>';
   inner.appendChild(header);
 
-  // Large image (512x512)
-  var imgUrl = API + '/globe/facility/thumbnail?lat=' + lat + '&lon=' + lon;
+  // Large image (512x512 native resolution from API)
+  var imgUrl = API + '/globe/facility/thumbnail?lat=' + lat + '&lon=' + lon + '&size=512';
   var img = document.createElement('img');
   img.src = imgUrl;
   img.alt = 'Satellite view of ' + name;
@@ -13586,10 +13622,17 @@ function renderVerificationChart(canvasId, facility) {
 
   var thermalHistory = (facility.thermal || {}).history || [];
   var no2History = (facility.no2 || {}).history || [];
+  var so2History = (facility.so2 && facility.so2.history) || [];
+  var ndviHistory = (facility.ndvi && facility.ndvi.history) || [];
 
   var dateSet = {};
   thermalHistory.forEach(function(h) { dateSet[h.date] = dateSet[h.date] || {}; dateSet[h.date].frp = h.total_frp_mw || 0; });
   no2History.forEach(function(h) { dateSet[h.date] = dateSet[h.date] || {}; dateSet[h.date].ratio = h.ratio || 0; });
+  if (facility._isRefinery) {
+    so2History.forEach(function(h) { dateSet[h.date] = dateSet[h.date] || {}; dateSet[h.date].so2_ratio = h.ratio || 0; });
+  } else {
+    ndviHistory.forEach(function(h) { dateSet[h.date] = dateSet[h.date] || {}; dateSet[h.date].bare_soil = h.bare_soil_pct || 0; });
+  }
 
   var dates = Object.keys(dateSet).sort();
   if (dates.length < 2) {
@@ -13602,6 +13645,16 @@ function renderVerificationChart(canvasId, facility) {
 
   var frpData = dates.map(function(d) { return (dateSet[d].frp || 0); });
   var ratioData = dates.map(function(d) { return (dateSet[d].ratio || 0); });
+  var thirdData, thirdLabel, thirdColor;
+  if (facility._isRefinery) {
+    thirdLabel = 'SO2 Ratio';
+    thirdData = dates.map(function(d) { return (dateSet[d].so2_ratio || 0); });
+    thirdColor = '#e6c619';
+  } else {
+    thirdLabel = 'Bare Soil %';
+    thirdData = dates.map(function(d) { return (dateSet[d].bare_soil || 0); });
+    thirdColor = '#6b9080';
+  }
   var labels = dates.map(function(d) { return d.slice(5); });
 
   var maxFrp = Math.max.apply(null, frpData.concat([1]));
@@ -13632,6 +13685,18 @@ function renderVerificationChart(canvasId, facility) {
       categoryPercentage: 0.8,
       yAxisID: 'y1',
       order: 2,
+    },
+    {
+      label: thirdLabel,
+      data: thirdData,
+      backgroundColor: thirdColor + '66',
+      borderColor: thirdColor,
+      borderWidth: 1,
+      borderRadius: 2,
+      barPercentage: 0.45,
+      categoryPercentage: 0.8,
+      yAxisID: facility._isRefinery ? 'y1' : 'y2',
+      order: 3,
     },
   ];
 
@@ -13668,6 +13733,7 @@ function renderVerificationChart(canvasId, facility) {
             label: function(c) {
               if (c.datasetIndex === 0) return c.parsed.y.toFixed(2) + ' MW FRP';
               if (c.datasetIndex === 1) return c.parsed.y.toFixed(1) + '\u00d7 background';
+              if (c.datasetIndex === 2) return facility._isRefinery ? c.parsed.y.toFixed(1) + '\u00d7 SO2' : c.parsed.y.toFixed(0) + '% bare soil';
               return c.dataset.label;
             }
           }
@@ -13690,10 +13756,19 @@ function renderVerificationChart(canvasId, facility) {
         y1: {
           display: true,
           position: 'right',
-          title: { display: true, text: 'NO2 (\u00d7bg)', font: { size: 8, family: 'JetBrains Mono' }, color: '#a050dc' },
+          title: { display: true, text: facility._isRefinery ? 'NO2/SO2 (\u00d7bg)' : 'NO2 (\u00d7bg)', font: { size: 8, family: 'JetBrains Mono' }, color: '#a050dc' },
           beginAtZero: true,
           ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 },
           grid: { drawOnChartArea: false },
+        },
+        y2: {
+          display: !facility._isRefinery,
+          position: 'right',
+          title: { display: true, text: 'Bare Soil %', color: '#6b9080', font: { size: 9, family: 'JetBrains Mono' } },
+          min: 0, max: 100,
+          beginAtZero: true,
+          ticks: { font: { size: 8 }, color: '#4B5567', maxTicksLimit: 4 },
+          grid: { display: false },
         },
       },
     },
