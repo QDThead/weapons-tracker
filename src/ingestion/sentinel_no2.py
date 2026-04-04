@@ -128,7 +128,8 @@ class SentinelNO2Client:
         token = await self._get_token()
         if not token:
             return None
-        now = datetime.now(timezone.utc)
+        # OFFL data lags 2-5 days behind real-time; shift window back 5 days
+        now = datetime.now(timezone.utc) - timedelta(days=5)
         time_from = (now - timedelta(days=days)).strftime("%Y-%m-%dT00:00:00Z")
         time_to = now.strftime("%Y-%m-%dT23:59:59Z")
         payload = {
@@ -179,9 +180,11 @@ class SentinelNO2Client:
         cached = _cache_get(self._cache, cache_key)
         if cached is not None:
             return cached
-        facility_bbox = _make_bbox(lat, lon, radius_deg)
+        # S5P pixels are ~5.5km — need at least 0.1 deg bbox to capture data
+        no2_radius = max(radius_deg, 0.1)
+        facility_bbox = _make_bbox(lat, lon, no2_radius)
         facility_no2 = await self._query_bbox_no2(facility_bbox, days)
-        bg_bbox = _make_bbox(lat, lon, radius_deg * 5)
+        bg_bbox = _make_bbox(lat, lon, no2_radius * 5)
         background_no2 = await self._query_bbox_no2(bg_bbox, days)
         status_info = compute_no2_status(facility_no2, background_no2)
         result = {
