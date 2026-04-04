@@ -7,7 +7,7 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 
 ## Tech Stack
 - **Language:** Python 3.9+ (use `from __future__ import annotations` in all files)
-- **API Framework:** FastAPI + Uvicorn (155+ API endpoints)
+- **API Framework:** FastAPI + Uvicorn (156+ API endpoints)
 - **Database:** SQLite (dev) / PostgreSQL + PostGIS (prod)
 - **ORM:** SQLAlchemy 2.0 (declarative models)
 - **HTTP Client:** httpx (async)
@@ -19,7 +19,7 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Design System:** Inter (display + body), JetBrains Mono (numbers); military theme with "Signal" desaturated palette; sharp edges, solid surfaces, atmospheric grid overlay + scan line
 - **Home Page:** Landing page at `/` with DND branding, OODA framework, capabilities grid, intel ticker, right-side nav menu
 - **Routing:** `/` = home.html (landing), `/dashboard` = index.html (7-tab dashboard)
-- **Codebase:** 95 Python files
+- **Codebase:** 96 Python files
 - **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
 - **Tests:** 364 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds, FIRMS thermal, Sentinel NO2 (238 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
@@ -58,7 +58,8 @@ weapons-tracker/
 │   │   ├── sipri_milex.py           # SIPRI Military Expenditure Database
 │   │   ├── cia_factbook.py          # CIA World Factbook military data
 │   │   ├── firms_thermal.py         # NASA FIRMS satellite thermal monitoring (18 cobalt facilities, 6hr polling)
-│   │   └── scheduler.py              # APScheduler ingestion pipeline (27 scheduled jobs)
+│   │   ├── sentinel_no2.py         # Sentinel-5P TROPOMI NO2 emissions monitoring (18 cobalt facilities, daily polling) + Sentinel-2 thumbnails
+│   │   └── scheduler.py              # APScheduler ingestion pipeline (28 scheduled jobs)
 │   ├── storage/
 │   │   ├── models.py                 # SQLAlchemy models (18 tables)
 │   │   ├── database.py               # DB connection + session management
@@ -201,7 +202,7 @@ weapons-tracker/
 | **Universal Source Validation** | source_registry.py, validation_routes.py, index.html | Every card, table, stat box across all 7 tabs has expandable "Sources & Validation" panel showing source citations, type badges, live data health (last fetch, records, cache status), and confidence assessment. 50 hierarchical registry keys with inheritance. |
 | **Satellite Thermal Verification** | firms_thermal.py, globe_routes.py, index.html | NASA FIRMS VIIRS NOAA-20 (375m) thermal anomaly detection for all 18 cobalt mines/refineries. Per-facility bounding boxes (2-8km adaptive). Status badges on globe pins (green=ACTIVE, amber=IDLE). Fuzzy red thermal bloom markers. FRP sparkline history (30-day backfill). Click popup with brightness, FRP, detection timestamp. GIBS VIIRS global thermal tile overlay. |
 | **Satellite NO2 Verification** | sentinel_no2.py, globe_routes.py, index.html | Sentinel-5P TROPOMI NO2 column density for 18 cobalt facilities. Per-facility vs regional background ratio. Combined thermal+NO2 operational verdict (CONFIRMED ACTIVE / LIKELY ACTIVE / IDLE). Purple plume ellipses on globe. 30-day NO2 ratio history sparklines. |
-| **Production Verification** | index.html (client-side) | Verification sub-tab (#13) cross-referencing FIRMS thermal + Sentinel-5P NO2 satellite signals against reported facility production capacity. 18 cobalt facilities in card grid with overlay charts (30-day thermal FRP + NO2 ratio + capacity reference line). Verification score (0-100%) with CONSISTENT/INCONCLUSIVE/DISCREPANCY verdicts. Sort by score/name/country/capacity, filter by verdict. |
+| **Production Verification** | sentinel_no2.py, globe_routes.py, index.html | Verification sub-tab (#13) cross-referencing FIRMS thermal + Sentinel-5P NO2 satellite signals against reported facility production capacity. 18 cobalt facilities in card grid with Sentinel-2 satellite thumbnails (click to zoom 512px modal), overlay charts (30-day thermal FRP + NO2 ratio + capacity reference line), cloud coverage indicator with scoring adjustment. Verification score (0-100%) with CONSISTENT/INCONCLUSIVE/DISCREPANCY verdicts. Sort by score/name/country/capacity, filter by verdict. Satellite Intelligence summary card on Alerts & Sensing tab (KPIs, anomaly detection, source badges). |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 
 ## Dashboard UI (7 tabs, EN/FR bilingual)
@@ -316,6 +317,7 @@ weapons-tracker/
 - `GET /globe/minerals` — All 30 mineral supply chains with geo-coordinates, Canada dependencies
 - `GET /globe/minerals/{name}` — Single mineral with full chain (deep data for Cobalt: mines, refineries, alloys, sea_routes, overland_routes, taxonomy scores, 18 dossiers, live HHI)
 - `GET /globe/minerals/{name}/forecast` — Live computed forecast (FRED nickel proxy, linear regression, insolvency, lead time)
+- `GET /globe/facility/thumbnail?lat=&lon=` — Sentinel-2 true-color satellite thumbnail (256x256 PNG, 30-day mosaic, <30% cloud)
 
 ### Validation (src/api/validation_routes.py)
 - `GET /validation/sources` — Full source registry (50 keys, hierarchical inheritance, cached 1hr)
