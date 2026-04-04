@@ -6,19 +6,27 @@ import pytest
 
 
 def test_status_emitting():
-    """NO2 ratio >= 2.0 should return EMITTING."""
+    """NO2 ratio >= 1.5 should return EMITTING."""
     from src.ingestion.sentinel_no2 import compute_no2_status
     result = compute_no2_status(facility_no2=0.00006, background_no2=0.00002)
     assert result["status"] == "EMITTING"
     assert result["ratio"] == 3.0
 
 
-def test_status_low_emission():
-    """NO2 ratio < 2.0 should return LOW_EMISSION."""
+def test_status_emitting_at_threshold():
+    """NO2 ratio exactly at 1.5 should return EMITTING."""
     from src.ingestion.sentinel_no2 import compute_no2_status
     result = compute_no2_status(facility_no2=0.000015, background_no2=0.00001)
-    assert result["status"] == "LOW_EMISSION"
+    assert result["status"] == "EMITTING"
     assert result["ratio"] == 1.5
+
+
+def test_status_low_emission():
+    """NO2 ratio < 1.5 should return LOW_EMISSION."""
+    from src.ingestion.sentinel_no2 import compute_no2_status
+    result = compute_no2_status(facility_no2=0.000012, background_no2=0.00001)
+    assert result["status"] == "LOW_EMISSION"
+    assert result["ratio"] == 1.2
 
 
 def test_status_unknown_none():
@@ -113,3 +121,63 @@ def test_history_cap():
     for name in history:
         history[name] = history[name][-90:]
     assert len(history["TestFacility"]) == 90
+
+
+def test_so2_status_smelting():
+    """SO2 ratio >= 1.5 should return SMELTING."""
+    from src.ingestion.sentinel_no2 import compute_so2_status
+    result = compute_so2_status(facility_so2=0.00045, background_so2=0.00015)
+    assert result["status"] == "SMELTING"
+    assert result["ratio"] == 3.0
+
+
+def test_so2_status_at_threshold():
+    """SO2 ratio exactly at 1.5 should return SMELTING."""
+    from src.ingestion.sentinel_no2 import compute_so2_status
+    result = compute_so2_status(facility_so2=0.000015, background_so2=0.00001)
+    assert result["status"] == "SMELTING"
+    assert result["ratio"] == 1.5
+
+
+def test_so2_status_low():
+    """SO2 ratio < 1.5 should return LOW_SO2."""
+    from src.ingestion.sentinel_no2 import compute_so2_status
+    result = compute_so2_status(facility_so2=0.000012, background_so2=0.00001)
+    assert result["status"] == "LOW_SO2"
+    assert result["ratio"] == 1.2
+
+
+def test_so2_status_unknown():
+    """None values should return UNKNOWN."""
+    from src.ingestion.sentinel_no2 import compute_so2_status
+    result = compute_so2_status(facility_so2=None, background_so2=None)
+    assert result["status"] == "UNKNOWN"
+    assert result["ratio"] == 0
+
+
+def test_ndvi_status_active_mining():
+    """Bare soil > 60% should return ACTIVE_MINING."""
+    from src.ingestion.sentinel_no2 import compute_ndvi_status
+    result = compute_ndvi_status(bare_soil_pct=75.0, mean_ndvi=0.15)
+    assert result["status"] == "ACTIVE_MINING"
+
+
+def test_ndvi_status_moderate():
+    """Bare soil 30-60% should return MODERATE."""
+    from src.ingestion.sentinel_no2 import compute_ndvi_status
+    result = compute_ndvi_status(bare_soil_pct=45.0, mean_ndvi=0.35)
+    assert result["status"] == "MODERATE"
+
+
+def test_ndvi_status_vegetated():
+    """Bare soil < 30% should return VEGETATED."""
+    from src.ingestion.sentinel_no2 import compute_ndvi_status
+    result = compute_ndvi_status(bare_soil_pct=15.0, mean_ndvi=0.65)
+    assert result["status"] == "VEGETATED"
+
+
+def test_ndvi_status_unknown():
+    """None values should return UNKNOWN."""
+    from src.ingestion.sentinel_no2 import compute_ndvi_status
+    result = compute_ndvi_status(bare_soil_pct=None, mean_ndvi=None)
+    assert result["status"] == "UNKNOWN"

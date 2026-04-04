@@ -63,9 +63,31 @@ def compute_no2_status(facility_no2: float | None, background_no2: float | None)
         return {"status": "UNKNOWN", "ratio": 0}
     ratio = facility_no2 / max(background_no2, 1e-8)
     ratio = round(ratio, 1)
-    if ratio >= 2.0:
+    if ratio >= 1.5:
         return {"status": "EMITTING", "ratio": ratio}
     return {"status": "LOW_EMISSION", "ratio": ratio}
+
+
+def compute_so2_status(facility_so2: float | None, background_so2: float | None) -> dict:
+    """Classify SO2 emissions: SMELTING (>= 1.5x background) or LOW_SO2."""
+    if facility_so2 is None or background_so2 is None:
+        return {"status": "UNKNOWN", "ratio": 0}
+    ratio = facility_so2 / max(background_so2, 1e-8)
+    ratio = round(ratio, 1)
+    if ratio >= 1.5:
+        return {"status": "SMELTING", "ratio": ratio}
+    return {"status": "LOW_SO2", "ratio": ratio}
+
+
+def compute_ndvi_status(bare_soil_pct: float | None, mean_ndvi: float | None) -> dict:
+    """Classify mine activity from Sentinel-2 bare soil percentage."""
+    if bare_soil_pct is None or mean_ndvi is None:
+        return {"status": "UNKNOWN", "bare_soil_pct": 0, "mean_ndvi": 0}
+    if bare_soil_pct > 60:
+        return {"status": "ACTIVE_MINING", "bare_soil_pct": bare_soil_pct, "mean_ndvi": mean_ndvi}
+    if bare_soil_pct >= 30:
+        return {"status": "MODERATE", "bare_soil_pct": bare_soil_pct, "mean_ndvi": mean_ndvi}
+    return {"status": "VEGETATED", "bare_soil_pct": bare_soil_pct, "mean_ndvi": mean_ndvi}
 
 
 def compute_combined_verdict(thermal_status: str, no2_status: str) -> dict:
@@ -178,12 +200,12 @@ class SentinelNO2Client:
             logger.warning("CDSE NO2 query failed: %s", e)
             return None
 
-    async def fetch_facility_thumbnail(self, lat: float, lon: float, radius_deg: float = 0.1) -> bytes | None:
+    async def fetch_facility_thumbnail(self, lat: float, lon: float, radius_deg: float = 0.1, size: int = 256) -> bytes | None:
         """Fetch a Sentinel-2 true-color thumbnail for a facility location.
 
-        Returns PNG bytes or None on failure. Cached for 24 hours.
+        Returns PNG bytes or None on failure. Cached for 24 hours per size.
         """
-        cache_key = f"thumb_{lat:.4f}_{lon:.4f}"
+        cache_key = f"thumb_{lat:.4f}_{lon:.4f}_{size}"
         cached = _cache_get(self._cache, cache_key)
         if cached is not None:
             return cached
@@ -219,8 +241,8 @@ class SentinelNO2Client:
                 }],
             },
             "output": {
-                "width": 256,
-                "height": 256,
+                "width": size,
+                "height": size,
                 "responses": [{"identifier": "default", "format": {"type": "image/png"}}],
             },
             "evalscript": s2_evalscript,
