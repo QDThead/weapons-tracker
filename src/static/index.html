@@ -13459,10 +13459,15 @@ function renderVerificationTab(m, container) {
       html += '</div>';
 
       // Satellite thumbnail + chart side by side
+      var thumbLat = f.lat || f.latitude || 0;
+      var thumbLon = f.lon || f.longitude || 0;
+      var thumbUrl = (thumbLat && thumbLon) ? (API + '/globe/facility/thumbnail?lat=' + thumbLat + '&lon=' + thumbLon) : '';
       html += '<div style="display:flex; gap:8px; margin-bottom:8px;">';
-      html += '<div style="flex-shrink:0; width:120px; height:120px; background:#0a0e14; border:1px solid var(--border); position:relative; overflow:hidden;">';
-      html += '<img id="' + cardId + '-thumb" src="" alt="Satellite" style="width:100%; height:100%; object-fit:cover; display:none;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">';
-      html += '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-align:center; padding:8px;">Loading<br>satellite...</div>';
+      html += '<div id="' + cardId + '-thumb-wrap" style="flex-shrink:0; width:120px; height:120px; background:#0a0e14; border:1px solid var(--border); position:relative; overflow:hidden; cursor:pointer;" onclick="openSatelliteZoom(\'' + esc(f.name) + '\',' + thumbLat + ',' + thumbLon + ')">';
+      if (thumbUrl) {
+        html += '<img src="' + thumbUrl + '" alt="Satellite view of ' + esc(f.name) + '" style="width:100%; height:100%; object-fit:cover;" onload="this.nextElementSibling.style.display=\'none\';" onerror="this.style.display=\'none\';">';
+      }
+      html += '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-align:center; padding:8px; position:absolute; top:0; left:0;">Loading<br>satellite...</div>';
       html += '<div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); padding:2px 4px; font-size:8px; font-family:var(--font-mono); color:var(--text-muted);">Sentinel-2 L2A</div>';
       html += '</div>';
       html += '<div style="flex:1; min-width:0;">';
@@ -13517,22 +13522,60 @@ function renderVerificationTab(m, container) {
     setTimeout(function() {
       filtered.forEach(function(f, idx) {
         renderVerificationChart('vf-card-' + idx + '-chart', f);
-        // Load satellite thumbnail
-        var thumbEl = document.getElementById('vf-card-' + idx + '-thumb');
-        if (thumbEl) {
-          var lat = f.lat || f.latitude || 0;
-          var lon = f.lon || f.longitude || 0;
-          if (lat && lon) {
-            thumbEl.src = API + '/globe/facility/thumbnail?lat=' + lat + '&lon=' + lon;
-            thumbEl.onload = function() { this.style.display = ''; this.nextElementSibling.style.display = 'none'; };
-          }
-        }
       });
     }, 50);
   }
 
   sortFacilities(currentSort);
   renderGrid('all');
+}
+
+function openSatelliteZoom(name, lat, lon) {
+  // Remove existing modal if any
+  var existing = document.getElementById('sat-zoom-modal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'sat-zoom-modal';
+  modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:10000; display:flex; align-items:center; justify-content:center; cursor:pointer;';
+  modal.onclick = function() { modal.remove(); };
+
+  var inner = document.createElement('div');
+  inner.style.cssText = 'max-width:90vw; max-height:90vh; position:relative;';
+  inner.onclick = function(e) { e.stopPropagation(); };
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'color:var(--text); font-family:var(--font-mono); font-size:13px; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;';
+  header.innerHTML = '<span>' + esc(name) + ' \u2014 Sentinel-2 Satellite Imagery</span>'
+    + '<span style="font-size:10px; color:var(--text-muted); font-weight:400;">Lat: ' + lat.toFixed(4) + ' Lon: ' + lon.toFixed(4) + '</span>';
+  inner.appendChild(header);
+
+  // Large image (512x512)
+  var imgUrl = API + '/globe/facility/thumbnail?lat=' + lat + '&lon=' + lon;
+  var img = document.createElement('img');
+  img.src = imgUrl;
+  img.alt = 'Satellite view of ' + name;
+  img.style.cssText = 'width:512px; height:512px; max-width:85vw; max-height:75vh; object-fit:cover; border:2px solid var(--border); background:#0a0e14;';
+
+  var loading = document.createElement('div');
+  loading.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--text-muted); font-family:var(--font-mono); font-size:12px;';
+  loading.textContent = 'Loading high-res imagery...';
+  img.onload = function() { loading.remove(); };
+  img.onerror = function() { loading.textContent = 'Satellite imagery unavailable'; };
+
+  inner.appendChild(img);
+  inner.appendChild(loading);
+
+  // Footer
+  var footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:6px; display:flex; justify-content:space-between; align-items:center;';
+  footer.innerHTML = '<span style="font-size:9px; font-family:var(--font-mono); color:var(--text-muted);">Sentinel-2 L2A \u2022 10m resolution \u2022 Last 30 days \u2022 &lt;30% cloud</span>'
+    + '<span style="font-size:10px; color:var(--text-dim); cursor:pointer;" onclick="document.getElementById(\'sat-zoom-modal\').remove();">Click anywhere to close</span>';
+  inner.appendChild(footer);
+
+  modal.appendChild(inner);
+  document.body.appendChild(modal);
 }
 
 function renderVerificationChart(canvasId, facility) {
