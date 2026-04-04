@@ -21,7 +21,7 @@ where are the threats, what's happening in the Arctic, and how is the world resh
 - **Routing:** `/` = home.html (landing), `/dashboard` = index.html (7-tab dashboard)
 - **Codebase:** 96 Python files
 - **Flight Tracking:** 4 ADS-B sources (adsb.lol, adsb.fi, Airplanes.live, ADSB One) — parallel fetch, dedup, position history tracking, freight estimation
-- **Tests:** 364 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds, FIRMS thermal, Sentinel NO2 (238 unit/integration + 85 adversarial)
+- **Tests:** 377 tests (pytest) covering models, persistence, risk scoring, taxonomy, API endpoints, scraper utilities, globe API, cobalt forecasting, scenario engine, cobalt connectors, financial scoring, player monitoring, Comtrade cobalt bilateral, confidence triangulation, dossier completeness, multi-source flights, source validation, scheduler feeds, FIRMS thermal, Sentinel NO2/SO2/NDVI (251 unit/integration + 85 adversarial)
 - **Compliance:** 100% DND DMPP 11 RFI compliance for Cobalt (all 12 original gaps + 14 polish items closed)
 
 ## Project Structure
@@ -59,7 +59,7 @@ weapons-tracker/
 │   │   ├── cia_factbook.py          # CIA World Factbook military data
 │   │   ├── firms_thermal.py         # NASA FIRMS satellite thermal monitoring (18 cobalt facilities, 6hr polling)
 │   │   ├── sentinel_no2.py         # Sentinel-5P TROPOMI NO2 emissions monitoring (18 cobalt facilities, daily polling) + Sentinel-2 thumbnails
-│   │   └── scheduler.py              # APScheduler ingestion pipeline (28 scheduled jobs)
+│   │   └── scheduler.py              # APScheduler ingestion pipeline (30 scheduled jobs)
 │   ├── storage/
 │   │   ├── models.py                 # SQLAlchemy models (18 tables)
 │   │   ├── database.py               # DB connection + session management
@@ -121,7 +121,7 @@ weapons-tracker/
 └── README.md
 ```
 
-## Data Sources (58 active + 2 inactive)
+## Data Sources (60 active + 2 inactive)
 
 | # | Source | Connector | Freshness | Auth | Status |
 |---|--------|-----------|-----------|------|--------|
@@ -158,6 +158,8 @@ weapons-tracker/
 | 51 | Comtrade Cobalt Bilateral | `comtrade.py` | Monthly | API key | Working |
 | 52 | NASA FIRMS Thermal | `firms_thermal.py` | 6 hours (18 facilities) | MAP_KEY (free) | Working |
 | 53 | Sentinel-5P NO2 | `sentinel_no2.py` | Daily (18 facilities) | OAuth (free) | Working |
+| 54 | Sentinel-5P SO2 | `sentinel_no2.py` | Daily (18 facilities) | OAuth (free) | Working |
+| 55 | Sentinel-2 NDVI | `sentinel_no2.py` | Weekly (9 mines) | OAuth (free) | Working |
 
 ## Intelligence Features
 
@@ -201,7 +203,10 @@ weapons-tracker/
 | **Security / RBAC** | auth.py, security_routes.py | API key authentication (loaded from env); 3 roles enforced (viewer, analyst, admin); CORS, TLS redirect, trusted hosts; full audit log |
 | **Universal Source Validation** | source_registry.py, validation_routes.py, index.html | Every card, table, stat box across all 7 tabs has expandable "Sources & Validation" panel showing source citations, type badges, live data health (last fetch, records, cache status), and confidence assessment. 50 hierarchical registry keys with inheritance. |
 | **Satellite Thermal Verification** | firms_thermal.py, globe_routes.py, index.html | NASA FIRMS VIIRS NOAA-20 (375m) thermal anomaly detection for all 18 cobalt mines/refineries. Per-facility bounding boxes (2-8km adaptive). Status badges on globe pins (green=ACTIVE, amber=IDLE). Fuzzy red thermal bloom markers. FRP sparkline history (30-day backfill). Click popup with brightness, FRP, detection timestamp. GIBS VIIRS global thermal tile overlay. |
-| **Satellite NO2 Verification** | sentinel_no2.py, globe_routes.py, index.html | Sentinel-5P TROPOMI NO2 column density for 18 cobalt facilities. Per-facility vs regional background ratio. Combined thermal+NO2 operational verdict (CONFIRMED ACTIVE / LIKELY ACTIVE / IDLE). Purple plume ellipses on globe. 30-day NO2 ratio history sparklines. |
+| **Satellite NO2 Verification** | sentinel_no2.py, globe_routes.py, index.html | Sentinel-5P TROPOMI NO2 column density for 18 cobalt facilities. Per-facility vs regional background ratio. Purple plume ellipses on globe. 30-day NO2 ratio history sparklines. |
+| **Satellite SO2 Smelting Detection** | sentinel_no2.py, globe_routes.py, index.html | Sentinel-5P TROPOMI SO2 column density for 18 facilities. Ratio >= 1.5x = SMELTING (refineries). Yellow plume ellipses on globe. Dossier popup SO2 section. |
+| **Satellite NDVI Mine Activity** | sentinel_no2.py, globe_routes.py, index.html | Sentinel-2 L2A NDVI bare soil detection for 9 cobalt mines. Bare soil > 60% = ACTIVE_MINING. Orange markers on globe. Dossier popup NDVI section. |
+| **Tier-Specific Combined Verdict** | sentinel_no2.py, globe_routes.py, index.html | 4-signal operational verdict: mines use thermal+NO2+NDVI, refineries use thermal+NO2+SO2. UNKNOWN signals excluded from scoring. 3/3 = CONFIRMED ACTIVE, 2/3 = ACTIVE, 1/3 = LIKELY ACTIVE, 0/3 = IDLE. |
 | **Production Verification** | sentinel_no2.py, globe_routes.py, index.html | Verification sub-tab (#13) cross-referencing FIRMS thermal + Sentinel-5P NO2 satellite signals against reported facility production capacity. 18 cobalt facilities in card grid with Sentinel-2 satellite thumbnails (click to zoom 512px modal), overlay charts (30-day thermal FRP + NO2 ratio + capacity reference line), cloud coverage indicator with scoring adjustment. Verification score (0-100%) with CONSISTENT/INCONCLUSIVE/DISCREPANCY verdicts. Sort by score/name/country/capacity, filter by verdict. Satellite Intelligence summary card on Alerts & Sensing tab (KPIs, anomaly detection, source badges). |
 | **Docker/Azure Deployment** | Dockerfile, docker-compose.yml, deploy/azure/deploy.sh | Containerised production deployment; Azure Container Apps deploy script |
 

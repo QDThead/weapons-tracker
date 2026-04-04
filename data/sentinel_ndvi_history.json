@@ -1,0 +1,74 @@
+{
+ "Tenke Fungurume (TFM)": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": 14.1,
+   "mean_ndvi": 0.658,
+   "status": "VEGETATED"
+  }
+ ],
+ "Kisanfu (KFM)": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": 0.0,
+   "mean_ndvi": 0.725,
+   "status": "VEGETATED"
+  }
+ ],
+ "Kamoto (KCC)": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": null,
+   "mean_ndvi": null,
+   "status": "UNKNOWN"
+  }
+ ],
+ "Mutanda": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": 4.7,
+   "mean_ndvi": 0.737,
+   "status": "VEGETATED"
+  }
+ ],
+ "Murrin Murrin": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": 98.9,
+   "mean_ndvi": 0.086,
+   "status": "ACTIVE_MINING"
+  }
+ ],
+ "Moa JV": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": 15.6,
+   "mean_ndvi": 0.197,
+   "status": "VEGETATED"
+  }
+ ],
+ "Voisey's Bay": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": null,
+   "mean_ndvi": null,
+   "status": "UNKNOWN"
+  }
+ ],
+ "Sudbury Basin": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": 0.2,
+   "mean_ndvi": 0.055,
+   "status": "VEGETATED"
+  }
+ ],
+ "Raglan Mine": [
+  {
+   "date": "2026-04-04",
+   "bare_soil_pct": null,
+   "mean_ndvi": null,
+   "status": "UNKNOWN"
+  }
+ ]
+}

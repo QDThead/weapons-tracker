@@ -1,0 +1,164 @@
+{
+ "Tenke Fungurume (TFM)": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 5.51014e-05,
+   "background_mol_m2": 7.40896e-05,
+   "ratio": 0.7,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Kisanfu (KFM)": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 8.32835e-05,
+   "background_mol_m2": 6.47911e-05,
+   "ratio": 1.3,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Kamoto (KCC)": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 8.27731e-05,
+   "background_mol_m2": 6.9888e-05,
+   "ratio": 1.2,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Mutanda": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 0.00010082,
+   "background_mol_m2": 7.86227e-05,
+   "ratio": 1.3,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Murrin Murrin": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 1.30719e-05,
+   "background_mol_m2": 4.73039e-05,
+   "ratio": 0.3,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Moa JV": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 6.32442e-05,
+   "background_mol_m2": 3.96959e-05,
+   "ratio": 1.6,
+   "status": "SMELTING"
+  }
+ ],
+ "Voisey's Bay": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 0.0005976103,
+   "background_mol_m2": 0.0004103554,
+   "ratio": 1.5,
+   "status": "SMELTING"
+  }
+ ],
+ "Sudbury Basin": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 5.85577e-05,
+   "background_mol_m2": 6.65158e-05,
+   "ratio": 0.9,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Raglan Mine": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 3.41912e-05,
+   "background_mol_m2": 5.27574e-05,
+   "ratio": 0.6,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Huayou Cobalt": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 7.46936e-05,
+   "background_mol_m2": 0.0002567775,
+   "ratio": 0.3,
+   "status": "LOW_SO2"
+  }
+ ],
+ "GEM Co.": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": null,
+   "background_mol_m2": null,
+   "ratio": 0,
+   "status": "UNKNOWN"
+  }
+ ],
+ "Jinchuan Group": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 9.23747e-05,
+   "background_mol_m2": 7.80292e-05,
+   "ratio": 1.2,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Umicore Kokkola": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 0.0001588796,
+   "background_mol_m2": 0.0002793602,
+   "ratio": 0.6,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Umicore Hoboken": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 8.76586e-05,
+   "background_mol_m2": 0.0001247772,
+   "ratio": 0.7,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Fort Saskatchewan": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 0.000220098,
+   "background_mol_m2": 0.0002768382,
+   "ratio": 0.8,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Long Harbour NPP": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 5.63725e-05,
+   "background_mol_m2": 4.81671e-05,
+   "ratio": 1.2,
+   "status": "LOW_SO2"
+  }
+ ],
+ "Niihama Nickel Refinery": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": 0.0003628064,
+   "background_mol_m2": 0.0002045056,
+   "ratio": 1.8,
+   "status": "SMELTING"
+  }
+ ],
+ "Harjavalta": [
+  {
+   "date": "2026-04-04",
+   "so2_mol_m2": null,
+   "background_mol_m2": null,
+   "ratio": 0,
+   "status": "UNKNOWN"
+  }
+ ]
+}
