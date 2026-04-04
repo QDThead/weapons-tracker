@@ -7397,6 +7397,8 @@ var GLOBE_LAYERS = [
   { id: 'thermal-gibs', name: 'VIIRS Thermal (NASA)', color: '#ff4500', defaultOn: true },
   { id: 'thermal-det',  name: 'Thermal Status',       color: '#ff6b35', defaultOn: true },
   { id: 'no2-emissions', name: 'NO2 Emissions (S5P)', color: '#a050dc', defaultOn: true },
+  { id: 'so2-emissions', name: 'SO2 Emissions (S5P)', color: '#e6c619', defaultOn: true },
+  { id: 'ndvi-activity', name: 'Mine Activity (NDVI)', color: '#6b9080', defaultOn: true },
 ];
 var layerVisibility = {};
 GLOBE_LAYERS.forEach(function(l) { layerVisibility[l.id] = l.defaultOn; });
@@ -8013,7 +8015,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -16),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1, thermal: JSON.stringify(mine.thermal || {}), no2: JSON.stringify(mine.no2 || {}), verdict: JSON.stringify(mine.operational_verdict || {}) },
+          properties: { layerId: 'mining', type: 'mine', mineral: m.name, name: mine.name, owner: mine.owner, country: mine.country, production: mine.production_t || 0, note: mine.note || '', flags: (mine.flags || []).join(', '), risks: JSON.stringify(mine.risks || []), foci_assessment: (mine.dossier && mine.dossier.foci_assessment) || '', z_score: (mine.dossier && mine.dossier.z_score != null) ? mine.dossier.z_score : -1, thermal: JSON.stringify(mine.thermal || {}), no2: JSON.stringify(mine.no2 || {}), so2: JSON.stringify(mine.so2 || {}), ndvi: JSON.stringify(mine.ndvi || {}), verdict: JSON.stringify(mine.operational_verdict || {}) },
         });
       });
     } else {
@@ -8069,7 +8071,7 @@ function renderGlobeEntities() {
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -14),
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
-          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1, thermal: JSON.stringify(ref.thermal || {}), no2: JSON.stringify(ref.no2 || {}), verdict: JSON.stringify(ref.operational_verdict || {}) },
+          properties: { layerId: 'processing', type: 'refinery', mineral: m.name, name: ref.name, owner: ref.owner, country: ref.country, capacity: ref.capacity_t || 0, products: ref.products || '', note: ref.note || '', flags: (ref.flags || []).join(', '), risks: JSON.stringify(ref.risks || []), foci_assessment: (ref.dossier && ref.dossier.foci_assessment) || '', z_score: (ref.dossier && ref.dossier.z_score != null) ? ref.dossier.z_score : -1, thermal: JSON.stringify(ref.thermal || {}), no2: JSON.stringify(ref.no2 || {}), so2: JSON.stringify(ref.so2 || {}), ndvi: JSON.stringify(ref.ndvi || {}), verdict: JSON.stringify(ref.operational_verdict || {}) },
         });
       });
     } else {
@@ -8343,6 +8345,113 @@ function renderGlobeEntities() {
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
           properties: { layerId: 'no2-emissions', type: 'no2-label', mineral: m.name, name: facility.name },
+        });
+      }
+
+      // SO2 smelting plumes — yellow ellipses (Sentinel-5P TROPOMI)
+      var so2 = facility.so2 || {};
+      if (so2.status === 'SMELTING' && so2.ratio >= 1.5) {
+        var so2Pos = Cesium.Cartesian3.fromDegrees(facility.lon || facility.longitude, facility.lat || facility.latitude);
+        var so2Scale = Math.min(2.0, (so2.ratio - 1.5) / 3.0 + 1.0);
+        var so2Base = 3000 * so2Scale;
+
+        // Outer glow
+        cesiumViewer.entities.add({
+          position: so2Pos,
+          ellipse: {
+            semiMajorAxis: so2Base * 3,
+            semiMinorAxis: so2Base * 2.5,
+            material: Cesium.Color.fromCssColorString('#e6c619').withAlpha(0.06),
+            outline: false,
+            height: 0,
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'so2-emissions', type: 'so2-plume', mineral: m.name, name: facility.name },
+        });
+        // Mid bloom
+        cesiumViewer.entities.add({
+          position: so2Pos,
+          ellipse: {
+            semiMajorAxis: so2Base * 1.8,
+            semiMinorAxis: so2Base * 1.5,
+            material: Cesium.Color.fromCssColorString('#e6c619').withAlpha(0.12),
+            outline: false,
+            height: 0,
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'so2-emissions', type: 'so2-plume', mineral: m.name, name: facility.name },
+        });
+        // Inner core
+        cesiumViewer.entities.add({
+          position: so2Pos,
+          ellipse: {
+            semiMajorAxis: so2Base,
+            semiMinorAxis: so2Base * 0.8,
+            material: Cesium.Color.fromCssColorString('#f0d040').withAlpha(0.22),
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString('#e6c619').withAlpha(0.12),
+            outlineWidth: 1,
+            height: 0,
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'so2-emissions', type: 'so2-plume', mineral: m.name, name: facility.name },
+        });
+        // Center label with ratio
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(facility.lon || facility.longitude, facility.lat || facility.latitude, 200),
+          point: {
+            pixelSize: 6,
+            color: Cesium.Color.fromCssColorString('#f0d040').withAlpha(0.7),
+            outlineColor: Cesium.Color.fromCssColorString('#e6c619').withAlpha(0.4),
+            outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          label: {
+            text: 'SO\u2082 ' + so2.ratio + '\u00d7',
+            font: '10px JetBrains Mono',
+            fillColor: Cesium.Color.fromCssColorString('#e6c619'),
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2,
+            outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -8),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          properties: { layerId: 'so2-emissions', type: 'so2-label', mineral: m.name, name: facility.name },
+        });
+      }
+
+      // NDVI active mining markers — orange circle (Sentinel-2)
+      var ndvi = facility.ndvi || {};
+      if (ndvi.status === 'ACTIVE_MINING') {
+        var ndviRadius = 2500; // ~2.5km detection radius
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(facility.lon || facility.longitude, facility.lat || facility.latitude),
+          ellipse: {
+            semiMajorAxis: ndviRadius,
+            semiMinorAxis: ndviRadius,
+            height: 50,
+            material: Cesium.Color.ORANGE.withAlpha(0.10),
+            outline: true,
+            outlineColor: Cesium.Color.ORANGE.withAlpha(0.35),
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { layerId: 'ndvi-activity', type: 'ndvi-marker', mineral: m.name, name: facility.name },
+        });
+        cesiumViewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(facility.lon || facility.longitude, facility.lat || facility.latitude, 150),
+          label: {
+            text: 'NDVI ' + (ndvi.bare_soil_pct || 0) + '%',
+            font: '9px JetBrains Mono',
+            fillColor: Cesium.Color.ORANGE,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2,
+            outlineColor: Cesium.Color.BLACK,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 22),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          properties: { layerId: 'ndvi-activity', type: 'ndvi-label', mineral: m.name, name: facility.name },
         });
       }
     });
@@ -9599,6 +9708,61 @@ function setupGlobeClickHandler() {
               } catch(e) {}
             }, 100);
           }
+        }
+      } catch(e) {}
+
+      // SO2 Smelting Verification section (Sentinel-5P TROPOMI)
+      var so2Json = props.so2 ? props.so2.getValue() : '{}';
+      try {
+        var so2 = JSON.parse(so2Json);
+        if (so2.status && so2.status !== 'UNKNOWN') {
+          var so2Colors = {SMELTING:'#e6c619', LOW_SO2:'#6b6b8a', UNKNOWN:'#4B5567'};
+          var so2Color = so2Colors[so2.status] || '#4B5567';
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
+          html += '<div style="font-size:9px; font-family:var(--font-mono); color:#e6c619; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">SO2 Smelting Verification</div>';
+          html += '<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">'
+            + '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + so2Color + '; box-shadow:0 0 6px ' + so2Color + ';"></span>'
+            + '<span style="font-family:var(--font-mono); font-size:11px; font-weight:600; color:' + so2Color + ';">' + so2.status + '</span>'
+            + (so2.ratio ? '<span style="font-size:10px; color:var(--text-dim);">(' + so2.ratio + '\u00d7 background)</span>' : '')
+            + '</div>';
+          if (so2.so2_mol_m2) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">SO2: ' + so2.so2_mol_m2.toFixed(6) + ' mol/m\u00b2</div>';
+          }
+          if (so2.background_mol_m2) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Background: ' + so2.background_mol_m2.toFixed(6) + ' mol/m\u00b2</div>';
+          }
+          if (so2.last_overpass) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Last overpass: ' + esc(so2.last_overpass) + '</div>';
+          }
+          html += '<div style="font-size:9px; color:var(--text-muted); margin-top:4px;">' + esc(so2.source || 'Sentinel-5P TROPOMI') + ' (5.5km)</div>';
+          html += '</div>';
+        }
+      } catch(e) {}
+
+      // NDVI Land Activity section (Sentinel-2)
+      var ndviJson = props.ndvi ? props.ndvi.getValue() : '{}';
+      try {
+        var ndvi = JSON.parse(ndviJson);
+        if (ndvi.status && ndvi.status !== 'UNKNOWN') {
+          var ndviColors = {ACTIVE_MINING:'#6b9080', VEGETATED:'#4B5567', UNKNOWN:'#4B5567'};
+          var ndviColor = ndviColors[ndvi.status] || '#4B5567';
+          html += '<div style="margin-top:8px; border-top:1px solid var(--border); padding-top:6px;">';
+          html += '<div style="font-size:9px; font-family:var(--font-mono); color:#6b9080; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Land Activity (NDVI)</div>';
+          html += '<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">'
+            + '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:' + ndviColor + '; box-shadow:0 0 6px ' + ndviColor + ';"></span>'
+            + '<span style="font-family:var(--font-mono); font-size:11px; font-weight:600; color:' + ndviColor + ';">' + ndvi.status + '</span>'
+            + '</div>';
+          if (ndvi.bare_soil_pct != null) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Bare Soil: <span style="color:#6b9080; font-weight:600;">' + ndvi.bare_soil_pct + '%</span></div>';
+          }
+          if (ndvi.mean_ndvi != null) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Mean NDVI: <span style="font-weight:600;">' + ndvi.mean_ndvi + '</span></div>';
+          }
+          if (ndvi.last_acquisition) {
+            html += '<div style="font-size:10px; color:var(--text-dim);">Last acquisition: ' + esc(ndvi.last_acquisition) + '</div>';
+          }
+          html += '<div style="font-size:9px; color:var(--text-muted); margin-top:4px;">' + esc(ndvi.source || 'Sentinel-2 MSI') + ' (10m)</div>';
+          html += '</div>';
         }
       } catch(e) {}
     } else if (type === 'mining') {
