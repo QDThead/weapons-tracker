@@ -202,3 +202,29 @@ def test_ndvi_status_unknown():
     from src.ingestion.sentinel_no2 import compute_ndvi_status
     result = compute_ndvi_status(bare_soil_pct=None, mean_ndvi=None)
     assert result["status"] == "UNKNOWN"
+
+
+def test_fallback_so2_data():
+    """SO2 fallback data should cover all 18 facilities."""
+    from src.ingestion.sentinel_no2 import SentinelNO2Client
+    client = SentinelNO2Client()
+    data = client._fallback_so2_data()
+    from src.ingestion.firms_thermal import FACILITY_CONFIG
+    assert len(data) == len(FACILITY_CONFIG)
+    for name, entry in data.items():
+        assert "so2_mol_m2" in entry
+        assert "status" in entry
+        assert entry["status"] in ("SMELTING", "LOW_SO2", "UNKNOWN")
+
+
+def test_fallback_ndvi_data():
+    """NDVI fallback data should cover all 9 mines."""
+    from src.ingestion.sentinel_no2 import SentinelNO2Client, MINE_NAMES
+    client = SentinelNO2Client()
+    data = client._fallback_ndvi_data()
+    assert len(data) == len(MINE_NAMES)
+    for name, entry in data.items():
+        assert name in MINE_NAMES
+        assert "bare_soil_pct" in entry
+        assert "status" in entry
+        assert entry["status"] in ("ACTIVE_MINING", "MODERATE", "VEGETATED", "UNKNOWN")
