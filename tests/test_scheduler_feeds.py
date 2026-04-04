@@ -35,8 +35,12 @@ def test_scheduler_creates_all_jobs():
     assert "arctic_osint" in job_ids
     assert "parliament_nddn" in job_ids
 
-    # Should have 22+ jobs
-    assert len(jobs) >= 22, f"Expected >= 22 jobs, got {len(jobs)}: {sorted(job_ids)}"
+    # Satellite verification jobs
+    assert "sentinel_so2" in job_ids
+    assert "sentinel_ndvi" in job_ids
+
+    # Should have 24+ jobs (22 base + firms_thermal + sentinel_no2 + sentinel_so2 + sentinel_ndvi)
+    assert len(jobs) >= 24, f"Expected >= 24 jobs, got {len(jobs)}: {sorted(job_ids)}"
 
 
 def test_sipri_country_coverage():

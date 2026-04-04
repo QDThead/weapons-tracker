@@ -26,6 +26,8 @@ Schedule:
   - PSI supply chain:       weekly Sunday 4 AM
   - Supplier scoring:       weekly Sunday 5 AM
   - Sentinel-5P NO2:         daily 3 AM
+  - Sentinel-5P SO2:         daily 3:30 AM
+  - Sentinel-2 NDVI:         weekly Sunday 4 AM
   - Comtrade cobalt:        monthly 1st 6 AM
 """
 
@@ -781,6 +783,44 @@ def create_scheduler() -> AsyncIOScheduler:
         CronTrigger(hour=3, minute=0),
         id="sentinel_no2",
         name="Sentinel-5P NO2 facility emissions (18 facilities)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Sentinel-5P SO2 facility smelting monitoring (daily at 03:30 UTC)
+    async def refresh_sentinel_so2():
+        from src.ingestion.sentinel_no2 import SentinelNO2Client, _SO2_HISTORY_PATH
+        client = SentinelNO2Client()
+        if not _SO2_HISTORY_PATH.exists():
+            logger.info("[sentinel_so2] First run — no backfill yet")
+        data = await client.fetch_all_facilities_so2()
+        smelting = sum(1 for v in data.values() if v["status"] == "SMELTING")
+        logger.info("[sentinel_so2] %d/%d facilities SMELTING", smelting, len(data))
+
+    scheduler.add_job(
+        resilient_job("sentinel_so2", timeout_s=300)(refresh_sentinel_so2),
+        CronTrigger(hour=3, minute=30),
+        id="sentinel_so2",
+        name="Sentinel-5P SO2 facility smelting (18 facilities)",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Sentinel-2 NDVI mine activity monitoring (weekly Sunday 04:00 UTC)
+    async def refresh_sentinel_ndvi():
+        from src.ingestion.sentinel_no2 import SentinelNO2Client, _NDVI_HISTORY_PATH
+        client = SentinelNO2Client()
+        if not _NDVI_HISTORY_PATH.exists():
+            logger.info("[sentinel_ndvi] First run — no backfill yet")
+        data = await client.fetch_all_facilities_ndvi()
+        active = sum(1 for v in data.values() if v["status"] == "ACTIVE_MINING")
+        logger.info("[sentinel_ndvi] %d/%d mines ACTIVE_MINING", active, len(data))
+
+    scheduler.add_job(
+        resilient_job("sentinel_ndvi", timeout_s=300)(refresh_sentinel_ndvi),
+        CronTrigger(day_of_week="sun", hour=4, minute=0),
+        id="sentinel_ndvi",
+        name="Sentinel-2 NDVI mine activity (9 mines)",
         replace_existing=True,
         max_instances=1,
     )

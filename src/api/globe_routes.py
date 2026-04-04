@@ -73,33 +73,70 @@ async def get_mineral(name: str):
 
         # Enrich mines/refineries with Sentinel-5P NO2 emissions data
         try:
-            from src.ingestion.sentinel_no2 import SentinelNO2Client, compute_combined_verdict
+            from src.ingestion.sentinel_no2 import SentinelNO2Client
             sentinel = SentinelNO2Client()
             no2_data = await sentinel.fetch_all_facilities()
-            unknown_no2 = {"status": "UNKNOWN", "ratio": 0, "source": "Sentinel-5P (unavailable)", "history": []}
+            unknown_no2 = {"status": "UNKNOWN", "ratio": 0, "source": "Sentinel-5P NO2 (unavailable)", "history": []}
             for mine in mineral.get("mines", []):
                 mine["no2"] = no2_data.get(mine["name"], unknown_no2)
-                t_status = mine.get("thermal", {}).get("status", "UNKNOWN")
-                n_status = mine["no2"].get("status", "UNKNOWN")
-                mine["operational_verdict"] = compute_combined_verdict(t_status, n_status)
             for ref in mineral.get("refineries", []):
                 ref["no2"] = no2_data.get(ref["name"], unknown_no2)
-                t_status = ref.get("thermal", {}).get("status", "UNKNOWN")
-                n_status = ref["no2"].get("status", "UNKNOWN")
-                ref["operational_verdict"] = compute_combined_verdict(t_status, n_status)
         except Exception as e:
             logger.warning("Sentinel NO2 enrichment failed: %s", e)
+
+        # Enrich mines/refineries with Sentinel-5P SO2 smelting data
+        try:
+            from src.ingestion.sentinel_no2 import SentinelNO2Client as SO2Client
+            so2_client = SO2Client()
+            so2_data = await so2_client.fetch_all_facilities_so2()
+            unknown_so2 = {"status": "UNKNOWN", "ratio": 0, "source": "Sentinel-5P SO2 (unavailable)", "history": []}
+            for mine in mineral.get("mines", []):
+                mine["so2"] = so2_data.get(mine["name"], unknown_so2)
+            for ref in mineral.get("refineries", []):
+                ref["so2"] = so2_data.get(ref["name"], unknown_so2)
+        except Exception as e:
+            logger.warning("Sentinel SO2 enrichment failed: %s", e)
+
+        # Enrich mines with Sentinel-2 NDVI bare-soil activity data
+        try:
+            from src.ingestion.sentinel_no2 import SentinelNO2Client as NDVIClient
+            ndvi_client = NDVIClient()
+            ndvi_data = await ndvi_client.fetch_all_facilities_ndvi()
+            unknown_ndvi = {"status": "UNKNOWN", "bare_soil_pct": 0, "source": "Sentinel-2 NDVI (unavailable)", "history": []}
+            for mine in mineral.get("mines", []):
+                mine["ndvi"] = ndvi_data.get(mine["name"], unknown_ndvi)
+        except Exception as e:
+            logger.warning("Sentinel NDVI enrichment failed: %s", e)
+
+        # Compute tier-specific combined verdicts (thermal + NO2 + SO2/NDVI)
+        try:
+            from src.ingestion.sentinel_no2 import compute_combined_verdict
+            for mine in mineral.get("mines", []):
+                t_status = mine.get("thermal", {}).get("status", "UNKNOWN")
+                n_status = mine.get("no2", {}).get("status", "UNKNOWN")
+                s_status = mine.get("so2", {}).get("status", "UNKNOWN")
+                d_status = mine.get("ndvi", {}).get("status", "UNKNOWN")
+                mine["operational_verdict"] = compute_combined_verdict(t_status, n_status, s_status, d_status, "mine")
+            for ref in mineral.get("refineries", []):
+                t_status = ref.get("thermal", {}).get("status", "UNKNOWN")
+                n_status = ref.get("no2", {}).get("status", "UNKNOWN")
+                s_status = ref.get("so2", {}).get("status", "UNKNOWN")
+                d_status = ref.get("ndvi", {}).get("status", "UNKNOWN")
+                ref["operational_verdict"] = compute_combined_verdict(t_status, n_status, s_status, d_status, "refinery")
+        except Exception as e:
+            logger.warning("Combined verdict computation failed: %s", e)
 
     return mineral
 
 
 @router.get("/facility/thumbnail")
-async def get_facility_thumbnail(lat: float, lon: float):
+async def get_facility_thumbnail(lat: float, lon: float, size: int = 256):
     """Return a Sentinel-2 true-color satellite thumbnail for a facility location."""
+    size = max(64, min(size, 1024))
     try:
         from src.ingestion.sentinel_no2 import SentinelNO2Client
         client = SentinelNO2Client()
-        png_bytes = await client.fetch_facility_thumbnail(lat, lon)
+        png_bytes = await client.fetch_facility_thumbnail(lat, lon, size=size)
         if png_bytes:
             return Response(content=png_bytes, media_type="image/png")
         raise HTTPException(status_code=503, detail="Satellite imagery unavailable")
