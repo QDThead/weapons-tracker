@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 
 from src.analysis.mineral_supply_chains import get_all_minerals, get_mineral_by_name
 
@@ -90,6 +91,23 @@ async def get_mineral(name: str):
             logger.warning("Sentinel NO2 enrichment failed: %s", e)
 
     return mineral
+
+
+@router.get("/facility/thumbnail")
+async def get_facility_thumbnail(lat: float, lon: float):
+    """Return a Sentinel-2 true-color satellite thumbnail for a facility location."""
+    try:
+        from src.ingestion.sentinel_no2 import SentinelNO2Client
+        client = SentinelNO2Client()
+        png_bytes = await client.fetch_facility_thumbnail(lat, lon)
+        if png_bytes:
+            return Response(content=png_bytes, media_type="image/png")
+        raise HTTPException(status_code=503, detail="Satellite imagery unavailable")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("Thumbnail fetch failed: %s", e)
+        raise HTTPException(status_code=503, detail="Satellite imagery unavailable")
 
 
 @router.get("/minerals/{name}/forecast")

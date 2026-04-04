@@ -124,7 +124,8 @@ class SentinelNO2Client:
             self._token_cache["expires_at"] = time.time() + data.get("expires_in", 1800)
             return data["access_token"]
 
-    async def _query_bbox_no2(self, bbox: list[float], days: int = 7) -> float | None:
+    async def _query_bbox_no2(self, bbox: list[float], days: int = 7) -> dict | None:
+        """Query NO2 for a bbox. Returns {no2: float, cloud_free_pct: int} or None."""
         token = await self._get_token()
         if not token:
             return None
@@ -166,13 +167,78 @@ class SentinelNO2Client:
                 from PIL import Image
                 img = Image.open(io.BytesIO(resp.content))
                 pixels = list(img.getdata())
+                total = len(pixels)
                 valid = [p[0] for p in pixels if len(p) >= 4 and p[3] > 0]
+                cloud_free_pct = round(len(valid) / max(total, 1) * 100)
                 if not valid:
-                    return None
+                    return {"no2": None, "cloud_free_pct": cloud_free_pct}
                 mean_scaled = sum(valid) / len(valid)
-                return mean_scaled / 255 * 0.0001
+                return {"no2": mean_scaled / 255 * 0.0001, "cloud_free_pct": cloud_free_pct}
         except Exception as e:
             logger.warning("CDSE NO2 query failed: %s", e)
+            return None
+
+    async def fetch_facility_thumbnail(self, lat: float, lon: float, radius_deg: float = 0.1) -> bytes | None:
+        """Fetch a Sentinel-2 true-color thumbnail for a facility location.
+
+        Returns PNG bytes or None on failure. Cached for 24 hours.
+        """
+        cache_key = f"thumb_{lat:.4f}_{lon:.4f}"
+        cached = _cache_get(self._cache, cache_key)
+        if cached is not None:
+            return cached
+
+        token = await self._get_token()
+        if not token:
+            return None
+
+        bbox = _make_bbox(lat, lon, max(radius_deg, 0.05))
+        now = datetime.now(timezone.utc)
+        time_from = (now - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z")
+        time_to = now.strftime("%Y-%m-%dT23:59:59Z")
+
+        s2_evalscript = (
+            "//VERSION=3\n"
+            "function setup(){return{input:[\"B04\",\"B03\",\"B02\",\"dataMask\"],"
+            "output:{bands:4,sampleType:\"AUTO\"}}}\n"
+            "function evaluatePixel(s){return[2.5*s.B04,2.5*s.B03,2.5*s.B02,s.dataMask];}"
+        )
+
+        payload = {
+            "input": {
+                "bounds": {
+                    "bbox": bbox,
+                    "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"},
+                },
+                "data": [{
+                    "type": "sentinel-2-l2a",
+                    "dataFilter": {
+                        "timeRange": {"from": time_from, "to": time_to},
+                        "maxCloudCoverage": 30,
+                    },
+                }],
+            },
+            "output": {
+                "width": 256,
+                "height": 256,
+                "responses": [{"identifier": "default", "format": {"type": "image/png"}}],
+            },
+            "evalscript": s2_evalscript,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    _PROCESS_ENDPOINT, json=payload,
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                if resp.status_code != 200:
+                    logger.warning("S2 thumbnail failed: HTTP %s", resp.status_code)
+                    return None
+                _cache_set(self._cache, cache_key, resp.content)
+                return resp.content
+        except Exception as e:
+            logger.warning("S2 thumbnail failed: %s", e)
             return None
 
     async def fetch_facility_no2(self, name: str, lat: float, lon: float, radius_deg: float, days: int = 7) -> dict:
@@ -183,15 +249,19 @@ class SentinelNO2Client:
         # S5P pixels are ~5.5km — need at least 0.1 deg bbox to capture data
         no2_radius = max(radius_deg, 0.1)
         facility_bbox = _make_bbox(lat, lon, no2_radius)
-        facility_no2 = await self._query_bbox_no2(facility_bbox, days)
+        facility_result = await self._query_bbox_no2(facility_bbox, days)
         bg_bbox = _make_bbox(lat, lon, no2_radius * 5)
-        background_no2 = await self._query_bbox_no2(bg_bbox, days)
+        bg_result = await self._query_bbox_no2(bg_bbox, days)
+        facility_no2 = facility_result["no2"] if facility_result else None
+        background_no2 = bg_result["no2"] if bg_result else None
+        cloud_free_pct = facility_result["cloud_free_pct"] if facility_result else 0
         status_info = compute_no2_status(facility_no2, background_no2)
         result = {
             "no2_mol_m2": round(facility_no2, 10) if facility_no2 else None,
             "background_mol_m2": round(background_no2, 10) if background_no2 else None,
             "ratio": status_info["ratio"],
             "status": status_info["status"],
+            "cloud_free_pct": cloud_free_pct,
             "last_overpass": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
             "source": "Sentinel-5P TROPOMI (live)",
         }
