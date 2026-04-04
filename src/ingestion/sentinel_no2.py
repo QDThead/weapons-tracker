@@ -90,26 +90,65 @@ def compute_ndvi_status(bare_soil_pct: float | None, mean_ndvi: float | None) ->
     return {"status": "VEGETATED", "bare_soil_pct": bare_soil_pct, "mean_ndvi": mean_ndvi}
 
 
-def compute_combined_verdict(thermal_status: str, no2_status: str) -> dict:
-    sources = []
-    if thermal_status == "ACTIVE":
-        sources.append("FIRMS VIIRS thermal")
-    if no2_status == "EMITTING":
-        sources.append("Sentinel-5P NO2")
+def compute_combined_verdict(
+    thermal_status: str,
+    no2_status: str,
+    so2_status: str = "UNKNOWN",
+    ndvi_status: str = "UNKNOWN",
+    facility_type: str = "mine",
+) -> dict:
+    """Tier-specific operational verdict from up to 4 satellite signals.
 
-    if thermal_status == "ACTIVE" and no2_status == "EMITTING":
-        return {"status": "CONFIRMED ACTIVE", "confidence": "high", "sources": sources}
-    if thermal_status == "ACTIVE" and no2_status in ("LOW_EMISSION", "UNKNOWN"):
-        return {"status": "ACTIVE", "confidence": "medium", "sources": ["FIRMS VIIRS thermal"]}
-    if thermal_status == "IDLE" and no2_status == "EMITTING":
-        return {"status": "LIKELY ACTIVE", "confidence": "medium", "sources": ["Sentinel-5P NO2"]}
-    if thermal_status == "UNKNOWN" and no2_status == "EMITTING":
-        return {"status": "LIKELY ACTIVE", "confidence": "medium", "sources": ["Sentinel-5P NO2"]}
-    if thermal_status == "IDLE" and no2_status in ("LOW_EMISSION", "UNKNOWN"):
-        return {"status": "IDLE", "confidence": "low", "sources": []}
-    if thermal_status == "UNKNOWN" and no2_status == "LOW_EMISSION":
+    Mines use: thermal + NO2 + NDVI (ignore SO2).
+    Refineries use: thermal + NO2 + SO2 (ignore NDVI).
+    UNKNOWN signals are excluded from the count (not confirming or denying).
+    """
+    sources = []
+    active_count = 0
+    known_count = 0
+
+    # Thermal — applies to both types
+    if thermal_status != "UNKNOWN":
+        known_count += 1
+        if thermal_status == "ACTIVE":
+            active_count += 1
+            sources.append("FIRMS VIIRS thermal")
+
+    # NO2 — applies to both types
+    if no2_status != "UNKNOWN":
+        known_count += 1
+        if no2_status == "EMITTING":
+            active_count += 1
+            sources.append("Sentinel-5P NO2")
+
+    # Tier-specific third signal
+    if facility_type == "refinery":
+        if so2_status != "UNKNOWN":
+            known_count += 1
+            if so2_status == "SMELTING":
+                active_count += 1
+                sources.append("Sentinel-5P SO2")
+    else:  # mine
+        if ndvi_status != "UNKNOWN":
+            known_count += 1
+            if ndvi_status == "ACTIVE_MINING":
+                active_count += 1
+                sources.append("Sentinel-2 NDVI")
+
+    if known_count == 0:
         return {"status": "UNKNOWN", "confidence": "none", "sources": []}
-    return {"status": "UNKNOWN", "confidence": "none", "sources": []}
+
+    # Score based on active signals out of known signals
+    if active_count >= 3:
+        return {"status": "CONFIRMED ACTIVE", "confidence": "high", "sources": sources}
+    if active_count == 2:
+        # 2/2 known = CONFIRMED, 2/3 known = ACTIVE
+        if known_count == 2 and active_count == 2:
+            return {"status": "CONFIRMED ACTIVE", "confidence": "high", "sources": sources}
+        return {"status": "ACTIVE", "confidence": "medium-high", "sources": sources}
+    if active_count == 1:
+        return {"status": "LIKELY ACTIVE", "confidence": "medium", "sources": sources}
+    return {"status": "IDLE", "confidence": "low", "sources": []}
 
 
 # Reuse FIRMS facility coordinates — single source of truth

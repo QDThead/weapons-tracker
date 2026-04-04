@@ -45,49 +45,70 @@ def test_status_zero_background():
     assert result["ratio"] > 0
 
 
-def test_combined_verdict_confirmed_active():
-    """ACTIVE thermal + EMITTING NO2 = CONFIRMED ACTIVE."""
+def test_combined_verdict_mine_3_signals():
+    """Mine with all 3 signals active -> CONFIRMED ACTIVE."""
     from src.ingestion.sentinel_no2 import compute_combined_verdict
-    result = compute_combined_verdict(thermal_status="ACTIVE", no2_status="EMITTING")
+    result = compute_combined_verdict("ACTIVE", "EMITTING", "UNKNOWN", "ACTIVE_MINING", "mine")
     assert result["status"] == "CONFIRMED ACTIVE"
     assert result["confidence"] == "high"
+    assert len(result["sources"]) == 3
 
 
-def test_combined_verdict_likely_active():
-    """IDLE thermal + EMITTING NO2 = LIKELY ACTIVE."""
+def test_combined_verdict_mine_2_signals():
+    """Mine with 2/3 signals active -> ACTIVE."""
     from src.ingestion.sentinel_no2 import compute_combined_verdict
-    result = compute_combined_verdict(thermal_status="IDLE", no2_status="EMITTING")
+    result = compute_combined_verdict("ACTIVE", "EMITTING", "UNKNOWN", "VEGETATED", "mine")
+    assert result["status"] == "ACTIVE"
+    assert result["confidence"] == "medium-high"
+
+
+def test_combined_verdict_mine_1_signal():
+    """Mine with 1/3 signals active -> LIKELY ACTIVE."""
+    from src.ingestion.sentinel_no2 import compute_combined_verdict
+    result = compute_combined_verdict("IDLE", "LOW_EMISSION", "UNKNOWN", "ACTIVE_MINING", "mine")
     assert result["status"] == "LIKELY ACTIVE"
     assert result["confidence"] == "medium"
 
 
-def test_combined_verdict_idle():
-    """IDLE thermal + LOW_EMISSION NO2 = IDLE."""
+def test_combined_verdict_mine_0_signals():
+    """Mine with 0/3 signals active -> IDLE."""
     from src.ingestion.sentinel_no2 import compute_combined_verdict
-    result = compute_combined_verdict(thermal_status="IDLE", no2_status="LOW_EMISSION")
+    result = compute_combined_verdict("IDLE", "LOW_EMISSION", "UNKNOWN", "VEGETATED", "mine")
     assert result["status"] == "IDLE"
+    assert result["confidence"] == "low"
 
 
-def test_combined_verdict_thermal_only():
-    """ACTIVE thermal + UNKNOWN NO2 = ACTIVE (thermal only)."""
+def test_combined_verdict_refinery_3_signals():
+    """Refinery with all 3 signals active -> CONFIRMED ACTIVE."""
     from src.ingestion.sentinel_no2 import compute_combined_verdict
-    result = compute_combined_verdict(thermal_status="ACTIVE", no2_status="UNKNOWN")
-    assert result["status"] == "ACTIVE"
-    assert "FIRMS" in result["sources"][0]
+    result = compute_combined_verdict("ACTIVE", "EMITTING", "SMELTING", "UNKNOWN", "refinery")
+    assert result["status"] == "CONFIRMED ACTIVE"
+    assert result["confidence"] == "high"
+    assert len(result["sources"]) == 3
 
 
-def test_combined_verdict_no2_only():
-    """UNKNOWN thermal + EMITTING NO2 = LIKELY ACTIVE."""
+def test_combined_verdict_refinery_so2_only():
+    """Refinery with only SO2 -> LIKELY ACTIVE."""
     from src.ingestion.sentinel_no2 import compute_combined_verdict
-    result = compute_combined_verdict(thermal_status="UNKNOWN", no2_status="EMITTING")
+    result = compute_combined_verdict("IDLE", "LOW_EMISSION", "SMELTING", "UNKNOWN", "refinery")
     assert result["status"] == "LIKELY ACTIVE"
+    assert result["confidence"] == "medium"
 
 
-def test_combined_verdict_both_unknown():
-    """UNKNOWN thermal + UNKNOWN NO2 = UNKNOWN."""
+def test_combined_verdict_backward_compat():
+    """With no SO2/NDVI data (UNKNOWN), degrades to 2-signal logic."""
     from src.ingestion.sentinel_no2 import compute_combined_verdict
-    result = compute_combined_verdict(thermal_status="UNKNOWN", no2_status="UNKNOWN")
+    result = compute_combined_verdict("ACTIVE", "EMITTING", "UNKNOWN", "UNKNOWN", "mine")
+    assert result["status"] == "CONFIRMED ACTIVE"
+    assert result["confidence"] == "high"
+
+
+def test_combined_verdict_all_unknown():
+    """All signals UNKNOWN -> UNKNOWN."""
+    from src.ingestion.sentinel_no2 import compute_combined_verdict
+    result = compute_combined_verdict("UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "mine")
     assert result["status"] == "UNKNOWN"
+    assert result["confidence"] == "none"
 
 
 def test_facility_config_matches_firms():
