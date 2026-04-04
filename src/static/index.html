@@ -10675,12 +10675,17 @@ function renderAlertsSensing(m, container) {
   var allFacilities = (m.mines || []).concat(m.refineries || []);
   if (allFacilities.length > 0) {
     var thermalActive = 0, no2Emitting = 0, confirmedActive = 0, likelyActive = 0, idle = 0, anomalies = [];
+    var so2Smelting = 0, ndviActive = 0;
     allFacilities.forEach(function(f) {
       var tStatus = (f.thermal || {}).status || 'UNKNOWN';
       var nStatus = (f.no2 || {}).status || 'UNKNOWN';
       var vStatus = (f.operational_verdict || {}).status || 'UNKNOWN';
       if (tStatus === 'ACTIVE') thermalActive++;
       if (nStatus === 'EMITTING') no2Emitting++;
+      var sStatus = (f.so2 || {}).status || 'UNKNOWN';
+      var dStatus = (f.ndvi || {}).status || 'UNKNOWN';
+      if (sStatus === 'SMELTING') so2Smelting++;
+      if (dStatus === 'ACTIVE_MINING') ndviActive++;
       if (vStatus === 'CONFIRMED ACTIVE') confirmedActive++;
       else if (vStatus === 'LIKELY ACTIVE') likelyActive++;
       else if (vStatus === 'IDLE') idle++;
@@ -10694,6 +10699,11 @@ function renderAlertsSensing(m, container) {
       var capacity = f.production_t || f.capacity_t || 0;
       if (capacity > 2000 && !isPaused && tStatus !== 'ACTIVE' && nStatus !== 'EMITTING' && tStatus !== 'UNKNOWN' && nStatus !== 'UNKNOWN') {
         anomalies.push({name: f.name, type: 'OPERATING_NO_SIGNAL', detail: 'Reports ' + capacity.toLocaleString() + ' t/yr capacity but no satellite confirmation'});
+      }
+      // Mine shows vegetation recovery but reports production
+      var isMine = (f.ndvi && f.ndvi.status);
+      if (capacity > 1000 && !isPaused && dStatus === 'VEGETATED' && isMine) {
+        anomalies.push({name: f.name, type: 'VEGETATED_BUT_OPERATING', detail: 'Reports ' + capacity.toLocaleString() + ' t/yr but NDVI shows vegetation recovery (bare soil < 30%)'});
       }
     });
 
@@ -10721,6 +10731,12 @@ function renderAlertsSensing(m, container) {
     html += '<div style="font-family:var(--font-mono); font-size:18px; font-weight:700; color:#a050dc;">' + no2Emitting + '</div>';
     html += '<div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">NO2 Emitting</div></div>';
     html += '<div style="text-align:center; padding:8px; background:rgba(255,255,255,0.02); border:1px solid var(--border);">';
+    html += '<div style="font-family:var(--font-mono); font-size:18px; font-weight:700; color:#e6c619;">' + so2Smelting + '</div>';
+    html += '<div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">SO2 Smelting</div></div>';
+    html += '<div style="text-align:center; padding:8px; background:rgba(255,255,255,0.02); border:1px solid var(--border);">';
+    html += '<div style="font-family:var(--font-mono); font-size:18px; font-weight:700; color:#6b9080;">' + ndviActive + '</div>';
+    html += '<div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">NDVI Active</div></div>';
+    html += '<div style="text-align:center; padding:8px; background:rgba(255,255,255,0.02); border:1px solid var(--border);">';
     html += '<div style="font-family:var(--font-mono); font-size:18px; font-weight:700; color:var(--accent2);">' + anomalies.length + '</div>';
     html += '<div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Anomalies</div></div>';
     html += '</div>';
@@ -10729,6 +10745,8 @@ function renderAlertsSensing(m, container) {
     html += '<div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">';
     html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.2); color:#ff4444;">FIRMS VIIRS NOAA-20 (375m)</span>';
     html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; background:rgba(160,80,220,0.08); border:1px solid rgba(160,80,220,0.2); color:#a050dc;">Sentinel-5P TROPOMI (5.5km)</span>';
+    html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; background:rgba(230,198,25,0.08); border:1px solid rgba(230,198,25,0.2); color:#e6c619;">Sentinel-5P SO2 (5.5km)</span>';
+    html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; background:rgba(107,144,128,0.08); border:1px solid rgba(107,144,128,0.2); color:#6b9080;">Sentinel-2 NDVI (10m)</span>';
     html += '<span style="font-size:9px; font-family:var(--font-mono); padding:2px 6px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-dim);">' + allFacilities.length + ' facilities monitored</span>';
     html += '</div>';
 
@@ -10737,8 +10755,8 @@ function renderAlertsSensing(m, container) {
       html += '<div style="margin-top:4px;">';
       html += '<div style="font-size:9px; font-family:var(--font-mono); color:var(--accent2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">ANOMALIES DETECTED</div>';
       anomalies.forEach(function(a) {
-        var aColor = a.type === 'PAUSED_BUT_ACTIVE' ? '#D80621' : '#a89060';
-        var aBadge = a.type === 'PAUSED_BUT_ACTIVE' ? 'INVESTIGATE' : 'MONITOR';
+        var aColor = a.type === 'PAUSED_BUT_ACTIVE' ? '#D80621' : a.type === 'VEGETATED_BUT_OPERATING' ? '#6b9080' : '#a89060';
+        var aBadge = a.type === 'PAUSED_BUT_ACTIVE' ? 'INVESTIGATE' : a.type === 'VEGETATED_BUT_OPERATING' ? 'VERIFY' : 'MONITOR';
         html += '<div style="padding:8px 10px; margin-bottom:4px; background:' + aColor + '0a; border-left:3px solid ' + aColor + '; font-size:11px;">';
         html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
         html += '<span><span style="font-weight:600; color:' + aColor + ';">' + esc(a.name) + '</span>';
