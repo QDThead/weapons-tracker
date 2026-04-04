@@ -7545,6 +7545,7 @@ async function initCesiumGlobe() {
     scene.backgroundColor = Cesium.Color.fromCssColorString('#06090f');
     scene.globe.baseColor = Cesium.Color.fromCssColorString('#111620');
     scene.globe.showGroundAtmosphere = false;
+    scene.globe.depthTestAgainstTerrain = true;
     scene.globe.enableLighting = false;
     if (scene.skyBox) scene.skyBox.show = false;
     if (scene.sun) scene.sun.show = false;
@@ -8375,7 +8376,7 @@ function renderGlobeEntities() {
         var lineWidth = sr.risk === 'critical' ? 4 : sr.risk === 'high' ? 3 : sr.risk === 'medium' ? 2.5 : 2;
         var dashLen = sr.risk === 'critical' ? 8 : sr.risk === 'high' ? 12 : sr.risk === 'medium' ? 14 : 16;
         var routeCoords = [];
-        sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
+        sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 50000); });
         cesiumViewer.entities.add({
           polyline: {
             positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
@@ -8404,7 +8405,6 @@ function renderGlobeEntities() {
             fillColor: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#999').withAlpha(0.9),
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 25000000),
           },
           properties: { layerId: 'route-labels', type: 'route-label', mineral: m.name },
@@ -8417,14 +8417,13 @@ function renderGlobeEntities() {
           var portName = sr.name.split('\u2192').pop().trim();
           cesiumViewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(lastWp[0], lastWp[1], 30000),
-            point: { pixelSize: 12, color: Cesium.Color.fromCssColorString('#ff2d2d'), outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+            point: { pixelSize: 12, color: Cesium.Color.fromCssColorString('#ff2d2d'), outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
             label: {
               text: portName, font: 'bold 10px JetBrains Mono',
               fillColor: Cesium.Color.fromCssColorString('#ff2d2d'),
               style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
               verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 14),
               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: { layerId: 'ports', type: 'port', mineral: m.name, name: portName, desc: sr.description },
           });
@@ -8437,14 +8436,13 @@ function renderGlobeEntities() {
           var originName = sr.name.split('\u2192')[0].trim();
           cesiumViewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(firstWp[0], firstWp[1], 30000),
-            point: { pixelSize: 10, color: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b').withAlpha(0.8), outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+            point: { pixelSize: 10, color: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b').withAlpha(0.8), outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
             label: {
               text: originName, font: '9px JetBrains Mono',
               fillColor: Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b'),
               style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
               verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 12),
               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
             },
             properties: { layerId: 'ports', type: 'port', mineral: m.name, name: originName, desc: sr.description },
           });
@@ -8456,7 +8454,7 @@ function renderGlobeEntities() {
         if (!sr.waypoints || sr.waypoints.length < 2) return;
         var lineColor = Cesium.Color.fromCssColorString(riskRouteColors[sr.risk] || '#5a7a9b');
         var routeCoords = [];
-        sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
+        sr.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 50000); });
         cesiumViewer.entities.add({
           polyline: {
             positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
@@ -8474,7 +8472,7 @@ function renderGlobeEntities() {
         var route = getSeaRoute(source.country, port);
         if (route && route.length >= 2) {
           var routeCoords = [];
-          route.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 5000); });
+          route.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 50000); });
           cesiumViewer.entities.add({
             polyline: {
               positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
@@ -8489,13 +8487,12 @@ function renderGlobeEntities() {
       }
       cesiumViewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(port.lon, port.lat, 30000),
-        point: { pixelSize: 14, color: Cesium.Color.fromCssColorString('#ff2d2d'), outlineColor: Cesium.Color.WHITE, outlineWidth: 3, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+        point: { pixelSize: 14, color: Cesium.Color.fromCssColorString('#ff2d2d'), outlineColor: Cesium.Color.WHITE, outlineWidth: 3 },
         label: {
           text: port.name + ' \u{1F341}', font: 'bold 12px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#ff2d2d'),
           style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
           verticalOrigin: Cesium.VerticalOrigin.TOP, pixelOffset: new Cesium.Cartesian2(0, 16),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
         properties: { layerId: 'ports', type: 'port', mineral: m.name, name: port.name, desc: 'Canadian import port' },
       });
@@ -8509,7 +8506,7 @@ function renderGlobeEntities() {
         var olColor = Cesium.Color.fromCssColorString(modeColors[ol.mode] || '#a89060');
         var olWidth = ol.mode === 'truck' ? 3 : 2.5;
         var routeCoords = [];
-        ol.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 500); });
+        ol.waypoints.forEach(function(wp) { routeCoords.push(wp[0], wp[1], 20000); });
         cesiumViewer.entities.add({
           polyline: {
             positions: Cesium.Cartesian3.fromDegreesArrayHeights(routeCoords),
@@ -8536,7 +8533,6 @@ function renderGlobeEntities() {
             fillColor: Cesium.Color.fromCssColorString(modeColors[ol.mode] || '#a89060').withAlpha(0.9),
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             outlineWidth: 2, outlineColor: Cesium.Color.BLACK,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 12000000),
           },
           properties: { layerId: 'route-labels', type: 'route-label', mineral: m.name },
