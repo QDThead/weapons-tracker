@@ -13360,6 +13360,14 @@ function computeVerificationScore(facility) {
   }
   score = Math.round(Math.max(0, Math.min(100, score)));
 
+  // Cloud coverage adjustment: if < 50% clear, pull score toward INCONCLUSIVE (50)
+  var cloudPct = (no2.cloud_free_pct !== undefined) ? no2.cloud_free_pct : 100;
+  var lowCoverage = cloudPct < 50;
+  if (lowCoverage && totalDays < 5) {
+    // Very limited data — force inconclusive rather than false discrepancy
+    score = Math.max(score, 50);
+  }
+
   var verdict, verdictColor;
   if (score >= 80) { verdict = 'CONSISTENT'; verdictColor = '#6b9080'; }
   else if (score >= 50) { verdict = 'INCONCLUSIVE'; verdictColor = '#a89060'; }
@@ -13369,7 +13377,9 @@ function computeVerificationScore(facility) {
   if (verdict === 'CONSISTENT') {
     verdictText = 'Satellite activity aligns with reported ' + reportedStatus + ' status.';
   } else if (verdict === 'INCONCLUSIVE') {
-    verdictText = 'Partial satellite coverage \u2014 insufficient data for verification.';
+    verdictText = lowCoverage
+      ? 'Heavy cloud cover limits satellite verification \u2014 data insufficient for conclusion.'
+      : 'Partial satellite coverage \u2014 insufficient data for verification.';
   } else {
     if (reportedStatus === 'paused') {
       verdictText = 'WARNING: Satellite shows activity but facility reports paused.';
@@ -13448,7 +13458,23 @@ function renderVerificationTab(m, container) {
       html += '<span style="display:inline-block; padding:2px 8px; font-family:var(--font-mono); font-size:10px; font-weight:700; color:' + v.verdictColor + '; border:1px solid ' + v.verdictColor + '; background:' + v.verdictColor + '18;">' + v.verdict + '</span>';
       html += '</div>';
 
-      html += '<canvas id="' + cardId + '-chart" width="340" height="120" style="width:100%; height:120px; margin-bottom:8px;"></canvas>';
+      // Satellite thumbnail + chart side by side
+      html += '<div style="display:flex; gap:8px; margin-bottom:8px;">';
+      html += '<div style="flex-shrink:0; width:120px; height:120px; background:#0a0e14; border:1px solid var(--border); position:relative; overflow:hidden;">';
+      html += '<img id="' + cardId + '-thumb" src="" alt="Satellite" style="width:100%; height:100%; object-fit:cover; display:none;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">';
+      html += '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:9px; font-family:var(--font-mono); color:var(--text-muted); text-align:center; padding:8px;">Loading<br>satellite...</div>';
+      html += '<div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); padding:2px 4px; font-size:8px; font-family:var(--font-mono); color:var(--text-muted);">Sentinel-2 L2A</div>';
+      html += '</div>';
+      html += '<div style="flex:1; min-width:0;">';
+      html += '<canvas id="' + cardId + '-chart" width="220" height="120" style="width:100%; height:120px;"></canvas>';
+      html += '</div>';
+      html += '</div>';
+
+      // Cloud coverage warning
+      var cloudPct = (f.no2 || {}).cloud_free_pct;
+      if (cloudPct !== undefined && cloudPct < 50) {
+        html += '<div style="font-size:10px; color:var(--accent4); padding:4px 6px; margin-bottom:6px; background:rgba(168,144,96,0.06); border-left:2px solid var(--accent4);">\u2601 Cloud coverage: only ' + cloudPct + '% clear \u2014 satellite readings may be unreliable</div>';
+      }
 
       html += '<div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">';
       html += '<span style="font-family:var(--font-mono);">' + capLabel + ':</span> ' + capValue;
@@ -13466,6 +13492,7 @@ function renderVerificationTab(m, container) {
       html += '<div style="font-size:10px; font-family:var(--font-mono); color:var(--text-dim);">';
       html += 'Thermal: ' + v.thermalActiveDays + '/' + v.totalDays + ' days ACTIVE';
       html += ' &nbsp;\u00b7&nbsp; NO2: ' + v.no2EmittingDays + '/' + v.totalDays + ' days EMITTING';
+      if (cloudPct !== undefined) html += ' &nbsp;\u00b7&nbsp; Cloud: ' + cloudPct + '% clear';
       html += '</div>';
       html += '</div>';
 
@@ -13490,6 +13517,16 @@ function renderVerificationTab(m, container) {
     setTimeout(function() {
       filtered.forEach(function(f, idx) {
         renderVerificationChart('vf-card-' + idx + '-chart', f);
+        // Load satellite thumbnail
+        var thumbEl = document.getElementById('vf-card-' + idx + '-thumb');
+        if (thumbEl) {
+          var lat = f.lat || f.latitude || 0;
+          var lon = f.lon || f.longitude || 0;
+          if (lat && lon) {
+            thumbEl.src = API + '/globe/facility/thumbnail?lat=' + lat + '&lon=' + lon;
+            thumbEl.onload = function() { this.style.display = ''; this.nextElementSibling.style.display = 'none'; };
+          }
+        }
       });
     }, 50);
   }
